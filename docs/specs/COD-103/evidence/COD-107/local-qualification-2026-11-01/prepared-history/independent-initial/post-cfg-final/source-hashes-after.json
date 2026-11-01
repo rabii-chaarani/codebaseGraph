@@ -1,0 +1,70 @@
+{
+  "assigned": {
+    "crates/xtask/src/main.rs": {
+      "before_sha256": "e4d256e451c03f447a4e374ed361d0d0b23d2898977d51953995fa307d896f1e",
+      "after_sha256": "e4d256e451c03f447a4e374ed361d0d0b23d2898977d51953995fa307d896f1e",
+      "bytes": 182034
+    },
+    "docs/release.md": {
+      "before_sha256": "1e67f4949647c10a48f9184db230454572d666a756b68c203690398f525c7954",
+      "after_sha256": "1e67f4949647c10a48f9184db230454572d666a756b68c203690398f525c7954",
+      "bytes": 20234
+    },
+    ".github/workflows/ci.yml": {
+      "before_sha256": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+      "after_sha256": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+      "bytes": 5739
+    },
+    ".github/workflows/native.yml": {
+      "before_sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "after_sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "bytes": 3860
+    }
+  },
+  "supporting_unchanged_inputs": {
+    "Cargo.toml": {
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "bytes": 2320
+    },
+    "Cargo.lock": {
+      "sha256": "63d868f91aa52acbddf0eb7e9385a101c3a59c02f7e527ced82d1993299f5afb",
+      "bytes": 52538
+    },
+    "crates/xtask/Cargo.toml": {
+      "sha256": "206d3a9af5953963659c0cc292e1356c8905f44288c417568bb7f146c4716198",
+      "bytes": 219
+    },
+    "crates/k-wiki/Cargo.toml": {
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "bytes": 1011
+    },
+    ".cargo/config.toml": {
+      "sha256": "388ad5407d7e78cae8dacd1c3c556f8c97f43d998c4e09273dcf8fca00eb0f82",
+      "bytes": 99
+    },
+    "crates/xtask/src/native_tests.rs": {
+      "sha256": "ada965856dbc889902c68a01c1e5fbe33c4a050dc84e915a5e07244162d7e5a4",
+      "bytes": 16415
+    },
+    "crates/xtask/src/native_tests/shards.rs": {
+      "sha256": "7420672dcfb926caf3e12c6483e3f0349e11ef11cb37a4d603811f43797c42f3",
+      "bytes": 5732
+    },
+    "crates/xtask/src/release.rs": {
+      "sha256": "dc74317037a68df27c98c24678d2b46589ef64fc1ef0d484b415cae33435ebd7",
+      "bytes": 5026
+    },
+    "crates/xtask/src/release/workflow_tests.rs": {
+      "sha256": "66c2921315dae1dad20a1cfd4eed620019d702da6c0e7e6ec3c1c43ff8ab0450",
+      "bytes": 44385
+    },
+    "release/install/install.ps1": {
+      "sha256": "830d128241c90b6f224554dc49bfcf572a1d51107ded8b12823e71d97c58b7bb",
+      "bytes": 3248
+    },
+    "release/install/install.sh": {
+      "sha256": "7ae5c7c5e08fa4c025b0fe5f5b2da605caccdde1a0aefcec148a272530c260e9",
+      "bytes": 6442
+    }
+  }
+}

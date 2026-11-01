@@ -1,0 +1,9 @@
+{
+  "command": "cargo clippy --locked -p xtask --all-targets -- -D warnings",
+  "exit_code": 101,
+  "running": false,
+  "capture": "BashResult.output combined stdout/stderr; not split by harness",
+  "note": "strict Clippy caught test helper arg-count/type-complexity warnings; fixed without lint allowances",
+  "output_file": "16_scoped_clippy_initial_warnings.combined-output.txt",
+  "output_sha256": "895b200fc866d55e14d52e925bddf92ce46f0dc1f74406b722212b2bc0f32184"
+}

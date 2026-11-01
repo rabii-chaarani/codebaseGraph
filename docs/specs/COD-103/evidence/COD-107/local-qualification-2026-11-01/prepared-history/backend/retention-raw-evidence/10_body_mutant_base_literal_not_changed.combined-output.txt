@@ -1,0 +1,21 @@
+   Compiling xtask v4.0.5 (/private/tmp/codebasegraph-cod107-20261031/crates/xtask)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.73s
+     Running unittests src/main.rs (target/debug/deps/xtask-269d5b6e7ec16933)
+
+running 1 test
+test tests::native_retention_actual_body_is_cod107_only ... 
+thread 'tests::native_retention_actual_body_is_cod107_only' (40229359) panicked at crates/xtask/src/main.rs:4019:13:
+assertion `left != right` failed: mutation did not alter selector for broadened base guard
+  left: "set -euo pipefail\n: \"${GITHUB_EVENT_NAME:?}\" \"${GITHUB_REF:?}\" \"${GITHUB_REPOSITORY:?}\" \"${GITHUB_EVENT_PATH:?}\" \"${GITHUB_OUTPUT:?}\"\nretain=\"$(jq -r \\\n  --arg event \"$GITHUB_EVENT_NAME\" \\\n  --arg ref \"$GITHUB_REF\" \\\n  --arg repository \"$GITHUB_REPOSITORY\" '\n  if type != \"object\" then error(\"Expected an event object\")\n  elif $event == \"push\" then $ref == \"refs/heads/main\"\n  elif $event == \"pull_request\" then\n    ((.action == \"opened\" or .action == \"synchronize\" or\n      .action == \"reopened\" or .action == \"edited\") and\n     .pull_request.head.repo.full_name == $repository and\n     .pull_request.base.repo.full_name == $repository and\n     .pull_request.head.ref == \"cod103-stack/cod-107\" and\n     (.pull_request.base.ref == \"cod103-stack/cod-56\" or\n      .pull_request.base.ref == \"main\"))\n  else false\n  end' \"$GITHUB_EVENT_PATH\")\"\ncase \"$retain\" in\n  true|false) printf 'retain=%s\\n' \"$retain\" >> \"$GITHUB_OUTPUT\" ;;\n  *) echo 'Invalid native retention result' >&2; exit 1 ;;\nesac\n"
+ right: "set -euo pipefail\n: \"${GITHUB_EVENT_NAME:?}\" \"${GITHUB_REF:?}\" \"${GITHUB_REPOSITORY:?}\" \"${GITHUB_EVENT_PATH:?}\" \"${GITHUB_OUTPUT:?}\"\nretain=\"$(jq -r \\\n  --arg event \"$GITHUB_EVENT_NAME\" \\\n  --arg ref \"$GITHUB_REF\" \\\n  --arg repository \"$GITHUB_REPOSITORY\" '\n  if type != \"object\" then error(\"Expected an event object\")\n  elif $event == \"push\" then $ref == \"refs/heads/main\"\n  elif $event == \"pull_request\" then\n    ((.action == \"opened\" or .action == \"synchronize\" or\n      .action == \"reopened\" or .action == \"edited\") and\n     .pull_request.head.repo.full_name == $repository and\n     .pull_request.base.repo.full_name == $repository and\n     .pull_request.head.ref == \"cod103-stack/cod-107\" and\n     (.pull_request.base.ref == \"cod103-stack/cod-56\" or\n      .pull_request.base.ref == \"main\"))\n  else false\n  end' \"$GITHUB_EVENT_PATH\")\"\ncase \"$retain\" in\n  true|false) printf 'retain=%s\\n' \"$retain\" >> \"$GITHUB_OUTPUT\" ;;\n  *) echo 'Invalid native retention result' >&2; exit 1 ;;\nesac\n"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+
+failures:
+
+failures:
+    tests::native_retention_actual_body_is_cod107_only
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 82 filtered out; finished in 0.33s
+
+error: test failed, to rerun pass `-p xtask --bin xtask`

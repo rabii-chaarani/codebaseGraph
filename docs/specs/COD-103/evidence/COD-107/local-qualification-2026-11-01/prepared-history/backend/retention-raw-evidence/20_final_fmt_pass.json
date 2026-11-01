@@ -1,0 +1,9 @@
+{
+  "command": "cargo fmt --package xtask -- --check",
+  "exit_code": 0,
+  "running": false,
+  "capture": "BashResult.output combined stdout/stderr; not split by harness",
+  "note": "final formatting check",
+  "output_file": "20_final_fmt_pass.combined-output.txt",
+  "output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

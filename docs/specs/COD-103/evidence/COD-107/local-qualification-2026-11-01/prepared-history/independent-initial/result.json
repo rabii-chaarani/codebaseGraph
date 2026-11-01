@@ -1,0 +1,569 @@
+{
+  "schema_version": 1,
+  "work_id": "COD-107",
+  "role": "Evidence Verifier",
+  "phase": "initial independent available local checks before cleancommit/payloadinventories",
+  "status": "all_executed_local_checks_passed_A03_incomplete",
+  "completed_at_utc": "2026-11-01T00:31:28.772613+00:00",
+  "authority": {
+    "original_spec": "docs/specs/COD-103/spec.md",
+    "approved_revision": "0.3",
+    "approved_full_sha": "316be4c4bb81d4f6e025016b12374836b4dcc1a8",
+    "separate_approval_sha": "0e6008a1f46679a86aba85ac513beb05af94b0c0",
+    "design_section6_sha256": "8ae7be05e8dafe6865656dbdcbbbdf13d270cf92e51a327a58884bea8abab8a8",
+    "retention_method_revision": "0.5",
+    "retention_freeze_sha": "e5adebfa1196a2074527cec4935522c43c773e39",
+    "retention_approval_sha": "08d2c060bba8bf45db069fe53185f06f5b3d6cd9",
+    "retention_user_decision": "5b4b5aad-cbe8-4265-8db9-5ea351b7f386",
+    "carrier_full_sha256": "475d7888a4587a6489670d54ac348ddbe1d8782187a6f1eca9da184c06fc11c4",
+    "retention_design_sha256": "d8556080b4b817522f12fed46e014b286ee368ce531f2f3ea6cdc7033fbbf64d",
+    "session_binding": "chg-xd2jtt existingonly; no model/maps/ingest/fold"
+  },
+  "snapshot": {
+    "root": "/private/tmp/codebasegraph-cod107-20261031",
+    "branch": "cod103-stack/cod-107",
+    "head": "08d2c060bba8bf45db069fe53185f06f5b3d6cd9",
+    "tree": "09552870917f232f59005cd73e41c788b0163dca",
+    "baseline": "f69fc133c544e2ecd16a825a1e4c8f448c8d81b7",
+    "dirty_paths": [
+      ".github/workflows/ci.yml",
+      "crates/xtask/src/main.rs",
+      "docs/release.md"
+    ],
+    "identity_note": "HEAD/tree PLUS exactthree dirtyfiles, not HEADalone. Readonlynative.ymlunchanged.",
+    "before_after": {
+      "crates/xtask/src/main.rs": {
+        "before_sha256": "e4d256e451c03f447a4e374ed361d0d0b23d2898977d51953995fa307d896f1e",
+        "after_sha256": "e4d256e451c03f447a4e374ed361d0d0b23d2898977d51953995fa307d896f1e",
+        "bytes": 182034
+      },
+      "docs/release.md": {
+        "before_sha256": "1e67f4949647c10a48f9184db230454572d666a756b68c203690398f525c7954",
+        "after_sha256": "1e67f4949647c10a48f9184db230454572d666a756b68c203690398f525c7954",
+        "bytes": 20234
+      },
+      ".github/workflows/ci.yml": {
+        "before_sha256": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+        "after_sha256": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+        "bytes": 5739
+      },
+      ".github/workflows/native.yml": {
+        "before_sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+        "after_sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+        "bytes": 3860
+      }
+    },
+    "supporting_inputs": {
+      "Cargo.toml": {
+        "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+        "bytes": 2320
+      },
+      "Cargo.lock": {
+        "sha256": "63d868f91aa52acbddf0eb7e9385a101c3a59c02f7e527ced82d1993299f5afb",
+        "bytes": 52538
+      },
+      "crates/xtask/Cargo.toml": {
+        "sha256": "206d3a9af5953963659c0cc292e1356c8905f44288c417568bb7f146c4716198",
+        "bytes": 219
+      },
+      "crates/k-wiki/Cargo.toml": {
+        "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+        "bytes": 1011
+      },
+      ".cargo/config.toml": {
+        "sha256": "388ad5407d7e78cae8dacd1c3c556f8c97f43d998c4e09273dcf8fca00eb0f82",
+        "bytes": 99
+      },
+      "crates/xtask/src/native_tests.rs": {
+        "sha256": "ada965856dbc889902c68a01c1e5fbe33c4a050dc84e915a5e07244162d7e5a4",
+        "bytes": 16415
+      },
+      "crates/xtask/src/native_tests/shards.rs": {
+        "sha256": "7420672dcfb926caf3e12c6483e3f0349e11ef11cb37a4d603811f43797c42f3",
+        "bytes": 5732
+      },
+      "crates/xtask/src/release.rs": {
+        "sha256": "dc74317037a68df27c98c24678d2b46589ef64fc1ef0d484b415cae33435ebd7",
+        "bytes": 5026
+      },
+      "crates/xtask/src/release/workflow_tests.rs": {
+        "sha256": "66c2921315dae1dad20a1cfd4eed620019d702da6c0e7e6ec3c1c43ff8ab0450",
+        "bytes": 44385
+      },
+      "release/install/install.ps1": {
+        "sha256": "830d128241c90b6f224554dc49bfcf572a1d51107ded8b12823e71d97c58b7bb",
+        "bytes": 3248
+      },
+      "release/install/install.sh": {
+        "sha256": "7ae5c7c5e08fa4c025b0fe5f5b2da605caccdde1a0aefcec148a272530c260e9",
+        "bytes": 6442
+      }
+    },
+    "full_status_HEAD_tree_stat_unchanged": true,
+    "diff_check_exit_code": 0,
+    "full_final_diff_sha256": "4fce94f235fadf96bfd36ed7f6676c7ab73e63191c087c182bdc81db48c74186",
+    "source_identity_files": [
+      "post-cfg-final/source-identity-before.txt",
+      "post-cfg-final/source-identity-after.txt",
+      "post-cfg-final/final-three-file.diff"
+    ]
+  },
+  "one_line_fix": {
+    "pre_fix_source_sha256": "47558f4ce54d15f874c5680fb90b9e844afa612ae50de180e45c2d308356e2c6",
+    "post_fix_source_sha256": "e4d256e451c03f447a4e374ed361d0d0b23d2898977d51953995fa307d896f1e",
+    "difference": "Only#[cfg(unix)] onretention_pr_event; byte reversal independently reconstructs pre-fixsource. No lintallow/testassertion/body change.",
+    "fix_owner_handoff_sha256": "81321ed9f52d9c51e130146e7212c2fa50a8047e6473b2f0c26edc789f4b3314",
+    "pre_fix_evidence": "Rootformat.log/windows-helper-cfg-preflight.json retain historical47558format/staticfinding. No compilation/test ran beforelease returned forownerfix.",
+    "Windows_execution": "Not runhere; hostpass isMac only, actualWindowshostwarnings remains futureCI"
+  },
+  "actual_checks": {
+    "format": "exit0",
+    "full_xtask": "83/83actualcasespass;0fail/errors/skips",
+    "genuine_junit": {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-local/post-cfg-final/xtask-junit.xml",
+      "sha256": "75671e56886ac4caf87c69aa564fb48767073efbfbd4dd21a1bdeb4253d9b4ae",
+      "run_id": "83002165-99cd-489a-863c-4ca3ba24d0c2",
+      "testcases": 83,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "case_names_match_inventory": true,
+      "reported_time_seconds": "30.529",
+      "actual_case_names": [
+        "macos::tests::dependency_parser_preserves_paths_with_spaces",
+        "macos::tests::dylib_dependency_parser_filters_only_matching_install_id",
+        "macos::tests::minimum_version_parser_reads_macos_build_and_legacy_commands",
+        "macos::tests::rpath_parser_reads_and_rejects_malformed_entries",
+        "macos::tests::source_archive_accepts_comment_metadata_without_extracting_it",
+        "macos_installer_tests::dry_run_validates_all_payloads_without_creating_destination",
+        "macos_installer_tests::invalid_inventory_rows_and_mixed_versions_preserve_destination",
+        "macos_installer_tests::missing_corrupt_and_symlink_payloads_preserve_existing_destination_files",
+        "macos_installer_tests::nonzero_binary_probe_preserves_existing_destination_files",
+        "macos_installer_tests::real_install_places_verified_runtime_license_and_binaries_in_spaced_directory",
+        "native_tests::shards::tests::empty_shard_never_runs_an_unfiltered_suite",
+        "native_tests::shards::tests::selected_exact_filters_execute_the_expected_real_harness_cases",
+        "native_tests::shards::tests::shards_cover_every_listed_case_once_and_bound_windows_arguments",
+        "native_tests::tests::captured_cli_survives_cargo_replacing_its_output",
+        "native_tests::tests::partitions_every_test_target_and_keeps_new_integration_targets",
+        "native_tests::tests::windows_regressions_precede_the_complete_unfiltered_suite",
+        "release::tests::metadata_rejects_inconsistent_versions",
+        "release::tests::notes_only_include_the_exact_release",
+        "release::tests::notes_reject_missing_duplicate_and_empty_sections",
+        "release::workflow_tests::accepted_writes_with_lost_responses_resume_without_replay",
+        "release::workflow_tests::ci_run_recovery_dry_run_validates_without_authorizing_publication",
+        "release::workflow_tests::draft_partial_upload_resumes_and_latest_is_selected_at_publication",
+        "release::workflow_tests::existing_tag_mode_remains_assets_only_for_draft_mutable_and_immutable_releases",
+        "release::workflow_tests::existing_tag_resolver_accepts_historical_lightweight_and_annotated_ancestors",
+        "release::workflow_tests::existing_tag_resolver_rejects_nonancestors_and_bad_identity_before_authorizing",
+        "release::workflow_tests::immutable_missing_or_mismatched_assets_fail_without_mutation",
+        "release::workflow_tests::immutable_release_uploads_before_publication_and_retries_without_writes",
+        "release::workflow_tests::legacy_dry_run_resolves_without_scheduling_the_publisher",
+        "release::workflow_tests::legacy_publisher_rechecks_fresh_tag_and_main_before_upload_and_allows_advancement",
+        "release::workflow_tests::legacy_publisher_rejects_late_history_and_tag_races_without_mutation",
+        "release::workflow_tests::ordinary_commit_cannot_authorize_release_and_tagged_retry_still_can",
+        "release::workflow_tests::proposal_reports_pending_release_then_proceeds_after_finalization",
+        "release::workflow_tests::published_mutable_partial_assets_can_resume_without_republishing",
+        "release::workflow_tests::publisher_rejects_conflicting_tags_and_does_not_regress_latest",
+        "release::workflow_tests::publisher_rejects_identity_metadata_prerelease_and_ambiguous_drafts_before_writes",
+        "release::workflow_tests::publisher_targets_original_sha_and_is_idempotent",
+        "release::workflow_tests::recovery_requires_one_target_and_forbids_ci_run_rebuilds",
+        "release::workflow_tests::staged_assets_match_the_supported_native_targets",
+        "release::workflow_tests::upload_or_remote_byte_failure_never_publishes",
+        "release::workflow_tests::verified_release_rejects_failed_ci_and_untrusted_run_identity",
+        "release::workflow_tests::verified_release_rejects_untrusted_prs_and_removed_history",
+        "release::workflow_tests::verified_release_survives_main_advancing_and_ignores_other_pending_releases",
+        "tests::archive_contract_rejects_unexpected_entries",
+        "tests::complete_artifact_set_rejects_mixed_provenance",
+        "tests::crate_size_validation_enforces_the_registry_limit",
+        "tests::docs_python_exception_rejects_component_aliases_and_symlinks",
+        "tests::docs_python_gate_accepts_root_and_nested_helpers_in_both_modes",
+        "tests::docs_python_gate_rejects_neighbors_root_tooling_and_workflow_python",
+        "tests::installer_rejects_removed_hosts_before_reading_archives_or_writing_destinations",
+        "tests::macos_smoke_commands_use_a_fixture_home_and_system_path",
+        "tests::mcp_smoke_accepts_valid_initialize_and_tools",
+        "tests::mcp_smoke_rejects_errors_missing_malformed_duplicate_and_decoy_responses",
+        "tests::mcp_smoke_rejects_nonzero_child_with_success_payload",
+        "tests::native_capture_requires_unique_source_bound_normal_cli_artifact",
+        "tests::native_capture_reuses_the_exact_test_profile_and_features",
+        "tests::native_payload_integrity_covers_runtime_files_and_preserves_windows_inventory",
+        "tests::native_retention_actual_body_is_cod107_only",
+        "tests::native_retention_invalid_input_cannot_succeed",
+        "tests::native_target_contract_maps_names_and_binaries",
+        "tests::native_test_failure_cannot_authorize_artifact_production",
+        "tests::release_identity_validation_is_strict",
+        "tests::required_rejects_retention_selector_failure",
+        "tests::windows_native_tests_forward_bundled_extensions",
+        "tests::workflow_policy_accepts_exact_cod103_stack_bases",
+        "tests::workflow_policy_rejects_automatic_rebuild_recovery",
+        "tests::workflow_policy_rejects_direct_release_push_trigger",
+        "tests::workflow_policy_rejects_github_sha_for_release_identity",
+        "tests::workflow_policy_rejects_missing_ci_success_guard",
+        "tests::workflow_policy_rejects_missing_crate_publish_retry",
+        "tests::workflow_policy_rejects_missing_crate_size_gates",
+        "tests::workflow_policy_rejects_missing_repository_release_gate",
+        "tests::workflow_policy_rejects_missing_triggering_run_binding",
+        "tests::workflow_policy_rejects_privileged_pr_event",
+        "tests::workflow_policy_rejects_release_queue_replacement",
+        "tests::workflow_policy_rejects_unapproved_pull_request_activity",
+        "tests::workflow_policy_rejects_unconditional_release_publication",
+        "tests::workflow_policy_rejects_unknown_stack_base_and_push_namespace",
+        "tests::workflow_policy_rejects_unvalidated_publishers",
+        "tests::workflow_policy_requires_ci_completion_release_trigger",
+        "tests::workflow_policy_requires_publication_revalidation",
+        "tests::workflow_policy_retention_wiring_is_closed",
+        "tests::workflow_yaml_validation_rejects_unindented_heredoc_body",
+        "tests::workflows_reject_removed_platform_targets"
+      ],
+      "new_required_cases": [
+        {
+          "name": "tests::docs_python_gate_accepts_root_and_nested_helpers_in_both_modes",
+          "occurrences": 1
+        },
+        {
+          "name": "tests::docs_python_gate_rejects_neighbors_root_tooling_and_workflow_python",
+          "occurrences": 1
+        },
+        {
+          "name": "tests::docs_python_exception_rejects_component_aliases_and_symlinks",
+          "occurrences": 1
+        },
+        {
+          "name": "tests::workflow_policy_retention_wiring_is_closed",
+          "occurrences": 1
+        },
+        {
+          "name": "tests::native_retention_actual_body_is_cod107_only",
+          "occurrences": 1
+        },
+        {
+          "name": "tests::native_retention_invalid_input_cannot_succeed",
+          "occurrences": 1
+        },
+        {
+          "name": "tests::required_rejects_retention_selector_failure",
+          "occurrences": 1
+        }
+      ]
+    },
+    "check_workflows": "exit0",
+    "ordinary_release_gate": "exit0",
+    "strict_workspace_all_targets_all_features_clippy": "exit0",
+    "warning_count": 0,
+    "newtests": [
+      "tests::docs_python_exception_rejects_component_aliases_and_symlinks",
+      "tests::docs_python_gate_accepts_root_and_nested_helpers_in_both_modes",
+      "tests::docs_python_gate_rejects_neighbors_root_tooling_and_workflow_python",
+      "tests::native_retention_actual_body_is_cod107_only",
+      "tests::native_retention_invalid_input_cannot_succeed",
+      "tests::required_rejects_retention_selector_failure",
+      "tests::workflow_policy_retention_wiring_is_closed"
+    ],
+    "native_product_runtime_cohorts_run": false,
+    "package_inventory_run": false,
+    "hosted_CI_or_VM_run": false,
+    "A03_complete": false
+  },
+  "commands": [
+    {
+      "name": "format-final",
+      "command": "cargo fmt --all --check > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-local/post-cfg-final/format.log' 2>&1",
+      "cwd": "/private/tmp/codebasegraph-cod107-20261031",
+      "started_at_utc": "2026-11-01T00:03:22.345515+00:00",
+      "status": "completed",
+      "scope": "independent check of newe4d256 snapshot; old47558 format retained separately",
+      "exit_code": 0,
+      "duration_seconds": 2.1054324998985976
+    },
+    {
+      "name": "xtask-inventory",
+      "command": "cargo nextest list --offline --locked -p xtask --bin xtask --cargo-profile native-tests --config-file '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-local/post-cfg-final/nextest.toml' --user-config-file none --profile cod107 --message-format json > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-local/post-cfg-final/xtask-inventory.json' 2> '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-local/post-cfg-final/xtask-inventory-build.log' ",
+      "cwd": "/private/tmp/codebasegraph-cod107-20261031",
+      "started_at_utc": "2026-11-01T00:03:45.174350+00:00",
+      "status": "completed",
+      "scope": "actual full xtask inventory; no filter; native-tests with defaultprofile flags; report-onlyconfig outside repository",
+      "environment": {
+        "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+        "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+        "LBUG_VERSION": "0.19.0",
+        "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+        "MACOSX_DEPLOYMENT_TARGET": "13.3",
+        "CARGO_BUILD_JOBS": "2"
+      },
+      "pid": 29531,
+      "exit_code": 0,
+      "duration_seconds": null,
+      "completion_limitation": "Final BashHandle duration unavailable after kernel restore; actual bash-done pid29531 exit0 received; initial10.011s running snapshot retained. No retry."
+    },
+    {
+      "name": "independent-full-xtask",
+      "command": "cargo nextest run --offline --locked -p xtask --bin xtask --cargo-profile native-tests --config-file '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-local/post-cfg-final/nextest.toml' --user-config-file none --profile cod107 --test-threads 1 --no-tests fail > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-local/post-cfg-final/xtask-run.log' 2>&1",
+      "cwd": "/private/tmp/codebasegraph-cod107-20261031",
+      "started_at_utc": "2026-11-01T00:05:32.134771+00:00",
+      "status": "completed",
+      "expected_cases": 83,
+      "cargo_profile": "native-tests",
+      "reporter_profile": "cod107,retries0,one thread",
+      "junit_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-local/post-cfg-final/xtask-junit.xml",
+      "environment": {
+        "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+        "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+        "LBUG_VERSION": "0.19.0",
+        "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+        "MACOSX_DEPLOYMENT_TARGET": "13.3",
+        "CARGO_BUILD_JOBS": "2"
+      },
+      "source_sha256": "e4d256e451c03f447a4e374ed361d0d0b23d2898977d51953995fa307d896f1e",
+      "pid": 29869,
+      "exit_code": 0,
+      "duration_seconds": 30.916879874886945
+    },
+    {
+      "name": "check-workflows",
+      "command": "cargo run --offline --locked -p xtask -- check-workflows > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-local/post-cfg-final/check-workflows.log' 2>&1",
+      "cwd": "/private/tmp/codebasegraph-cod107-20261031",
+      "started_at_utc": "2026-11-01T00:07:19.181269+00:00",
+      "status": "completed",
+      "environment": {
+        "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+        "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+        "LBUG_VERSION": "0.19.0",
+        "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+        "MACOSX_DEPLOYMENT_TARGET": "13.3",
+        "CARGO_BUILD_JOBS": "2"
+      },
+      "exit_code": 0,
+      "duration_seconds": 1.0171940829604864
+    },
+    {
+      "name": "ordinary-release-gate",
+      "command": "cargo run --offline --locked -p xtask -- release-gate > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-local/post-cfg-final/release-gate.log' 2>&1",
+      "cwd": "/private/tmp/codebasegraph-cod107-20261031",
+      "started_at_utc": "2026-11-01T00:07:36.708053+00:00",
+      "status": "completed",
+      "scope": "ordinary actual projectgate; productionroute covered only by complete disposable fixtures, no liveexternalattestations",
+      "environment": {
+        "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+        "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+        "LBUG_VERSION": "0.19.0",
+        "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+        "MACOSX_DEPLOYMENT_TARGET": "13.3",
+        "CARGO_BUILD_JOBS": "2"
+      },
+      "exit_code": 0,
+      "duration_seconds": 0.46945187519304454
+    },
+    {
+      "name": "strict-workspace-clippy",
+      "command": "cargo clippy --offline --workspace --all-targets --all-features --locked -- -D warnings > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-local/post-cfg-final/strict-workspace-clippy.log' 2>&1",
+      "cwd": "/private/tmp/codebasegraph-cod107-20261031",
+      "started_at_utc": "2026-11-01T00:07:37.179267+00:00",
+      "status": "completed",
+      "environment": {
+        "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+        "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+        "LBUG_VERSION": "0.19.0",
+        "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+        "MACOSX_DEPLOYMENT_TARGET": "13.3",
+        "CARGO_BUILD_JOBS": "2"
+      },
+      "scope": "existinglocalworkspacealltargetsallfeatures-Dwarnings; actualnormaldeveloper environment, no productnativeartifactbuild/runtimecohort",
+      "pid": 34562,
+      "exit_code": 0,
+      "duration_seconds": 68.89762162510306
+    },
+    {
+      "name": "final-whitespace-source-identity",
+      "command": "git --no-optional-locks status --porcelain=v1 -uall; rev-parse HEAD/tree; diff --stat HEAD; diff --check",
+      "cwd": "/private/tmp/codebasegraph-cod107-20261031",
+      "exit_code": 0,
+      "duration_seconds": 0.08583016716875136,
+      "status": "completed",
+      "source_identity": "Exactly same three dirty files and08d2/tree095528; all four assigned/read-only file hashes unchanged",
+      "log": "source-identity-after.txt"
+    }
+  ],
+  "environment": {
+    "native_env": {
+      "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+      "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+      "LBUG_VERSION": "0.19.0",
+      "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+      "MACOSX_DEPLOYMENT_TARGET": "13.3",
+      "CARGO_BUILD_JOBS": "2"
+    },
+    "unset_env": {
+      "LBUG_SHARED": null,
+      "CARGO_TARGET_DIR": null,
+      "RUSTFLAGS": null,
+      "CARGO_ENCODED_RUSTFLAGS": null,
+      "LBUG_BUILD_FROM_SOURCE": null,
+      "LBUG_RUST_BUILD_FROM_SOURCE": null
+    },
+    "native_inputs": {
+      "liblbug.a": {
+        "path": "/private/tmp/codebasegraph-copy153-evidence/native019/liblbug.a",
+        "expected_sha256": "d2e9a5c37617b0affb01f18f6ef48bb1531f5744f5ba06c849226842617ad142",
+        "actual_sha256": "d2e9a5c37617b0affb01f18f6ef48bb1531f5744f5ba06c849226842617ad142"
+      },
+      "lbug.h": {
+        "path": "/private/tmp/codebasegraph-copy153-evidence/native019/lbug.h",
+        "expected_sha256": "7da5b7e36d6610e43a1512e4997ac123ba0886cf5598ae44aca5449aa02a8aa3",
+        "actual_sha256": "7da5b7e36d6610e43a1512e4997ac123ba0886cf5598ae44aca5449aa02a8aa3"
+      },
+      "lbug.hpp": {
+        "path": "/private/tmp/codebasegraph-copy153-evidence/native019/lbug.hpp",
+        "expected_sha256": "0b463bef0fa7a9ba1bb14cee12b23bf5bc7c2d6cfc4b3779d6f7cbe92bf4831d",
+        "actual_sha256": "0b463bef0fa7a9ba1bb14cee12b23bf5bc7c2d6cfc4b3779d6f7cbe92bf4831d"
+      }
+    },
+    "project_config": "[env]\nRUST_TEST_THREADS = \"1\"\nHOME = { value = \"target/test-home\", relative = true, force = true }\n",
+    "cargo_profile": "native-tests for nextest; ordinary dev Clippy/policy profile",
+    "target": "default isolated worktree target; existing worker outputs not treated as stale executable proof; exact nextest Cargo compile/sourcepackage/binary inventory captured",
+    "RUST_TEST_THREADS": "1 through project .cargo/config.toml",
+    "effective_test_HOME": "/private/tmp/codebasegraph-cod107-20261031/target/test-home",
+    "resource_note": "Existing jobs2 local native recipe reused, not changed product/resource-policy constant",
+    "scope": "Developer native inputs only; no productnativebuild/consumerqualification"
+  },
+  "versions_file": "post-cfg-final/environment-versions.txt",
+  "binary_provenance": {
+    "package_id": "path+file:///private/tmp/codebasegraph-cod107-20261031/crates/xtask#4.0.5",
+    "cwd": "/private/tmp/codebasegraph-cod107-20261031/crates/xtask",
+    "binary_path": "/private/tmp/codebasegraph-cod107-20261031/target/native-tests/deps/xtask-eed5a74c0d8f01ef",
+    "binary_sha256": "6af0feb90ae1398cf32fcbc668e13d1236123d33341492f6e593e2688f6a24f1",
+    "source_main_sha256": "e4d256e451c03f447a4e374ed361d0d0b23d2898977d51953995fa307d896f1e",
+    "profile": "native-tests",
+    "target_directory": "/private/tmp/codebasegraph-cod107-20261031/target",
+    "actual_compile_log": "xtask-inventory-build.log",
+    "source_compile_line": [
+      "   Compiling xtask v4.0.5 (/private/tmp/codebasegraph-cod107-20261031/crates/xtask)"
+    ],
+    "features": "xtask declares no features; no explicitfeatures flags used",
+    "new_test_inventory_count": 83,
+    "test_profile_basis": "Actual native-tests command+output directory and unchanged root Cargo profile debug-assertions/overflow/unwind settings",
+    "stale_binary_limit": "Actual cargo inventory source package path/current root compile log+new83cases+binaryhash retained, no other checkout/sharedtarget assumed"
+  },
+  "binary_hash_preserved": true,
+  "criterion_trace": [
+    {
+      "criterion": "C103-A03 / docs positive ordinary+confirmed-production",
+      "source_anchor": "crates/xtask/src/main.rs::check_rust_only_files/is_docs_helper_path",
+      "test": "tests::docs_python_gate_accepts_root_and_nested_helpers_in_both_modes",
+      "actual_method": "Genuine nextest full83 run; real release_gate(args) in isolated complete fixture child; rootdocs/helper.py+nesteddocs/qualification/reproduce.py; generatedexclusions at root+nested; both modes",
+      "result": "passed actual covered cases; fixture flags are not external production confirmations"
+    },
+    {
+      "criterion": "C103-A03 / path,roottooling,security,workflow negatives",
+      "source_anchor": "same common gate plus current security/workflow policy",
+      "test": "tests::docs_python_gate_rejects_neighbors_root_tooling_and_workflow_python",
+      "actual_method": "Complete fixture with allowed docshelper +docs-extra/srcdocs/root/scripts/legacyPython,pyproject/requirementsdev,missingSECURITY andpython-m workflow marker; asserts all corresponding diagnostics and no rejection of allowedhelper in both modes",
+      "result": "passed actual covered cases",
+      "unexecuted_required_matrix_cells": [
+        "mydocs path",
+        "knowledge Python path",
+        "testing Python path",
+        "direct outside.py gate fixture",
+        "incomplete rather than missing SECURITY policy",
+        "actual workflow setup/dependency markers rather than appended python-m comment"
+      ]
+    },
+    {
+      "criterion": "C103-A03 / aliases+symlink failure andactionablemetadatafailure",
+      "source_anchor": "is_docs_helper_path +actual release_gate",
+      "test": "tests::docs_python_exception_rejects_component_aliases_and_symlinks",
+      "actual_method": "Actual helper aliases+missing candidate error; then actual bothgate modes for docsfile\u2192outside,outsidefile\u2192docs,symlinkdocsdir; hostMac supports these symlinks",
+      "result": "passed Macintosh branches; sourcehasWindowsprivilegeunavailable returnpath so futureWindows needs actual branch accounting",
+      "unexecuted_platform_cells": [
+        "Windows drive alias assertion",
+        "Windows symlink privilege/execution"
+      ]
+    },
+    {
+      "criterion": "Approved rev0.5 retention structuralwires",
+      "source_anchor": "native_retention_policy_valid/check_workflow_policy; realci.yml/native.yml",
+      "test": "tests::workflow_policy_retention_wiring_is_closed",
+      "actual_method": "ActualparsedYAML positive+typed structuralmutants; selector/needs/output/fromJSON/source/target/run-tests/uploadguard/types/retentions/requireddependency/gating invariants",
+      "result": "passed; static exactsixneeds supplies completeness, not genericActions interpreter"
+    },
+    {
+      "criterion": "Approved rev0.5 bytecasesensitive limited retention behavior",
+      "source_anchor": "actualci.yml jobs.native_retention.steps.decision.run",
+      "test": "tests::native_retention_actual_body_is_cod107_only",
+      "actual_method": "Executes actualextracted Bash/jq inisolatedclearedchildenv;9positive decisions+registeredfalse negatives; same-repo/base/casefold semantic mutants each distinguished; command/input/output failure branches",
+      "result": "passed onUnixMac Bash3.2/jq1.7.1; not hosted selector/platform execution"
+    },
+    {
+      "criterion": "Retention selector invalidinputs failclosed",
+      "source_anchor": "same actualBash/jqbody",
+      "test": "tests::native_retention_invalid_input_cannot_succeed",
+      "actual_method": "Actualmalformed/nonobject/multipleJSON bodies nonzero with no validoutput",
+      "result": "passed onUnixMac"
+    },
+    {
+      "criterion": "Required aggregation selector failure propagation",
+      "source_anchor": "actualci.yml required.run unchanged",
+      "test": "tests::required_rejects_retention_selector_failure",
+      "actual_method": "ActualBash body: allsixsuccess inclretainfalse passes; presentselectorfailure/cancelled/skipped/missingresult andeachfailedotherneed reject; entirelyabsentselector key succeeds as originalbody does",
+      "result": "passed; absence case not falsely promised runtime rejection; exactsixneeds staticpolicy covers realworkflowdependency completeness"
+    },
+    {
+      "criterion": "Wholelocalavailableprojectlint/policy gates",
+      "source_anchor": "actualdirtythreefileworktree",
+      "test": "fmt,check-workflows,ordinaryrelease-gate,strictworkspacealltargetsallfeaturesClippy",
+      "actual_method": "Independently executed normaloffline/lockedprojectcommands afterfix; exactcommandrecords/rawlogs",
+      "result": "all exit0,no observedcompilerwarnings; not fullproductruntime/Windowsqualification"
+    },
+    {
+      "criterion": "A03 actual root+wiki .crate inventories",
+      "source_anchor": "unchanged actual packaging manifests",
+      "test": null,
+      "actual_method": "NOT RUN: currentthreefilesdirty; no --allow-dirty/package attempted",
+      "result": "pending reviewedcleancommittedsource slot afterProductionSTOP; keep existingpackagedryrun/size/compilation gates separate"
+    },
+    {
+      "criterion": "A03 actualsame-source native twoarchive inventories",
+      "source_anchor": "approvedrev0.5 retention route inrealCOD107PR",
+      "test": null,
+      "actual_method": "NOT RUN: requires necessaryrealPR/event/fullCI then downloadactualretainedtargetarchive+sidecar+provenance/checksum/memberreadback",
+      "result": "pending; no oldv405/crosscompile/syntheticinventory substitute and no A03complete/107\u2192108 assertion"
+    }
+  ],
+  "warnings": {
+    "count": 0,
+    "per_log": {
+      "release-gate.log": [],
+      "xtask-inventory-build.log": [],
+      "format.log": [],
+      "strict-workspace-clippy.log": [],
+      "check-workflows.log": [],
+      "xtask-run.log": []
+    },
+    "note": "Compilerwarningobservations, not securityadvisory/rawhosted fullplatforminventory; strictMacworkspacecheck passed"
+  },
+  "limits": [
+    "Fixture coverage limitations explicitly listed; no failedrun or productregression fabricated, but83passingnamedcases do not prove unexecutedmatrixcells. Parentmustdispose throughowner/acceptance trace beforefullA03handoff.",
+    "Unix Bash/jqbodytests actuallyexecuted onMac; notWindows/hostedselector/protectedCIproof. FutureWindows symlink privilegebranch mayreturnunavailable while testcaseaggregatepasses, so actualbranch accounting remainsrequired.",
+    "Nextest inventory commandcompletedexit0 acrosskernelrestore; exactfinaldurationunavailable. Initialrunning snapshotpreserved; no repeat for timing.",
+    "CurrentcanonicalScryerrootremainsf69, not future107dirtysource; no attachment/ingest/fold/claim/maprootchange. Existingpendingdrift/future108entries unchanged.",
+    "No root/wiki.crate inventory ondirtysource; noallow-dirty/fakeclean. No nativebuild/archiveinventory/VM/fullruntimecohort/CIaction. Later necessaryreal107PR/fullCI+retainedbotharchives and cleancommittedcrateinventories remainexplicit A03gates.",
+    "FreshintegratedFinalReviewer/focusedfixacceptance/currentheadallCI/sourcepayloadbinding/currentcanonicalmodel reconciliation andstagegates remain; no107\u2192108/Done/main/release/aggregateclaim."
+  ],
+  "execution_settings": {
+    "role_map": "agents.evidence_verifier",
+    "model": "inherit",
+    "reasoning_effort": "inherit",
+    "host": "Original acceptedinheriteddispatch reused; nooverride/substitution/rolespawn",
+    "actual_runtime_metadata": "unexposed"
+  },
+  "writes": {
+    "repository_source_docs_tests": false,
+    "Gitrefs": false,
+    "Linear_wiki_memory": false,
+    "model_maps_ingest_fold": false,
+    "CI_VM_package_nativeartifact_install": false,
+    "settings_credentials_dependencies": false,
+    "allowed": "Ownprivateevidence/config/JUnit and normalisolatedtarget build/testoutputs fromassignedcommands"
+  },
+  "assumptions_constants": "OwnerSTOP/exclusiveCargolease honored. Existingverifiednative019/OpenSSL3.6.2/deployment13.3/jobs2resourceenvironment retained, no product/profile/feature/resourcepolicy/oracleconstant changed byverifier.",
+  "reusable_memory_assessment": "No newdurableknowledge warranted/authorized fromtransientpersnapshotchecks; source/evidence captures actualfindings.",
+  "next_owner": "Engineerreviews actualfixturecoverage/FinalReviewer and Productioncommitordering. Cargolease/source/reportwrites STOP/released afterhandoff; separatecleancrate and realPRnativepayload slots later."
+}

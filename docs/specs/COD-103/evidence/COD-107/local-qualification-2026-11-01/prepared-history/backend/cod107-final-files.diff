@@ -1,0 +1,540 @@
+diff --git a/crates/xtask/src/main.rs b/crates/xtask/src/main.rs
+index f7d3409..299cb00 100644
+--- a/crates/xtask/src/main.rs
++++ b/crates/xtask/src/main.rs
+@@ -1002,6 +1002,109 @@ fn check_security_policy(issues: &mut Vec<String>) {
+     }
+ }
+ 
++fn is_docs_helper_path(root: &Path, candidate: &Path) -> Result<bool, String> {
++    let relative = if candidate.is_absolute() {
++        if let Ok(relative) = candidate.strip_prefix(root) {
++            relative.to_path_buf()
++        } else {
++            let repository_root = root.canonicalize().map_err(|error| {
++                format!(
++                    "cannot resolve repository root {} for the docs Python exception: {error}",
++                    root.display()
++                )
++            })?;
++            let Ok(relative) = candidate.strip_prefix(&repository_root) else {
++                return Ok(false);
++            };
++            relative.to_path_buf()
++        }
++    } else {
++        candidate
++            .strip_prefix(root)
++            .unwrap_or(candidate)
++            .to_path_buf()
++    };
++
++    let mut components = Vec::new();
++    for component in relative.components() {
++        let std::path::Component::Normal(name) = component else {
++            return Ok(false);
++        };
++        components.push(name.to_os_string());
++    }
++    if components.len() < 2
++        || components[0].to_str() != Some("docs")
++        || relative.extension() != Some(std::ffi::OsStr::new("py"))
++    {
++        return Ok(false);
++    }
++
++    let repository_root = root.canonicalize().map_err(|error| {
++        format!(
++            "cannot resolve repository root {} for the docs Python exception: {error}",
++            root.display()
++        )
++    })?;
++    let mut path = repository_root.clone();
++    for (index, component) in components.iter().enumerate() {
++        path.push(component);
++        let metadata = fs::symlink_metadata(&path).map_err(|error| {
++            format!(
++                "cannot inspect docs Python exception path {}: {error}; no exception is granted",
++                path.display()
++            )
++        })?;
++        if metadata.file_type().is_symlink() {
++            return Err(format!(
++                "docs Python exception rejects symlink path {}; no exception is granted",
++                path.display()
++            ));
++        }
++        let is_last = index + 1 == components.len();
++        if (is_last && !metadata.is_file()) || (!is_last && !metadata.is_dir()) {
++            return Ok(false);
++        }
++    }
++
++    let docs = repository_root.join("docs");
++    let real_docs = docs.canonicalize().map_err(|error| {
++        format!(
++            "cannot resolve literal docs directory {}: {error}; no exception is granted",
++            docs.display()
++        )
++    })?;
++    if real_docs.parent() != Some(repository_root.as_path()) {
++        return Err(format!(
++            "docs directory {} does not resolve to the repository's literal docs directory; no exception is granted",
++            docs.display()
++        ));
++    }
++    let real_candidate = path.canonicalize().map_err(|error| {
++        format!(
++            "cannot resolve docs Python exception path {}: {error}; no exception is granted",
++            path.display()
++        )
++    })?;
++    if real_candidate.strip_prefix(&real_docs).is_err() {
++        return Err(format!(
++            "docs Python exception path {} resolves outside literal docs; no exception is granted",
++            path.display()
++        ));
++    }
++
++    Ok(true)
++}
++
++fn has_generated_component(path: &Path) -> bool {
++    path.components().any(|component| {
++        matches!(
++            component,
++            std::path::Component::Normal(name)
++                if matches!(name.to_str(), Some(".git" | "target" | ".codebaseGraph" | ".kwiki"))
++        )
++    })
++}
++
+ fn check_rust_only_files(issues: &mut Vec<String>) {
+     for forbidden in ["pyproject.toml", "requirements-dev.txt"] {
+         if Path::new(forbidden).exists() {
+@@ -1019,19 +1122,21 @@ fn check_rust_only_files(issues: &mut Vec<String>) {
+     }
+     for path in files_under(Path::new(".")) {
+         let relative = path.strip_prefix(".").unwrap_or(&path);
+-        let text_path = relative.to_string_lossy();
+-        if text_path.contains("/target/")
+-            || text_path.contains("/.git/")
+-            || text_path.contains("/.codebaseGraph/")
+-            || text_path.contains("/.kwiki/")
+-        {
++        if has_generated_component(relative) {
+             continue;
+         }
+         if path.extension().is_some_and(|extension| extension == "py") {
+-            issues.push(format!(
+-                "FAIL: python-file-present: {} must not be maintained source.",
+-                text_path
+-            ));
++            let text_path = relative.to_string_lossy();
++            match is_docs_helper_path(Path::new("."), &path) {
++                Ok(true) => {}
++                Ok(false) => issues.push(format!(
++                    "FAIL: python-file-present: {} must not be maintained source.",
++                    text_path
++                )),
++                Err(error) => {
++                    issues.push(format!("FAIL: docs-python-exception-unavailable: {error}."))
++                }
++            }
+         }
+     }
+ }
+@@ -2765,8 +2870,181 @@ mod tests {
+     use serde_json::{json, Value};
+     use std::collections::BTreeSet;
+     use std::fs;
+-    use std::path::Path;
+-    use std::process::{ExitStatus, Output};
++    use std::path::{Path, PathBuf};
++    use std::process::{Command, ExitStatus, Output};
++
++    const GATE_FIXTURE_CHILD_MARKER: &str = ".cod107-gate-fixture-mode";
++
++    fn release_gate_fixture() -> PathBuf {
++        let root = super::unique_temp_dir("cod107_release_gate_fixture").unwrap();
++        let project = Path::new(env!("CARGO_MANIFEST_DIR"))
++            .join("../..")
++            .canonicalize()
++            .unwrap();
++        for relative in [
++            "SECURITY.md",
++            "Cargo.toml",
++            "crates/k-wiki/Cargo.toml",
++            "release-please-config.json",
++            ".github/workflows/ci.yml",
++            ".github/workflows/native.yml",
++            ".github/workflows/release.yml",
++            "src/lib.rs",
++            "src/adapters/cli/mod.rs",
++        ] {
++            let source = project.join(relative);
++            let destination = root.join(relative);
++            fs::create_dir_all(destination.parent().unwrap()).unwrap();
++            fs::copy(&source, &destination).unwrap_or_else(|error| {
++                panic!(
++                    "could not copy gate fixture file {}: {error}",
++                    source.display()
++                )
++            });
++        }
++        fs::create_dir_all(root.join("docs")).unwrap();
++        root
++    }
++
++    fn write_gate_fixture_file(root: &Path, relative: &str, contents: &str) {
++        let path = root.join(relative);
++        fs::create_dir_all(path.parent().unwrap()).unwrap();
++        fs::write(path, contents).unwrap();
++    }
++
++    fn execute_gate_fixture_child() -> bool {
++        let Ok(mode) = fs::read_to_string(GATE_FIXTURE_CHILD_MARKER) else {
++            return false;
++        };
++        let mode = mode.trim();
++        let (route, outcome) = mode.split_once(':').expect("valid gate fixture child mode");
++        let production = match route {
++            "ordinary" => false,
++            "production" => true,
++            _ => panic!("unknown gate fixture route {route}"),
++        };
++        let expected_success = match outcome {
++            "pass" => true,
++            "reject" => false,
++            _ => panic!("unknown gate fixture outcome {outcome}"),
++        };
++        let args = if production {
++            [
++                "--production".to_string(),
++                "--confirm".to_string(),
++                "release-environment".to_string(),
++                "--confirm".to_string(),
++                "private-vulnerability-reporting".to_string(),
++            ]
++            .to_vec()
++        } else {
++            Vec::new()
++        };
++        let result = super::release_gate(args);
++        assert_eq!(
++            result.is_ok(),
++            expected_success,
++            "release_gate returned {result:?} for {route}:{outcome}"
++        );
++        true
++    }
++
++    fn run_gate_fixture_route(
++        test_name: &str,
++        root: &Path,
++        production: bool,
++        expected_success: bool,
++        expected_diagnostics: &[&str],
++        forbidden_diagnostics: &[&str],
++    ) -> String {
++        let route = if production { "production" } else { "ordinary" };
++        let outcome = if expected_success { "pass" } else { "reject" };
++        fs::write(
++            root.join(GATE_FIXTURE_CHILD_MARKER),
++            format!("{route}:{outcome}"),
++        )
++        .unwrap();
++        let output = Command::new(std::env::current_exe().unwrap())
++            .args(["--exact", test_name, "--nocapture"])
++            .current_dir(root)
++            .output()
++            .unwrap_or_else(|error| panic!("could not run gate fixture child: {error}"));
++        let report = format!(
++            "{}\n{}",
++            String::from_utf8_lossy(&output.stdout),
++            String::from_utf8_lossy(&output.stderr)
++        );
++        assert!(
++            output.status.success(),
++            "gate fixture child failed for {route}:\n{report}"
++        );
++        if expected_success {
++            assert!(report.contains("release gate passed"), "{report}");
++        }
++        for diagnostic in expected_diagnostics {
++            assert!(
++                report.contains(diagnostic),
++                "missing {diagnostic:?}:\n{report}"
++            );
++        }
++        for diagnostic in forbidden_diagnostics {
++            assert!(
++                !report.contains(diagnostic),
++                "unexpected {diagnostic:?}:\n{report}"
++            );
++        }
++        report
++    }
++
++    fn symlink_privilege_unavailable(error: &std::io::Error) -> bool {
++        #[cfg(windows)]
++        {
++            return error.raw_os_error() == Some(1314);
++        }
++        #[cfg(not(windows))]
++        {
++            let _ = error;
++            false
++        }
++    }
++
++    fn symlink_file(target: &Path, link: &Path) -> std::io::Result<()> {
++        #[cfg(unix)]
++        {
++            std::os::unix::fs::symlink(target, link)
++        }
++        #[cfg(windows)]
++        {
++            std::os::windows::fs::symlink_file(target, link)
++        }
++        #[cfg(not(any(unix, windows)))]
++        {
++            let _ = (target, link);
++            Err(std::io::Error::new(
++                std::io::ErrorKind::Unsupported,
++                "symlinks are unsupported on this host",
++            ))
++        }
++    }
++
++    fn symlink_dir(target: &Path, link: &Path) -> std::io::Result<()> {
++        #[cfg(unix)]
++        {
++            std::os::unix::fs::symlink(target, link)
++        }
++        #[cfg(windows)]
++        {
++            std::os::windows::fs::symlink_dir(target, link)
++        }
++        #[cfg(not(any(unix, windows)))]
++        {
++            let _ = (target, link);
++            Err(std::io::Error::new(
++                std::io::ErrorKind::Unsupported,
++                "symlinks are unsupported on this host",
++            ))
++        }
++    }
+ 
+     fn mcp_smoke_output(exit_code: i32, stdout: &str) -> Output {
+         #[cfg(unix)]
+@@ -3464,4 +3742,185 @@ mod tests {
+         let error = validate_crate_size(CRATES_IO_PACKAGE_LIMIT_BYTES + 1).unwrap_err();
+         assert!(error.contains("exceeding the crates.io limit"), "{error}");
+     }
++
++    #[test]
++    fn docs_python_gate_accepts_root_and_nested_helpers_in_both_modes() {
++        if execute_gate_fixture_child() {
++            return;
++        }
++        let root = release_gate_fixture();
++        write_gate_fixture_file(&root, "docs/helper.py", "# documentation helper\n");
++        write_gate_fixture_file(
++            &root,
++            "docs/qualification/reproduce.py",
++            "# qualification helper\n",
++        );
++        for generated in [".git", "target", ".codebaseGraph", ".kwiki"] {
++            write_gate_fixture_file(&root, &format!("{generated}/ignored.py"), "");
++            write_gate_fixture_file(&root, &format!("docs/{generated}/ignored.py"), "");
++        }
++
++        let test_name = "tests::docs_python_gate_accepts_root_and_nested_helpers_in_both_modes";
++        for production in [false, true] {
++            run_gate_fixture_route(test_name, &root, production, true, &[], &[]);
++        }
++        fs::remove_dir_all(root).unwrap();
++    }
++
++    #[test]
++    fn docs_python_gate_rejects_neighbors_root_tooling_and_workflow_python() {
++        if execute_gate_fixture_child() {
++            return;
++        }
++        let root = release_gate_fixture();
++        write_gate_fixture_file(&root, "docs/allowed.py", "# optional local helper\n");
++        write_gate_fixture_file(&root, "docs-extra/neighbor.py", "");
++        write_gate_fixture_file(&root, "src/docs/neighbor.py", "");
++        write_gate_fixture_file(&root, "root.py", "");
++        write_gate_fixture_file(&root, "pyproject.toml", "");
++        write_gate_fixture_file(&root, "requirements-dev.txt", "");
++        write_gate_fixture_file(&root, "scripts/helper.py", "");
++        write_gate_fixture_file(&root, "src/codebase_graph/helper.py", "");
++        fs::remove_file(root.join("SECURITY.md")).unwrap();
++        let ci_path = root.join(".github/workflows/ci.yml");
++        let mut ci = fs::read_to_string(&ci_path).unwrap();
++        ci.push_str("\n# python -m is not an approved workflow step\n");
++        fs::write(ci_path, ci).unwrap();
++
++        let test_name =
++            "tests::docs_python_gate_rejects_neighbors_root_tooling_and_workflow_python";
++        let expected = [
++            "security-policy-missing",
++            "python-tooling-present: pyproject.toml",
++            "python-tooling-present: requirements-dev.txt",
++            "python-surface-present: scripts",
++            "python-surface-present: src/codebase_graph",
++            "python-file-present: docs-extra/neighbor.py",
++            "python-file-present: src/docs/neighbor.py",
++            "python-file-present: root.py",
++            "python-file-present: scripts/helper.py",
++            "python-file-present: src/codebase_graph/helper.py",
++            "workflow-python-tooling-present: .github/workflows/ci.yml",
++        ];
++        for production in [false, true] {
++            run_gate_fixture_route(
++                test_name,
++                &root,
++                production,
++                false,
++                &expected,
++                &["python-file-present: docs/allowed.py"],
++            );
++        }
++        fs::remove_dir_all(root).unwrap();
++    }
++
++    #[test]
++    fn docs_python_exception_rejects_component_aliases_and_symlinks() {
++        if execute_gate_fixture_child() {
++            return;
++        }
++        let aliases = release_gate_fixture();
++        write_gate_fixture_file(&aliases, "docs/helper.py", "");
++        assert!(super::is_docs_helper_path(&aliases, &aliases.join("docs/helper.py")).unwrap());
++        for candidate in [
++            aliases.join("docs/../docs/helper.py"),
++            PathBuf::from("./docs/helper.py"),
++            aliases.join("docs-extra/helper.py"),
++            aliases.join("src/docs/helper.py"),
++            aliases.parent().unwrap().join("outside/docs/helper.py"),
++        ] {
++            assert!(
++                !super::is_docs_helper_path(&aliases, &candidate).unwrap(),
++                "accepted alias {}",
++                candidate.display()
++            );
++        }
++        let missing =
++            super::is_docs_helper_path(&aliases, &aliases.join("docs/missing.py")).unwrap_err();
++        assert!(
++            missing.contains("cannot inspect docs Python exception path"),
++            "{missing}"
++        );
++        #[cfg(windows)]
++        assert!(!super::is_docs_helper_path(&aliases, Path::new(r"C:\docs\helper.py")).unwrap());
++        fs::remove_dir_all(&aliases).unwrap();
++
++        let test_name = "tests::docs_python_exception_rejects_component_aliases_and_symlinks";
++
++        let root = release_gate_fixture();
++        let outside = super::unique_temp_dir("cod107_docs_link_target").unwrap();
++        write_gate_fixture_file(&outside, "helper.py", "");
++        if let Err(error) = symlink_file(&outside.join("helper.py"), &root.join("docs/linked.py")) {
++            if symlink_privilege_unavailable(&error) {
++                eprintln!("Windows symlink privilege unavailable; symlink gate cases not executed: {error}");
++                fs::remove_dir_all(&root).unwrap();
++                fs::remove_dir_all(&outside).unwrap();
++                return;
++            }
++            panic!("could not create docs-to-outside symlink: {error}");
++        }
++        for production in [false, true] {
++            run_gate_fixture_route(
++                test_name,
++                &root,
++                production,
++                false,
++                &["docs Python exception rejects symlink path"],
++                &[],
++            );
++        }
++        fs::remove_dir_all(&root).unwrap();
++        fs::remove_dir_all(&outside).unwrap();
++
++        let root = release_gate_fixture();
++        write_gate_fixture_file(&root, "docs/inside.py", "");
++        let outside_link = root.join("outside/linked.py");
++        fs::create_dir_all(outside_link.parent().unwrap()).unwrap();
++        if let Err(error) = symlink_file(&root.join("docs/inside.py"), &outside_link) {
++            if symlink_privilege_unavailable(&error) {
++                eprintln!("Windows symlink privilege unavailable; remaining symlink gate cases not executed: {error}");
++                fs::remove_dir_all(&root).unwrap();
++                return;
++            }
++            panic!("could not create outside-to-docs symlink: {error}");
++        }
++        for production in [false, true] {
++            run_gate_fixture_route(
++                test_name,
++                &root,
++                production,
++                false,
++                &["python-file-present: outside/linked.py"],
++                &[],
++            );
++        }
++        fs::remove_dir_all(&root).unwrap();
++
++        let root = release_gate_fixture();
++        let outside = super::unique_temp_dir("cod107_docs_directory_target").unwrap();
++        write_gate_fixture_file(&outside, "helper.py", "");
++        fs::remove_dir_all(root.join("docs")).unwrap();
++        if let Err(error) = symlink_dir(&outside, &root.join("docs")) {
++            if symlink_privilege_unavailable(&error) {
++                eprintln!("Windows symlink privilege unavailable; docs-directory symlink case not executed: {error}");
++                fs::remove_dir_all(&root).unwrap();
++                fs::remove_dir_all(&outside).unwrap();
++                return;
++            }
++            panic!("could not create symlinked docs directory: {error}");
++        }
++        for production in [false, true] {
++            run_gate_fixture_route(
++                test_name,
++                &root,
++                production,
++                false,
++                &["docs Python exception rejects symlink path"],
++                &[],
++            );
++        }
++        fs::remove_dir_all(&root).unwrap();
++        fs::remove_dir_all(&outside).unwrap();
++    }
+ }
+diff --git a/docs/release.md b/docs/release.md
+index d23373f..b1ebecb 100644
+--- a/docs/release.md
++++ b/docs/release.md
+@@ -113,6 +113,19 @@ cargo run -p xtask -- release-gate --production \
+ 
+ Add `--require-conda` when conda-forge submission is in scope for the release.
+ 
++### Optional local documentation helpers
++
++Python helpers are permitted only under `docs/` for documentation, evidence, qualification, audit, or reproduction support.
++They are optional local commands for explicit developer use with Python 3's standard library only. Path placement is
++necessary, not sufficient: helper content must not implement product build, runtime, installation, or release
++behavior.
++
++Do not add Python setup, dependencies, package/tool manifests, or helper invocations in CI, Release, product builds,
++runtime, or installation. Keep helpers out of native archives and published `.crate` payloads; ordinary Git source and
++tag snapshots may retain documentation.
++This policy does not restore or extract archived COD-99 helpers, and existing root-tooling, security, workflow, and
++other repository checks remain in force. It adds no helper or command to run.
++
+ Release notes should list native smoke evidence, benchmark evidence used for rollout recommendations, and graph
+ compatibility changes that require users to refresh `.codebaseGraph` state.
+ 

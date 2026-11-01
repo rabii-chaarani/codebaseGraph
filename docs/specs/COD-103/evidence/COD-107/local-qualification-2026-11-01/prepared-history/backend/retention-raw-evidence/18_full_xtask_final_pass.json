@@ -1,0 +1,9 @@
+{
+  "command": "cargo test --locked -p xtask",
+  "exit_code": 0,
+  "running": false,
+  "capture": "BashResult.output combined stdout/stderr; not split by harness",
+  "note": "final full xtask suite",
+  "output_file": "18_full_xtask_final_pass.combined-output.txt",
+  "output_sha256": "7c05d75aa6d5329bfe696437f977d9b9b28c221134e3961a2fd0f8e826579a27"
+}

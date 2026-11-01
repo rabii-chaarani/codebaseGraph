@@ -1,0 +1,3913 @@
+use flate2::read::GzDecoder;
+use flate2::{Compression, GzBuilder};
+use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
+use sha2::{Digest, Sha256};
+use std::collections::{BTreeMap, BTreeSet};
+use std::env;
+use std::fs::{self, File};
+use std::io::{BufRead, BufReader, Read, Write};
+use std::net::TcpStream;
+use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use yaml_serde::Value as YamlValue;
+
+mod macos;
+#[cfg(test)]
+mod macos_installer_tests;
+mod native_tests;
+mod release;
+
+const CONFIRMATIONS: &[&str] = &["release-environment", "private-vulnerability-reporting"];
+const CRATES_IO_PACKAGE_LIMIT_BYTES: u64 = 10 * 1024 * 1024;
+const NATIVE_TARGETS: [NativeTarget; 2] = [NativeTarget::MacosArm64, NativeTarget::WindowsX86_64];
+
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+enum NativeTarget {
+    MacosArm64,
+    WindowsX86_64,
+}
+
+impl NativeTarget {
+    fn parse(value: &str) -> Result<Self, String> {
+        match value {
+            "macos-arm64" => Ok(Self::MacosArm64),
+            "windows-x86_64" => Ok(Self::WindowsX86_64),
+            other => Err(format!("unsupported native target: {other}")),
+        }
+    }
+
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::MacosArm64 => "macos-arm64",
+            Self::WindowsX86_64 => "windows-x86_64",
+        }
+    }
+
+    fn binary_names(self) -> (&'static str, &'static str) {
+        match self {
+            Self::WindowsX86_64 => ("codebase-graph.exe", "k-wiki.exe"),
+            _ => ("codebase-graph", "k-wiki"),
+        }
+    }
+
+    fn host(self) -> (&'static str, &'static str) {
+        match self {
+            Self::MacosArm64 => ("macos", "aarch64"),
+            Self::WindowsX86_64 => ("windows", "x86_64"),
+        }
+    }
+
+    fn archive_name(self, version: &str) -> String {
+        format!("codebase-graph-{version}-{}.tar.gz", self.as_str())
+    }
+
+    fn uses_windows_extensions(self) -> bool {
+        self == Self::WindowsX86_64
+    }
+
+    fn payload_files(self) -> Vec<&'static str> {
+        let (graph, wiki) = self.binary_names();
+        let mut files = vec![graph, wiki];
+        if self == Self::MacosArm64 {
+            files.extend(macos::PAYLOAD_FILES);
+        }
+        files
+    }
+
+    fn package_files(self) -> Vec<(&'static str, u32)> {
+        let (graph, wiki) = self.binary_names();
+        let mut files = vec![(graph, 0o755), (wiki, 0o755)];
+        if self == Self::MacosArm64 {
+            files.extend(macos::PAYLOAD_FILES.map(|name| (name, 0o644)));
+        }
+        files.extend([
+            ("checksums.txt", 0o644),
+            ("install.sh", 0o755),
+            ("install.ps1", 0o644),
+        ]);
+        files
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+struct NativeProvenance {
+    schema_version: u32,
+    commit_sha: String,
+    version: String,
+    target: String,
+    archive: String,
+    archive_sha256: String,
+}
+
+fn main() {
+    if let Err(error) = run() {
+        eprintln!("{error}");
+        std::process::exit(1);
+    }
+}
+
+fn run() -> Result<(), String> {
+    let mut args = env::args().skip(1);
+    match args.next().as_deref() {
+        Some("release-gate") => release_gate(args.collect()),
+        Some("check-workflows") => check_workflows_command(),
+        Some("release-metadata") => release::metadata_command(args.collect()),
+        Some("native-test") => native_test(args.collect()),
+        Some("native-artifact") => native_artifact(args.collect()),
+        Some("validate-native-artifacts") => validate_native_artifacts(args.collect()),
+        Some("smoke-artifact") => {
+            let executable = args
+                .next()
+                .ok_or_else(|| "smoke-artifact requires a binary path".to_string())?;
+            smoke_artifact(Path::new(&executable))
+        }
+        Some("smoke-wiki-artifact") => {
+            let executable = args
+                .next()
+                .ok_or_else(|| "smoke-wiki-artifact requires a binary path".to_string())?;
+            smoke_wiki_artifact(Path::new(&executable))
+        }
+        Some("verify-release-version") => {
+            let tag = args
+                .next()
+                .ok_or_else(|| "verify-release-version requires a vX.Y.Z tag".to_string())?;
+            verify_release_version(&tag)
+        }
+        Some("verify-crate-size") => {
+            let archive = args
+                .next()
+                .ok_or_else(|| "verify-crate-size requires a .crate path".to_string())?;
+            verify_crate_size(Path::new(&archive))
+        }
+        Some(command) => Err(format!("unknown xtask command: {command}")),
+        None => Err(
+            "usage: cargo run -p xtask -- <release-gate|check-workflows|native-test|native-artifact|validate-native-artifacts|smoke-artifact|smoke-wiki-artifact|verify-release-version|verify-crate-size>"
+                .to_string(),
+        ),
+    }
+}
+
+fn verify_crate_size(archive: &Path) -> Result<(), String> {
+    let bytes = fs::metadata(archive)
+        .map_err(|error| {
+            format!(
+                "failed to read crate package {}: {error}",
+                archive.display()
+            )
+        })?
+        .len();
+    validate_crate_size(bytes)?;
+    println!("crate package size verified: {bytes} bytes <= {CRATES_IO_PACKAGE_LIMIT_BYTES} bytes");
+    Ok(())
+}
+
+fn validate_crate_size(bytes: u64) -> Result<(), String> {
+    if bytes <= CRATES_IO_PACKAGE_LIMIT_BYTES {
+        Ok(())
+    } else {
+        Err(format!(
+            "crate package is {bytes} bytes, exceeding the crates.io limit of {CRATES_IO_PACKAGE_LIMIT_BYTES} bytes"
+        ))
+    }
+}
+
+fn native_test(args: Vec<String>) -> Result<(), String> {
+    native_tests::run(args)
+}
+
+fn native_test_capture_command(target: NativeTarget) -> Vec<&'static str> {
+    let mut args = native_test_command(target);
+    args.extend(["--no-run", "--message-format=json-render-diagnostics"]);
+    args
+}
+
+fn record_native_test_cli_artifact(
+    message: &Value,
+    manifest: &Path,
+    candidates: &mut BTreeSet<PathBuf>,
+) -> Result<(), String> {
+    if message["reason"] != "compiler-artifact"
+        || message["target"]["name"] != "codebase-graph"
+        || message["profile"]["test"] != false
+        || !message["target"]["kind"]
+            .as_array()
+            .is_some_and(|kinds| kinds.iter().any(|kind| kind == "bin"))
+    {
+        return Ok(());
+    }
+    let actual_manifest = message["manifest_path"]
+        .as_str()
+        .ok_or("native-test CLI artifact has no source manifest")?;
+    if fs::canonicalize(actual_manifest).map_err(|error| error.to_string())? != manifest {
+        return Ok(());
+    }
+    let executable = message["executable"]
+        .as_str()
+        .ok_or("native-test normal CLI artifact has no executable")?;
+    let executable = fs::canonicalize(executable).map_err(|error| error.to_string())?;
+    if !executable.is_file() {
+        return Err("native-test CLI artifact is not a file".into());
+    }
+    candidates.insert(executable);
+    Ok(())
+}
+
+fn unique_native_test_cli(candidates: BTreeSet<PathBuf>) -> Result<PathBuf, String> {
+    if candidates.len() != 1 {
+        return Err(format!(
+            "expected one source-bound normal codebase-graph CLI compiler artifact, got {}",
+            candidates.len()
+        ));
+    }
+    Ok(candidates
+        .into_iter()
+        .next()
+        .expect("one captured executable"))
+}
+
+fn capture_native_test_cli(target: NativeTarget) -> Result<PathBuf, String> {
+    let manifest = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../Cargo.toml");
+    let manifest = fs::canonicalize(manifest).map_err(|error| error.to_string())?;
+    let mut child = Command::new("cargo")
+        .args(native_test_capture_command(target))
+        .stdout(Stdio::piped())
+        .stderr(Stdio::inherit())
+        .spawn()
+        .map_err(|error| format!("failed to capture native-test CLI: {error}"))?;
+    let stdout = child.stdout.take().expect("capture stdout was piped");
+    let mut candidates = BTreeSet::new();
+    let mut failure = None;
+    for line in BufReader::new(stdout).lines() {
+        let line = match line {
+            Ok(line) => line,
+            Err(error) => {
+                failure = Some(error.to_string());
+                break;
+            }
+        };
+        match serde_json::from_str::<Value>(&line) {
+            Ok(message) => {
+                if let Some(rendered) = message["message"]["rendered"].as_str() {
+                    eprint!("{rendered}");
+                }
+                if let Err(error) =
+                    record_native_test_cli_artifact(&message, &manifest, &mut candidates)
+                {
+                    failure.get_or_insert(error);
+                }
+            }
+            Err(error) => {
+                failure.get_or_insert(format!("invalid native-test compiler message: {error}"));
+            }
+        }
+    }
+    let status = child.wait().map_err(|error| error.to_string())?;
+    if !status.success() {
+        return Err(format!(
+            "native-test artifact capture failed with status {status}"
+        ));
+    }
+    if let Some(error) = failure {
+        return Err(error);
+    }
+    unique_native_test_cli(candidates)
+}
+
+fn native_test_command(target: NativeTarget) -> Vec<&'static str> {
+    let mut args = vec![
+        "test",
+        "--workspace",
+        "--locked",
+        "--profile",
+        "native-tests",
+    ];
+    if target.uses_windows_extensions() {
+        // Keep optimized fault-test binaries separate from shipped artifacts.
+        args.extend([
+            "--features",
+            "codebase-graph/bundled-windows-extensions,k-wiki/bundled-windows-extensions",
+        ]);
+    }
+    args
+}
+
+fn native_artifact(args: Vec<String>) -> Result<(), String> {
+    let options = parse_options(&args, &["--target", "--commit-sha", "--output"])?;
+    let target = NativeTarget::parse(required_option(&options, "--target")?)?;
+    let commit_sha = required_option(&options, "--commit-sha")?;
+    validate_commit_sha(commit_sha)?;
+    let output = Path::new(required_option(&options, "--output")?);
+    ensure_native_host(target)?;
+
+    let version = release_version()?;
+    fs::create_dir_all(output).map_err(|error| {
+        format!(
+            "failed to create artifact output {}: {error}",
+            output.display()
+        )
+    })?;
+
+    let staging = unique_temp_dir(&format!("native_artifact_{}", target.as_str()))?;
+    let result = (|| {
+        let runtime = if target == NativeTarget::MacosArm64 {
+            Some(macos::prepare_openssl(&staging.join("openssl"))?)
+        } else {
+            None
+        };
+        build_native_binaries(target, runtime.as_deref())?;
+        build_and_smoke_native_archive(
+            target,
+            &version,
+            commit_sha,
+            output,
+            &staging,
+            runtime.as_deref(),
+        )
+    })();
+    let _ = fs::remove_dir_all(&staging);
+    result
+}
+
+fn validate_native_artifacts(args: Vec<String>) -> Result<(), String> {
+    let options = parse_options(&args, &["--input", "--tag", "--commit-sha"])?;
+    let input = Path::new(required_option(&options, "--input")?);
+    let tag = required_option(&options, "--tag")?;
+    let commit_sha = required_option(&options, "--commit-sha")?;
+    validate_commit_sha(commit_sha)?;
+    let version = release_version_from_tag(tag)?;
+    validate_native_artifact_set(input, &version, commit_sha)
+}
+
+fn parse_options(args: &[String], allowed: &[&str]) -> Result<BTreeMap<String, String>, String> {
+    let allowed: BTreeSet<&str> = allowed.iter().copied().collect();
+    let mut options = BTreeMap::new();
+    let mut index = 0;
+    while index < args.len() {
+        let flag = args[index].as_str();
+        if !allowed.contains(flag) {
+            return Err(format!("unknown option: {flag}"));
+        }
+        index += 1;
+        let value = args
+            .get(index)
+            .ok_or_else(|| format!("{flag} requires a value"))?;
+        if options.insert(flag.to_string(), value.clone()).is_some() {
+            return Err(format!("duplicate option: {flag}"));
+        }
+        index += 1;
+    }
+    Ok(options)
+}
+
+fn required_option<'a>(
+    options: &'a BTreeMap<String, String>,
+    flag: &str,
+) -> Result<&'a str, String> {
+    options
+        .get(flag)
+        .map(String::as_str)
+        .ok_or_else(|| format!("missing required option: {flag}"))
+}
+
+fn validate_commit_sha(value: &str) -> Result<(), String> {
+    if value.len() == 40 && value.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+        Ok(())
+    } else {
+        Err(format!(
+            "commit SHA must be 40 hexadecimal characters, got {value:?}"
+        ))
+    }
+}
+
+fn ensure_native_host(target: NativeTarget) -> Result<(), String> {
+    let (expected_os, expected_arch) = target.host();
+    if env::consts::OS == expected_os && env::consts::ARCH == expected_arch {
+        Ok(())
+    } else {
+        Err(format!(
+            "target {} requires {expected_os}/{expected_arch}, current host is {}/{}",
+            target.as_str(),
+            env::consts::OS,
+            env::consts::ARCH
+        ))
+    }
+}
+
+fn release_version() -> Result<String, String> {
+    let root = cargo_version(Path::new("Cargo.toml"))?;
+    let wiki = cargo_version(Path::new("crates/k-wiki/Cargo.toml"))?;
+    let dependency = dependency_version(Path::new("crates/k-wiki/Cargo.toml"), "codebase-graph")?;
+    if root != wiki || root != dependency {
+        return Err(format!(
+            "release versions are not aligned: root={root}, k-wiki={wiki}, dependency={dependency}"
+        ));
+    }
+    Ok(root)
+}
+
+fn release_version_from_tag(tag: &str) -> Result<String, String> {
+    let version = tag
+        .strip_prefix('v')
+        .ok_or_else(|| format!("release tag must match vX.Y.Z, got {tag:?}"))?;
+    let parts: Vec<&str> = version.split('.').collect();
+    if parts.len() != 3
+        || parts
+            .iter()
+            .any(|part| part.is_empty() || !part.bytes().all(|byte| byte.is_ascii_digit()))
+    {
+        return Err(format!("release tag must match vX.Y.Z, got {tag:?}"));
+    }
+    Ok(version.to_string())
+}
+
+fn configure_native_build(command: &mut Command, runtime: Option<&Path>) {
+    if let Some(library_dir) = runtime {
+        command
+            .env("OPENSSL_LIB_DIR", library_dir)
+            .env("MACOSX_DEPLOYMENT_TARGET", "13.3");
+        let flags = env::var("RUSTFLAGS").unwrap_or_default();
+        command.env_remove("CARGO_ENCODED_RUSTFLAGS").env(
+            "RUSTFLAGS",
+            format!("{flags} -C link-arg=-Wl,-headerpad_max_install_names"),
+        );
+    }
+}
+
+fn build_native_binaries(target: NativeTarget, runtime: Option<&Path>) -> Result<(), String> {
+    let mut graph = Command::new("cargo");
+    configure_native_build(&mut graph, runtime);
+    graph.args(["build", "--locked", "--release", "--bin", "codebase-graph"]);
+    if target.uses_windows_extensions() {
+        graph.args(["--features", "bundled-windows-extensions"]);
+    }
+    run_command(&mut graph, "codebase-graph release build")?;
+
+    let mut wiki = Command::new("cargo");
+    configure_native_build(&mut wiki, runtime);
+    wiki.args([
+        "build",
+        "--locked",
+        "--release",
+        "-p",
+        "k-wiki",
+        "--bin",
+        "k-wiki",
+    ]);
+    if target.uses_windows_extensions() {
+        wiki.args(["--features", "bundled-windows-extensions"]);
+    }
+    run_command(&mut wiki, "k-wiki release build")
+}
+
+fn build_and_smoke_native_archive(
+    target: NativeTarget,
+    version: &str,
+    commit_sha: &str,
+    output: &Path,
+    staging: &Path,
+    runtime: Option<&Path>,
+) -> Result<(), String> {
+    let package = staging.join("package");
+    let extracted = staging.join("extracted");
+    let install_bin = staging.join("install-bin");
+    fs::create_dir_all(&package).map_err(|error| error.to_string())?;
+
+    let (graph_name, wiki_name) = target.binary_names();
+    copy_file(
+        Path::new("target/release").join(graph_name),
+        package.join(graph_name),
+    )?;
+    copy_file(
+        Path::new("target/release").join(wiki_name),
+        package.join(wiki_name),
+    )?;
+    copy_file("release/install/install.sh", package.join("install.sh"))?;
+    copy_file("release/install/install.ps1", package.join("install.ps1"))?;
+    set_executable(&package.join(graph_name))?;
+    set_executable(&package.join(wiki_name))?;
+    set_executable(&package.join("install.sh"))?;
+
+    if let Some(library_dir) = runtime {
+        macos::stage_runtime(library_dir, &package)?;
+    }
+    write_internal_checksums(&package, target)?;
+
+    let archive_name = target.archive_name(version);
+    let archive_path = output.join(&archive_name);
+    create_native_archive(&package, &archive_path, target)?;
+    let archive_sha256 = sha256_file(&archive_path)?;
+    fs::write(
+        output.join(format!("{archive_name}.sha256")),
+        format!("{archive_sha256}  {archive_name}\n"),
+    )
+    .map_err(|error| error.to_string())?;
+    let provenance = NativeProvenance {
+        schema_version: 1,
+        commit_sha: commit_sha.to_string(),
+        version: version.to_string(),
+        target: target.as_str().to_string(),
+        archive: archive_name.clone(),
+        archive_sha256,
+    };
+    fs::write(
+        output.join("provenance.json"),
+        serde_json::to_vec_pretty(&provenance).map_err(|error| error.to_string())?,
+    )
+    .map_err(|error| error.to_string())?;
+
+    extract_and_validate_native_archive(&archive_path, target, &extracted)?;
+    dry_run_installer(target, &extracted, &install_bin)?;
+    if target == NativeTarget::MacosArm64 {
+        macos::validate_package(&extracted)?;
+        let installed = staging.join("installed bin with spaces");
+        install_macos_package(&extracted, &installed, false)?;
+        macos::validate_package(&installed)?;
+        smoke_artifact(&installed.join(graph_name))?;
+        smoke_wiki_artifact(&installed.join(wiki_name))?;
+        verify_macos_install_rejects_bad_runtime(&extracted, &installed, staging)?;
+    } else {
+        smoke_artifact(&extracted.join(graph_name))?;
+        smoke_wiki_artifact(&extracted.join(wiki_name))?;
+    }
+    println!("{}", archive_path.display());
+    Ok(())
+}
+
+fn copy_file(source: impl AsRef<Path>, destination: impl AsRef<Path>) -> Result<(), String> {
+    let source = source.as_ref();
+    let destination = destination.as_ref();
+    fs::copy(source, destination).map_err(|error| {
+        format!(
+            "failed to copy {} to {}: {error}",
+            source.display(),
+            destination.display()
+        )
+    })?;
+    Ok(())
+}
+
+#[cfg(unix)]
+fn set_executable(path: &Path) -> Result<(), String> {
+    use std::os::unix::fs::PermissionsExt;
+    let mut permissions = fs::metadata(path)
+        .map_err(|error| error.to_string())?
+        .permissions();
+    permissions.set_mode(0o755);
+    fs::set_permissions(path, permissions).map_err(|error| error.to_string())
+}
+
+#[cfg(not(unix))]
+fn set_executable(_path: &Path) -> Result<(), String> {
+    Ok(())
+}
+
+fn create_native_archive(
+    package: &Path,
+    archive_path: &Path,
+    target: NativeTarget,
+) -> Result<(), String> {
+    let file = File::create(archive_path)
+        .map_err(|error| format!("failed to create {}: {error}", archive_path.display()))?;
+    let encoder = GzBuilder::new()
+        .mtime(0)
+        .write(file, Compression::default());
+    let mut archive = tar::Builder::new(encoder);
+    for (name, mode) in target.package_files() {
+        append_deterministic_file(&mut archive, &package.join(name), name, mode)?;
+    }
+    let encoder = archive
+        .into_inner()
+        .map_err(|error| format!("failed to finish tar archive: {error}"))?;
+    encoder
+        .finish()
+        .map_err(|error| format!("failed to finish gzip archive: {error}"))?;
+    Ok(())
+}
+
+fn append_deterministic_file<W: Write>(
+    archive: &mut tar::Builder<W>,
+    source: &Path,
+    name: &str,
+    mode: u32,
+) -> Result<(), String> {
+    let mut file = File::open(source)
+        .map_err(|error| format!("failed to open {}: {error}", source.display()))?;
+    let size = file.metadata().map_err(|error| error.to_string())?.len();
+    let mut header = tar::Header::new_gnu();
+    header.set_size(size);
+    header.set_mode(mode);
+    header.set_uid(0);
+    header.set_gid(0);
+    header.set_mtime(0);
+    header.set_cksum();
+    archive
+        .append_data(&mut header, name, &mut file)
+        .map_err(|error| format!("failed to append {name}: {error}"))
+}
+
+fn extract_and_validate_native_archive(
+    archive_path: &Path,
+    target: NativeTarget,
+    destination: &Path,
+) -> Result<(), String> {
+    fs::create_dir_all(destination).map_err(|error| error.to_string())?;
+    let file = File::open(archive_path)
+        .map_err(|error| format!("failed to open {}: {error}", archive_path.display()))?;
+    let mut archive = tar::Archive::new(GzDecoder::new(file));
+    let expected = expected_package_files(target);
+    let mut actual = BTreeSet::new();
+    for entry in archive.entries().map_err(|error| error.to_string())? {
+        let entry = entry.map_err(|error| error.to_string())?;
+        if !entry.header().entry_type().is_file() {
+            return Err("native archive contains a non-file entry".to_string());
+        }
+        let path = entry.path().map_err(|error| error.to_string())?;
+        let text = path
+            .to_str()
+            .ok_or_else(|| "native archive contains a non-UTF-8 path".to_string())?;
+        if !expected.contains(text) || !actual.insert(text.to_string()) {
+            return Err(format!(
+                "unexpected or duplicate native archive entry: {text}"
+            ));
+        }
+    }
+    if actual != expected {
+        return Err(format!(
+            "native archive entries do not match contract: expected {expected:?}, got {actual:?}"
+        ));
+    }
+
+    let file = File::open(archive_path).map_err(|error| error.to_string())?;
+    tar::Archive::new(GzDecoder::new(file))
+        .unpack(destination)
+        .map_err(|error| format!("failed to extract {}: {error}", archive_path.display()))?;
+    for executable in [target.binary_names().0, target.binary_names().1] {
+        set_executable(&destination.join(executable))?;
+    }
+    set_executable(&destination.join("install.sh"))?;
+    validate_internal_checksums(destination, target)
+}
+
+fn expected_package_files(target: NativeTarget) -> BTreeSet<String> {
+    target
+        .package_files()
+        .into_iter()
+        .map(|(name, _)| name.to_string())
+        .collect()
+}
+
+fn write_internal_checksums(directory: &Path, target: NativeTarget) -> Result<(), String> {
+    let mut text = String::new();
+    for name in target.payload_files() {
+        text.push_str(&format!(
+            "{}  {name}\n",
+            sha256_file(&directory.join(name))?
+        ));
+    }
+    fs::write(directory.join("checksums.txt"), text).map_err(|error| error.to_string())
+}
+
+fn validate_internal_checksums(directory: &Path, target: NativeTarget) -> Result<(), String> {
+    let text = fs::read_to_string(directory.join("checksums.txt"))
+        .map_err(|error| format!("failed to read checksums.txt: {error}"))?;
+    let mut checksums = BTreeMap::new();
+    for line in text.lines() {
+        let Some((digest, name)) = line.split_once("  ") else {
+            return Err(format!("invalid checksums.txt line: {line:?}"));
+        };
+        if digest.len() != 64
+            || !digest.bytes().all(|byte| byte.is_ascii_hexdigit())
+            || name.bytes().any(|byte| byte.is_ascii_whitespace())
+            || checksums
+                .insert(name.to_string(), digest.to_ascii_lowercase())
+                .is_some()
+        {
+            return Err(format!("invalid checksums.txt line: {line:?}"));
+        }
+    }
+    let expected_names: BTreeSet<String> = target
+        .payload_files()
+        .into_iter()
+        .map(str::to_string)
+        .collect();
+    if checksums.keys().cloned().collect::<BTreeSet<_>>() != expected_names {
+        return Err("checksums.txt does not contain the exact packaged payload".to_string());
+    }
+    for (name, expected) in checksums {
+        let actual = sha256_file(&directory.join(&name))?;
+        if actual != expected {
+            return Err(format!("SHA256 mismatch for {name}"));
+        }
+    }
+    Ok(())
+}
+
+fn dry_run_installer(
+    target: NativeTarget,
+    extracted: &Path,
+    install_bin: &Path,
+) -> Result<(), String> {
+    let mut command = if target == NativeTarget::WindowsX86_64 {
+        let mut command = Command::new("pwsh");
+        command
+            .arg("-File")
+            .arg(extracted.join("install.ps1"))
+            .arg("-SourceDir")
+            .arg(extracted)
+            .arg("-BinDir")
+            .arg(install_bin)
+            .arg("-DryRun");
+        command
+    } else {
+        let mut command = Command::new("bash");
+        command
+            .arg(extracted.join("install.sh"))
+            .arg("--source-dir")
+            .arg(extracted)
+            .arg("--bin-dir")
+            .arg(install_bin)
+            .arg("--dry-run");
+        command
+    };
+    run_command(&mut command, "packaged installer dry-run")
+}
+
+fn install_macos_package(source: &Path, destination: &Path, dry_run: bool) -> Result<(), String> {
+    let mut command = Command::new("/bin/bash");
+    command
+        .arg(source.join("install.sh"))
+        .arg("--source-dir")
+        .arg(source)
+        .arg("--bin-dir")
+        .arg(destination);
+    if dry_run {
+        command.arg("--dry-run");
+    }
+    run_command(&mut command, "packaged macOS installer")
+}
+
+fn verify_macos_install_rejects_bad_runtime(
+    source: &Path,
+    destination: &Path,
+    staging: &Path,
+) -> Result<(), String> {
+    let target = NativeTarget::MacosArm64;
+    let before = target
+        .payload_files()
+        .into_iter()
+        .map(|name| sha256_file(&destination.join(name)).map(|digest| (name, digest)))
+        .collect::<Result<BTreeMap<_, _>, _>>()?;
+    for failure in ["missing", "corrupt", "incompatible"] {
+        let broken = staging.join(format!("{failure} runtime"));
+        fs::create_dir(&broken).map_err(|error| error.to_string())?;
+        for (name, _) in target.package_files() {
+            copy_file(source.join(name), broken.join(name))?;
+        }
+        let library = broken.join(macos::PAYLOAD_FILES[0]);
+        if failure == "missing" {
+            fs::remove_file(&library).map_err(|error| error.to_string())?;
+        } else {
+            fs::write(&library, b"not a compatible Mach-O library\n")
+                .map_err(|error| error.to_string())?;
+            if failure == "incompatible" {
+                write_internal_checksums(&broken, target)?;
+            }
+        }
+        for dry_run in [true, false] {
+            if install_macos_package(&broken, destination, dry_run).is_ok() {
+                return Err(format!("installer accepted {failure} bundled runtime"));
+            }
+            for (name, digest) in &before {
+                if sha256_file(&destination.join(name))? != *digest {
+                    return Err(format!("{failure} runtime changed installed {name}"));
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+fn sha256_file(path: &Path) -> Result<String, String> {
+    let mut file =
+        File::open(path).map_err(|error| format!("failed to open {}: {error}", path.display()))?;
+    let mut digest = Sha256::new();
+    std::io::copy(&mut file, &mut digest).map_err(|error| error.to_string())?;
+    Ok(format!("{:x}", digest.finalize()))
+}
+
+fn validate_native_artifact_set(
+    input: &Path,
+    version: &str,
+    commit_sha: &str,
+) -> Result<(), String> {
+    if !input.is_dir() {
+        return Err(format!(
+            "artifact input is not a directory: {}",
+            input.display()
+        ));
+    }
+    let files = all_files_under(input);
+    let provenance_files: Vec<PathBuf> = files
+        .iter()
+        .filter(|path| {
+            path.file_name()
+                .is_some_and(|name| name == "provenance.json")
+        })
+        .cloned()
+        .collect();
+    if provenance_files.len() != NATIVE_TARGETS.len() {
+        return Err(format!(
+            "expected {} provenance files, found {}",
+            NATIVE_TARGETS.len(),
+            provenance_files.len()
+        ));
+    }
+
+    let mut validated_targets = BTreeSet::new();
+    let mut expected_files = BTreeSet::new();
+    for provenance_path in provenance_files {
+        let provenance: NativeProvenance =
+            serde_json::from_slice(&fs::read(&provenance_path).map_err(|error| error.to_string())?)
+                .map_err(|error| format!("invalid {}: {error}", provenance_path.display()))?;
+        if provenance.schema_version != 1 {
+            return Err(format!(
+                "unsupported provenance schema: {}",
+                provenance.schema_version
+            ));
+        }
+        if provenance.commit_sha != commit_sha || provenance.version != version {
+            return Err(format!(
+                "mixed release provenance in {}: expected {commit_sha}/{version}, got {}/{}",
+                provenance_path.display(),
+                provenance.commit_sha,
+                provenance.version
+            ));
+        }
+        let target = NativeTarget::parse(&provenance.target)?;
+        if !validated_targets.insert(target) {
+            return Err(format!("duplicate provenance target: {}", target.as_str()));
+        }
+        let expected_archive = target.archive_name(version);
+        if provenance.archive != expected_archive {
+            return Err(format!(
+                "provenance archive mismatch for {}: expected {expected_archive}, got {}",
+                target.as_str(),
+                provenance.archive
+            ));
+        }
+        let parent = provenance_path
+            .parent()
+            .ok_or_else(|| "provenance file has no parent directory".to_string())?;
+        let archive_path = parent.join(&expected_archive);
+        let sidecar_path = parent.join(format!("{expected_archive}.sha256"));
+        let actual_sha = sha256_file(&archive_path)?;
+        if provenance.archive_sha256 != actual_sha {
+            return Err(format!(
+                "archive SHA256 does not match provenance for {expected_archive}"
+            ));
+        }
+        let expected_sidecar = format!("{actual_sha}  {expected_archive}");
+        let sidecar = fs::read_to_string(&sidecar_path)
+            .map_err(|error| format!("failed to read {}: {error}", sidecar_path.display()))?;
+        if sidecar.trim_end() != expected_sidecar {
+            return Err(format!("invalid SHA256 sidecar for {expected_archive}"));
+        }
+        let extracted = unique_temp_dir(&format!("validate_{}", target.as_str()))?;
+        let validation = extract_and_validate_native_archive(&archive_path, target, &extracted);
+        let _ = fs::remove_dir_all(&extracted);
+        validation?;
+        expected_files.extend([provenance_path, archive_path, sidecar_path]);
+    }
+
+    let all_targets: BTreeSet<NativeTarget> = NATIVE_TARGETS.into_iter().collect();
+    if validated_targets != all_targets {
+        return Err(format!(
+            "native artifact targets are incomplete: expected {all_targets:?}, got {validated_targets:?}"
+        ));
+    }
+    let actual_files: BTreeSet<PathBuf> = files.into_iter().collect();
+    if actual_files != expected_files {
+        return Err("artifact input contains unexpected or missing files".to_string());
+    }
+    println!("validated {} native artifact targets", NATIVE_TARGETS.len());
+    Ok(())
+}
+
+fn all_files_under(root: &Path) -> Vec<PathBuf> {
+    let mut files = Vec::new();
+    let Ok(entries) = fs::read_dir(root) else {
+        return files;
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            files.extend(all_files_under(&path));
+        } else {
+            files.push(path);
+        }
+    }
+    files
+}
+
+fn run_command(command: &mut Command, description: &str) -> Result<(), String> {
+    let status = command
+        .status()
+        .map_err(|error| format!("failed to run {description}: {error}"))?;
+    if status.success() {
+        Ok(())
+    } else {
+        Err(format!("{description} failed with status {status}"))
+    }
+}
+
+fn release_gate(args: Vec<String>) -> Result<(), String> {
+    let mut production = false;
+    let mut require_conda = false;
+    let mut confirmations = BTreeSet::new();
+    let mut index = 0;
+    while index < args.len() {
+        match args[index].as_str() {
+            "--production" => production = true,
+            "--require-conda" => require_conda = true,
+            "--confirm" => {
+                index += 1;
+                let flag = args
+                    .get(index)
+                    .ok_or_else(|| "--confirm requires a value".to_string())?;
+                confirmations.insert(flag.clone());
+            }
+            other => return Err(format!("unknown release-gate option: {other}")),
+        }
+        index += 1;
+    }
+
+    let mut issues = Vec::new();
+    check_security_policy(&mut issues);
+    check_rust_only_files(&mut issues);
+    check_cargo_metadata(&mut issues);
+    check_release_version_sync(&mut issues);
+    check_release_please_config(&mut issues);
+    check_workflows(&mut issues);
+    check_no_legacy_surfaces(&mut issues);
+    if require_conda {
+        check_conda_recipe(&mut issues);
+    }
+    if production {
+        for flag in CONFIRMATIONS {
+            if !confirmations.contains(*flag) {
+                issues.push(format!("FAIL: external-confirmation-missing: production release requires --confirm {flag}."));
+            }
+        }
+    }
+
+    if issues.is_empty() {
+        println!("release gate passed");
+        Ok(())
+    } else {
+        for issue in &issues {
+            eprintln!("{issue}");
+        }
+        Err("release gate failed".to_string())
+    }
+}
+
+fn check_workflows_command() -> Result<(), String> {
+    let mut issues = Vec::new();
+    check_workflows(&mut issues);
+    if issues.is_empty() {
+        println!("workflow policy passed");
+        Ok(())
+    } else {
+        for issue in &issues {
+            eprintln!("{issue}");
+        }
+        Err("workflow policy failed".to_string())
+    }
+}
+
+fn check_security_policy(issues: &mut Vec<String>) {
+    let path = Path::new("SECURITY.md");
+    let Ok(text) = fs::read_to_string(path) else {
+        issues.push("FAIL: security-policy-missing: SECURITY.md is required.".to_string());
+        return;
+    };
+    for required in ["Reporting a Vulnerability", "graph_query", "--allow-remote"] {
+        if !text.contains(required) {
+            issues.push(format!(
+                "FAIL: security-policy-incomplete: SECURITY.md must mention {required:?}."
+            ));
+        }
+    }
+}
+
+fn is_docs_helper_path(root: &Path, candidate: &Path) -> Result<bool, String> {
+    let relative = if candidate.is_absolute() {
+        let repository_root = root.canonicalize().map_err(|error| {
+            format!(
+                "cannot resolve repository root {} for the docs Python exception: {error}",
+                root.display()
+            )
+        })?;
+        let Ok(relative) = candidate.strip_prefix(&repository_root) else {
+            return Ok(false);
+        };
+        relative.to_path_buf()
+    } else {
+        candidate
+            .strip_prefix(root)
+            .unwrap_or(candidate)
+            .to_path_buf()
+    };
+
+    let mut components = Vec::new();
+    for component in relative.components() {
+        let std::path::Component::Normal(name) = component else {
+            return Ok(false);
+        };
+        components.push(name.to_os_string());
+    }
+    if components.len() < 2
+        || components[0].to_str() != Some("docs")
+        || relative.extension() != Some(std::ffi::OsStr::new("py"))
+    {
+        return Ok(false);
+    }
+
+    let repository_root = root.canonicalize().map_err(|error| {
+        format!(
+            "cannot resolve repository root {} for the docs Python exception: {error}",
+            root.display()
+        )
+    })?;
+    let mut path = repository_root.clone();
+    for (index, component) in components.iter().enumerate() {
+        path.push(component);
+        let metadata = fs::symlink_metadata(&path).map_err(|error| {
+            format!(
+                "cannot inspect docs Python exception path {}: {error}; no exception is granted",
+                path.display()
+            )
+        })?;
+        if metadata.file_type().is_symlink() {
+            return Err(format!(
+                "docs Python exception rejects symlink path {}; no exception is granted",
+                path.display()
+            ));
+        }
+        let is_last = index + 1 == components.len();
+        if (is_last && !metadata.is_file()) || (!is_last && !metadata.is_dir()) {
+            return Ok(false);
+        }
+    }
+
+    let docs = repository_root.join("docs");
+    let real_docs = docs.canonicalize().map_err(|error| {
+        format!(
+            "cannot resolve literal docs directory {}: {error}; no exception is granted",
+            docs.display()
+        )
+    })?;
+    if real_docs.parent() != Some(repository_root.as_path()) {
+        return Err(format!(
+            "docs directory {} does not resolve to the repository's literal docs directory; no exception is granted",
+            docs.display()
+        ));
+    }
+    let real_candidate = path.canonicalize().map_err(|error| {
+        format!(
+            "cannot resolve docs Python exception path {}: {error}; no exception is granted",
+            path.display()
+        )
+    })?;
+    if real_candidate.strip_prefix(&real_docs).is_err() {
+        return Err(format!(
+            "docs Python exception path {} resolves outside literal docs; no exception is granted",
+            path.display()
+        ));
+    }
+
+    Ok(true)
+}
+
+fn has_generated_component(path: &Path) -> bool {
+    path.components().any(|component| {
+        matches!(
+            component,
+            std::path::Component::Normal(name)
+                if matches!(name.to_str(), Some(".git" | "target" | ".codebaseGraph" | ".kwiki"))
+        )
+    })
+}
+
+fn check_rust_only_files(issues: &mut Vec<String>) {
+    for forbidden in ["pyproject.toml", "requirements-dev.txt"] {
+        if Path::new(forbidden).exists() {
+            issues.push(format!(
+                "FAIL: python-tooling-present: {forbidden} must not exist."
+            ));
+        }
+    }
+    for directory in ["scripts", "src/codebase_graph"] {
+        if Path::new(directory).exists() {
+            issues.push(format!(
+                "FAIL: python-surface-present: {directory} must not exist."
+            ));
+        }
+    }
+    for path in files_under(Path::new(".")) {
+        let relative = path.strip_prefix(".").unwrap_or(&path);
+        if has_generated_component(relative) {
+            continue;
+        }
+        if path.extension().is_some_and(|extension| extension == "py") {
+            let text_path = relative.to_string_lossy();
+            match is_docs_helper_path(Path::new("."), &path) {
+                Ok(true) => {}
+                Ok(false) => issues.push(format!(
+                    "FAIL: python-file-present: {} must not be maintained source.",
+                    text_path
+                )),
+                Err(error) => issues.push(format!(
+                    "FAIL: docs-python-exception-unavailable: {error}."
+                )),
+            }
+        }
+    }
+}
+
+fn check_cargo_metadata(issues: &mut Vec<String>) {
+    let Ok(cargo) = fs::read_to_string("Cargo.toml") else {
+        issues.push("FAIL: cargo-missing: root Cargo.toml is required.".to_string());
+        return;
+    };
+    for required in [
+        r#"name = "codebase-graph""#,
+        r#"name = "codebase_graph""#,
+        r#"name = "codebase-graph""#,
+        r#"license = "MIT""#,
+        r#"repository = "https://github.com/rabii-chaarani/codebaseGraph""#,
+        r#"readme = "README.md""#,
+    ] {
+        if !cargo.contains(required) {
+            issues.push(format!(
+                "FAIL: cargo-metadata-incomplete: Cargo.toml must contain {required}."
+            ));
+        }
+    }
+    let wiki_manifest = Path::new("crates/k-wiki/Cargo.toml");
+    match fs::read_to_string(wiki_manifest) {
+        Ok(wiki) => {
+            for required in [
+                r#"name = "k-wiki""#,
+                r#"name = "k_wiki""#,
+                r#"name = "k-wiki""#,
+                r#"license = "MIT""#,
+            ] {
+                if !wiki.contains(required) {
+                    issues.push(format!(
+                        "FAIL: cargo-metadata-incomplete: {} must contain {required}.",
+                        wiki_manifest.display()
+                    ));
+                }
+            }
+        }
+        Err(_) => issues.push(format!(
+            "FAIL: cargo-missing: {} is required.",
+            wiki_manifest.display()
+        )),
+    }
+}
+
+fn check_release_version_sync(issues: &mut Vec<String>) {
+    let root = match cargo_version(Path::new("Cargo.toml")) {
+        Ok(version) => version,
+        Err(error) => {
+            issues.push(format!(
+                "FAIL: cargo-version-missing: could not read root version: {error}."
+            ));
+            return;
+        }
+    };
+    let wiki = match cargo_version(Path::new("crates/k-wiki/Cargo.toml")) {
+        Ok(version) => version,
+        Err(error) => {
+            issues.push(format!(
+                "FAIL: cargo-version-missing: could not read k-wiki version: {error}."
+            ));
+            return;
+        }
+    };
+    if root != wiki {
+        issues.push(format!(
+            "FAIL: release-version-divergence: root Cargo.toml version {root} does not match crates/k-wiki/Cargo.toml version {wiki}."
+        ));
+    }
+    match dependency_version(Path::new("crates/k-wiki/Cargo.toml"), "codebase-graph") {
+        Ok(version) if version != root => issues.push(format!(
+            "FAIL: release-version-divergence: crates/k-wiki/Cargo.toml depends on codebase-graph {version} but root Cargo.toml is {root}."
+        )),
+        Ok(_) => {}
+        Err(error) => issues.push(format!(
+            "FAIL: cargo-version-missing: could not read crates/k-wiki dependency version: {error}."
+        )),
+    }
+}
+
+fn check_release_please_config(issues: &mut Vec<String>) {
+    let Ok(text) = fs::read_to_string("release-please-config.json") else {
+        issues.push(
+            "FAIL: release-please-config-missing: release-please-config.json is required."
+                .to_string(),
+        );
+        return;
+    };
+    let Ok(parsed) = serde_json::from_str::<Value>(&text) else {
+        issues.push(
+            "FAIL: release-please-config-invalid: release-please-config.json must be valid JSON."
+                .to_string(),
+        );
+        return;
+    };
+    let Some(extra_files) = parsed
+        .get("packages")
+        .and_then(|packages| packages.get("."))
+        .and_then(|root| root.get("extra-files"))
+        .and_then(Value::as_array)
+    else {
+        issues.push(
+            "FAIL: release-please-config-incomplete: root package must declare extra-files for crates/k-wiki/Cargo.toml."
+                .to_string(),
+        );
+        return;
+    };
+    let required = [
+        ("crates/k-wiki/Cargo.toml", "$.package.version"),
+        (
+            "crates/k-wiki/Cargo.toml",
+            "$.dependencies['codebase-graph'].version",
+        ),
+    ];
+    for (path, jsonpath) in required {
+        let present = extra_files.iter().any(|entry| {
+            entry.get("type").and_then(Value::as_str) == Some("toml")
+                && entry.get("path").and_then(Value::as_str) == Some(path)
+                && entry.get("jsonpath").and_then(Value::as_str) == Some(jsonpath)
+        });
+        if !present {
+            issues.push(format!(
+                "FAIL: release-please-config-incomplete: root package extra-files must include {path} with {jsonpath}."
+            ));
+        }
+    }
+}
+
+fn check_workflows(issues: &mut Vec<String>) {
+    let paths = [
+        ".github/workflows/ci.yml",
+        ".github/workflows/native.yml",
+        ".github/workflows/release.yml",
+    ];
+    let mut parsed = BTreeMap::new();
+    for workflow in paths {
+        let Ok(text) = fs::read_to_string(workflow) else {
+            issues.push(format!("FAIL: workflow-missing: {workflow} is required."));
+            continue;
+        };
+        let workflow_forbidden = [
+            concat!("actions/setup-", "python"),
+            concat!("python", " "),
+            concat!("p", "ip", " "),
+            concat!("py", "test"),
+            concat!("ru", "ff"),
+            concat!("p", "ip", "-audit"),
+            "scripts/",
+        ];
+        for forbidden in workflow_forbidden {
+            if text.contains(forbidden) {
+                issues.push(format!(
+                    "FAIL: workflow-python-tooling-present: {workflow} contains {forbidden}."
+                ));
+            }
+        }
+        match yaml_serde::from_str::<YamlValue>(&text) {
+            Ok(value) => {
+                parsed.insert(workflow, value);
+            }
+            Err(error) => issues.push(format!(
+                "FAIL: workflow-yaml-invalid: {workflow} is not valid YAML: {error}."
+            )),
+        }
+    }
+    if let (Some(ci), Some(native), Some(release)) = (
+        parsed.get(".github/workflows/ci.yml"),
+        parsed.get(".github/workflows/native.yml"),
+        parsed.get(".github/workflows/release.yml"),
+    ) {
+        check_workflow_policy(ci, native, release, issues);
+    }
+}
+
+#[cfg(test)]
+fn workflow_yaml_error(text: &str) -> Option<String> {
+    yaml_serde::from_str::<YamlValue>(text)
+        .err()
+        .map(|error| error.to_string())
+}
+
+fn check_workflow_policy(
+    ci: &YamlValue,
+    native: &YamlValue,
+    release: &YamlValue,
+    issues: &mut Vec<String>,
+) {
+    let pull_request_bases = BTreeSet::from([
+        "main",
+        "cod103-stack/cod-105",
+        "cod103-stack/cod-106",
+        "cod103-stack/cod-56",
+        "cod103-stack/cod-107",
+    ])
+    .into_iter()
+    .map(str::to_string)
+    .collect::<BTreeSet<_>>();
+    if !yaml_matches_string_set(
+        yaml_path(ci, &["on", "pull_request", "branches"]),
+        &pull_request_bases,
+    ) {
+        issues.push(
+            "FAIL: workflow-trigger-invalid: CI pull_request branches must contain exactly main and the four approved COD-103 stack bases.".to_string(),
+        );
+    }
+    let pull_request_types = BTreeSet::from(["opened", "synchronize", "reopened", "edited"])
+        .into_iter()
+        .map(str::to_string)
+        .collect();
+    if !yaml_matches_string_set(
+        yaml_path(ci, &["on", "pull_request", "types"]),
+        &pull_request_types,
+    ) {
+        issues.push(
+            "FAIL: workflow-trigger-invalid: CI pull_request activities must be opened, synchronize, reopened, and edited.".to_string(),
+        );
+    }
+    let ci_events = yaml_mapping_key_set(yaml_path(ci, &["on"])).unwrap_or_default();
+    if ci_events.contains("pull_request_target") {
+        issues.push(
+            "FAIL: workflow-privileged-pr-event: CI must not use pull_request_target.".to_string(),
+        );
+    }
+    let push_branches = BTreeSet::from(["main".to_string()]);
+    if !yaml_matches_string_set(yaml_path(ci, &["on", "push", "branches"]), &push_branches) {
+        issues.push(
+            "FAIL: workflow-trigger-invalid: CI push branches must contain only main.".to_string(),
+        );
+    }
+    if yaml_path(ci, &["jobs", "native", "uses"]).and_then(YamlValue::as_str)
+        != Some("./.github/workflows/native.yml")
+    {
+        issues.push(
+            "FAIL: workflow-native-reuse-missing: CI native job must call native.yml.".to_string(),
+        );
+    }
+    let supported: BTreeSet<String> = NATIVE_TARGETS
+        .iter()
+        .map(|t| t.as_str().to_owned())
+        .collect();
+    let ci_targets = yaml_path(ci, &["jobs", "native", "strategy", "matrix", "include"])
+        .and_then(YamlValue::as_sequence);
+    let actual: BTreeSet<String> = ci_targets
+        .into_iter()
+        .flatten()
+        .filter_map(|t| {
+            t.get("target")
+                .and_then(YamlValue::as_str)
+                .map(str::to_owned)
+        })
+        .collect();
+    if actual != supported
+        || ci_targets.is_none_or(|targets| {
+            targets.len() != supported.len()
+                || targets
+                    .iter()
+                    .any(|t| t.get("run-tests").and_then(YamlValue::as_bool) != Some(true))
+        })
+    {
+        issues.push(
+            "FAIL: native-target-support: CI must test exactly macos-arm64 and windows-x86_64."
+                .into(),
+        );
+    }
+    if yaml_path(
+        release,
+        &["jobs", "rebuild-artifacts", "strategy", "matrix", "target"],
+    )
+    .and_then(yaml_string_set)
+        != Some(supported)
+    {
+        issues.push("FAIL: native-target-support: release rebuilds must contain exactly macos-arm64 and windows-x86_64.".into());
+    }
+    let required_needs = yaml_path(ci, &["jobs", "required", "needs"])
+        .and_then(yaml_string_set)
+        .unwrap_or_default();
+    let expected_needs: BTreeSet<String> =
+        ["fmt", "clippy", "supply-chain", "publish-dry-run", "native"]
+            .into_iter()
+            .map(str::to_string)
+            .collect();
+    if required_needs != expected_needs {
+        issues.push(
+            "FAIL: workflow-required-incomplete: required job must depend on every mandatory CI job."
+                .to_string(),
+        );
+    }
+    let ci_publish = yaml_path(ci, &["jobs", "publish-dry-run"]).unwrap_or(&YamlValue::Null);
+    if !yaml_contains_string(ci_publish, "cargo run -p xtask --locked -- release-gate") {
+        issues.push(
+            "FAIL: repository-release-gate-missing: CI must check repository release policy."
+                .to_string(),
+        );
+    }
+    if !yaml_contains_string(ci_publish, "cargo package --locked --no-verify")
+        || !yaml_contains_string(ci_publish, "verify-crate-size")
+    {
+        issues.push(
+            "FAIL: crates-io-package-size-gate-missing: CI must reject .crate files above the registry limit."
+                .to_string(),
+        );
+    }
+    if yaml_path(ci, &["jobs", "required", "if"]).and_then(YamlValue::as_str)
+        != Some("${{ always() }}")
+    {
+        issues.push(
+            "FAIL: workflow-required-condition: required job must use if: always().".to_string(),
+        );
+    }
+
+    for input in [
+        "target",
+        "source-sha",
+        "run-tests",
+        "upload-artifact",
+        "artifact-retention-days",
+    ] {
+        if yaml_path(native, &["on", "workflow_call", "inputs", input]).is_none() {
+            issues.push(format!(
+                "FAIL: workflow-native-input-missing: native workflow input {input} is required."
+            ));
+        }
+    }
+    if yaml_path(native, &["jobs", "native", "permissions", "contents"]).and_then(YamlValue::as_str)
+        != Some("read")
+    {
+        issues.push(
+            "FAIL: workflow-native-permissions: native workflow must use contents: read."
+                .to_string(),
+        );
+    }
+    if yaml_path(native, &["jobs", "tests", "if"]).and_then(YamlValue::as_str) != Some("inputs.run-tests")
+        || yaml_path(native, &["jobs", "tests", "strategy", "fail-fast"]).and_then(YamlValue::as_bool) != Some(false)
+        || yaml_path(native, &["jobs", "tests", "strategy", "matrix", "cohort"]).and_then(yaml_string_set)
+            != Some(BTreeSet::from(["unit".to_string(), "generation".to_string(), "integration".to_string()]))
+        || yaml_path(native, &["jobs", "tests", "strategy", "matrix", "shard"]).and_then(YamlValue::as_str)
+            != Some("${{ fromJSON(inputs.target == 'windows-x86_64' && '[1,2,3,4]' || '[0]') }}")
+        || yaml_path(native, &["jobs", "native", "needs"]).and_then(YamlValue::as_str) != Some("tests")
+        || yaml_path(native, &["jobs", "native", "if"]).and_then(YamlValue::as_str)
+            != Some("${{ always() && !cancelled() && (!inputs.run-tests || needs.tests.result == 'success') }}")
+    {
+        issues.push("FAIL: native-test-gate: require all three macOS cohorts and successful tests before artifact production; retain build-only callers.".into());
+    }
+
+    if yaml_path(release, &["on", "push"]).is_some() {
+        issues.push(
+            "FAIL: release-direct-push-trigger: release must wait for the completed CI workflow."
+                .to_string(),
+        );
+    }
+    for (field, expected) in [
+        ("workflows", BTreeSet::from(["CI".to_string()])),
+        ("types", BTreeSet::from(["completed".to_string()])),
+        ("branches", BTreeSet::from(["main".to_string()])),
+    ] {
+        let actual = yaml_path(release, &["on", "workflow_run", field])
+            .and_then(yaml_string_set)
+            .unwrap_or_default();
+        if actual != expected {
+            issues.push(format!(
+                "FAIL: release-workflow-run-trigger: release workflow_run {field} is invalid."
+            ));
+        }
+    }
+    if yaml_path(release, &["on", "workflow_dispatch"]).is_none() {
+        issues.push(
+            "FAIL: release-manual-trigger-missing: release must retain workflow_dispatch recovery."
+                .to_string(),
+        );
+    }
+    if yaml_path(release, &["concurrency", "group"]).and_then(YamlValue::as_str)
+        != Some("release-main")
+        || yaml_path(release, &["concurrency", "cancel-in-progress"]).and_then(YamlValue::as_bool)
+            != Some(false)
+        || yaml_path(release, &["concurrency", "queue"]).and_then(YamlValue::as_str) != Some("max")
+    {
+        issues.push(
+            "FAIL: release-concurrency-invalid: automatic releases must serialize as release-main without cancellation."
+                .to_string(),
+        );
+    }
+
+    let release_target =
+        yaml_path(release, &["jobs", "release-target"]).unwrap_or(&YamlValue::Null);
+    for marker in [
+        "github.event_name == 'workflow_run'",
+        "github.event.workflow_run.event == 'push'",
+        "github.event.workflow_run.head_branch == 'main'",
+        "github.event.workflow_run.conclusion == 'success'",
+    ] {
+        if !yaml_path(release_target, &["if"]).is_some_and(|v| yaml_contains_string(v, marker)) {
+            issues.push(format!(
+                "FAIL: release-success-guard-missing: target must require {marker}."
+            ));
+        }
+    }
+    let verified = yaml_step_by_id(release_target, "verified").unwrap_or(&YamlValue::Null);
+    for (field, expected) in [
+        (
+            "ci-run-id",
+            "${{ github.event.workflow_run.id || inputs.resume-ci-run }}",
+        ),
+        ("expected-sha", "${{ github.event.workflow_run.head_sha }}"),
+        (
+            "require-release",
+            "${{ github.event_name == 'workflow_dispatch' }}",
+        ),
+    ] {
+        if yaml_path(verified, &["with", field]).and_then(YamlValue::as_str) != Some(expected) {
+            issues.push(format!(
+                "FAIL: release-trigger-binding-missing: verified {field} must bind {expected}."
+            ));
+        }
+    }
+    if yaml_path(verified, &["uses"]).and_then(YamlValue::as_str)
+        != Some("./.github/actions/verified-release")
+    {
+        issues.push(
+            "FAIL: release-trigger-binding-missing: use the shared exact-release verifier.".into(),
+        );
+    }
+    let release_please =
+        yaml_path(release, &["jobs", "release-please"]).unwrap_or(&YamlValue::Null);
+    let action = yaml_step_by_id(release_please, "release").unwrap_or(&YamlValue::Null);
+    if yaml_path(action, &["uses"]).and_then(YamlValue::as_str)
+        != Some("googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7")
+    {
+        issues
+            .push("FAIL: release-please-action-missing: retain the pinned proposal action.".into());
+    }
+    if yaml_path(action, &["with", "skip-github-release"]).and_then(YamlValue::as_bool)
+        != Some(true)
+    {
+        issues.push(
+            "FAIL: release-publication-gate-missing: release-please must never create tags.".into(),
+        );
+    }
+    let publisher =
+        yaml_path(release, &["jobs", "publish-release-assets"]).unwrap_or(&YamlValue::Null);
+    let recheck = yaml_step_by_id(publisher, "verified").unwrap_or(&YamlValue::Null);
+    if yaml_path(recheck, &["uses"]).and_then(YamlValue::as_str)
+        != Some("./.github/actions/verified-release")
+        || yaml_path(recheck, &["with", "require-release"]).and_then(YamlValue::as_str)
+            != Some("true")
+        || yaml_path(recheck, &["with", "expected-sha"]).and_then(YamlValue::as_str)
+            != Some("${{ needs.release-target.outputs.source-sha }}")
+        || yaml_path(recheck, &["with", "ci-run-id"]).and_then(YamlValue::as_str)
+            != Some("${{ needs.release-target.outputs.ci-run-id }}")
+    {
+        issues.push("FAIL: release-publication-revalidation-missing: recheck exact CI and release identity before mutation.".into());
+    }
+    let create = yaml_step_by_name(publisher, "Create only the verified release")
+        .unwrap_or(&YamlValue::Null);
+    for marker in [
+        "tag_sha",
+        "SOURCE_SHA",
+        "VERIFIED_PR",
+        "RELEASE_PR",
+        "target_commitish: .source_sha",
+        "git/refs",
+        "make_latest",
+    ] {
+        if !yaml_contains_string(create, marker) {
+            issues.push(format!(
+                "FAIL: release-exact-publisher-missing: creation must preserve {marker}."
+            ));
+        }
+    }
+    for marker in [
+        "always()",
+        "needs.validate-artifacts.result == 'success'",
+        "needs.release-target.outputs.publish_assets == 'true'",
+    ] {
+        if !yaml_path(publisher, &["if"]).is_some_and(|v| yaml_contains_string(v, marker)) {
+            issues.push(format!(
+                "FAIL: release-publication-gate-missing: publisher requires {marker}."
+            ));
+        }
+    }
+    let crate_job = yaml_path(release, &["jobs", "publish-crate"]).unwrap_or(&YamlValue::Null);
+    for marker in [
+        "always()",
+        "needs.publish-release-assets.result == 'success'",
+        "needs.release-target.outputs.automatic == 'true'",
+        "needs.release-target.outputs.publish_assets == 'true'",
+    ] {
+        if !yaml_path(crate_job, &["if"]).is_some_and(|v| yaml_contains_string(v, marker)) {
+            issues.push(format!(
+                "FAIL: release-publication-gate-missing: crate job requires {marker}."
+            ));
+        }
+    }
+    for job in [
+        release_target,
+        publisher,
+        yaml_path(release, &["jobs", "ci-gate"]).unwrap_or(&YamlValue::Null),
+    ] {
+        if yaml_contains_string(job, "github.sha") {
+            issues.push(
+                "FAIL: release-github-sha-forbidden: source identity must come from verified CI."
+                    .into(),
+            );
+        }
+    }
+    let proposal = yaml_step_by_id(release_please, "proposal").unwrap_or(&YamlValue::Null);
+    for marker in [
+        "main_sha",
+        "actions/workflows/ci.yml/runs",
+        "autorelease: pending",
+        "::error::",
+        "resume-ci-run",
+    ] {
+        if !yaml_contains_string(proposal, marker) {
+            issues.push(format!(
+                "FAIL: release-proposal-gate-missing: proposal preflight requires {marker}."
+            ));
+        }
+    }
+
+    if yaml_path(release, &["jobs", "ci-gate", "permissions", "actions"])
+        .and_then(YamlValue::as_str)
+        != Some("read")
+        || yaml_path(release, &["jobs", "ci-gate", "outputs", "ci-run-id"]).is_none()
+    {
+        issues.push(
+            "FAIL: release-exact-sha-gate-missing: release must resolve an exact-SHA CI run with actions: read."
+                .to_string(),
+        );
+    }
+    let ci_gate = yaml_path(release, &["jobs", "ci-gate"]).unwrap_or(&YamlValue::Null);
+    let ci_gate_step = yaml_step_by_id(ci_gate, "wait").unwrap_or(&YamlValue::Null);
+    for (field, expected) in [
+        ("AUTOMATIC", "${{ needs.release-target.outputs.automatic }}"),
+        (
+            "REQUESTED_CI_RUN_ID",
+            "${{ needs.release-target.outputs.ci-run-id }}",
+        ),
+    ] {
+        if yaml_path(ci_gate_step, &["env", field]).and_then(YamlValue::as_str) != Some(expected) {
+            issues.push(format!(
+                "FAIL: release-trigger-run-validation-missing: CI gate {field} must bind {expected}."
+            ));
+        }
+    }
+    for marker in [
+        "if [[ \"$AUTOMATIC\" == 'true' ]]",
+        "actions/runs/$REQUESTED_CI_RUN_ID",
+        ".github/workflows/ci.yml",
+        ".event == \"push\"",
+        ".head_branch == \"main\"",
+        ".status == \"completed\"",
+        ".conclusion == \"success\"",
+    ] {
+        if !yaml_path(ci_gate_step, &["run"]).is_some_and(|run| yaml_contains_string(run, marker)) {
+            issues.push(format!(
+                "FAIL: release-trigger-run-validation-missing: exact triggering CI validation must contain {marker}."
+            ));
+        }
+    }
+    let select_artifacts =
+        yaml_path(release, &["jobs", "select-artifacts"]).unwrap_or(&YamlValue::Null);
+    let select_step = yaml_step_by_id(select_artifacts, "select").unwrap_or(&YamlValue::Null);
+    if yaml_path(select_step, &["env", "AUTOMATIC"]).and_then(YamlValue::as_str)
+        != Some("${{ needs.release-target.outputs.automatic }}")
+        || !yaml_path(select_step, &["run"]).is_some_and(|run| {
+            yaml_contains_string(run, "\"$AUTOMATIC\" == 'false'")
+                && yaml_contains_string(run, "rebuild-if-missing")
+        })
+    {
+        issues.push(
+            "FAIL: release-automatic-rebuild: all-target rebuild recovery must remain manual-only."
+                .to_string(),
+        );
+    }
+    if yaml_path(release, &["jobs", "rebuild-artifacts", "uses"]).and_then(YamlValue::as_str)
+        != Some("./.github/workflows/native.yml")
+    {
+        issues.push(
+            "FAIL: release-recovery-reuse-missing: recovery must call native.yml.".to_string(),
+        );
+    }
+    let Some(jobs) = yaml_path(release, &["jobs"]).and_then(YamlValue::as_mapping) else {
+        issues.push("FAIL: release-jobs-missing: release workflow jobs are required.".to_string());
+        return;
+    };
+    let publishers: Vec<&YamlValue> = jobs
+        .values()
+        .filter(|job| yaml_contains_string(job, "gh release upload"))
+        .collect();
+    if publishers.len() != 1
+        || !yaml_contains_string(
+            yaml_path(release, &["jobs", "publish-release-assets"]).unwrap_or(&YamlValue::Null),
+            "gh release upload",
+        )
+    {
+        issues.push(
+            "FAIL: release-publisher-count: exactly one publish-release-assets job may upload release assets."
+                .to_string(),
+        );
+    }
+    if yaml_path(
+        release,
+        &["jobs", "publish-release-assets", "permissions", "contents"],
+    )
+    .and_then(YamlValue::as_str)
+        != Some("write")
+        || yaml_path(
+            release,
+            &["jobs", "publish-release-assets", "environment", "name"],
+        )
+        .and_then(YamlValue::as_str)
+            != Some("cargo")
+    {
+        issues.push(
+            "FAIL: release-publisher-permissions: the single publisher must use contents: write in cargo."
+                .to_string(),
+        );
+    }
+    let publish_crate = yaml_path(release, &["jobs", "publish-crate"]).unwrap_or(&YamlValue::Null);
+    if !yaml_contains_string(publish_crate, "cargo publish --dry-run --locked")
+        || !yaml_contains_string(publish_crate, "cargo publish --locked")
+    {
+        issues.push(
+            "FAIL: release-publish-gate-missing: crate publication must retain dry-run and publish steps."
+                .to_string(),
+        );
+    }
+    if !yaml_contains_string(publish_crate, "cargo package --locked --no-verify")
+        || !yaml_contains_string(publish_crate, "verify-crate-size")
+    {
+        issues.push(
+            "FAIL: crates-io-package-size-gate-missing: Release must recheck the .crate file before upload."
+                .to_string(),
+        );
+    }
+    let publish_step =
+        yaml_step_by_name(publish_crate, "Publish crates.io package").unwrap_or(&YamlValue::Null);
+    let publish_run = yaml_path(publish_step, &["run"])
+        .and_then(YamlValue::as_str)
+        .unwrap_or_default();
+    if yaml_path(publish_step, &["env", "CRATE_NAME"]).and_then(YamlValue::as_str)
+        != Some("codebase-graph")
+        || yaml_path(publish_step, &["env", "CRATE_VERSION"]).and_then(YamlValue::as_str)
+            != Some("${{ needs.release-target.outputs.version }}")
+        || publish_run.matches("if version_is_published").count() < 2
+        || [
+            "https://crates.io/api/v1/crates/$CRATE_NAME/$CRATE_VERSION",
+            "max_attempts=4",
+            "for (( attempt=1; attempt<=max_attempts; attempt++ ))",
+            "sleep_seconds=$((15 * attempt))",
+        ]
+        .iter()
+        .any(|marker| !publish_run.contains(marker))
+    {
+        issues.push(
+            "FAIL: release-publish-retry-missing: crate publication must use bounded, registry-aware retries."
+                .to_string(),
+        );
+    }
+}
+
+fn yaml_path<'a>(value: &'a YamlValue, path: &[&str]) -> Option<&'a YamlValue> {
+    let mut current = value;
+    for key in path {
+        current = current
+            .as_mapping()?
+            .get(YamlValue::String((*key).to_string()))?;
+    }
+    Some(current)
+}
+
+fn yaml_string_set(value: &YamlValue) -> Option<BTreeSet<String>> {
+    value.as_sequence().map(|items| {
+        items
+            .iter()
+            .filter_map(YamlValue::as_str)
+            .map(str::to_string)
+            .collect()
+    })
+}
+
+fn yaml_matches_string_set(value: Option<&YamlValue>, expected: &BTreeSet<String>) -> bool {
+    value.and_then(YamlValue::as_sequence).is_some_and(|items| {
+        items.len() == expected.len()
+            && items.iter().all(YamlValue::is_string)
+            && yaml_string_set(value.unwrap()) == Some(expected.clone())
+    })
+}
+
+fn yaml_mapping_key_set(value: Option<&YamlValue>) -> Option<BTreeSet<String>> {
+    value?
+        .as_mapping()?
+        .keys()
+        .map(|key| key.as_str().map(str::to_string))
+        .collect()
+}
+
+fn yaml_step_by_id<'a>(job: &'a YamlValue, id: &str) -> Option<&'a YamlValue> {
+    yaml_path(job, &["steps"])?
+        .as_sequence()?
+        .iter()
+        .find(|step| yaml_path(step, &["id"]).and_then(YamlValue::as_str) == Some(id))
+}
+
+fn yaml_step_by_name<'a>(job: &'a YamlValue, name: &str) -> Option<&'a YamlValue> {
+    yaml_path(job, &["steps"])?
+        .as_sequence()?
+        .iter()
+        .find(|step| yaml_path(step, &["name"]).and_then(YamlValue::as_str) == Some(name))
+}
+
+fn yaml_contains_string(value: &YamlValue, needle: &str) -> bool {
+    match value {
+        YamlValue::String(text) => text.contains(needle),
+        YamlValue::Sequence(items) => items.iter().any(|item| yaml_contains_string(item, needle)),
+        YamlValue::Mapping(mapping) => mapping.iter().any(|(key, value)| {
+            yaml_contains_string(key, needle) || yaml_contains_string(value, needle)
+        }),
+        YamlValue::Tagged(tagged) => yaml_contains_string(&tagged.value, needle),
+        _ => false,
+    }
+}
+
+fn check_no_legacy_surfaces(issues: &mut Vec<String>) {
+    let old_crate_name = ["codebase", "graph", "native"].join("_");
+    let old_builder = format!("{old_crate_name}_graph_builder");
+    let old_workspace_crate = ["rust", "crates", &old_crate_name, "Cargo.toml"].join("/");
+    for forbidden in [
+        concat!("src/", "legacy", "_cli.rs"),
+        "src/ffi.rs",
+        &format!("src/bin/{old_builder}.rs"),
+        concat!("rust", "/Cargo.toml"),
+        &old_workspace_crate,
+    ] {
+        if Path::new(forbidden).exists() {
+            issues.push(format!(
+                "FAIL: legacy-surface-present: {forbidden} must not exist."
+            ));
+        }
+    }
+    for path in [
+        "Cargo.toml",
+        "src/lib.rs",
+        "src/adapters/cli/mod.rs",
+        "src/ladybug_writer.rs",
+    ] {
+        let text = fs::read_to_string(path).unwrap_or_default();
+        let forbidden_tokens = [
+            concat!("py", "o3"),
+            concat!("python", "-extension"),
+            concat!("cdy", "lib"),
+            concat!("legacy", "-protocol"),
+            concat!("legacy", "_cli"),
+            old_builder.as_str(),
+        ];
+        for forbidden in forbidden_tokens {
+            if text.contains(forbidden) {
+                issues.push(format!(
+                    "FAIL: legacy-token-present: {path} contains {forbidden}."
+                ));
+            }
+        }
+    }
+}
+
+fn check_conda_recipe(issues: &mut Vec<String>) {
+    let Ok(recipe) = fs::read_to_string("conda-forge/recipe/meta.yaml") else {
+        issues.push(
+            "FAIL: conda-recipe-missing: conda-forge/recipe/meta.yaml is required.".to_string(),
+        );
+        return;
+    };
+    for placeholder in [
+        "PUT_RELEASE_VERSION_HERE",
+        "PUT_RELEASE_ARCHIVE_SHA256_HERE",
+        "PUT_SPDX_LICENSE_ID_HERE",
+    ] {
+        if recipe.contains(placeholder) {
+            issues.push(format!(
+                "FAIL: conda-placeholder: conda recipe still contains {placeholder}."
+            ));
+        }
+    }
+    if recipe.contains(concat!("rust", "/Cargo.toml")) {
+        issues.push(
+            "FAIL: conda-stale-path: conda recipe must build from root Cargo.toml.".to_string(),
+        );
+    }
+}
+
+fn smoke_artifact(executable: &Path) -> Result<(), String> {
+    if !executable.exists() {
+        return Err(format!("binary does not exist: {}", executable.display()));
+    }
+    let executable = executable
+        .canonicalize()
+        .map_err(|error| error.to_string())?;
+    let temp = unique_temp_dir("codebase_graph_smoke")?;
+    fs::create_dir_all(temp.join("sample")).map_err(|error| error.to_string())?;
+    fs::write(
+        temp.join("sample/service.py"),
+        "def helper():\n    return 1\n",
+    )
+    .map_err(|error| error.to_string())?;
+
+    run_checked_in(&executable, ["--help"], &temp)?;
+    let schema = run_capture_in(&executable, ["schema", "--json"], &temp)?;
+    serde_json::from_slice::<Value>(&schema.stdout)
+        .map_err(|error| format!("schema did not emit JSON: {error}"))?;
+    run_checked_in(
+        &executable,
+        [
+            "install",
+            "--repo-root",
+            temp.join("sample").to_str().ok_or("invalid temp path")?,
+            "--mcp-client",
+            "none",
+            "--instructions-target",
+            "skip",
+            "--dry-run",
+            "--json",
+        ],
+        &temp,
+    )?;
+    run_checked_in(
+        &executable,
+        [
+            "install",
+            "--repo-root",
+            temp.join("sample").to_str().ok_or("invalid temp path")?,
+            "--mcp-client",
+            "none",
+            "--instructions-target",
+            "skip",
+            "--json",
+        ],
+        &temp,
+    )?;
+    run_checked_in(
+        &executable,
+        [
+            "check-health",
+            "--repo-root",
+            temp.join("sample").to_str().ok_or("invalid temp path")?,
+            "--json",
+        ],
+        &temp,
+    )?;
+    run_checked_in(
+        &executable,
+        [
+            "codebase-search",
+            "helper",
+            "--repo-root",
+            temp.join("sample").to_str().ok_or("invalid temp path")?,
+            "--no-refresh",
+        ],
+        &temp,
+    )?;
+    if cfg!(target_os = "macos") {
+        verify_bundled_extension_smoke(&executable, &temp)?;
+    }
+    smoke_mcp_stdio(&executable, &temp.join("sample"), &temp)?;
+    Ok(())
+}
+
+fn verify_bundled_extension_smoke(executable: &Path, fixture: &Path) -> Result<(), String> {
+    let sample = fixture.join("sample");
+    let database = fixture.join("extension-smoke.ldb");
+    let manifest = fixture.join("extension-manifest.json");
+    run_checked_in(
+        executable,
+        [
+            "build",
+            "--repo-root",
+            sample.to_str().ok_or("invalid sample path")?,
+            "--db",
+            database.to_str().ok_or("invalid database path")?,
+            "--manifest",
+            manifest.to_str().ok_or("invalid manifest path")?,
+            "--no-git",
+            "--json",
+        ],
+        fixture,
+    )?;
+    let search = run_capture_in(
+        executable,
+        [
+            "codebase-search",
+            "helper",
+            "--repo-root",
+            sample.to_str().ok_or("invalid sample path")?,
+            "--db",
+            database.to_str().ok_or("invalid database path")?,
+            "--manifest",
+            manifest.to_str().ok_or("invalid manifest path")?,
+            "--no-refresh",
+            "--json",
+        ],
+        fixture,
+    )?;
+    let search: Value =
+        serde_json::from_slice(&search.stdout).map_err(|error| error.to_string())?;
+    if search["results"].as_array().is_none_or(Vec::is_empty) {
+        return Err("installed graph search did not find the smoke fixture".into());
+    }
+
+    // A legacy manifest selects Ladybug FTS rather than the current sidecar backend.
+    let mut legacy: Value =
+        serde_json::from_slice(&fs::read(&manifest).map_err(|error| error.to_string())?)
+            .map_err(|error| error.to_string())?;
+    legacy["search_backend"] = Value::Null;
+    let legacy_manifest = fixture.join("legacy-extension-manifest.json");
+    fs::write(
+        &legacy_manifest,
+        serde_json::to_vec(&legacy).map_err(|error| error.to_string())?,
+    )
+    .map_err(|error| error.to_string())?;
+    run_checked_in(
+        executable,
+        [
+            "codebase-search",
+            "helper",
+            "--repo-root",
+            sample.to_str().ok_or("invalid sample path")?,
+            "--db",
+            database.to_str().ok_or("invalid database path")?,
+            "--manifest",
+            legacy_manifest
+                .to_str()
+                .ok_or("invalid legacy manifest path")?,
+            "--no-refresh",
+            "--json",
+        ],
+        fixture,
+    )?;
+    let cache = fixture.join("smoke-home/.lbdb/extension/0.19.0/osx_arm64");
+    for (extension, digest) in [
+        (
+            "json",
+            "e6482a025de31d662ee4b32a39c991706b8cc3c2ec49673ef5d8ce45cc23ce7a",
+        ),
+        (
+            "fts",
+            "83ae4be9fa718577ca971f27ff890b3aea5789c9dd908784e28f52917febbfdb",
+        ),
+    ] {
+        let path = cache
+            .join(extension)
+            .join(format!("lib{extension}.lbug_extension"));
+        if sha256_file(&path)? != digest {
+            return Err(format!(
+                "installed smoke did not seed the official {extension} bytes"
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn smoke_wiki_artifact(executable: &Path) -> Result<(), String> {
+    if !executable.exists() {
+        return Err(format!("binary does not exist: {}", executable.display()));
+    }
+    let executable = executable.canonicalize().map_err(|error| {
+        format!(
+            "failed to resolve wiki binary {}: {error}",
+            executable.display()
+        )
+    })?;
+    let temp = unique_temp_dir("k_wiki_smoke")?;
+    let bundle = temp.join("bundle");
+    let concepts = bundle.join("concepts");
+    let site = temp.join("site");
+    fs::create_dir_all(&concepts).map_err(|error| error.to_string())?;
+    fs::write(
+        bundle.join("index.md"),
+        "---\nokf_version: \"0.1\"\ntitle: Smoke Bundle\n---\n# Smoke Bundle\n",
+    )
+    .map_err(|error| error.to_string())?;
+    fs::write(
+        concepts.join("welcome.md"),
+        "---\ntype: guide\ntitle: Welcome\ndescription: Packaged wiki smoke fixture.\ntags: [smoke]\n---\n# Welcome\n\nPackaged wiki smoke.\n",
+    )
+    .map_err(|error| error.to_string())?;
+    let repo_root = temp.join("repo");
+    let knowledge_root = repo_root.join("knowledge");
+    fs::create_dir_all(&knowledge_root).map_err(|error| error.to_string())?;
+    fs::write(
+        knowledge_root.join("index.md"),
+        "---\nokf_version: \"0.1\"\ntitle: Repo Knowledge\n---\n# Repo Knowledge\n",
+    )
+    .map_err(|error| error.to_string())?;
+
+    let bundle_text = bundle.to_str().ok_or("invalid bundle path")?;
+    let site_text = site.to_str().ok_or("invalid site path")?;
+    assert_version_surface(&executable, Path::new("crates/k-wiki/Cargo.toml"), &temp)?;
+    run_checked_in(&executable, ["--help"], &temp)?;
+    run_checked_in(&executable, ["validate", bundle_text, "--json"], &temp)?;
+    run_checked_in(
+        &executable,
+        ["build", bundle_text, "--out", site_text],
+        &temp,
+    )?;
+    assert_wiki_codex_project_install(&executable, &repo_root, &temp)?;
+    if !site.join("index.html").is_file() {
+        return Err("wiki artifact smoke did not generate index.html".to_string());
+    }
+    smoke_wiki_http(&executable, &bundle, &temp)?;
+    smoke_wiki_mcp_stdio(&executable, &bundle, &temp)?;
+    Ok(())
+}
+
+fn smoke_wiki_http(executable: &Path, bundle: &Path, current_dir: &Path) -> Result<(), String> {
+    let mut child = smoke_command(executable, current_dir)?
+        .args(["serve"])
+        .arg(bundle)
+        .args(["--host", "127.0.0.1", "--port", "0"])
+        .current_dir(current_dir)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(|error| format!("failed to spawn wiki preview: {error}"))?;
+
+    let result = (|| {
+        let stderr = child.stderr.take().ok_or("missing wiki preview stderr")?;
+        let mut reader = BufReader::new(stderr);
+        let mut line = String::new();
+        reader
+            .read_line(&mut line)
+            .map_err(|error| format!("failed to read wiki preview address: {error}"))?;
+        let address = line
+            .trim()
+            .strip_prefix("Knowledge Wiki preview: http://")
+            .ok_or_else(|| format!("wiki preview did not report its address: {line:?}"))?;
+
+        for path in ["/healthz", "/", "/assets/wiki.css"] {
+            let response = wiki_http_get(address, path)?;
+            if !response.starts_with("HTTP/1.1 200") {
+                return Err(format!(
+                    "wiki preview returned a non-success response for {path}: {}",
+                    response.lines().next().unwrap_or_default()
+                ));
+            }
+        }
+        Ok(())
+    })();
+
+    let _ = child.kill();
+    let _ = child.wait();
+    result
+}
+
+fn wiki_http_get(address: &str, path: &str) -> Result<String, String> {
+    let mut stream = TcpStream::connect(address)
+        .map_err(|error| format!("failed to connect to wiki preview: {error}"))?;
+    stream
+        .set_read_timeout(Some(Duration::from_secs(5)))
+        .map_err(|error| error.to_string())?;
+    stream
+        .set_write_timeout(Some(Duration::from_secs(5)))
+        .map_err(|error| error.to_string())?;
+    write!(
+        stream,
+        "GET {path} HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n"
+    )
+    .map_err(|error| error.to_string())?;
+    let mut response = String::new();
+    stream
+        .read_to_string(&mut response)
+        .map_err(|error| error.to_string())?;
+    Ok(response)
+}
+
+fn smoke_wiki_mcp_stdio(
+    executable: &Path,
+    bundle: &Path,
+    current_dir: &Path,
+) -> Result<(), String> {
+    let mut child = smoke_command(executable, current_dir)?
+        .arg("mcp")
+        .arg(bundle)
+        .current_dir(current_dir)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(|error| format!("failed to spawn wiki MCP server: {error}"))?;
+    {
+        let mut stdin = child.stdin.take().ok_or("missing wiki MCP stdin")?;
+        writeln!(
+            stdin,
+            "{}",
+            json!({
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "initialize",
+                "params": {"protocolVersion": "2025-11-25"}
+            })
+        )
+        .map_err(|error| error.to_string())?;
+        writeln!(
+            stdin,
+            "{}",
+            json!({"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}})
+        )
+        .map_err(|error| error.to_string())?;
+    }
+
+    let output = child
+        .wait_with_output()
+        .map_err(|error| error.to_string())?;
+    if !output.status.success() {
+        return Err(format!(
+            "wiki MCP smoke failed with status {}: {}",
+            output.status,
+            String::from_utf8_lossy(&output.stderr)
+        ));
+    }
+    let stdout = String::from_utf8(output.stdout).map_err(|error| error.to_string())?;
+    if !stdout.contains(r#""name":"Knowledge Wiki""#)
+        || !stdout.contains(r#""name":"wiki_get_concept""#)
+        || !stdout.contains(r#""name":"wiki_populate_page""#)
+        || !stdout.contains(r#""name":"wiki_validate""#)
+        || !stdout.contains(r#""name":"wiki_check_links""#)
+        || !stdout.contains(r#""name":"wiki_build""#)
+    {
+        return Err("wiki MCP smoke did not advertise the Knowledge Wiki schema".to_string());
+    }
+    Ok(())
+}
+
+fn assert_version_surface(
+    executable: &Path,
+    manifest: &Path,
+    fixture: &Path,
+) -> Result<(), String> {
+    let expected = cargo_version(manifest)?;
+    let output = run_capture_in(executable, ["--version"], fixture)?;
+    let stdout = String::from_utf8(output.stdout).map_err(|error| error.to_string())?;
+    let actual = stdout.trim();
+    let expected_line = format!("k-wiki {expected}");
+    if actual != expected_line {
+        return Err(format!(
+            "unexpected version output: expected {expected_line:?}, got {actual:?}"
+        ));
+    }
+    Ok(())
+}
+
+fn assert_wiki_codex_project_install(
+    executable: &Path,
+    repo_root: &Path,
+    current_dir: &Path,
+) -> Result<(), String> {
+    let home = current_dir.join("isolated-home");
+    let codex_home = home.join(".codex");
+    let empty_path = current_dir.join("empty-path");
+    let legacy_repo = current_dir.join("StructuralFactory");
+    let legacy_bundle = legacy_repo.join("knowledge");
+    fs::create_dir_all(&codex_home).map_err(|error| error.to_string())?;
+    fs::create_dir_all(&empty_path).map_err(|error| error.to_string())?;
+    fs::create_dir_all(&legacy_bundle).map_err(|error| error.to_string())?;
+    fs::write(
+        legacy_bundle.join("index.md"),
+        "---\nokf_version: \"0.1\"\ntitle: Legacy Knowledge\n---\n# Legacy Knowledge\n",
+    )
+    .map_err(|error| error.to_string())?;
+    let legacy_bundle = legacy_bundle
+        .canonicalize()
+        .map_err(|error| format!("failed to canonicalize legacy bundle: {error}"))?;
+    fs::write(
+        codex_home.join("config.toml"),
+        format!(
+            "model = \"preserved\"\n\n[mcp_servers.k_wiki]\ncommand = \"legacy-k-wiki\"\nargs = [\"mcp\", {}]\nstartup_timeout_sec = 60\n",
+            serde_json::to_string(legacy_bundle.to_string_lossy().as_ref())
+                .map_err(|error| error.to_string())?,
+        ),
+    )
+    .map_err(|error| error.to_string())?;
+    let home_text = home.to_string_lossy().to_string();
+    let codex_home_text = codex_home.to_string_lossy().to_string();
+    let empty_path_text = empty_path.to_string_lossy().to_string();
+    let executable_text = executable.to_string_lossy().to_string();
+    let environment = [
+        ("HOME", home_text.as_str()),
+        ("CODEX_HOME", codex_home_text.as_str()),
+        ("PATH", empty_path_text.as_str()),
+        ("K_WIKI_SERVER_COMMAND", executable_text.as_str()),
+    ];
+    let output = run_capture_in_with_env(
+        executable,
+        [
+            "mcp",
+            "install",
+            "--client",
+            "codex",
+            "--scope",
+            "project",
+            "--repo-root",
+            repo_root.to_str().ok_or("invalid repo root path")?,
+            "--dry-run",
+            "--verify",
+        ],
+        current_dir,
+        &environment,
+    )?;
+    let stdout = String::from_utf8(output.stdout).map_err(|error| error.to_string())?;
+    let payload: Value = serde_json::from_str(stdout.trim()).map_err(|error| {
+        format!("dry-run MCP install did not return valid JSON: {error}; stdout: {stdout}")
+    })?;
+    let method = payload
+        .get("method")
+        .and_then(Value::as_str)
+        .ok_or("dry-run MCP install did not report method")?;
+    if method != "file_adapter" {
+        return Err(format!(
+            "dry-run MCP install expected method=file_adapter, got {method}"
+        ));
+    }
+    let locality = payload
+        .get("target_locality")
+        .and_then(Value::as_str)
+        .ok_or("dry-run MCP install did not report target_locality")?;
+    if locality != "repository_local" {
+        return Err(format!(
+            "dry-run MCP install expected repository_local locality, got {locality}"
+        ));
+    }
+    let expected_path = repo_root
+        .canonicalize()
+        .map_err(|error| format!("failed to canonicalize repo root for dry-run smoke: {error}"))?
+        .join(".codex/config.toml");
+    let reported_path = payload
+        .get("path")
+        .and_then(Value::as_str)
+        .ok_or("dry-run MCP install did not report path")?;
+    if Path::new(reported_path) != expected_path {
+        return Err(format!(
+            "dry-run MCP install expected path {}, got {}",
+            expected_path.display(),
+            reported_path
+        ));
+    }
+    if payload
+        .pointer("/verification/reason")
+        .and_then(Value::as_str)
+        != Some("dry_run")
+    {
+        return Err("dry-run MCP install did not report verification as skipped".to_string());
+    }
+
+    let install_args = [
+        "mcp",
+        "install",
+        "--client",
+        "codex",
+        "--scope",
+        "project",
+        "--repo-root",
+        repo_root.to_str().ok_or("invalid repo root path")?,
+        "--verify",
+    ];
+    let installed = run_capture_in_with_env(executable, install_args, current_dir, &environment)?;
+    let installed_stdout =
+        String::from_utf8(installed.stdout).map_err(|error| error.to_string())?;
+    let installed: Value = serde_json::from_str(installed_stdout.trim()).map_err(|error| {
+        format!("MCP install did not return valid JSON: {error}; stdout: {installed_stdout}")
+    })?;
+    if !matches!(
+        installed.get("action").and_then(Value::as_str),
+        Some("created" | "updated")
+    ) || installed
+        .pointer("/verification/ok")
+        .and_then(Value::as_bool)
+        != Some(true)
+        || installed
+            .pointer("/legacy_cleanup/action")
+            .and_then(Value::as_str)
+            != Some("renamed")
+    {
+        return Err(format!(
+            "packaged MCP install did not update, verify, and preserve the legacy entry: {installed}"
+        ));
+    }
+    let preserved_as = installed
+        .pointer("/legacy_cleanup/preserved_as")
+        .and_then(Value::as_str)
+        .ok_or("packaged MCP install did not report the preserved legacy name")?;
+    if !preserved_as.starts_with("k_wiki_structuralfactory_") {
+        return Err(format!("unexpected preserved legacy name: {preserved_as}"));
+    }
+    let local_config = fs::read_to_string(&expected_path).map_err(|error| error.to_string())?;
+    let expected_command = format!(
+        "command = {}",
+        serde_json::to_string(&executable_text).map_err(|error| error.to_string())?
+    );
+    if !local_config.contains("[mcp_servers.k_wiki]")
+        || !local_config
+            .lines()
+            .any(|line| line.trim() == expected_command)
+    {
+        return Err("packaged MCP install did not write the repository-local registration".into());
+    }
+    let shared_config =
+        fs::read_to_string(codex_home.join("config.toml")).map_err(|error| error.to_string())?;
+    if !shared_config.contains("model = \"preserved\"")
+        || shared_config.contains("[mcp_servers.k_wiki]")
+        || !shared_config.contains(&format!("[mcp_servers.{preserved_as}]"))
+        || !shared_config.contains("command = \"legacy-k-wiki\"")
+    {
+        return Err("packaged MCP install did not preserve the shared legacy registration".into());
+    }
+
+    let repeated = run_capture_in_with_env(executable, install_args, current_dir, &environment)?;
+    let repeated_stdout = String::from_utf8(repeated.stdout).map_err(|error| error.to_string())?;
+    let repeated: Value = serde_json::from_str(repeated_stdout.trim()).map_err(|error| {
+        format!("repeat MCP install did not return valid JSON: {error}; stdout: {repeated_stdout}")
+    })?;
+    if repeated.get("action").and_then(Value::as_str) != Some("unchanged")
+        || repeated
+            .pointer("/verification/ok")
+            .and_then(Value::as_bool)
+            != Some(true)
+    {
+        return Err(format!(
+            "packaged MCP install was not idempotent: {repeated}"
+        ));
+    }
+    Ok(())
+}
+
+fn smoke_mcp_stdio(executable: &Path, repo_root: &Path, fixture: &Path) -> Result<(), String> {
+    let mut child = smoke_command(executable, fixture)?
+        .args(["mcp", "start", "--repo-root"])
+        .arg(repo_root)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(|error| format!("failed to spawn MCP server: {error}"))?;
+    let write_result = (|| {
+        let mut stdin = child.stdin.take().ok_or_else(|| {
+            std::io::Error::new(std::io::ErrorKind::BrokenPipe, "missing MCP stdin")
+        })?;
+        let initialize = json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {
+                "protocolVersion": "2025-11-25",
+                "capabilities": {},
+                "clientInfo": {"name": "xtask-smoke", "version": "0"}
+            }
+        });
+        writeln!(stdin, "{initialize}")?;
+        let tools = json!({"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}});
+        writeln!(stdin, "{tools}")?;
+        Ok::<(), std::io::Error>(())
+    })();
+    if let Err(error) = write_result {
+        let _ = child.kill();
+        let _ = child.wait();
+        return Err(format!("failed to write MCP smoke requests: {error}"));
+    }
+
+    let output = child
+        .wait_with_output()
+        .map_err(|error| format!("failed to collect MCP smoke output: {error}"))?;
+    validate_mcp_smoke_output(&output)
+}
+
+fn validate_mcp_smoke_output(output: &std::process::Output) -> Result<(), String> {
+    if !output.status.success() {
+        return Err(format!(
+            "MCP stdio smoke child exited with status {}\nstdout:\n{}\nstderr:\n{}",
+            output.status,
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        ));
+    }
+    let stdout = std::str::from_utf8(&output.stdout).map_err(|error| {
+        format!(
+            "MCP stdio smoke stdout is not valid UTF-8: {error}; stderr: {}",
+            String::from_utf8_lossy(&output.stderr)
+        )
+    })?;
+    let mut seen_ids = Vec::new();
+    let mut initialize_result = None;
+    let mut tools_result = None;
+
+    for (index, line) in stdout.lines().enumerate() {
+        if line.trim().is_empty() {
+            continue;
+        }
+        let message: Value = serde_json::from_str(line).map_err(|error| {
+            format!(
+                "MCP stdio smoke received malformed JSON on stdout line {}: {error}; stdout: {stdout:?}; stderr: {}",
+                index + 1,
+                String::from_utf8_lossy(&output.stderr)
+            )
+        })?;
+        let Some(object) = message.as_object() else {
+            return Err(format!(
+                "MCP stdio smoke stdout line {} is not a JSON-RPC object: {message}; stderr: {}",
+                index + 1,
+                String::from_utf8_lossy(&output.stderr)
+            ));
+        };
+        if object.get("jsonrpc").and_then(Value::as_str) != Some("2.0") {
+            return Err(format!(
+                "MCP stdio smoke stdout line {} is not a JSON-RPC 2.0 message: {message}",
+                index + 1
+            ));
+        }
+        let Some(id) = object.get("id") else {
+            let valid_params = object
+                .get("params")
+                .is_none_or(|params| params.is_object() || params.is_array());
+            if object
+                .get("method")
+                .and_then(Value::as_str)
+                .is_some_and(|method| !method.is_empty())
+                && valid_params
+                && !object.contains_key("error")
+                && !object.contains_key("result")
+            {
+                continue;
+            }
+            return Err(format!(
+                "MCP stdio smoke stdout line {} is not a valid JSON-RPC notification: {message}",
+                index + 1
+            ));
+        };
+        if object.contains_key("method") || object.contains_key("params") {
+            return Err(format!(
+                "MCP stdio smoke response {id} contains request fields: {message}"
+            ));
+        }
+        if !(id.is_number() || id.is_string()) {
+            return Err(format!(
+                "MCP stdio smoke response id is not a string or number: {id}"
+            ));
+        }
+        if id.as_i64() == Some(1) || id.as_i64() == Some(2) {
+            if seen_ids.iter().any(|seen| seen == id) {
+                return Err(format!(
+                    "MCP stdio smoke received duplicate response id {id}"
+                ));
+            }
+            seen_ids.push(id.clone());
+        }
+        if object.contains_key("error") {
+            return Err(format!(
+                "MCP stdio smoke response {id} contains an error: {message}"
+            ));
+        }
+        let Some(result) = object.get("result").and_then(Value::as_object) else {
+            return Err(format!(
+                "MCP stdio smoke response {id} has no object result: {message}"
+            ));
+        };
+        match id {
+            Value::Number(number) if number.as_i64() == Some(1) => {
+                if !result.get("protocolVersion").is_some_and(Value::is_string)
+                    || !result.get("capabilities").is_some_and(Value::is_object)
+                    || !result.get("serverInfo").is_some_and(Value::is_object)
+                {
+                    return Err(format!(
+                        "MCP initialize response is missing protocolVersion, capabilities, or serverInfo: {message}"
+                    ));
+                }
+                initialize_result = Some(());
+            }
+            Value::Number(number) if number.as_i64() == Some(2) => {
+                let has_graph_search =
+                    result
+                        .get("tools")
+                        .and_then(Value::as_array)
+                        .is_some_and(|tools| {
+                            tools.iter().any(|tool| {
+                                tool.as_object()
+                                    .and_then(|tool| tool.get("name"))
+                                    .and_then(Value::as_str)
+                                    == Some("graph_search")
+                            })
+                        });
+                if !has_graph_search {
+                    return Err(format!(
+                        "MCP tools/list response does not contain a graph_search tool: {message}"
+                    ));
+                }
+                tools_result = Some(());
+            }
+            _ => {
+                return Err(format!(
+                    "MCP stdio smoke received unexpected response id {id}: {message}"
+                ));
+            }
+        }
+    }
+
+    if initialize_result.is_none() {
+        return Err(format!(
+            "MCP stdio smoke did not receive initialize response id 1; stdout: {stdout:?}; stderr: {}",
+            String::from_utf8_lossy(&output.stderr)
+        ));
+    }
+    if tools_result.is_none() {
+        return Err(format!(
+            "MCP stdio smoke did not receive tools/list response id 2; stdout: {stdout:?}; stderr: {}",
+            String::from_utf8_lossy(&output.stderr)
+        ));
+    }
+    Ok(())
+}
+
+fn verify_release_version(tag: &str) -> Result<(), String> {
+    let expected = tag
+        .strip_prefix('v')
+        .ok_or_else(|| format!("release tag must match vX.Y.Z, got {tag:?}"))?;
+    if expected.split('.').count() != 3
+        || !expected
+            .chars()
+            .all(|item| item.is_ascii_digit() || item == '.')
+    {
+        return Err(format!("release tag must match vX.Y.Z, got {tag:?}"));
+    }
+    let actual = cargo_version(Path::new("Cargo.toml"))?;
+    if actual != expected {
+        return Err(format!(
+            "Cargo package version {actual} does not match release tag {tag}"
+        ));
+    }
+    let wiki = cargo_version(Path::new("crates/k-wiki/Cargo.toml"))?;
+    if wiki != expected {
+        return Err(format!(
+            "Knowledge Wiki package version {wiki} does not match release tag {tag}"
+        ));
+    }
+    let dependency = dependency_version(Path::new("crates/k-wiki/Cargo.toml"), "codebase-graph")?;
+    if dependency != expected {
+        return Err(format!(
+            "Knowledge Wiki depends on codebase-graph {dependency} but release tag is {tag}"
+        ));
+    }
+    println!("{actual}");
+    Ok(())
+}
+
+fn cargo_version(manifest: &Path) -> Result<String, String> {
+    let cargo = fs::read_to_string(manifest).map_err(|error| error.to_string())?;
+    for line in cargo.lines() {
+        let line = line.trim();
+        if let Some(value) = line.strip_prefix("version = ") {
+            return Ok(value.trim_matches('"').to_string());
+        }
+    }
+    Err(format!(
+        "{} does not contain package version",
+        manifest.display()
+    ))
+}
+
+fn dependency_version(manifest: &Path, dependency: &str) -> Result<String, String> {
+    let cargo = fs::read_to_string(manifest).map_err(|error| error.to_string())?;
+    for line in cargo.lines() {
+        let line = line.trim();
+        if line.starts_with(&format!("{dependency} =")) {
+            if let Some(version_index) = line.find("version = ") {
+                let value = &line[(version_index + "version = ".len())..];
+                if let Some(first_quote) = value.find('"') {
+                    let rest = &value[(first_quote + 1)..];
+                    if let Some(end_quote) = rest.find('"') {
+                        return Ok(rest[..end_quote].to_string());
+                    }
+                }
+            }
+        }
+    }
+    Err(format!(
+        "{} does not contain dependency version for {}",
+        manifest.display(),
+        dependency
+    ))
+}
+
+fn smoke_command(executable: &Path, fixture: &Path) -> Result<Command, String> {
+    let mut command = Command::new(executable);
+    if cfg!(target_os = "macos") {
+        let home = fixture.join("smoke-home");
+        fs::create_dir_all(&home).map_err(|error| error.to_string())?;
+        for (key, _) in env::vars_os() {
+            let name = key.to_string_lossy();
+            if name.starts_with("DYLD_") || name.starts_with("OPENSSL_") {
+                command.env_remove(key);
+            }
+        }
+        command
+            .env("HOME", home)
+            .env("PATH", "/usr/bin:/bin:/usr/sbin:/sbin");
+    }
+    Ok(command)
+}
+
+fn run_capture_in<'a, I>(
+    executable: &Path,
+    args: I,
+    current_dir: &Path,
+) -> Result<std::process::Output, String>
+where
+    I: IntoIterator<Item = &'a str>,
+{
+    smoke_command(executable, current_dir)?
+        .args(args)
+        .current_dir(current_dir)
+        .output()
+        .map_err(|error| error.to_string())
+        .and_then(|output| {
+            if output.status.success() {
+                Ok(output)
+            } else {
+                Err(format!(
+                    "command failed with status {}: {}\nstdout:\n{}\nstderr:\n{}",
+                    output.status,
+                    executable.display(),
+                    String::from_utf8_lossy(&output.stdout),
+                    String::from_utf8_lossy(&output.stderr)
+                ))
+            }
+        })
+}
+
+fn run_capture_in_with_env<'a, I>(
+    executable: &Path,
+    args: I,
+    current_dir: &Path,
+    env_pairs: &[(&str, &str)],
+) -> Result<std::process::Output, String>
+where
+    I: IntoIterator<Item = &'a str>,
+{
+    let mut command = smoke_command(executable, current_dir)?;
+    command.args(args).current_dir(current_dir);
+    for (key, value) in env_pairs {
+        command.env(key, value);
+    }
+    command
+        .output()
+        .map_err(|error| error.to_string())
+        .and_then(|output| {
+            if output.status.success() {
+                Ok(output)
+            } else {
+                Err(format!(
+                    "command failed with status {}: {}\nstdout:\n{}\nstderr:\n{}",
+                    output.status,
+                    executable.display(),
+                    String::from_utf8_lossy(&output.stdout),
+                    String::from_utf8_lossy(&output.stderr)
+                ))
+            }
+        })
+}
+
+fn run_checked_in<'a, I>(executable: &Path, args: I, current_dir: &Path) -> Result<(), String>
+where
+    I: IntoIterator<Item = &'a str>,
+{
+    let output = smoke_command(executable, current_dir)?
+        .args(args)
+        .current_dir(current_dir)
+        .output()
+        .map_err(|error| error.to_string())?;
+    if output.status.success() {
+        Ok(())
+    } else {
+        Err(format!(
+            "command failed with status {}: {}\nstdout:\n{}\nstderr:\n{}",
+            output.status,
+            executable.display(),
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        ))
+    }
+}
+
+fn unique_temp_dir(prefix: &str) -> Result<PathBuf, String> {
+    let nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|error| error.to_string())?
+        .as_nanos();
+    let path = env::temp_dir().join(format!("{prefix}_{nanos}"));
+    fs::create_dir_all(&path).map_err(|error| error.to_string())?;
+    Ok(path)
+}
+
+fn files_under(root: &Path) -> Vec<PathBuf> {
+    let mut files = Vec::new();
+    let Ok(entries) = fs::read_dir(root) else {
+        return files;
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        let name = path
+            .file_name()
+            .and_then(|item| item.to_str())
+            .unwrap_or_default();
+        if name == ".git" || name == "target" || name == ".codebaseGraph" || name == ".kwiki" {
+            continue;
+        }
+        if path.is_dir() {
+            files.extend(files_under(&path));
+        } else {
+            files.push(path);
+        }
+    }
+    files
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        check_workflow_policy, create_native_archive, extract_and_validate_native_archive,
+        native_test_command, release_version_from_tag, sha256_file, validate_commit_sha,
+        validate_crate_size, validate_native_artifact_set, workflow_yaml_error, NativeProvenance,
+        NativeTarget, YamlValue, CRATES_IO_PACKAGE_LIMIT_BYTES, NATIVE_TARGETS,
+    };
+    use serde_json::{json, Value};
+    use std::collections::BTreeSet;
+    use std::fs;
+    use std::path::{Path, PathBuf};
+    use std::process::{Command, ExitStatus, Output};
+
+    const GATE_FIXTURE_CHILD_ENV: &str = "CODEBASEGRAPH_COD107_GATE_FIXTURE_CHILD";
+
+    fn release_gate_fixture() -> PathBuf {
+        let root = super::unique_temp_dir("cod107_release_gate_fixture").unwrap();
+        let project = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../..")
+            .canonicalize()
+            .unwrap();
+        for relative in [
+            "SECURITY.md",
+            "Cargo.toml",
+            "crates/k-wiki/Cargo.toml",
+            "release-please-config.json",
+            ".github/workflows/ci.yml",
+            ".github/workflows/native.yml",
+            ".github/workflows/release.yml",
+            "src/lib.rs",
+            "src/adapters/cli/mod.rs",
+        ] {
+            let source = project.join(relative);
+            let destination = root.join(relative);
+            fs::create_dir_all(destination.parent().unwrap()).unwrap();
+            fs::copy(&source, &destination).unwrap_or_else(|error| {
+                panic!("could not copy gate fixture file {}: {error}", source.display())
+            });
+        }
+        fs::create_dir_all(root.join("docs")).unwrap();
+        root
+    }
+
+    fn write_gate_fixture_file(root: &Path, relative: &str, contents: &str) {
+        let path = root.join(relative);
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(path, contents).unwrap();
+    }
+
+    fn execute_gate_fixture_child() -> bool {
+        let Some(mode) = std::env::var_os(GATE_FIXTURE_CHILD_ENV) else {
+            return false;
+        };
+        let mode = mode.to_string_lossy();
+        let (route, outcome) = mode.split_once(':').expect("valid gate fixture child mode");
+        let production = match route {
+            "ordinary" => false,
+            "production" => true,
+            _ => panic!("unknown gate fixture route {route}"),
+        };
+        let expected_success = match outcome {
+            "pass" => true,
+            "reject" => false,
+            _ => panic!("unknown gate fixture outcome {outcome}"),
+        };
+        let args = if production {
+            [
+                "--production".to_string(),
+                "--confirm".to_string(),
+                "release-environment".to_string(),
+                "--confirm".to_string(),
+                "private-vulnerability-reporting".to_string(),
+            ]
+            .to_vec()
+        } else {
+            Vec::new()
+        };
+        let result = super::release_gate(args);
+        assert_eq!(
+            result.is_ok(),
+            expected_success,
+            "release_gate returned {result:?} for {route}:{outcome}"
+        );
+        true
+    }
+
+    fn run_gate_fixture_route(
+        test_name: &str,
+        root: &Path,
+        production: bool,
+        expected_success: bool,
+        expected_diagnostics: &[&str],
+        forbidden_diagnostics: &[&str],
+    ) -> String {
+        let route = if production { "production" } else { "ordinary" };
+        let outcome = if expected_success { "pass" } else { "reject" };
+        let output = Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", test_name, "--nocapture"])
+            .current_dir(root)
+            .env(GATE_FIXTURE_CHILD_ENV, format!("{route}:{outcome}"))
+            .output()
+            .unwrap_or_else(|error| panic!("could not run gate fixture child: {error}"));
+        let report = format!(
+            "{}
+{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert!(
+            output.status.success(),
+            "gate fixture child failed for {route}:
+{report}"
+        );
+        if expected_success {
+            assert!(report.contains("release gate passed"), "{report}");
+        }
+        for diagnostic in expected_diagnostics {
+            assert!(report.contains(diagnostic), "missing {diagnostic:?}:
+{report}");
+        }
+        for diagnostic in forbidden_diagnostics {
+            assert!(!report.contains(diagnostic), "unexpected {diagnostic:?}:
+{report}");
+        }
+        report
+    }
+
+    fn symlink_privilege_unavailable(error: &std::io::Error) -> bool {
+        #[cfg(windows)]
+        {
+            return error.kind() == std::io::ErrorKind::PermissionDenied
+                || error.raw_os_error() == Some(1314);
+        }
+        #[cfg(not(windows))]
+        {
+            let _ = error;
+            false
+        }
+    }
+
+    fn symlink_file(target: &Path, link: &Path) -> std::io::Result<()> {
+        #[cfg(unix)]
+        {
+            std::os::unix::fs::symlink(target, link)
+        }
+        #[cfg(windows)]
+        {
+            std::os::windows::fs::symlink_file(target, link)
+        }
+        #[cfg(not(any(unix, windows)))]
+        {
+            let _ = (target, link);
+            Err(std::io::Error::new(
+                std::io::ErrorKind::Unsupported,
+                "symlinks are unsupported on this host",
+            ))
+        }
+    }
+
+    fn symlink_dir(target: &Path, link: &Path) -> std::io::Result<()> {
+        #[cfg(unix)]
+        {
+            std::os::unix::fs::symlink(target, link)
+        }
+        #[cfg(windows)]
+        {
+            std::os::windows::fs::symlink_dir(target, link)
+        }
+        #[cfg(not(any(unix, windows)))]
+        {
+            let _ = (target, link);
+            Err(std::io::Error::new(
+                std::io::ErrorKind::Unsupported,
+                "symlinks are unsupported on this host",
+            ))
+        }
+    }
+
+    fn mcp_smoke_output(exit_code: i32, stdout: &str) -> Output {
+        #[cfg(unix)]
+        fn status(exit_code: i32) -> ExitStatus {
+            use std::os::unix::process::ExitStatusExt;
+            ExitStatus::from_raw(exit_code << 8)
+        }
+
+        #[cfg(windows)]
+        fn status(exit_code: i32) -> ExitStatus {
+            use std::os::windows::process::ExitStatusExt;
+            ExitStatus::from_raw(exit_code as u32)
+        }
+
+        Output {
+            status: status(exit_code),
+            stdout: stdout.as_bytes().to_vec(),
+            stderr: Vec::new(),
+        }
+    }
+
+    fn valid_mcp_smoke_stdout() -> String {
+        concat!(
+            r#"{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2025-11-25","capabilities":{},"serverInfo":{"name":"codebase-graph","version":"4.0.3"}}}"#,
+            "\n",
+            r#"{"jsonrpc":"2.0","id":2,"result":{"tools":[{"name":"graph_search","description":"Search graph"}]}}"#,
+        )
+        .to_string()
+    }
+
+    #[test]
+    fn mcp_smoke_accepts_valid_initialize_and_tools() {
+        assert!(
+            super::validate_mcp_smoke_output(&mcp_smoke_output(0, &valid_mcp_smoke_stdout()))
+                .is_ok()
+        );
+    }
+
+    #[test]
+    fn mcp_smoke_rejects_nonzero_child_with_success_payload() {
+        let error = super::validate_mcp_smoke_output(&mcp_smoke_output(
+            7,
+            &format!(
+                "{}\nMCP server stopped with an error",
+                valid_mcp_smoke_stdout()
+            ),
+        ))
+        .unwrap_err();
+        assert!(error.contains("status"));
+        assert!(error.contains("graph_search"));
+    }
+
+    #[test]
+    fn mcp_smoke_rejects_errors_missing_malformed_duplicate_and_decoy_responses() {
+        let valid = valid_mcp_smoke_stdout();
+        let initialize = valid.lines().next().unwrap();
+        let tools = valid.lines().nth(1).unwrap();
+        let cases = [
+            ("zero-status JSON-RPC error", format!("{initialize}\n{{\"jsonrpc\":\"2.0\",\"id\":2,\"error\":{{\"message\":\"graph_search failed\"}}}}")),
+            ("missing initialize", tools.to_string()),
+            ("missing tools response", initialize.to_string()),
+            ("malformed JSON", format!("{initialize}\n{{\"jsonrpc\":\"2.0\",")),
+            ("non-object protocol data", format!("{initialize}\n[]\n{tools}")),
+            ("wrong response ID", format!("{initialize}\n{{\"jsonrpc\":\"2.0\",\"id\":3,\"result\":{{\"tools\":[{{\"name\":\"graph_search\"}}]}}}}")),
+            ("duplicate response ID", format!("{initialize}\n{initialize}\n{tools}")),
+            ("description-only decoy", format!("{initialize}\n{{\"jsonrpc\":\"2.0\",\"id\":2,\"result\":{{\"tools\":[{{\"name\":\"not_graph_search\",\"description\":\"graph_search\"}}]}}}}")),
+        ];
+        for (label, stdout) in cases {
+            assert!(
+                super::validate_mcp_smoke_output(&mcp_smoke_output(0, &stdout)).is_err(),
+                "accepted {label}"
+            );
+        }
+    }
+
+    #[test]
+    fn workflow_yaml_validation_rejects_unindented_heredoc_body() {
+        let invalid =
+            "jobs:\n  build:\n    steps:\n      - run: |\n          cat <<'EOF'\nbody\nEOF\n";
+        let valid = "jobs:\n  build:\n    steps:\n      - run: |\n          cat <<'EOF'\n          body\n          EOF\n";
+
+        assert!(workflow_yaml_error(invalid).is_some());
+        assert!(workflow_yaml_error(valid).is_none());
+    }
+
+    #[test]
+    fn native_target_contract_maps_names_and_binaries() {
+        assert_eq!(
+            NativeTarget::parse("macos-arm64").unwrap().binary_names(),
+            ("codebase-graph", "k-wiki")
+        );
+        assert_eq!(
+            NativeTarget::parse("windows-x86_64")
+                .unwrap()
+                .binary_names(),
+            ("codebase-graph.exe", "k-wiki.exe")
+        );
+        assert!(NativeTarget::parse("linux-arm64").is_err());
+        assert!(NativeTarget::parse("linux-x86_64").is_err());
+        assert!(NativeTarget::parse("macos-x86_64").is_err());
+    }
+
+    #[test]
+    fn windows_native_tests_forward_bundled_extensions() {
+        let windows = native_test_command(NativeTarget::WindowsX86_64);
+        assert!(windows
+            .windows(2)
+            .any(|pair| pair == ["--profile", "native-tests"]));
+        assert!(!windows.contains(&"--release"));
+        assert!(windows.contains(
+            &"codebase-graph/bundled-windows-extensions,k-wiki/bundled-windows-extensions"
+        ));
+
+        let macos = native_test_command(NativeTarget::MacosArm64);
+        assert!(!macos.contains(&"--features"));
+        assert!(!macos.contains(&"--release"));
+        assert!(macos.contains(&"--profile"));
+    }
+
+    #[test]
+    fn native_capture_reuses_the_exact_test_profile_and_features() {
+        for target in super::NATIVE_TARGETS {
+            let test = native_test_command(target);
+            let capture = super::native_test_capture_command(target);
+            assert_eq!(&capture[..test.len()], test);
+            assert_eq!(
+                &capture[test.len()..],
+                ["--no-run", "--message-format=json-render-diagnostics"]
+            );
+        }
+    }
+
+    #[test]
+    fn native_capture_requires_unique_source_bound_normal_cli_artifact() {
+        let root = super::unique_temp_dir("native_cli_capture").unwrap();
+        let manifest = root.join("Cargo.toml");
+        let unrelated = root.join("other.toml");
+        let executable = root.join("normal-cli");
+        let second = root.join("second-cli");
+        for path in [&manifest, &unrelated, &executable, &second] {
+            fs::write(path, b"fixture").unwrap();
+        }
+        let manifest = fs::canonicalize(manifest).unwrap();
+        let mut candidates = BTreeSet::new();
+        let valid = json!({"reason":"compiler-artifact","manifest_path":manifest,
+            "target":{"name":"codebase-graph","kind":["bin"]},
+            "profile":{"test":false},"executable":executable});
+        let mut harness = valid.clone();
+        harness["profile"]["test"] = json!(true);
+        let mut wrong = valid.clone();
+        wrong["manifest_path"] = json!(unrelated);
+        for message in [&harness, &wrong, &json!({"reason":"build-finished"})] {
+            super::record_native_test_cli_artifact(message, &manifest, &mut candidates).unwrap();
+        }
+        assert!(super::unique_native_test_cli(candidates.clone()).is_err());
+        super::record_native_test_cli_artifact(&valid, &manifest, &mut candidates).unwrap();
+        super::record_native_test_cli_artifact(&valid, &manifest, &mut candidates).unwrap();
+        assert_eq!(
+            super::unique_native_test_cli(candidates.clone()).unwrap(),
+            fs::canonicalize(&executable).unwrap()
+        );
+        let mut missing = valid.clone();
+        missing["executable"] = Value::Null;
+        assert!(
+            super::record_native_test_cli_artifact(&missing, &manifest, &mut candidates).is_err()
+        );
+        let mut ambiguous = valid;
+        ambiguous["executable"] = json!(second);
+        super::record_native_test_cli_artifact(&ambiguous, &manifest, &mut candidates).unwrap();
+        assert!(super::unique_native_test_cli(candidates).is_err());
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn release_identity_validation_is_strict() {
+        assert_eq!(release_version_from_tag("v1.2.3").unwrap(), "1.2.3");
+        assert!(release_version_from_tag("1.2.3").is_err());
+        assert!(release_version_from_tag("v1.2").is_err());
+        assert!(validate_commit_sha("0123456789abcdef0123456789abcdef01234567").is_ok());
+        assert!(validate_commit_sha("abc").is_err());
+    }
+
+    #[test]
+    fn archive_contract_rejects_unexpected_entries() {
+        let temp = super::unique_temp_dir("xtask_archive_contract").unwrap();
+        let package = temp.join("package");
+        fs::create_dir_all(&package).unwrap();
+        for (name, _) in NativeTarget::MacosArm64.package_files() {
+            fs::write(package.join(name), name).unwrap();
+        }
+        let archive = temp.join("artifact.tar.gz");
+        create_native_archive(&package, &archive, NativeTarget::MacosArm64).unwrap();
+        let extracted = temp.join("extracted");
+        let error =
+            extract_and_validate_native_archive(&archive, NativeTarget::MacosArm64, &extracted)
+                .unwrap_err();
+        assert!(error.contains("checksums.txt") || error.contains("SHA256"));
+        fs::remove_dir_all(temp).unwrap();
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn macos_smoke_commands_use_a_fixture_home_and_system_path() {
+        let fixture = super::unique_temp_dir("xtask_smoke_env").unwrap();
+        let command = super::smoke_command(Path::new("/usr/bin/true"), &fixture).unwrap();
+        let environment = command
+            .get_envs()
+            .collect::<std::collections::BTreeMap<_, _>>();
+        assert_eq!(
+            environment.get(std::ffi::OsStr::new("HOME")),
+            Some(&Some(fixture.join("smoke-home").as_os_str()))
+        );
+        assert_eq!(
+            environment.get(std::ffi::OsStr::new("PATH")),
+            Some(&Some(std::ffi::OsStr::new("/usr/bin:/bin:/usr/sbin:/sbin")))
+        );
+        fs::remove_dir_all(fixture).unwrap();
+    }
+
+    #[test]
+    fn native_payload_integrity_covers_runtime_files_and_preserves_windows_inventory() {
+        let temp = super::unique_temp_dir("xtask_payload_integrity").unwrap();
+        let target = NativeTarget::MacosArm64;
+        for name in target.payload_files() {
+            fs::write(temp.join(name), name).unwrap();
+        }
+        super::write_internal_checksums(&temp, target).unwrap();
+        super::validate_internal_checksums(&temp, target).unwrap();
+        for name in super::macos::PAYLOAD_FILES {
+            fs::write(temp.join(name), b"corrupt").unwrap();
+            assert!(super::validate_internal_checksums(&temp, target).is_err());
+            fs::write(temp.join(name), name).unwrap();
+        }
+        assert_eq!(
+            NativeTarget::WindowsX86_64.payload_files(),
+            ["codebase-graph.exe", "k-wiki.exe"]
+        );
+        fs::remove_dir_all(temp).unwrap();
+    }
+
+    #[test]
+    fn complete_artifact_set_rejects_mixed_provenance() {
+        let temp = super::unique_temp_dir("xtask_artifact_set").unwrap();
+        let version = "1.2.3";
+        let commit_sha = "0123456789abcdef0123456789abcdef01234567";
+        for target in NATIVE_TARGETS {
+            write_test_artifact(&temp, target, version, commit_sha);
+        }
+        validate_native_artifact_set(&temp, version, commit_sha).unwrap();
+
+        let provenance_path = temp.join("native-macos-arm64/provenance.json");
+        let mut provenance: NativeProvenance =
+            serde_json::from_slice(&fs::read(&provenance_path).unwrap()).unwrap();
+        provenance.commit_sha = "ffffffffffffffffffffffffffffffffffffffff".to_string();
+        fs::write(
+            &provenance_path,
+            serde_json::to_vec_pretty(&provenance).unwrap(),
+        )
+        .unwrap();
+        let error = validate_native_artifact_set(&temp, version, commit_sha).unwrap_err();
+        assert!(error.contains("mixed release provenance"));
+        fs::remove_dir_all(temp).unwrap();
+    }
+
+    fn write_test_artifact(root: &Path, target: NativeTarget, version: &str, commit_sha: &str) {
+        let artifact_dir = root.join(format!("native-{}", target.as_str()));
+        let package = artifact_dir.join("package");
+        fs::create_dir_all(&package).unwrap();
+        let (graph_name, wiki_name) = target.binary_names();
+        fs::write(package.join(graph_name), b"graph").unwrap();
+        fs::write(package.join(wiki_name), b"wiki").unwrap();
+        fs::write(package.join("install.sh"), b"installer").unwrap();
+        fs::write(package.join("install.ps1"), b"installer").unwrap();
+        if target == NativeTarget::MacosArm64 {
+            for name in super::macos::PAYLOAD_FILES {
+                fs::write(package.join(name), name).unwrap();
+            }
+        }
+        super::write_internal_checksums(&package, target).unwrap();
+        let archive_name = target.archive_name(version);
+        let archive_path = artifact_dir.join(&archive_name);
+        create_native_archive(&package, &archive_path, target).unwrap();
+        fs::remove_dir_all(&package).unwrap();
+        let archive_sha256 = sha256_file(&archive_path).unwrap();
+        fs::write(
+            artifact_dir.join(format!("{archive_name}.sha256")),
+            format!("{archive_sha256}  {archive_name}\n"),
+        )
+        .unwrap();
+        let provenance = NativeProvenance {
+            schema_version: 1,
+            commit_sha: commit_sha.to_string(),
+            version: version.to_string(),
+            target: target.as_str().to_string(),
+            archive: archive_name,
+            archive_sha256,
+        };
+        fs::write(
+            artifact_dir.join("provenance.json"),
+            serde_json::to_vec_pretty(&provenance).unwrap(),
+        )
+        .unwrap();
+    }
+
+    fn valid_ci_workflow() -> YamlValue {
+        yaml_serde::from_str(include_str!("../../../.github/workflows/ci.yml")).unwrap()
+    }
+
+    #[test]
+    fn workflows_reject_removed_platform_targets() {
+        for removed in ["linux-x86_64", "macos-x86_64"] {
+            let mut ci = valid_ci_workflow();
+            ci["jobs"]["native"]["strategy"]["matrix"]["include"]
+                .as_sequence_mut()
+                .unwrap()
+                .push(
+                    yaml_serde::from_str(&format!("target: {removed}\nrun-tests: true")).unwrap(),
+                );
+            let mut issues = Vec::new();
+            check_workflow_policy(
+                &ci,
+                &valid_native_workflow(),
+                &yaml_serde::from_str(&valid_release_workflow_text()).unwrap(),
+                &mut issues,
+            );
+            assert!(
+                issues.iter().any(|s| s.contains("native-target-support")),
+                "{issues:?}"
+            );
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn installer_rejects_removed_hosts_before_reading_archives_or_writing_destinations() {
+        let root = super::unique_temp_dir("unsupported_installer_hosts").unwrap();
+        let bin = root.join("bin");
+        fs::create_dir(&bin).unwrap();
+        let uname = bin.join("uname");
+        let target = root.join("installed");
+        let path = std::env::join_paths(
+            std::iter::once(bin.clone())
+                .chain(std::env::split_paths(&std::env::var_os("PATH").unwrap())),
+        )
+        .unwrap();
+        let installer =
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../release/install/install.sh");
+        for system in ["Linux", "Darwin"] {
+            fs::write(
+                &uname,
+                format!("#!/bin/sh\ncase \"$1\" in -s) echo {system} ;; -m) echo x86_64 ;; esac\n"),
+            )
+            .unwrap();
+            super::set_executable(&uname).unwrap();
+            let output = std::process::Command::new("bash")
+                .arg(&installer)
+                .arg("--bin-dir")
+                .arg(&target)
+                .arg("--dry-run")
+                .env("PATH", &path)
+                .output()
+                .unwrap();
+            assert!(!output.status.success());
+            assert!(String::from_utf8_lossy(&output.stderr).contains("Supported platforms"));
+            assert!(!target.exists());
+        }
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    fn valid_native_workflow() -> YamlValue {
+        yaml_serde::from_str(include_str!("../../../.github/workflows/native.yml")).unwrap()
+    }
+
+    #[test]
+    fn native_test_failure_cannot_authorize_artifact_production() {
+        for replacement in ["${{ always() }}", "${{ !inputs.run-tests }}"] {
+            let mut native = valid_native_workflow();
+            native["jobs"]["native"]["if"] = YamlValue::String(replacement.into());
+            let mut issues = Vec::new();
+            check_workflow_policy(
+                &valid_ci_workflow(),
+                &native,
+                &yaml_serde::from_str(&valid_release_workflow_text()).unwrap(),
+                &mut issues,
+            );
+            assert!(
+                issues.iter().any(|i| i.contains("native-test-gate")),
+                "{issues:?}"
+            );
+        }
+    }
+
+    fn valid_release_workflow_text() -> String {
+        include_str!("../../../.github/workflows/release.yml").to_string()
+    }
+
+    fn workflow_policy_issues_for_ci(ci: &YamlValue) -> Vec<String> {
+        let mut issues = Vec::new();
+        check_workflow_policy(
+            ci,
+            &valid_native_workflow(),
+            &yaml_serde::from_str(&valid_release_workflow_text()).unwrap(),
+            &mut issues,
+        );
+        issues
+    }
+
+    fn workflow_policy_issues(release_text: &str) -> Vec<String> {
+        let release = yaml_serde::from_str(release_text).unwrap();
+        let mut issues = Vec::new();
+        check_workflow_policy(
+            &valid_ci_workflow(),
+            &valid_native_workflow(),
+            &release,
+            &mut issues,
+        );
+        issues
+    }
+
+    #[test]
+    fn workflow_policy_accepts_exact_cod103_stack_bases() {
+        assert!(workflow_policy_issues_for_ci(&valid_ci_workflow()).is_empty());
+    }
+
+    #[test]
+    fn workflow_policy_rejects_unknown_stack_base_and_push_namespace() {
+        for (event, branch) in [
+            ("pull_request", "cod103-stack/cod-108"),
+            ("pull_request", "*"),
+            ("push", "cod103-stack/cod-105"),
+            ("push", "*"),
+        ] {
+            let mut ci = valid_ci_workflow();
+            ci["on"][event]["branches"] = yaml_serde::from_str(&format!("- '{branch}'\n")).unwrap();
+            let issues = workflow_policy_issues_for_ci(&ci);
+            assert!(
+                issues
+                    .iter()
+                    .any(|issue| issue.contains("workflow-trigger-invalid")),
+                "accepted {event} branch {branch}: {issues:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn workflow_policy_rejects_privileged_pr_event() {
+        let mut ci = valid_ci_workflow();
+        ci["on"]["pull_request_target"] = yaml_serde::from_str("branches: [main]").unwrap();
+        let issues = workflow_policy_issues_for_ci(&ci);
+        assert!(
+            issues
+                .iter()
+                .any(|issue| issue.contains("workflow-privileged-pr-event")),
+            "{issues:?}"
+        );
+    }
+
+    #[test]
+    fn workflow_policy_rejects_unapproved_pull_request_activity() {
+        let mut ci = valid_ci_workflow();
+        ci["on"]["pull_request"]["types"] = yaml_serde::from_str("[opened, labeled]").unwrap();
+        let issues = workflow_policy_issues_for_ci(&ci);
+        assert!(
+            issues
+                .iter()
+                .any(|issue| issue.contains("workflow-trigger-invalid")),
+            "{issues:?}"
+        );
+    }
+
+    #[test]
+    fn workflow_policy_requires_ci_completion_release_trigger() {
+        let issues = workflow_policy_issues(&valid_release_workflow_text());
+        assert!(issues.is_empty(), "{issues:?}");
+    }
+
+    #[test]
+    fn workflow_policy_rejects_direct_release_push_trigger() {
+        let broken = valid_release_workflow_text().replace(
+            "  workflow_dispatch:",
+            "  push: {branches: [main]}\n  workflow_dispatch:",
+        );
+        let issues = workflow_policy_issues(&broken);
+        assert!(
+            issues
+                .iter()
+                .any(|issue| issue.contains("release-direct-push-trigger")),
+            "{issues:?}"
+        );
+    }
+
+    #[test]
+    fn workflow_policy_rejects_missing_ci_success_guard() {
+        let broken = valid_release_workflow_text().replace(
+            "github.event.workflow_run.conclusion == 'success'",
+            "github.event.workflow_run.conclusion != 'cancelled'",
+        );
+        let issues = workflow_policy_issues(&broken);
+        assert!(
+            issues
+                .iter()
+                .any(|issue| issue.contains("release-success-guard-missing")),
+            "{issues:?}"
+        );
+    }
+
+    #[test]
+    fn workflow_policy_rejects_github_sha_for_release_identity() {
+        let broken = valid_release_workflow_text().replace(
+            "${{ github.event.workflow_run.head_sha }}",
+            "${{ github.sha }}",
+        );
+        let issues = workflow_policy_issues(&broken);
+        assert!(
+            issues
+                .iter()
+                .any(|issue| issue.contains("release-github-sha-forbidden")),
+            "{issues:?}"
+        );
+    }
+
+    #[test]
+    fn workflow_policy_rejects_missing_triggering_run_binding() {
+        let broken = valid_release_workflow_text().replace(
+            "${{ github.event.workflow_run.id || inputs.resume-ci-run }}",
+            "${{ github.run_id }}",
+        );
+        let issues = workflow_policy_issues(&broken);
+        assert!(
+            issues
+                .iter()
+                .any(|issue| issue.contains("release-trigger-binding-missing")),
+            "{issues:?}"
+        );
+    }
+
+    #[test]
+    fn workflow_policy_rejects_unconditional_release_publication() {
+        let broken = valid_release_workflow_text()
+            .replace("skip-github-release: true", "skip-github-release: false");
+        assert!(workflow_policy_issues(&broken)
+            .iter()
+            .any(|x| x.contains("release-publication-gate-missing")));
+    }
+
+    #[test]
+    fn workflow_policy_requires_publication_revalidation() {
+        for (old, new) in [
+            ("require-release: 'true'", "require-release: 'false'"),
+            (
+                "expected-sha: ${{ needs.release-target.outputs.source-sha }}",
+                "expected-sha: unverified",
+            ),
+            (
+                "ci-run-id: ${{ needs.release-target.outputs.ci-run-id }}",
+                "ci-run-id: unverified",
+            ),
+        ] {
+            let broken = valid_release_workflow_text().replace(old, new);
+            assert!(
+                workflow_policy_issues(&broken)
+                    .iter()
+                    .any(|x| x.contains("release-publication-revalidation-missing")),
+                "{old}"
+            );
+        }
+    }
+
+    #[test]
+    fn workflow_policy_rejects_unvalidated_publishers() {
+        for old in [
+            "needs.validate-artifacts.result == 'success'",
+            "needs.publish-release-assets.result == 'success'",
+            "needs.release-target.outputs.automatic == 'true'",
+        ] {
+            let broken = valid_release_workflow_text().replace(old, "true");
+            assert!(
+                workflow_policy_issues(&broken)
+                    .iter()
+                    .any(|x| x.contains("release-publication-gate-missing")),
+                "{old}"
+            );
+        }
+    }
+
+    #[test]
+    fn workflow_policy_rejects_release_queue_replacement() {
+        let broken = valid_release_workflow_text().replace("queue: max", "queue: single");
+        assert!(workflow_policy_issues(&broken)
+            .iter()
+            .any(|x| x.contains("release-concurrency-invalid")));
+    }
+
+    #[test]
+    fn workflow_policy_rejects_automatic_rebuild_recovery() {
+        let broken = valid_release_workflow_text()
+            .replace("\"$AUTOMATIC\" == 'false'", "\"$AUTOMATIC\" == 'true'");
+        let issues = workflow_policy_issues(&broken);
+        assert!(
+            issues
+                .iter()
+                .any(|issue| issue.contains("release-automatic-rebuild")),
+            "{issues:?}"
+        );
+    }
+
+    #[test]
+    fn workflow_policy_rejects_missing_crate_publish_retry() {
+        for (required, replacement) in [
+            ("max_attempts=4", "max_attempts=1"),
+            (
+                "https://crates.io/api/v1/crates/$CRATE_NAME/$CRATE_VERSION",
+                "https://example.invalid/crate",
+            ),
+        ] {
+            let broken = valid_release_workflow_text().replace(required, replacement);
+            let issues = workflow_policy_issues(&broken);
+            assert!(
+                issues
+                    .iter()
+                    .any(|issue| issue.contains("release-publish-retry-missing")),
+                "{required}: {issues:?}"
+            );
+        }
+
+        let broken = valid_release_workflow_text().replacen(
+            "if version_is_published; then",
+            "if false; then",
+            1,
+        );
+        let issues = workflow_policy_issues(&broken);
+        assert!(
+            issues
+                .iter()
+                .any(|issue| issue.contains("release-publish-retry-missing")),
+            "{issues:?}"
+        );
+    }
+
+    #[test]
+    fn workflow_policy_rejects_missing_repository_release_gate() {
+        let mut ci = valid_ci_workflow();
+        let steps = ci["jobs"]["publish-dry-run"]["steps"]
+            .as_sequence_mut()
+            .unwrap();
+        steps.retain(|step| {
+            step.get("run").and_then(YamlValue::as_str)
+                != Some("cargo run -p xtask --locked -- release-gate")
+        });
+        let mut issues = Vec::new();
+        check_workflow_policy(
+            &ci,
+            &valid_native_workflow(),
+            &yaml_serde::from_str(&valid_release_workflow_text()).unwrap(),
+            &mut issues,
+        );
+        assert!(
+            issues
+                .iter()
+                .any(|issue| issue.contains("repository-release-gate-missing")),
+            "{issues:?}"
+        );
+    }
+
+    #[test]
+    fn workflow_policy_rejects_missing_crate_size_gates() {
+        let broken_release = valid_release_workflow_text()
+            .replace("cargo package --locked --no-verify", "echo size unchecked");
+        let issues = workflow_policy_issues(&broken_release);
+        assert!(
+            issues
+                .iter()
+                .any(|issue| issue.contains("crates-io-package-size-gate-missing")),
+            "{issues:?}"
+        );
+
+        let broken_ci: YamlValue = yaml_serde::from_str(
+            "on:\n  pull_request: {branches: [main]}\n  push: {branches: [main]}\njobs:\n  native: {uses: './.github/workflows/native.yml'}\n  publish-dry-run:\n    steps: [{run: 'echo size unchecked'}]\n  required:\n    if: '${{ always() }}'\n    needs: [fmt, clippy, supply-chain, publish-dry-run, native]\n",
+        )
+        .unwrap();
+        let release = yaml_serde::from_str(&valid_release_workflow_text()).unwrap();
+        let mut issues = Vec::new();
+        check_workflow_policy(&broken_ci, &valid_native_workflow(), &release, &mut issues);
+        assert!(
+            issues
+                .iter()
+                .any(|issue| issue.contains("crates-io-package-size-gate-missing")),
+            "{issues:?}"
+        );
+    }
+
+    #[test]
+    fn crate_size_validation_enforces_the_registry_limit() {
+        assert!(validate_crate_size(CRATES_IO_PACKAGE_LIMIT_BYTES).is_ok());
+        let error = validate_crate_size(CRATES_IO_PACKAGE_LIMIT_BYTES + 1).unwrap_err();
+        assert!(error.contains("exceeding the crates.io limit"), "{error}");
+    }
+
+    #[test]
+    fn docs_python_gate_accepts_root_and_nested_helpers_in_both_modes() {
+        if execute_gate_fixture_child() {
+            return;
+        }
+        let root = release_gate_fixture();
+        write_gate_fixture_file(&root, "docs/helper.py", "# documentation helper\n");
+        write_gate_fixture_file(
+            &root,
+            "docs/qualification/reproduce.py",
+            "# qualification helper\n",
+        );
+        for generated in [".git", "target", ".codebaseGraph", ".kwiki"] {
+            write_gate_fixture_file(&root, &format!("{generated}/ignored.py"), "");
+            write_gate_fixture_file(&root, &format!("docs/{generated}/ignored.py"), "");
+        }
+
+        let test_name =
+            "tests::docs_python_gate_accepts_root_and_nested_helpers_in_both_modes";
+        for production in [false, true] {
+            run_gate_fixture_route(test_name, &root, production, true, &[], &[]);
+        }
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn docs_python_gate_rejects_neighbors_root_tooling_and_workflow_python() {
+        if execute_gate_fixture_child() {
+            return;
+        }
+        let root = release_gate_fixture();
+        write_gate_fixture_file(&root, "docs/allowed.py", "# optional local helper\n");
+        write_gate_fixture_file(&root, "docs-extra/neighbor.py", "");
+        write_gate_fixture_file(&root, "src/docs/neighbor.py", "");
+        write_gate_fixture_file(&root, "root.py", "");
+        write_gate_fixture_file(&root, "pyproject.toml", "");
+        write_gate_fixture_file(&root, "requirements-dev.txt", "");
+        write_gate_fixture_file(&root, "scripts/helper.py", "");
+        write_gate_fixture_file(&root, "src/codebase_graph/helper.py", "");
+        fs::remove_file(root.join("SECURITY.md")).unwrap();
+        let ci_path = root.join(".github/workflows/ci.yml");
+        let mut ci = fs::read_to_string(&ci_path).unwrap();
+        ci.push_str("\n# python -m is not an approved workflow step\n");
+        fs::write(ci_path, ci).unwrap();
+
+        let test_name =
+            "tests::docs_python_gate_rejects_neighbors_root_tooling_and_workflow_python";
+        let expected = [
+            "security-policy-missing",
+            "python-tooling-present: pyproject.toml",
+            "python-tooling-present: requirements-dev.txt",
+            "python-surface-present: scripts",
+            "python-surface-present: src/codebase_graph",
+            "python-file-present: docs-extra/neighbor.py",
+            "python-file-present: src/docs/neighbor.py",
+            "python-file-present: root.py",
+            "python-file-present: scripts/helper.py",
+            "python-file-present: src/codebase_graph/helper.py",
+            "workflow-python-tooling-present: .github/workflows/ci.yml",
+        ];
+        for production in [false, true] {
+            run_gate_fixture_route(
+                test_name,
+                &root,
+                production,
+                false,
+                &expected,
+                &["python-file-present: docs/allowed.py"],
+            );
+        }
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn docs_python_exception_rejects_component_aliases_and_symlinks() {
+        if execute_gate_fixture_child() {
+            return;
+        }
+        let aliases = release_gate_fixture();
+        write_gate_fixture_file(&aliases, "docs/helper.py", "");
+        assert!(super::is_docs_helper_path(&aliases, &aliases.join("docs/helper.py")).unwrap());
+        for candidate in [
+            aliases.join("docs/../docs/helper.py"),
+            PathBuf::from("./docs/helper.py"),
+            aliases.join("docs-extra/helper.py"),
+            aliases.join("src/docs/helper.py"),
+            aliases.parent().unwrap().join("outside/docs/helper.py"),
+        ] {
+            assert!(
+                !super::is_docs_helper_path(&aliases, &candidate).unwrap(),
+                "accepted alias {}",
+                candidate.display()
+            );
+        }
+        let missing = super::is_docs_helper_path(&aliases, &aliases.join("docs/missing.py"))
+            .unwrap_err();
+        assert!(missing.contains("cannot inspect docs Python exception path"), "{missing}");
+        #[cfg(windows)]
+        assert!(!super::is_docs_helper_path(&aliases, Path::new(r"C:\docs\helper.py")).unwrap());
+        fs::remove_dir_all(&aliases).unwrap();
+
+        let test_name =
+            "tests::docs_python_exception_rejects_component_aliases_and_symlinks";
+
+        let root = release_gate_fixture();
+        let outside = super::unique_temp_dir("cod107_docs_link_target").unwrap();
+        write_gate_fixture_file(&outside, "helper.py", "");
+        if let Err(error) = symlink_file(&outside.join("helper.py"), &root.join("docs/linked.py")) {
+            if symlink_privilege_unavailable(&error) {
+                eprintln!("Windows symlink privilege unavailable; symlink gate cases not executed: {error}");
+                fs::remove_dir_all(&root).unwrap();
+                fs::remove_dir_all(&outside).unwrap();
+                return;
+            }
+            panic!("could not create docs-to-outside symlink: {error}");
+        }
+        for production in [false, true] {
+            run_gate_fixture_route(
+                test_name,
+                &root,
+                production,
+                false,
+                &["docs Python exception rejects symlink path"],
+                &[],
+            );
+        }
+        fs::remove_dir_all(&root).unwrap();
+        fs::remove_dir_all(&outside).unwrap();
+
+        let root = release_gate_fixture();
+        write_gate_fixture_file(&root, "docs/inside.py", "");
+        let outside_link = root.join("outside/linked.py");
+        fs::create_dir_all(outside_link.parent().unwrap()).unwrap();
+        if let Err(error) = symlink_file(&root.join("docs/inside.py"), &outside_link) {
+            if symlink_privilege_unavailable(&error) {
+                eprintln!("Windows symlink privilege unavailable; remaining symlink gate cases not executed: {error}");
+                fs::remove_dir_all(&root).unwrap();
+                return;
+            }
+            panic!("could not create outside-to-docs symlink: {error}");
+        }
+        for production in [false, true] {
+            run_gate_fixture_route(
+                test_name,
+                &root,
+                production,
+                false,
+                &["python-file-present: outside/linked.py"],
+                &[],
+            );
+        }
+        fs::remove_dir_all(&root).unwrap();
+
+        let root = release_gate_fixture();
+        let outside = super::unique_temp_dir("cod107_docs_directory_target").unwrap();
+        write_gate_fixture_file(&outside, "helper.py", "");
+        fs::remove_dir_all(root.join("docs")).unwrap();
+        if let Err(error) = symlink_dir(&outside, &root.join("docs")) {
+            if symlink_privilege_unavailable(&error) {
+                eprintln!("Windows symlink privilege unavailable; docs-directory symlink case not executed: {error}");
+                fs::remove_dir_all(&root).unwrap();
+                fs::remove_dir_all(&outside).unwrap();
+                return;
+            }
+            panic!("could not create symlinked docs directory: {error}");
+        }
+        for production in [false, true] {
+            run_gate_fixture_route(
+                test_name,
+                &root,
+                production,
+                false,
+                &["docs Python exception rejects symlink path"],
+                &[],
+            );
+        }
+        fs::remove_dir_all(&root).unwrap();
+        fs::remove_dir_all(&outside).unwrap();
+    }
+}

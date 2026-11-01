@@ -1,0 +1,65 @@
+{
+  "source_sha256": "47558f4ce54d15f874c5680fb90b9e844afa612ae50de180e45c2d308356e2c6",
+  "helper": "retention_pr_event",
+  "definition_and_call_sites": [
+    {
+      "line": 3597,
+      "context": "3591:         )\n3592:         .and_then(|step| yaml_path(step, &[\"run\"]))\n3593:         .and_then(YamlValue::as_str)\n3594:         .unwrap()\n3595:     }\n3596: \n3597:     fn retention_pr_event(\n3598:         action: &str,\n3599:         head: &str,\n3600:         base: &str,\n3601:         head_repo: &str,\n3602:         base_repo: &str,\n3603:     ) -> Value {\n3604:         json!({\n3605:             \"action\": action,"
+    },
+    {
+      "line": 3906,
+      "context": "3900:             &serde_json::to_vec(&push).unwrap(),\n3901:             true,\n3902:         );\n3903:         positives += 1;\n3904:         for action in [\"opened\", \"synchronize\", \"reopened\", \"edited\"] {\n3905:             for base in [\"cod103-stack/cod-56\", \"main\"] {\n3906:                 let event = retention_pr_event(\n3907:                     action,\n3908:                     \"cod103-stack/cod-107\",\n3909:                     base,\n3910:                     repository,\n3911:                     repository,\n3912:                 );\n3913:                 assert_retention_result(\n3914:                     script,"
+    },
+    {
+      "line": 3947,
+      "context": "3941:             \"cod103-stack/cod-107/child\",\n3942:             \"COD103-stack/cod-107\",\n3943:         ] {\n3944:             negatives.push((\n3945:                 \"disallowed head\",\n3946:                 \"pull_request\",\n3947:                 retention_pr_event(\"opened\", head, \"main\", repository, repository),\n3948:             ));\n3949:         }\n3950:         for base in [\n3951:             \"cod103-stack/cod-105\",\n3952:             \"cod103-stack/cod-106\",\n3953:             \"cod103-stack/cod-107\",\n3954:             \"cod103-stack/cod-108\",\n3955:             \"unknown\","
+    },
+    {
+      "line": 3961,
+      "context": "3955:             \"unknown\",\n3956:             \"Main\",\n3957:         ] {\n3958:             negatives.push((\n3959:                 \"disallowed base\",\n3960:                 \"pull_request\",\n3961:                 retention_pr_event(\n3962:                     \"opened\",\n3963:                     \"cod103-stack/cod-107\",\n3964:                     base,\n3965:                     repository,\n3966:                     repository,\n3967:                 ),\n3968:             ));\n3969:         }"
+    },
+    {
+      "line": 3974,
+      "context": "3968:             ));\n3969:         }\n3970:         for action in [\"closed\", \"labeled\", \"ready_for_review\"] {\n3971:             negatives.push((\n3972:                 \"disallowed action\",\n3973:                 \"pull_request\",\n3974:                 retention_pr_event(\n3975:                     action,\n3976:                     \"cod103-stack/cod-107\",\n3977:                     \"main\",\n3978:                     repository,\n3979:                     repository,\n3980:                 ),\n3981:             ));\n3982:         }"
+    },
+    {
+      "line": 3983,
+      "context": "3977:                     \"main\",\n3978:                     repository,\n3979:                     repository,\n3980:                 ),\n3981:             ));\n3982:         }\n3983:         let mut different_head = retention_pr_event(\n3984:             \"opened\",\n3985:             \"cod103-stack/cod-107\",\n3986:             \"main\",\n3987:             repository,\n3988:             repository,\n3989:         );\n3990:         different_head[\"pull_request\"][\"head\"][\"repo\"][\"full_name\"] =\n3991:             json!(\"fork-owner/codebaseGraph\");"
+    },
+    {
+      "line": 3993,
+      "context": "3987:             repository,\n3988:             repository,\n3989:         );\n3990:         different_head[\"pull_request\"][\"head\"][\"repo\"][\"full_name\"] =\n3991:             json!(\"fork-owner/codebaseGraph\");\n3992:         negatives.push((\"fork head repository\", \"pull_request\", different_head));\n3993:         let mut different_base = retention_pr_event(\n3994:             \"opened\",\n3995:             \"cod103-stack/cod-107\",\n3996:             \"main\",\n3997:             repository,\n3998:             repository,\n3999:         );\n4000:         different_base[\"pull_request\"][\"base\"][\"repo\"][\"full_name\"] =\n4001:             json!(\"someone/codebaseGraph\");"
+    },
+    {
+      "line": 4003,
+      "context": "3997:             repository,\n3998:             repository,\n3999:         );\n4000:         different_base[\"pull_request\"][\"base\"][\"repo\"][\"full_name\"] =\n4001:             json!(\"someone/codebaseGraph\");\n4002:         negatives.push((\"different base repository\", \"pull_request\", different_base));\n4003:         let mut missing_head_repo = retention_pr_event(\n4004:             \"opened\",\n4005:             \"cod103-stack/cod-107\",\n4006:             \"main\",\n4007:             repository,\n4008:             repository,\n4009:         );\n4010:         missing_head_repo[\"pull_request\"][\"head\"][\"repo\"] = Value::Null;\n4011:         negatives.push((\"missing head repository\", \"pull_request\", missing_head_repo));"
+    },
+    {
+      "line": 4012,
+      "context": "4006:             \"main\",\n4007:             repository,\n4008:             repository,\n4009:         );\n4010:         missing_head_repo[\"pull_request\"][\"head\"][\"repo\"] = Value::Null;\n4011:         negatives.push((\"missing head repository\", \"pull_request\", missing_head_repo));\n4012:         let mut missing_base = retention_pr_event(\n4013:             \"opened\",\n4014:             \"cod103-stack/cod-107\",\n4015:             \"main\",\n4016:             repository,\n4017:             repository,\n4018:         );\n4019:         missing_base[\"pull_request\"][\"base\"]\n4020:             .as_object_mut()"
+    },
+    {
+      "line": 4024,
+      "context": "4018:         );\n4019:         missing_base[\"pull_request\"][\"base\"]\n4020:             .as_object_mut()\n4021:             .unwrap()\n4022:             .remove(\"ref\");\n4023:         negatives.push((\"missing base ref\", \"pull_request\", missing_base));\n4024:         let mut missing_action = retention_pr_event(\n4025:             \"opened\",\n4026:             \"cod103-stack/cod-107\",\n4027:             \"main\",\n4028:             repository,\n4029:             repository,\n4030:         );\n4031:         missing_action.as_object_mut().unwrap().remove(\"action\");\n4032:         negatives.push((\"missing action\", \"pull_request\", missing_action));"
+    },
+    {
+      "line": 4069,
+      "context": "4063:                         \".pull_request.head.repo.full_name == $repository and\\n\",\n4064:                         \"     .pull_request.base.repo.full_name == $repository and\\n\",\n4065:                         \"     \",\n4066:                     ),\n4067:                     \"\",\n4068:                 ),\n4069:                 retention_pr_event(\n4070:                     \"opened\",\n4071:                     \"cod103-stack/cod-107\",\n4072:                     \"main\",\n4073:                     \"fork-owner/codebaseGraph\",\n4074:                     repository,\n4075:                 ),\n4076:             ),\n4077:             ("
+    },
+    {
+      "line": 4086,
+      "context": "4080:                     concat!(\n4081:                         \"(.pull_request.base.ref == \\\"cod103-stack/cod-56\\\" or\\n\",\n4082:                         \"      .pull_request.base.ref == \\\"main\\\")\",\n4083:                     ),\n4084:                     \"true\",\n4085:                 ),\n4086:                 retention_pr_event(\n4087:                     \"opened\",\n4088:                     \"cod103-stack/cod-107\",\n4089:                     \"cod103-stack/cod-108\",\n4090:                     repository,\n4091:                     repository,\n4092:                 ),\n4093:             ),\n4094:             ("
+    },
+    {
+      "line": 4100,
+      "context": "4094:             (\n4095:                 \"case-folded head guard\",\n4096:                 script.replace(\n4097:                     \".pull_request.head.ref == \\\"cod103-stack/cod-107\\\"\",\n4098:                     \"(.pull_request.head.ref | ascii_downcase) == \\\"cod103-stack/cod-107\\\"\",\n4099:                 ),\n4100:                 retention_pr_event(\n4101:                     \"opened\",\n4102:                     \"COD103-stack/cod-107\",\n4103:                     \"main\",\n4104:                     repository,\n4105:                     repository,\n4106:                 ),\n4107:             ),\n4108:         ];"
+    }
+  ],
+  "Cargo_execution_started": "Only cargo fmt --all --check completed; no compilation/test/nextest/Clippy started",
+  "finding_pending_caller_cfg_audit": false,
+  "static_finding": "retention_pr_event is an unguarded private test helper at3597. All13 callsites are inside #[cfg(unix)] native_retention_actual_body_is_cod107_only at3890; on Windows that caller is absent while helper remains. This is an unused-function/dead_code warning risk in Windows tests under strict -D warnings.",
+  "execution_limit": "Static cfg/callsite confirmation only; Windows compiler was not run.",
+  "Cargo_compilation_started": false,
+  "deferred": "Independent nextest/tests/Clippy not started; defer until Engineer source-fix disposition. cargo fmt --all --check already passed on frozen47558 source, no passing compile/test canceled.",
+  "source_edited_by_verifier": false
+}

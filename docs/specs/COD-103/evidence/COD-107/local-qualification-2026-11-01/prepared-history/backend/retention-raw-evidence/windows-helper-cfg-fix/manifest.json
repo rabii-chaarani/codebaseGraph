@@ -1,0 +1,51 @@
+{
+  "before_main_sha256": "47558f4ce54d15f874c5680fb90b9e844afa612ae50de180e45c2d308356e2c6",
+  "after_main_sha256": "e4d256e451c03f447a4e374ed361d0d0b23d2898977d51953995fa307d896f1e",
+  "docs_release_sha256": "1e67f4949647c10a48f9184db230454572d666a756b68c203690398f525c7954",
+  "ci_yml_sha256": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+  "native_yml_sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+  "change": "One cfg(unix) attribute on test-only retention_pr_event; all call sites are under #[cfg(unix)] native_retention_actual_body_is_cod107_only. No other source or test behavior changed.",
+  "environment": "macOS ARM64; Rust/Cargo 1.96.0; xtask dev/test profile; --locked Cargo commands; no installation/dependency operation. Windows qualification not run.",
+  "commands": [
+    {
+      "label": "format",
+      "metadata": "format.json",
+      "metadata_sha256": "b961d7378a1fc926a5d94e4baa832f2ae5c943ca3ba117b67fa6a073c27b92fe",
+      "output": "format.combined-output.txt",
+      "output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exit_code": 0
+    },
+    {
+      "label": "focused_tests",
+      "metadata": "focused_tests.json",
+      "metadata_sha256": "751dee6b6045aed45620a024c49f31bb69b73cbf8fcc34f78132afd91433201a",
+      "output": "focused_tests.combined-output.txt",
+      "output_sha256": "68179a17b4dcb32a0d34d41dd00e356aa9684456c3bb74e92a8b29a684eede40",
+      "exit_code": 0
+    },
+    {
+      "label": "clippy",
+      "metadata": "clippy.json",
+      "metadata_sha256": "16abf9872febc7ebc536de5df97620feb90340b0225d6097bba2ed5946c812c3",
+      "output": "clippy.combined-output.txt",
+      "output_sha256": "d21a7eac05e7e69020fb18fafa04b5ba741911f8ccda6fe7fa70469404f8ad1b",
+      "exit_code": 0
+    },
+    {
+      "label": "full_xtask",
+      "metadata": "full_xtask.json",
+      "metadata_sha256": "a88ac89880a305388ea0714069844d7f2334cdc19a818f1e06a89ac595900501",
+      "output": "full_xtask.combined-output.txt",
+      "output_sha256": "1d97990028796f3991995bb91b02bbefcd38f7018d81962aeedde67067a11195",
+      "exit_code": 0
+    },
+    {
+      "label": "workflows_and_gate",
+      "metadata": "workflows_and_gate.json",
+      "metadata_sha256": "65356afad9299f4878795674b3f0ecc78463cb02b49b6c28b6d5375bef86eba5",
+      "output": "workflows_and_gate.combined-output.txt",
+      "output_sha256": "043a99f0d0fa905b54cd077f6300ccd57c134a9921d21d85c7139bb22cbf7c06",
+      "exit_code": 0
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+   Compiling xtask v4.0.5 (/private/tmp/codebasegraph-cod107-20261031/crates/xtask)
+error[E0425]: cannot find value `yaml_string_set` in this scope
+    --> crates/xtask/src/main.rs:3618:67
+     |
+3618 | ...   yaml_path(&ci, &["jobs", "native", "needs"]).and_then(yaml_string_set)==Some(BTreeSet::from(["native_retention".into()])),
+     |                                                             ^^^^^^^^^^^^^^^ not found in this scope
+     |
+help: consider importing this function
+     |
+2975 +     use crate::yaml_string_set;
+     |
+
+error[E0425]: cannot find value `yaml_string_set` in this scope
+    --> crates/xtask/src/main.rs:3626:49
+     |
+3626 | ...   yaml_path(req, &["needs"]).and_then(yaml_string_set)==Some(BTreeSet::from(["fmt".into(),"clippy".into(),"supply-chain".into(...
+     |                                           ^^^^^^^^^^^^^^^ not found in this scope
+     |
+help: consider importing this function
+     |
+2975 +     use crate::yaml_string_set;
+     |
+
+For more information about this error, try `rustc --explain E0425`.
+error: could not compile `xtask` (bin "xtask" test) due to 2 previous errors

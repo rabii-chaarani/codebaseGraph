@@ -31,7 +31,7 @@ asset and crate publication. Never copy a local CLI login token into repository 
 
 ## CI
 
-Pull requests targeting `main` and the approved COD-103 staging branches run the same full verification. The staged PR bases are exactly `main`, `cod103-stack/cod-105`, `cod103-stack/cod-106`, `cod103-stack/cod-56`, and `cod103-stack/cod-107`; pull-request activities are opened, synchronize, reopened, and edited. Pushes remain restricted to `main`. Staging checks are full CI, not release qualification; a changed head/base needs a fresh event and result. No privileged PR trigger or PR artifact retention is added.
+Pull requests targeting `main` and the approved COD-103 staging branches run the same full verification. The staged PR bases are exactly `main`, `cod103-stack/cod-105`, `cod103-stack/cod-106`, `cod103-stack/cod-56`, and `cod103-stack/cod-107`; pull-request activities are opened, synchronize, reopened, and edited. Pushes remain restricted to `main`. Staging checks are full CI, not release qualification; a changed head/base needs a fresh event and result. No privileged PR trigger or PR artifact promotion/publication is added. The separate COD-107 A03 method permits internal retention of the already-built native archives, sidecars, and provenance only for its qualifying same-repository PR, so the exact-source payloads can be independently inventoried. It adds no public release authority or permissions and changes no unrelated PR retention. All other PR artifact retention remains disabled.
 
 Every qualifying pull request and every push to `main` runs:
 
@@ -45,10 +45,12 @@ Every qualifying pull request and every push to `main` runs:
 - `cargo package -p k-wiki --locked --no-verify` and the isolated Knowledge Wiki smoke. The
   unpublished wiki binary uses the in-tree codebase-graph registrar, while the preceding root
   package check verifies that publishable shared API in isolation.
-- Release-ready package builds on macOS ARM64 and Windows x86_64. Pull requests build and smoke
-  them without retention; `main` retains both artifacts for 90 days.
-- A stable `required` aggregate check that succeeds only when every mandatory job succeeds. Repository rules should
-  require this check after it has appeared on `main` once.
+- Release-ready package builds on macOS ARM64 and Windows x86_64. The normal COD-107 same-repository staging PR may
+  retain both already-built archives, sidecars, and provenance for independent A03 inventory; other PRs upload none.
+  `main` retains both artifacts for 90 days. Retention does not skip verification or promote PR artifacts for publication.
+- The dedicated COD-107 selector controls only retention; native verification remains required on every PR, and the
+  stable `required` aggregate still succeeds only when every mandatory job succeeds. Repository rules should require
+  that check after it has appeared on `main` once.
 
 macOS ARM64 runs unit, generation-storage, and remaining integration/doctest cohorts independently. Windows uses four
 serial groups per cohort, including generation-storage, so each case runs once. Groups are discovered from
@@ -112,6 +114,19 @@ cargo run -p xtask -- release-gate --production \
 ```
 
 Add `--require-conda` when conda-forge submission is in scope for the release.
+
+### Optional local documentation helpers
+
+Python helpers are permitted only under `docs/` for documentation, evidence, qualification, audit, or reproduction support.
+They are optional local commands for explicit developer use with Python 3's standard library only. Path placement is
+necessary, not sufficient: helper content must not implement product build, runtime, installation, or release
+behavior.
+
+Do not add Python setup, dependencies, package/tool manifests, or helper invocations in CI, Release, product builds,
+runtime, or installation. Keep helpers out of native archives and published `.crate` payloads; ordinary Git source and
+tag snapshots may retain documentation.
+This policy does not restore or extract archived COD-99 helpers, and existing root-tooling, security, workflow, and
+other repository checks remain in force. It adds no helper or command to run.
 
 Release notes should list native smoke evidence, benchmark evidence used for rollout recommendations, and graph
 compatibility changes that require users to refresh `.codebaseGraph` state.

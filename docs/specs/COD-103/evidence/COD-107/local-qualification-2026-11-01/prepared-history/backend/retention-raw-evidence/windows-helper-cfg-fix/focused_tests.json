@@ -1,0 +1,6 @@
+{
+  "command": "cargo test --locked -p xtask native_retention_ -- --nocapture && cargo test --locked -p xtask workflow_policy_retention_wiring_is_closed -- --nocapture && cargo test --locked -p xtask required_rejects_retention_selector_failure -- --nocapture",
+  "exit_code": 0,
+  "streams": "BashResult returned combined stdout/stderr; not separable after execution",
+  "sha256": "68179a17b4dcb32a0d34d41dd00e356aa9684456c3bb74e92a8b29a684eede40"
+}

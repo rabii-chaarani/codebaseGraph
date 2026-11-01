@@ -1,0 +1,1690 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 66e3cc1..a2beaa6 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -99,8 +99,42 @@ jobs:
+       - name: Verify Knowledge Wiki package archive
+         run: cargo package -p k-wiki --locked --no-verify --config 'patch.crates-io.codebase-graph.path="."'
+ 
++  native_retention:
++    name: native artifact retention
++    runs-on: ubuntu-latest
++    outputs:
++      retain: ${{ steps.decision.outputs.retain }}
++    steps:
++      - name: Select native artifact retention
++        id: decision
++        shell: bash
++        run: |
++          set -euo pipefail
++          : "${GITHUB_EVENT_NAME:?}" "${GITHUB_REF:?}" "${GITHUB_REPOSITORY:?}" "${GITHUB_EVENT_PATH:?}" "${GITHUB_OUTPUT:?}"
++          retain="$(jq -r \
++            --arg event "$GITHUB_EVENT_NAME" \
++            --arg ref "$GITHUB_REF" \
++            --arg repository "$GITHUB_REPOSITORY" '
++            if type != "object" then error("Expected an event object")
++            elif $event == "push" then $ref == "refs/heads/main"
++            elif $event == "pull_request" then
++              ((.action == "opened" or .action == "synchronize" or
++                .action == "reopened" or .action == "edited") and
++               .pull_request.head.repo.full_name == $repository and
++               .pull_request.base.repo.full_name == $repository and
++               .pull_request.head.ref == "cod103-stack/cod-107" and
++               (.pull_request.base.ref == "cod103-stack/cod-56" or
++                .pull_request.base.ref == "main"))
++            else false
++            end' "$GITHUB_EVENT_PATH")"
++          case "$retain" in
++            true|false) printf 'retain=%s\n' "$retain" >> "$GITHUB_OUTPUT" ;;
++            *) echo 'Invalid native retention result' >&2; exit 1 ;;
++          esac
++
+   native:
+     name: native (${{ matrix.target }})
++    needs: [native_retention]
+     strategy:
+       fail-fast: false
+       matrix:
+@@ -114,7 +148,7 @@ jobs:
+       target: ${{ matrix.target }}
+       source-sha: ${{ github.sha }}
+       run-tests: ${{ matrix.run-tests }}
+-      upload-artifact: ${{ github.event_name == 'push' }}
++      upload-artifact: ${{ fromJSON(needs.native_retention.outputs.retain) }}
+       artifact-retention-days: 90
+ 
+   required:
+@@ -126,6 +160,7 @@ jobs:
+       - supply-chain
+       - publish-dry-run
+       - native
++      - native_retention
+     runs-on: ubuntu-latest
+     timeout-minutes: 5
+     steps:
+diff --git a/crates/xtask/src/main.rs b/crates/xtask/src/main.rs
+index f7d3409..59848bb 100644
+--- a/crates/xtask/src/main.rs
++++ b/crates/xtask/src/main.rs
+@@ -1002,6 +1002,109 @@ fn check_security_policy(issues: &mut Vec<String>) {
+     }
+ }
+ 
++fn is_docs_helper_path(root: &Path, candidate: &Path) -> Result<bool, String> {
++    let relative = if candidate.is_absolute() {
++        if let Ok(relative) = candidate.strip_prefix(root) {
++            relative.to_path_buf()
++        } else {
++            let repository_root = root.canonicalize().map_err(|error| {
++                format!(
++                    "cannot resolve repository root {} for the docs Python exception: {error}",
++                    root.display()
++                )
++            })?;
++            let Ok(relative) = candidate.strip_prefix(&repository_root) else {
++                return Ok(false);
++            };
++            relative.to_path_buf()
++        }
++    } else {
++        candidate
++            .strip_prefix(root)
++            .unwrap_or(candidate)
++            .to_path_buf()
++    };
++
++    let mut components = Vec::new();
++    for component in relative.components() {
++        let std::path::Component::Normal(name) = component else {
++            return Ok(false);
++        };
++        components.push(name.to_os_string());
++    }
++    if components.len() < 2
++        || components[0].to_str() != Some("docs")
++        || relative.extension() != Some(std::ffi::OsStr::new("py"))
++    {
++        return Ok(false);
++    }
++
++    let repository_root = root.canonicalize().map_err(|error| {
++        format!(
++            "cannot resolve repository root {} for the docs Python exception: {error}",
++            root.display()
++        )
++    })?;
++    let mut path = repository_root.clone();
++    for (index, component) in components.iter().enumerate() {
++        path.push(component);
++        let metadata = fs::symlink_metadata(&path).map_err(|error| {
++            format!(
++                "cannot inspect docs Python exception path {}: {error}; no exception is granted",
++                path.display()
++            )
++        })?;
++        if metadata.file_type().is_symlink() {
++            return Err(format!(
++                "docs Python exception rejects symlink path {}; no exception is granted",
++                path.display()
++            ));
++        }
++        let is_last = index + 1 == components.len();
++        if (is_last && !metadata.is_file()) || (!is_last && !metadata.is_dir()) {
++            return Ok(false);
++        }
++    }
++
++    let docs = repository_root.join("docs");
++    let real_docs = docs.canonicalize().map_err(|error| {
++        format!(
++            "cannot resolve literal docs directory {}: {error}; no exception is granted",
++            docs.display()
++        )
++    })?;
++    if real_docs.parent() != Some(repository_root.as_path()) {
++        return Err(format!(
++            "docs directory {} does not resolve to the repository's literal docs directory; no exception is granted",
++            docs.display()
++        ));
++    }
++    let real_candidate = path.canonicalize().map_err(|error| {
++        format!(
++            "cannot resolve docs Python exception path {}: {error}; no exception is granted",
++            path.display()
++        )
++    })?;
++    if real_candidate.strip_prefix(&real_docs).is_err() {
++        return Err(format!(
++            "docs Python exception path {} resolves outside literal docs; no exception is granted",
++            path.display()
++        ));
++    }
++
++    Ok(true)
++}
++
++fn has_generated_component(path: &Path) -> bool {
++    path.components().any(|component| {
++        matches!(
++            component,
++            std::path::Component::Normal(name)
++                if matches!(name.to_str(), Some(".git" | "target" | ".codebaseGraph" | ".kwiki"))
++        )
++    })
++}
++
+ fn check_rust_only_files(issues: &mut Vec<String>) {
+     for forbidden in ["pyproject.toml", "requirements-dev.txt"] {
+         if Path::new(forbidden).exists() {
+@@ -1019,19 +1122,21 @@ fn check_rust_only_files(issues: &mut Vec<String>) {
+     }
+     for path in files_under(Path::new(".")) {
+         let relative = path.strip_prefix(".").unwrap_or(&path);
+-        let text_path = relative.to_string_lossy();
+-        if text_path.contains("/target/")
+-            || text_path.contains("/.git/")
+-            || text_path.contains("/.codebaseGraph/")
+-            || text_path.contains("/.kwiki/")
+-        {
++        if has_generated_component(relative) {
+             continue;
+         }
+         if path.extension().is_some_and(|extension| extension == "py") {
+-            issues.push(format!(
+-                "FAIL: python-file-present: {} must not be maintained source.",
+-                text_path
+-            ));
++            let text_path = relative.to_string_lossy();
++            match is_docs_helper_path(Path::new("."), &path) {
++                Ok(true) => {}
++                Ok(false) => issues.push(format!(
++                    "FAIL: python-file-present: {} must not be maintained source.",
++                    text_path
++                )),
++                Err(error) => {
++                    issues.push(format!("FAIL: docs-python-exception-unavailable: {error}."))
++                }
++            }
+         }
+     }
+ }
+@@ -1208,11 +1313,145 @@ fn check_workflows(issues: &mut Vec<String>) {
+     }
+ }
+ 
+-#[cfg(test)]
+-fn workflow_yaml_error(text: &str) -> Option<String> {
+-    yaml_serde::from_str::<YamlValue>(text)
+-        .err()
+-        .map(|error| error.to_string())
++fn native_retention_policy_valid(ci: &YamlValue, native: &YamlValue) -> bool {
++    let selector = yaml_path(ci, &["jobs", "native_retention"]).unwrap_or(&YamlValue::Null);
++    let selector_steps = yaml_path(selector, &["steps"]).and_then(YamlValue::as_sequence);
++    let selector_step = yaml_step_by_id(selector, "decision").unwrap_or(&YamlValue::Null);
++    let selector_outputs = yaml_path(selector, &["outputs"]).unwrap_or(&YamlValue::Null);
++    let native_job = yaml_path(ci, &["jobs", "native"]).unwrap_or(&YamlValue::Null);
++    let native_with = yaml_path(native_job, &["with"]).unwrap_or(&YamlValue::Null);
++    let upload_input = yaml_path(
++        native,
++        &["on", "workflow_call", "inputs", "upload-artifact"],
++    )
++    .unwrap_or(&YamlValue::Null);
++    let retention_input = yaml_path(
++        native,
++        &["on", "workflow_call", "inputs", "artifact-retention-days"],
++    )
++    .unwrap_or(&YamlValue::Null);
++    let upload_step = yaml_step_by_name(
++        yaml_path(native, &["jobs", "native"]).unwrap_or(&YamlValue::Null),
++        "Upload internal artifact",
++    )
++    .unwrap_or(&YamlValue::Null);
++    let upload_with = yaml_path(upload_step, &["with"]).unwrap_or(&YamlValue::Null);
++    let diagnostics_upload = yaml_step_by_name(
++        yaml_path(native, &["jobs", "tests"]).unwrap_or(&YamlValue::Null),
++        "Upload native test diagnostics",
++    )
++    .unwrap_or(&YamlValue::Null);
++
++    let selector_valid = yaml_path(selector, &["name"]).and_then(YamlValue::as_str)
++        == Some("native artifact retention")
++        && yaml_path(selector, &["runs-on"]).and_then(YamlValue::as_str) == Some("ubuntu-latest")
++        && selector.get("permissions").is_none()
++        && selector.get("environment").is_none()
++        && selector.get("env").is_none()
++        && selector.get("needs").is_none()
++        && selector.get("if").is_none()
++        && selector.get("continue-on-error").is_none()
++        && selector_steps.is_some_and(|steps| steps.len() == 1)
++        && yaml_path(selector_step, &["name"]).and_then(YamlValue::as_str)
++            == Some("Select native artifact retention")
++        && yaml_path(selector_step, &["id"]).and_then(YamlValue::as_str) == Some("decision")
++        && yaml_path(selector_step, &["shell"]).and_then(YamlValue::as_str) == Some("bash")
++        && yaml_path(selector_step, &["run"])
++            .and_then(YamlValue::as_str)
++            .is_some_and(|run| !run.trim().is_empty())
++        && selector_step.get("uses").is_none()
++        && selector_step.get("env").is_none()
++        && selector_step.get("if").is_none()
++        && selector_step.get("continue-on-error").is_none()
++        && yaml_mapping_key_set(Some(selector_outputs))
++            == Some(BTreeSet::from(["retain".to_string()]))
++        && yaml_path(selector_outputs, &["retain"]).and_then(YamlValue::as_str)
++            == Some("${{ steps.decision.outputs.retain }}");
++
++    let native_valid = yaml_path(native_job, &["uses"]).and_then(YamlValue::as_str)
++        == Some("./.github/workflows/native.yml")
++        && yaml_path(native_job, &["needs"]).and_then(yaml_string_set)
++            == Some(BTreeSet::from(["native_retention".to_string()]))
++        && yaml_path(native_job, &["strategy", "matrix", "include"])
++            .and_then(YamlValue::as_sequence)
++            .is_some_and(|targets| {
++                let expected_targets: BTreeSet<String> = NATIVE_TARGETS
++                    .iter()
++                    .map(|target| target.as_str().to_string())
++                    .collect();
++                let actual_targets: BTreeSet<String> = targets
++                    .iter()
++                    .filter_map(|target| {
++                        yaml_path(target, &["target"])
++                            .and_then(YamlValue::as_str)
++                            .map(str::to_string)
++                    })
++                    .collect();
++                targets.len() == expected_targets.len()
++                    && actual_targets == expected_targets
++                    && targets.iter().all(|target| {
++                        yaml_path(target, &["run-tests"]).and_then(YamlValue::as_bool) == Some(true)
++                    })
++            })
++        && native_job.get("if").is_none()
++        && native_job.get("continue-on-error").is_none()
++        && yaml_path(native_with, &["target"]).and_then(YamlValue::as_str)
++            == Some("${{ matrix.target }}")
++        && yaml_path(native_with, &["source-sha"]).and_then(YamlValue::as_str)
++            == Some("${{ github.sha }}")
++        && yaml_path(native_with, &["run-tests"]).and_then(YamlValue::as_str)
++            == Some("${{ matrix.run-tests }}")
++        && yaml_path(native_with, &["upload-artifact"]).and_then(YamlValue::as_str)
++            == Some("${{ fromJSON(needs.native_retention.outputs.retain) }}")
++        && yaml_path(native_with, &["artifact-retention-days"]).and_then(YamlValue::as_i64)
++            == Some(90)
++        && yaml_path(upload_input, &["required"]).and_then(YamlValue::as_bool) == Some(true)
++        && yaml_path(upload_input, &["type"]).and_then(YamlValue::as_str) == Some("boolean")
++        && yaml_path(retention_input, &["required"]).and_then(YamlValue::as_bool) == Some(true)
++        && yaml_path(retention_input, &["type"]).and_then(YamlValue::as_str) == Some("number")
++        && yaml_path(upload_step, &["if"]).and_then(YamlValue::as_str)
++            == Some("inputs.upload-artifact")
++        && yaml_path(upload_step, &["uses"]).and_then(YamlValue::as_str)
++            == Some("actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a")
++        && yaml_path(upload_with, &["name"]).and_then(YamlValue::as_str)
++            == Some("native-${{ inputs.target }}")
++        && yaml_path(upload_with, &["path"]).and_then(YamlValue::as_str)
++            == Some("dist/${{ inputs.target }}/")
++        && yaml_path(upload_with, &["if-no-files-found"]).and_then(YamlValue::as_str)
++            == Some("error")
++        && yaml_path(upload_with, &["retention-days"]).and_then(YamlValue::as_str)
++            == Some("${{ inputs.artifact-retention-days }}")
++        && yaml_path(diagnostics_upload, &["if"]).and_then(YamlValue::as_str) == Some("always()")
++        && yaml_path(diagnostics_upload, &["with", "retention-days"]).and_then(YamlValue::as_i64)
++            == Some(3);
++
++    let required_needs = yaml_path(ci, &["jobs", "required", "needs"])
++        .and_then(yaml_string_set)
++        .unwrap_or_default();
++    let required_step = yaml_step_by_name(
++        yaml_path(ci, &["jobs", "required"]).unwrap_or(&YamlValue::Null),
++        "Require every mandatory job",
++    )
++    .unwrap_or(&YamlValue::Null);
++    let expected_required_run = "set -euo pipefail\nif jq -e 'to_entries | any(.value.result != \"success\")' <<<\"$RESULTS\" >/dev/null; then\n  echo \"$RESULTS\"\n  exit 1\nfi\n";
++    let expected_required_needs = BTreeSet::from([
++        "fmt".to_string(),
++        "clippy".to_string(),
++        "supply-chain".to_string(),
++        "publish-dry-run".to_string(),
++        "native".to_string(),
++        "native_retention".to_string(),
++    ]);
++    selector_valid
++        && native_valid
++        && required_needs == expected_required_needs
++        && yaml_path(ci, &["jobs", "required", "if"]).and_then(YamlValue::as_str)
++            == Some("${{ always() }}")
++        && yaml_path(required_step, &["shell"]).and_then(YamlValue::as_str) == Some("bash")
++        && yaml_path(required_step, &["env", "RESULTS"]).and_then(YamlValue::as_str)
++            == Some("${{ toJSON(needs) }}")
++        && yaml_path(required_step, &["run"]).and_then(YamlValue::as_str)
++            == Some(expected_required_run)
+ }
+ 
+ fn check_workflow_policy(
+@@ -1310,17 +1549,29 @@ fn check_workflow_policy(
+     let required_needs = yaml_path(ci, &["jobs", "required", "needs"])
+         .and_then(yaml_string_set)
+         .unwrap_or_default();
+-    let expected_needs: BTreeSet<String> =
+-        ["fmt", "clippy", "supply-chain", "publish-dry-run", "native"]
+-            .into_iter()
+-            .map(str::to_string)
+-            .collect();
++    let expected_needs: BTreeSet<String> = [
++        "fmt",
++        "clippy",
++        "supply-chain",
++        "publish-dry-run",
++        "native",
++        "native_retention",
++    ]
++    .into_iter()
++    .map(str::to_string)
++    .collect();
+     if required_needs != expected_needs {
+         issues.push(
+             "FAIL: workflow-required-incomplete: required job must depend on every mandatory CI job."
+                 .to_string(),
+         );
+     }
++    if !native_retention_policy_valid(ci, native) {
++        issues.push(
++            "FAIL: native-retention-policy-invalid: retention must remain COD-107-only without skipping native verification."
++                .to_string(),
++        );
++    }
+     let ci_publish = yaml_path(ci, &["jobs", "publish-dry-run"]).unwrap_or(&YamlValue::Null);
+     if !yaml_contains_string(ci_publish, "cargo run -p xtask --locked -- release-gate") {
+         issues.push(
+@@ -1695,6 +1946,13 @@ fn check_workflow_policy(
+     }
+ }
+ 
++#[cfg(test)]
++fn workflow_yaml_error(text: &str) -> Option<String> {
++    yaml_serde::from_str::<YamlValue>(text)
++        .err()
++        .map(|error| error.to_string())
++}
++
+ fn yaml_path<'a>(value: &'a YamlValue, path: &[&str]) -> Option<&'a YamlValue> {
+     let mut current = value;
+     for key in path {
+@@ -2758,15 +3016,189 @@ fn files_under(root: &Path) -> Vec<PathBuf> {
+ mod tests {
+     use super::{
+         check_workflow_policy, create_native_archive, extract_and_validate_native_archive,
+-        native_test_command, release_version_from_tag, sha256_file, validate_commit_sha,
+-        validate_crate_size, validate_native_artifact_set, workflow_yaml_error, NativeProvenance,
++        native_retention_policy_valid, native_test_command, release_version_from_tag, sha256_file,
++        validate_commit_sha, validate_crate_size, validate_native_artifact_set,
++        workflow_yaml_error, yaml_path, yaml_step_by_id, yaml_step_by_name, NativeProvenance,
+         NativeTarget, YamlValue, CRATES_IO_PACKAGE_LIMIT_BYTES, NATIVE_TARGETS,
+     };
+     use serde_json::{json, Value};
+     use std::collections::BTreeSet;
+     use std::fs;
+-    use std::path::Path;
+-    use std::process::{ExitStatus, Output};
++    use std::path::{Path, PathBuf};
++    use std::process::{Command, ExitStatus, Output};
++
++    const GATE_FIXTURE_CHILD_MARKER: &str = ".cod107-gate-fixture-mode";
++
++    fn release_gate_fixture() -> PathBuf {
++        let root = super::unique_temp_dir("cod107_release_gate_fixture").unwrap();
++        let project = Path::new(env!("CARGO_MANIFEST_DIR"))
++            .join("../..")
++            .canonicalize()
++            .unwrap();
++        for relative in [
++            "SECURITY.md",
++            "Cargo.toml",
++            "crates/k-wiki/Cargo.toml",
++            "release-please-config.json",
++            ".github/workflows/ci.yml",
++            ".github/workflows/native.yml",
++            ".github/workflows/release.yml",
++            "src/lib.rs",
++            "src/adapters/cli/mod.rs",
++        ] {
++            let source = project.join(relative);
++            let destination = root.join(relative);
++            fs::create_dir_all(destination.parent().unwrap()).unwrap();
++            fs::copy(&source, &destination).unwrap_or_else(|error| {
++                panic!(
++                    "could not copy gate fixture file {}: {error}",
++                    source.display()
++                )
++            });
++        }
++        fs::create_dir_all(root.join("docs")).unwrap();
++        root
++    }
++
++    fn write_gate_fixture_file(root: &Path, relative: &str, contents: &str) {
++        let path = root.join(relative);
++        fs::create_dir_all(path.parent().unwrap()).unwrap();
++        fs::write(path, contents).unwrap();
++    }
++
++    fn execute_gate_fixture_child() -> bool {
++        let Ok(mode) = fs::read_to_string(GATE_FIXTURE_CHILD_MARKER) else {
++            return false;
++        };
++        let mode = mode.trim();
++        let (route, outcome) = mode.split_once(':').expect("valid gate fixture child mode");
++        let production = match route {
++            "ordinary" => false,
++            "production" => true,
++            _ => panic!("unknown gate fixture route {route}"),
++        };
++        let expected_success = match outcome {
++            "pass" => true,
++            "reject" => false,
++            _ => panic!("unknown gate fixture outcome {outcome}"),
++        };
++        let args = if production {
++            [
++                "--production".to_string(),
++                "--confirm".to_string(),
++                "release-environment".to_string(),
++                "--confirm".to_string(),
++                "private-vulnerability-reporting".to_string(),
++            ]
++            .to_vec()
++        } else {
++            Vec::new()
++        };
++        let result = super::release_gate(args);
++        assert_eq!(
++            result.is_ok(),
++            expected_success,
++            "release_gate returned {result:?} for {route}:{outcome}"
++        );
++        true
++    }
++
++    fn run_gate_fixture_route(
++        test_name: &str,
++        root: &Path,
++        production: bool,
++        expected_success: bool,
++        expected_diagnostics: &[&str],
++        forbidden_diagnostics: &[&str],
++    ) -> String {
++        let route = if production { "production" } else { "ordinary" };
++        let outcome = if expected_success { "pass" } else { "reject" };
++        fs::write(
++            root.join(GATE_FIXTURE_CHILD_MARKER),
++            format!("{route}:{outcome}"),
++        )
++        .unwrap();
++        let output = Command::new(std::env::current_exe().unwrap())
++            .args(["--exact", test_name, "--nocapture"])
++            .current_dir(root)
++            .output()
++            .unwrap_or_else(|error| panic!("could not run gate fixture child: {error}"));
++        let report = format!(
++            "{}\n{}",
++            String::from_utf8_lossy(&output.stdout),
++            String::from_utf8_lossy(&output.stderr)
++        );
++        assert!(
++            output.status.success(),
++            "gate fixture child failed for {route}:\n{report}"
++        );
++        if expected_success {
++            assert!(report.contains("release gate passed"), "{report}");
++        }
++        for diagnostic in expected_diagnostics {
++            assert!(
++                report.contains(diagnostic),
++                "missing {diagnostic:?}:\n{report}"
++            );
++        }
++        for diagnostic in forbidden_diagnostics {
++            assert!(
++                !report.contains(diagnostic),
++                "unexpected {diagnostic:?}:\n{report}"
++            );
++        }
++        report
++    }
++
++    fn symlink_privilege_unavailable(error: &std::io::Error) -> bool {
++        #[cfg(windows)]
++        {
++            return error.raw_os_error() == Some(1314);
++        }
++        #[cfg(not(windows))]
++        {
++            let _ = error;
++            false
++        }
++    }
++
++    fn symlink_file(target: &Path, link: &Path) -> std::io::Result<()> {
++        #[cfg(unix)]
++        {
++            std::os::unix::fs::symlink(target, link)
++        }
++        #[cfg(windows)]
++        {
++            std::os::windows::fs::symlink_file(target, link)
++        }
++        #[cfg(not(any(unix, windows)))]
++        {
++            let _ = (target, link);
++            Err(std::io::Error::new(
++                std::io::ErrorKind::Unsupported,
++                "symlinks are unsupported on this host",
++            ))
++        }
++    }
++
++    fn symlink_dir(target: &Path, link: &Path) -> std::io::Result<()> {
++        #[cfg(unix)]
++        {
++            std::os::unix::fs::symlink(target, link)
++        }
++        #[cfg(windows)]
++        {
++            std::os::windows::fs::symlink_dir(target, link)
++        }
++        #[cfg(not(any(unix, windows)))]
++        {
++            let _ = (target, link);
++            Err(std::io::Error::new(
++                std::io::ErrorKind::Unsupported,
++                "symlinks are unsupported on this host",
++            ))
++        }
++    }
+ 
+     fn mcp_smoke_output(exit_code: i32, stdout: &str) -> Output {
+         #[cfg(unix)]
+@@ -3071,6 +3503,849 @@ mod tests {
+         .unwrap();
+     }
+ 
++    #[cfg(unix)]
++    struct NativeRetentionInput<'a> {
++        event_name: Option<&'a str>,
++        git_ref: Option<&'a str>,
++        repository: Option<&'a str>,
++        event_json: Option<&'a [u8]>,
++        missing_event_file: bool,
++        missing_event_path: bool,
++        missing_output: bool,
++        output_path_is_directory: bool,
++    }
++
++    #[cfg(unix)]
++    fn run_native_retention_script(
++        script: &str,
++        input: NativeRetentionInput<'_>,
++    ) -> (Output, String) {
++        let NativeRetentionInput {
++            event_name,
++            git_ref,
++            repository,
++            event_json,
++            missing_event_file,
++            missing_event_path,
++            missing_output,
++            output_path_is_directory,
++        } = input;
++        let root = super::unique_temp_dir("native_retention_step").unwrap();
++        let event_path = root.join("event.json");
++        if let Some(payload) = event_json {
++            fs::write(&event_path, payload).unwrap();
++        }
++        let output_path = root.join("github-output");
++        if output_path_is_directory {
++            fs::create_dir(&output_path).unwrap();
++        }
++        let event_path = if missing_event_file {
++            root.join("missing-event.json")
++        } else {
++            event_path
++        };
++        let mut command = Command::new("bash");
++        command
++            .arg("-c")
++            .arg(script)
++            .current_dir(&root)
++            .env_clear()
++            .env("PATH", std::env::var_os("PATH").unwrap())
++            .env_remove("BASH_ENV");
++        if missing_event_path {
++            command.env_remove("GITHUB_EVENT_PATH");
++        } else {
++            command.env("GITHUB_EVENT_PATH", &event_path);
++        }
++        if let Some(value) = event_name {
++            command.env("GITHUB_EVENT_NAME", value);
++        } else {
++            command.env_remove("GITHUB_EVENT_NAME");
++        }
++        if let Some(value) = git_ref {
++            command.env("GITHUB_REF", value);
++        } else {
++            command.env_remove("GITHUB_REF");
++        }
++        if let Some(value) = repository {
++            command.env("GITHUB_REPOSITORY", value);
++        } else {
++            command.env_remove("GITHUB_REPOSITORY");
++        }
++        if missing_output {
++            command.env_remove("GITHUB_OUTPUT");
++        } else {
++            command.env("GITHUB_OUTPUT", &output_path);
++        }
++        let output = command.output().unwrap();
++        let output_text = fs::read_to_string(&output_path).unwrap_or_default();
++        fs::remove_dir_all(root).unwrap();
++        (output, output_text)
++    }
++
++    #[cfg(unix)]
++    fn native_retention_step(ci: &YamlValue) -> &str {
++        yaml_step_by_id(
++            yaml_path(ci, &["jobs", "native_retention"]).unwrap(),
++            "decision",
++        )
++        .and_then(|step| yaml_path(step, &["run"]))
++        .and_then(YamlValue::as_str)
++        .unwrap()
++    }
++
++    fn retention_pr_event(
++        action: &str,
++        head: &str,
++        base: &str,
++        head_repo: &str,
++        base_repo: &str,
++    ) -> Value {
++        json!({
++            "action": action,
++            "pull_request": {
++                "head": {"ref": head, "repo": {"full_name": head_repo}},
++                "base": {"ref": base, "repo": {"full_name": base_repo}}
++            }
++        })
++    }
++
++    #[cfg(unix)]
++    fn assert_retention_result(
++        script: &str,
++        event_name: &str,
++        git_ref: &str,
++        event_json: &[u8],
++        expected: bool,
++    ) {
++        let (output, value) = run_native_retention_script(
++            script,
++            NativeRetentionInput {
++                event_name: Some(event_name),
++                git_ref: Some(git_ref),
++                repository: Some("rabii-chaarani/codebaseGraph"),
++                event_json: Some(event_json),
++                missing_event_file: false,
++                missing_event_path: false,
++                missing_output: false,
++                output_path_is_directory: false,
++            },
++        );
++        assert!(
++            output.status.success(),
++            "retention selector failed: {}{}",
++            String::from_utf8_lossy(&output.stdout),
++            String::from_utf8_lossy(&output.stderr)
++        );
++        assert_eq!(
++            value,
++            format!("retain={}\n", if expected { "true" } else { "false" }),
++            "event={event_name} ref={git_ref} expected={expected} payload={}",
++            String::from_utf8_lossy(event_json)
++        );
++    }
++
++    #[cfg(unix)]
++    fn run_required_result(run: &str, results: &Value) -> Output {
++        Command::new("bash")
++            .arg("-c")
++            .arg(run)
++            .env_clear()
++            .env("PATH", std::env::var_os("PATH").unwrap())
++            .env("RESULTS", results.to_string())
++            .output()
++            .unwrap()
++    }
++
++    #[test]
++    fn workflow_policy_retention_wiring_is_closed() {
++        let ci = valid_ci_workflow();
++        let native = valid_native_workflow();
++        assert!(native_retention_policy_valid(&ci, &native));
++
++        type CiMutation = (&'static str, Box<dyn Fn(&mut YamlValue)>);
++        let mutations: Vec<CiMutation> = vec![
++            (
++                "selector-output-mapping",
++                Box::new(|ci| {
++                    ci["jobs"]["native_retention"]["outputs"]["retain"] =
++                        YamlValue::String("${{ steps.other.outputs.retain }}".into())
++                }),
++            ),
++            (
++                "native-prerequisite",
++                Box::new(|ci| {
++                    ci["jobs"]["native"]["needs"] = yaml_serde::from_str("[fmt]").unwrap()
++                }),
++            ),
++            (
++                "upload-boolean-binding",
++                Box::new(|ci| {
++                    ci["jobs"]["native"]["with"]["upload-artifact"] =
++                        YamlValue::String("true".into())
++                }),
++            ),
++            (
++                "source-sha-binding",
++                Box::new(|ci| {
++                    ci["jobs"]["native"]["with"]["source-sha"] =
++                        YamlValue::String("${{ github.event.pull_request.head.sha }}".into())
++                }),
++            ),
++            (
++                "artifact-retention-days",
++                Box::new(|ci| {
++                    ci["jobs"]["native"]["with"]["artifact-retention-days"] =
++                        YamlValue::Number(3.into())
++                }),
++            ),
++            (
++                "required-dependency",
++                Box::new(|ci| {
++                    ci["jobs"]["required"]["needs"]
++                        .as_sequence_mut()
++                        .unwrap()
++                        .retain(|need| need.as_str() != Some("native_retention"))
++                }),
++            ),
++            (
++                "selector-skips-native",
++                Box::new(|ci| {
++                    ci["jobs"]["native"]["if"] =
++                        YamlValue::String("needs.native_retention.outputs.retain == 'true'".into())
++                }),
++            ),
++            (
++                "selector-extra-permission",
++                Box::new(|ci| {
++                    ci["jobs"]["native_retention"]["permissions"]["contents"] =
++                        YamlValue::String("write".into())
++                }),
++            ),
++            (
++                "selector-checkout-action",
++                Box::new(|ci| {
++                    ci["jobs"]["native_retention"]["steps"]
++                        .as_sequence_mut()
++                        .unwrap()
++                        .push(yaml_serde::from_str("uses: actions/checkout@v6").unwrap())
++                }),
++            ),
++            (
++                "selector-step-condition",
++                Box::new(|ci| {
++                    ci["jobs"]["native_retention"]["steps"][0]["if"] =
++                        YamlValue::String("always()".into())
++                }),
++            ),
++            (
++                "selector-step-environment",
++                Box::new(|ci| {
++                    ci["jobs"]["native_retention"]["steps"][0]["env"]["GITHUB_REF"] =
++                        YamlValue::String("main".into())
++                }),
++            ),
++        ];
++        for (label, mutate) in mutations {
++            let mut changed = ci.clone();
++            mutate(&mut changed);
++            assert!(
++                !native_retention_policy_valid(&changed, &native),
++                "accepted retention wiring mutation {label}"
++            );
++        }
++
++        let mut selector_without_decision = ci.clone();
++        selector_without_decision["jobs"]["native_retention"]["steps"] =
++            YamlValue::Sequence(Vec::new());
++        assert!(!native_retention_policy_valid(
++            &selector_without_decision,
++            &native
++        ));
++        let mut extra_step_env = ci.clone();
++        extra_step_env["jobs"]["native_retention"]["steps"][0]["env"]["GITHUB_REF"] =
++            YamlValue::String("refs/heads/main".into());
++        assert!(!native_retention_policy_valid(&extra_step_env, &native));
++        let mut no_tests_on_native = native.clone();
++        no_tests_on_native["jobs"]["native"]["needs"] = YamlValue::Sequence(Vec::new());
++        let mut issues = Vec::new();
++        check_workflow_policy(
++            &ci,
++            &no_tests_on_native,
++            &yaml_serde::from_str(&valid_release_workflow_text()).unwrap(),
++            &mut issues,
++        );
++        assert!(
++            issues
++                .iter()
++                .any(|issue| issue.contains("native-test-gate")),
++            "native test gate mutation escaped policy: {issues:?}"
++        );
++
++        let native_mutations: Vec<CiMutation> = vec![
++            (
++                "upload-not-boolean",
++                Box::new(|native| {
++                    native["on"]["workflow_call"]["inputs"]["upload-artifact"]["type"] =
++                        YamlValue::String("string".into())
++                }),
++            ),
++            (
++                "upload-guard",
++                Box::new(|native| {
++                    native["jobs"]["native"]["steps"]
++                        .as_sequence_mut()
++                        .unwrap()
++                        .iter_mut()
++                        .find(|step| {
++                            step.get("name").and_then(YamlValue::as_str)
++                                == Some("Upload internal artifact")
++                        })
++                        .unwrap()["if"] = YamlValue::String("always()".into())
++                }),
++            ),
++            (
++                "upload-path",
++                Box::new(|native| {
++                    native["jobs"]["native"]["steps"]
++                        .as_sequence_mut()
++                        .unwrap()
++                        .iter_mut()
++                        .find(|step| {
++                            step.get("name").and_then(YamlValue::as_str)
++                                == Some("Upload internal artifact")
++                        })
++                        .unwrap()["with"]["path"] = YamlValue::String(".".into())
++                }),
++            ),
++            (
++                "upload-target-name",
++                Box::new(|native| {
++                    native["jobs"]["native"]["steps"]
++                        .as_sequence_mut()
++                        .unwrap()
++                        .iter_mut()
++                        .find(|step| {
++                            step.get("name").and_then(YamlValue::as_str)
++                                == Some("Upload internal artifact")
++                        })
++                        .unwrap()["with"]["name"] = YamlValue::String("shared".into())
++                }),
++            ),
++            (
++                "missing-files-policy",
++                Box::new(|native| {
++                    native["jobs"]["native"]["steps"]
++                        .as_sequence_mut()
++                        .unwrap()
++                        .iter_mut()
++                        .find(|step| {
++                            step.get("name").and_then(YamlValue::as_str)
++                                == Some("Upload internal artifact")
++                        })
++                        .unwrap()["with"]["if-no-files-found"] = YamlValue::String("warn".into())
++                }),
++            ),
++            (
++                "retention-input-binding",
++                Box::new(|native| {
++                    native["jobs"]["native"]["steps"]
++                        .as_sequence_mut()
++                        .unwrap()
++                        .iter_mut()
++                        .find(|step| {
++                            step.get("name").and_then(YamlValue::as_str)
++                                == Some("Upload internal artifact")
++                        })
++                        .unwrap()["with"]["retention-days"] = YamlValue::String("3".into())
++                }),
++            ),
++        ];
++        for (label, mutate) in native_mutations {
++            let mut changed = native.clone();
++            mutate(&mut changed);
++            assert!(
++                !native_retention_policy_valid(&ci, &changed),
++                "accepted reusable native workflow mutation {label}"
++            );
++        }
++
++        let mut required_body = ci.clone();
++        required_body["jobs"]["required"]["steps"][0]["run"] =
++            YamlValue::String("echo success".into());
++        assert!(!native_retention_policy_valid(&required_body, &native));
++        let mut absent_required_key = ci;
++        absent_required_key["jobs"]["required"]["needs"]
++            .as_sequence_mut()
++            .unwrap()
++            .retain(|need| need.as_str() != Some("native_retention"));
++        assert!(!native_retention_policy_valid(
++            &absent_required_key,
++            &native
++        ));
++    }
++
++    #[cfg(unix)]
++    #[test]
++    fn native_retention_actual_body_is_cod107_only() {
++        let ci = valid_ci_workflow();
++        let script = native_retention_step(&ci);
++        let repository = "rabii-chaarani/codebaseGraph";
++        let mut positives = 0;
++        let push = json!({"ref":"refs/heads/main"});
++        assert_retention_result(
++            script,
++            "push",
++            "refs/heads/main",
++            &serde_json::to_vec(&push).unwrap(),
++            true,
++        );
++        positives += 1;
++        for action in ["opened", "synchronize", "reopened", "edited"] {
++            for base in ["cod103-stack/cod-56", "main"] {
++                let event = retention_pr_event(
++                    action,
++                    "cod103-stack/cod-107",
++                    base,
++                    repository,
++                    repository,
++                );
++                assert_retention_result(
++                    script,
++                    "pull_request",
++                    "refs/pull/107/merge",
++                    &serde_json::to_vec(&event).unwrap(),
++                    true,
++                );
++                positives += 1;
++            }
++        }
++        assert_eq!(positives, 9);
++
++        let mut negatives: Vec<(&str, &str, Value)> = Vec::new();
++        for (label, git_ref) in [
++            ("non-main push", "refs/heads/cod103-stack/cod-107"),
++            ("tag push", "refs/tags/v4.0.5"),
++            ("case-variant main push", "refs/heads/Main"),
++        ] {
++            negatives.push((label, "push", json!({"ref":git_ref})));
++        }
++        for head in [
++            "cod103-stack/cod-105",
++            "cod103-stack/cod-106",
++            "cod103-stack/cod-56",
++            "cod103-stack/cod-108",
++            "cod103-stack/cod-110",
++            "main",
++            "cod103-stack/cod-107-extra",
++            "cod103-stack/cod-107/child",
++            "COD103-stack/cod-107",
++        ] {
++            negatives.push((
++                "disallowed head",
++                "pull_request",
++                retention_pr_event("opened", head, "main", repository, repository),
++            ));
++        }
++        for base in [
++            "cod103-stack/cod-105",
++            "cod103-stack/cod-106",
++            "cod103-stack/cod-107",
++            "cod103-stack/cod-108",
++            "unknown",
++            "Main",
++        ] {
++            negatives.push((
++                "disallowed base",
++                "pull_request",
++                retention_pr_event(
++                    "opened",
++                    "cod103-stack/cod-107",
++                    base,
++                    repository,
++                    repository,
++                ),
++            ));
++        }
++        for action in ["closed", "labeled", "ready_for_review"] {
++            negatives.push((
++                "disallowed action",
++                "pull_request",
++                retention_pr_event(
++                    action,
++                    "cod103-stack/cod-107",
++                    "main",
++                    repository,
++                    repository,
++                ),
++            ));
++        }
++        let mut different_head = retention_pr_event(
++            "opened",
++            "cod103-stack/cod-107",
++            "main",
++            repository,
++            repository,
++        );
++        different_head["pull_request"]["head"]["repo"]["full_name"] =
++            json!("fork-owner/codebaseGraph");
++        negatives.push(("fork head repository", "pull_request", different_head));
++        let mut different_base = retention_pr_event(
++            "opened",
++            "cod103-stack/cod-107",
++            "main",
++            repository,
++            repository,
++        );
++        different_base["pull_request"]["base"]["repo"]["full_name"] =
++            json!("someone/codebaseGraph");
++        negatives.push(("different base repository", "pull_request", different_base));
++        let mut missing_head_repo = retention_pr_event(
++            "opened",
++            "cod103-stack/cod-107",
++            "main",
++            repository,
++            repository,
++        );
++        missing_head_repo["pull_request"]["head"]["repo"] = Value::Null;
++        negatives.push(("missing head repository", "pull_request", missing_head_repo));
++        let mut missing_base = retention_pr_event(
++            "opened",
++            "cod103-stack/cod-107",
++            "main",
++            repository,
++            repository,
++        );
++        missing_base["pull_request"]["base"]
++            .as_object_mut()
++            .unwrap()
++            .remove("ref");
++        negatives.push(("missing base ref", "pull_request", missing_base));
++        let mut missing_action = retention_pr_event(
++            "opened",
++            "cod103-stack/cod-107",
++            "main",
++            repository,
++            repository,
++        );
++        missing_action.as_object_mut().unwrap().remove("action");
++        negatives.push(("missing action", "pull_request", missing_action));
++        for event_name in [
++            "pull_request_target",
++            "workflow_run",
++            "workflow_dispatch",
++            "schedule",
++            "unknown",
++        ] {
++            negatives.push(("unknown event", event_name, json!({"action":"opened","pull_request":{"head":{"ref":"cod103-stack/cod-107","repo":{"full_name":repository}},"base":{"ref":"main","repo":{"full_name":repository}}}})));
++        }
++        for (label, event_name, payload) in &negatives {
++            let git_ref = if *event_name == "push" {
++                payload["ref"].as_str().unwrap_or("refs/heads/main")
++            } else {
++                "refs/pull/107/merge"
++            };
++            assert_retention_result(
++                script,
++                event_name,
++                git_ref,
++                &serde_json::to_vec(payload).unwrap(),
++                false,
++            );
++            assert!(!label.is_empty());
++        }
++
++        let semantic_mutants = [
++            (
++                "missing same-repository guard",
++                script.replace(
++                    concat!(
++                        ".pull_request.head.repo.full_name == $repository and\n",
++                        "     .pull_request.base.repo.full_name == $repository and\n",
++                        "     ",
++                    ),
++                    "",
++                ),
++                retention_pr_event(
++                    "opened",
++                    "cod103-stack/cod-107",
++                    "main",
++                    "fork-owner/codebaseGraph",
++                    repository,
++                ),
++            ),
++            (
++                "broadened base guard",
++                script.replace(
++                    concat!(
++                        "(.pull_request.base.ref == \"cod103-stack/cod-56\" or\n",
++                        "      .pull_request.base.ref == \"main\")",
++                    ),
++                    "true",
++                ),
++                retention_pr_event(
++                    "opened",
++                    "cod103-stack/cod-107",
++                    "cod103-stack/cod-108",
++                    repository,
++                    repository,
++                ),
++            ),
++            (
++                "case-folded head guard",
++                script.replace(
++                    ".pull_request.head.ref == \"cod103-stack/cod-107\"",
++                    "(.pull_request.head.ref | ascii_downcase) == \"cod103-stack/cod-107\"",
++                ),
++                retention_pr_event(
++                    "opened",
++                    "COD103-stack/cod-107",
++                    "main",
++                    repository,
++                    repository,
++                ),
++            ),
++        ];
++        for (label, mutant, event) in semantic_mutants {
++            assert_ne!(
++                mutant, script,
++                "mutation did not alter selector for {label}"
++            );
++            let (output, value) = run_native_retention_script(
++                &mutant,
++                NativeRetentionInput {
++                    event_name: Some("pull_request"),
++                    git_ref: Some("refs/pull/107/merge"),
++                    repository: Some(repository),
++                    event_json: Some(&serde_json::to_vec(&event).unwrap()),
++                    missing_event_file: false,
++                    missing_event_path: false,
++                    missing_output: false,
++                    output_path_is_directory: false,
++                },
++            );
++            assert!(
++                output.status.success(),
++                "mutant failed before the oracle for {label}"
++            );
++            assert_eq!(
++                value, "retain=true\n",
++                "negative fixture did not kill semantic mutant {label}"
++            );
++        }
++
++        let wrong_runner_ref = json!({"ref":"refs/heads/main"});
++        assert_retention_result(
++            script,
++            "push",
++            "refs/heads/CODE-107",
++            &serde_json::to_vec(&wrong_runner_ref).unwrap(),
++            false,
++        );
++        for (payload, name) in [
++            (b"{".as_slice(), "malformed JSON"),
++            (b"[]", "array event"),
++            (b"null", "null event"),
++            (b"{} {}", "multiple JSON values"),
++        ] {
++            let (output, result) = run_native_retention_script(
++                script,
++                NativeRetentionInput {
++                    event_name: Some("push"),
++                    git_ref: Some("refs/heads/main"),
++                    repository: Some(repository),
++                    event_json: Some(payload),
++                    missing_event_file: false,
++                    missing_event_path: false,
++                    missing_output: false,
++                    output_path_is_directory: false,
++                },
++            );
++            assert!(!output.status.success(), "accepted {name}");
++            assert!(result.is_empty(), "wrote output for {name}: {result:?}");
++        }
++        for (
++            event_name,
++            git_ref,
++            repo,
++            payload,
++            missing_event_file,
++            missing_event_path,
++            missing_output,
++            output_path_is_directory,
++            label,
++        ) in [
++            (
++                None,
++                Some("refs/heads/main"),
++                Some(repository),
++                Some(br#"{"ref":"refs/heads/main"}"#.as_slice()),
++                false,
++                false,
++                false,
++                false,
++                "missing event name",
++            ),
++            (
++                Some("push"),
++                None,
++                Some(repository),
++                Some(br#"{"ref":"refs/heads/main"}"#.as_slice()),
++                false,
++                false,
++                false,
++                false,
++                "missing runner ref",
++            ),
++            (
++                Some("push"),
++                Some("refs/heads/main"),
++                None,
++                Some(br#"{"ref":"refs/heads/main"}"#.as_slice()),
++                false,
++                false,
++                false,
++                false,
++                "missing repository",
++            ),
++            (
++                Some("push"),
++                Some("refs/heads/main"),
++                Some(repository),
++                Some(br#"{"ref":"refs/heads/main"}"#.as_slice()),
++                true,
++                false,
++                false,
++                false,
++                "missing event file",
++            ),
++            (
++                Some("push"),
++                Some("refs/heads/main"),
++                Some(repository),
++                Some(br#"{"ref":"refs/heads/main"}"#.as_slice()),
++                false,
++                true,
++                false,
++                false,
++                "missing event path input",
++            ),
++            (
++                Some("push"),
++                Some("refs/heads/main"),
++                Some(repository),
++                Some(br#"{"ref":"refs/heads/main"}"#.as_slice()),
++                false,
++                false,
++                true,
++                false,
++                "missing output input",
++            ),
++            (
++                Some("push"),
++                Some("refs/heads/main"),
++                Some(repository),
++                Some(br#"{"ref":"refs/heads/main"}"#.as_slice()),
++                false,
++                false,
++                false,
++                true,
++                "output path failure",
++            ),
++        ] {
++            let (output, result) = run_native_retention_script(
++                script,
++                NativeRetentionInput {
++                    event_name,
++                    git_ref,
++                    repository: repo,
++                    event_json: payload,
++                    missing_event_file,
++                    missing_event_path,
++                    missing_output,
++                    output_path_is_directory,
++                },
++            );
++            assert!(!output.status.success(), "accepted {label}");
++            assert!(result.is_empty(), "wrote output for {label}: {result:?}");
++        }
++    }
++
++    #[cfg(unix)]
++    #[test]
++    fn native_retention_invalid_input_cannot_succeed() {
++        let script = native_retention_step(&valid_ci_workflow()).to_string();
++        let repository = "rabii-chaarani/codebaseGraph";
++        for (payload, label) in [
++            (b"{".as_slice(), "malformed JSON"),
++            (b"[]", "array event"),
++            (b"null", "null event"),
++            (b"{} {}", "multiple JSON values"),
++        ] {
++            let (output, result) = run_native_retention_script(
++                &script,
++                NativeRetentionInput {
++                    event_name: Some("push"),
++                    git_ref: Some("refs/heads/main"),
++                    repository: Some(repository),
++                    event_json: Some(payload),
++                    missing_event_file: false,
++                    missing_event_path: false,
++                    missing_output: false,
++                    output_path_is_directory: false,
++                },
++            );
++            assert!(!output.status.success(), "accepted {label}");
++            assert!(result.is_empty(), "wrote output for {label}: {result:?}");
++        }
++    }
++
++    #[cfg(unix)]
++    #[test]
++    fn required_rejects_retention_selector_failure() {
++        let ci = valid_ci_workflow();
++        let required = yaml_path(&ci, &["jobs", "required"]).unwrap();
++        let step = yaml_step_by_name(required, "Require every mandatory job").unwrap();
++        let run = yaml_path(step, &["run"])
++            .and_then(YamlValue::as_str)
++            .unwrap();
++        let successful = json!({
++            "fmt":{"result":"success"}, "clippy":{"result":"success"},
++            "supply-chain":{"result":"success"}, "publish-dry-run":{"result":"success"},
++            "native":{"result":"success"}, "native_retention":{"result":"success","outputs":{"retain":"false"}}
++        });
++        assert!(run_required_result(run, &successful).status.success());
++        let absent_selector = json!({
++            "fmt":{"result":"success"}, "clippy":{"result":"success"},
++            "supply-chain":{"result":"success"}, "publish-dry-run":{"result":"success"},
++            "native":{"result":"success"}
++        });
++        assert!(run_required_result(run, &absent_selector).status.success());
++
++        for state in ["failure", "cancelled", "skipped"] {
++            let mut results = successful.clone();
++            results["native_retention"]["result"] = json!(state);
++            assert!(
++                !run_required_result(run, &results).status.success(),
++                "accepted selector {state}"
++            );
++        }
++        let mut missing_result = successful.clone();
++        missing_result["native_retention"]
++            .as_object_mut()
++            .unwrap()
++            .remove("result");
++        assert!(!run_required_result(run, &missing_result).status.success());
++        for job in ["fmt", "clippy", "supply-chain", "publish-dry-run", "native"] {
++            let mut results = successful.clone();
++            results[job]["result"] = json!("failure");
++            assert!(
++                !run_required_result(run, &results).status.success(),
++                "accepted failed {job}"
++            );
++        }
++    }
++
+     fn valid_ci_workflow() -> YamlValue {
+         yaml_serde::from_str(include_str!("../../../.github/workflows/ci.yml")).unwrap()
+     }
+@@ -3464,4 +4739,185 @@ mod tests {
+         let error = validate_crate_size(CRATES_IO_PACKAGE_LIMIT_BYTES + 1).unwrap_err();
+         assert!(error.contains("exceeding the crates.io limit"), "{error}");
+     }
++
++    #[test]
++    fn docs_python_gate_accepts_root_and_nested_helpers_in_both_modes() {
++        if execute_gate_fixture_child() {
++            return;
++        }
++        let root = release_gate_fixture();
++        write_gate_fixture_file(&root, "docs/helper.py", "# documentation helper\n");
++        write_gate_fixture_file(
++            &root,
++            "docs/qualification/reproduce.py",
++            "# qualification helper\n",
++        );
++        for generated in [".git", "target", ".codebaseGraph", ".kwiki"] {
++            write_gate_fixture_file(&root, &format!("{generated}/ignored.py"), "");
++            write_gate_fixture_file(&root, &format!("docs/{generated}/ignored.py"), "");
++        }
++
++        let test_name = "tests::docs_python_gate_accepts_root_and_nested_helpers_in_both_modes";
++        for production in [false, true] {
++            run_gate_fixture_route(test_name, &root, production, true, &[], &[]);
++        }
++        fs::remove_dir_all(root).unwrap();
++    }
++
++    #[test]
++    fn docs_python_gate_rejects_neighbors_root_tooling_and_workflow_python() {
++        if execute_gate_fixture_child() {
++            return;
++        }
++        let root = release_gate_fixture();
++        write_gate_fixture_file(&root, "docs/allowed.py", "# optional local helper\n");
++        write_gate_fixture_file(&root, "docs-extra/neighbor.py", "");
++        write_gate_fixture_file(&root, "src/docs/neighbor.py", "");
++        write_gate_fixture_file(&root, "root.py", "");
++        write_gate_fixture_file(&root, "pyproject.toml", "");
++        write_gate_fixture_file(&root, "requirements-dev.txt", "");
++        write_gate_fixture_file(&root, "scripts/helper.py", "");
++        write_gate_fixture_file(&root, "src/codebase_graph/helper.py", "");
++        fs::remove_file(root.join("SECURITY.md")).unwrap();
++        let ci_path = root.join(".github/workflows/ci.yml");
++        let mut ci = fs::read_to_string(&ci_path).unwrap();
++        ci.push_str("\n# python -m is not an approved workflow step\n");
++        fs::write(ci_path, ci).unwrap();
++
++        let test_name =
++            "tests::docs_python_gate_rejects_neighbors_root_tooling_and_workflow_python";
++        let expected = [
++            "security-policy-missing",
++            "python-tooling-present: pyproject.toml",
++            "python-tooling-present: requirements-dev.txt",
++            "python-surface-present: scripts",
++            "python-surface-present: src/codebase_graph",
++            "python-file-present: docs-extra/neighbor.py",
++            "python-file-present: src/docs/neighbor.py",
++            "python-file-present: root.py",
++            "python-file-present: scripts/helper.py",
++            "python-file-present: src/codebase_graph/helper.py",
++            "workflow-python-tooling-present: .github/workflows/ci.yml",
++        ];
++        for production in [false, true] {
++            run_gate_fixture_route(
++                test_name,
++                &root,
++                production,
++                false,
++                &expected,
++                &["python-file-present: docs/allowed.py"],
++            );
++        }
++        fs::remove_dir_all(root).unwrap();
++    }
++
++    #[test]
++    fn docs_python_exception_rejects_component_aliases_and_symlinks() {
++        if execute_gate_fixture_child() {
++            return;
++        }
++        let aliases = release_gate_fixture();
++        write_gate_fixture_file(&aliases, "docs/helper.py", "");
++        assert!(super::is_docs_helper_path(&aliases, &aliases.join("docs/helper.py")).unwrap());
++        for candidate in [
++            aliases.join("docs/../docs/helper.py"),
++            PathBuf::from("./docs/helper.py"),
++            aliases.join("docs-extra/helper.py"),
++            aliases.join("src/docs/helper.py"),
++            aliases.parent().unwrap().join("outside/docs/helper.py"),
++        ] {
++            assert!(
++                !super::is_docs_helper_path(&aliases, &candidate).unwrap(),
++                "accepted alias {}",
++                candidate.display()
++            );
++        }
++        let missing =
++            super::is_docs_helper_path(&aliases, &aliases.join("docs/missing.py")).unwrap_err();
++        assert!(
++            missing.contains("cannot inspect docs Python exception path"),
++            "{missing}"
++        );
++        #[cfg(windows)]
++        assert!(!super::is_docs_helper_path(&aliases, Path::new(r"C:\docs\helper.py")).unwrap());
++        fs::remove_dir_all(&aliases).unwrap();
++
++        let test_name = "tests::docs_python_exception_rejects_component_aliases_and_symlinks";
++
++        let root = release_gate_fixture();
++        let outside = super::unique_temp_dir("cod107_docs_link_target").unwrap();
++        write_gate_fixture_file(&outside, "helper.py", "");
++        if let Err(error) = symlink_file(&outside.join("helper.py"), &root.join("docs/linked.py")) {
++            if symlink_privilege_unavailable(&error) {
++                eprintln!("Windows symlink privilege unavailable; symlink gate cases not executed: {error}");
++                fs::remove_dir_all(&root).unwrap();
++                fs::remove_dir_all(&outside).unwrap();
++                return;
++            }
++            panic!("could not create docs-to-outside symlink: {error}");
++        }
++        for production in [false, true] {
++            run_gate_fixture_route(
++                test_name,
++                &root,
++                production,
++                false,
++                &["docs Python exception rejects symlink path"],
++                &[],
++            );
++        }
++        fs::remove_dir_all(&root).unwrap();
++        fs::remove_dir_all(&outside).unwrap();
++
++        let root = release_gate_fixture();
++        write_gate_fixture_file(&root, "docs/inside.py", "");
++        let outside_link = root.join("outside/linked.py");
++        fs::create_dir_all(outside_link.parent().unwrap()).unwrap();
++        if let Err(error) = symlink_file(&root.join("docs/inside.py"), &outside_link) {
++            if symlink_privilege_unavailable(&error) {
++                eprintln!("Windows symlink privilege unavailable; remaining symlink gate cases not executed: {error}");
++                fs::remove_dir_all(&root).unwrap();
++                return;
++            }
++            panic!("could not create outside-to-docs symlink: {error}");
++        }
++        for production in [false, true] {
++            run_gate_fixture_route(
++                test_name,
++                &root,
++                production,
++                false,
++                &["python-file-present: outside/linked.py"],
++                &[],
++            );
++        }
++        fs::remove_dir_all(&root).unwrap();
++
++        let root = release_gate_fixture();
++        let outside = super::unique_temp_dir("cod107_docs_directory_target").unwrap();
++        write_gate_fixture_file(&outside, "helper.py", "");
++        fs::remove_dir_all(root.join("docs")).unwrap();
++        if let Err(error) = symlink_dir(&outside, &root.join("docs")) {
++            if symlink_privilege_unavailable(&error) {
++                eprintln!("Windows symlink privilege unavailable; docs-directory symlink case not executed: {error}");
++                fs::remove_dir_all(&root).unwrap();
++                fs::remove_dir_all(&outside).unwrap();
++                return;
++            }
++            panic!("could not create symlinked docs directory: {error}");
++        }
++        for production in [false, true] {
++            run_gate_fixture_route(
++                test_name,
++                &root,
++                production,
++                false,
++                &["docs Python exception rejects symlink path"],
++                &[],
++            );
++        }
++        fs::remove_dir_all(&root).unwrap();
++        fs::remove_dir_all(&outside).unwrap();
++    }
+ }
+diff --git a/docs/release.md b/docs/release.md
+index d23373f..bf88256 100644
+--- a/docs/release.md
++++ b/docs/release.md
+@@ -31,7 +31,7 @@ asset and crate publication. Never copy a local CLI login token into repository
+ 
+ ## CI
+ 
+-Pull requests targeting `main` and the approved COD-103 staging branches run the same full verification. The staged PR bases are exactly `main`, `cod103-stack/cod-105`, `cod103-stack/cod-106`, `cod103-stack/cod-56`, and `cod103-stack/cod-107`; pull-request activities are opened, synchronize, reopened, and edited. Pushes remain restricted to `main`. Staging checks are full CI, not release qualification; a changed head/base needs a fresh event and result. No privileged PR trigger or PR artifact retention is added.
++Pull requests targeting `main` and the approved COD-103 staging branches run the same full verification. The staged PR bases are exactly `main`, `cod103-stack/cod-105`, `cod103-stack/cod-106`, `cod103-stack/cod-56`, and `cod103-stack/cod-107`; pull-request activities are opened, synchronize, reopened, and edited. Pushes remain restricted to `main`. Staging checks are full CI, not release qualification; a changed head/base needs a fresh event and result. No privileged PR trigger or PR artifact promotion/publication is added. The separate COD-107 A03 method permits internal retention of the already-built native archives, sidecars, and provenance only for its qualifying same-repository PR, so the exact-source payloads can be independently inventoried. It adds no public release authority or permissions and changes no unrelated PR retention. All other PR artifact retention remains disabled.
+ 
+ Every qualifying pull request and every push to `main` runs:
+ 
+@@ -45,10 +45,12 @@ Every qualifying pull request and every push to `main` runs:
+ - `cargo package -p k-wiki --locked --no-verify` and the isolated Knowledge Wiki smoke. The
+   unpublished wiki binary uses the in-tree codebase-graph registrar, while the preceding root
+   package check verifies that publishable shared API in isolation.
+-- Release-ready package builds on macOS ARM64 and Windows x86_64. Pull requests build and smoke
+-  them without retention; `main` retains both artifacts for 90 days.
+-- A stable `required` aggregate check that succeeds only when every mandatory job succeeds. Repository rules should
+-  require this check after it has appeared on `main` once.
++- Release-ready package builds on macOS ARM64 and Windows x86_64. The normal COD-107 same-repository staging PR may
++  retain both already-built archives, sidecars, and provenance for independent A03 inventory; other PRs upload none.
++  `main` retains both artifacts for 90 days. Retention does not skip verification or promote PR artifacts for publication.
++- The dedicated COD-107 selector controls only retention; native verification remains required on every PR, and the
++  stable `required` aggregate still succeeds only when every mandatory job succeeds. Repository rules should require
++  that check after it has appeared on `main` once.
+ 
+ macOS ARM64 runs unit, generation-storage, and remaining integration/doctest cohorts independently. Windows uses four
+ serial groups per cohort, including generation-storage, so each case runs once. Groups are discovered from
+@@ -113,6 +115,19 @@ cargo run -p xtask -- release-gate --production \
+ 
+ Add `--require-conda` when conda-forge submission is in scope for the release.
+ 
++### Optional local documentation helpers
++
++Python helpers are permitted only under `docs/` for documentation, evidence, qualification, audit, or reproduction support.
++They are optional local commands for explicit developer use with Python 3's standard library only. Path placement is
++necessary, not sufficient: helper content must not implement product build, runtime, installation, or release
++behavior.
++
++Do not add Python setup, dependencies, package/tool manifests, or helper invocations in CI, Release, product builds,
++runtime, or installation. Keep helpers out of native archives and published `.crate` payloads; ordinary Git source and
++tag snapshots may retain documentation.
++This policy does not restore or extract archived COD-99 helpers, and existing root-tooling, security, workflow, and
++other repository checks remain in force. It adds no helper or command to run.
++
+ Release notes should list native smoke evidence, benchmark evidence used for rollout recommendations, and graph
+ compatibility changes that require users to refresh `.codebaseGraph` state.
+ 

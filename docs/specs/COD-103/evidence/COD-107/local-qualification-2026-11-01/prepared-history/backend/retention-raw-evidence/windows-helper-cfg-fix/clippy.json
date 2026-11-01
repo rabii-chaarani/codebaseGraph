@@ -1,0 +1,6 @@
+{
+  "command": "cargo clippy --locked -p xtask --all-targets -- -D warnings",
+  "exit_code": 0,
+  "streams": "BashResult returned combined stdout/stderr; not separable after execution",
+  "sha256": "d21a7eac05e7e69020fb18fafa04b5ba741911f8ccda6fe7fa70469404f8ad1b"
+}

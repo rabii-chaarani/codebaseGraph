@@ -1,0 +1,9 @@
+{
+  "command": "cargo test --locked -p xtask workflow_policy_retention_wiring_is_closed -- --nocapture",
+  "exit_code": 101,
+  "running": false,
+  "capture": "BashResult.output combined stdout/stderr; not split by harness",
+  "note": "diagnostic run; actual YAML rejected by first predicate version",
+  "output_file": "03_policy_debug_failure.combined-output.txt",
+  "output_sha256": "c17d34adf072eaabf67803934d5d3facb8bc210d9f7445ce532785c5b2f622c5"
+}

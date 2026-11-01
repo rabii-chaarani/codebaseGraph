@@ -1,0 +1,8 @@
+# COD-107 Windows unused test-helper correction handoff
+
+- Authorized single-file follow-up: `crates/xtask/src/main.rs` only. Added only `#[cfg(unix)]` to test helper `retention_pr_event`; all callers are inside Unix-only `native_retention_actual_body_is_cod107_only`. This prevents the helper being compiled unused by Windows test target Clippy. No lint allowance/fallback/test selection change.
+- Before source SHA256 `47558f4ce54d15f874c5680fb90b9e844afa612ae50de180e45c2d308356e2c6`; after `e4d256e451c03f447a4e374ed361d0d0b23d2898977d51953995fa307d896f1e`. Exact one-line diff: `cod107-windows-helper-cfg-only.diff`; final source freeze `cod107-windows-helper-cfg-final-main.rs`.
+- `docs/release.md` SHA256 `1e67f4949647c10a48f9184db230454572d666a756b68c203690398f525c7954`, ci.yml `3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9`, native.yml `cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683` remain unchanged.
+- Actual final checks after the fix: `cargo fmt --package xtask -- --check` pass; three focused retention groups pass; scoped strict xtask Clippy pass/no warnings; full xtask **83 passed, 0 failed**; `check-workflows` and ordinary `release-gate` pass. Raw combined logs and command/exit metadata are under `retention-raw-evidence/windows-helper-cfg-fix/`.
+- Environment macOS ARM64, Rust/Cargo 1.96.0; Windows test compilation/Clippy was NOT run here. A true Windows pass remains with hosted/independent verification.
+- Worktree HEAD/tree unchanged, no Git operation, CI run, native/package build, archive inventory, A03 acceptance, PR/merge/release or model/tracking operation. All source/Cargo/report writes stopped after creating this private handoff.

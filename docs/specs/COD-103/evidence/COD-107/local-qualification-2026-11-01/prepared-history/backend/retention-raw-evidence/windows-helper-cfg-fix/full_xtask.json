@@ -1,0 +1,6 @@
+{
+  "command": "cargo test --locked -p xtask",
+  "exit_code": 0,
+  "streams": "BashResult returned combined stdout/stderr; not separable after execution",
+  "sha256": "1d97990028796f3991995bb91b02bbefcd38f7018d81962aeedde67067a11195"
+}

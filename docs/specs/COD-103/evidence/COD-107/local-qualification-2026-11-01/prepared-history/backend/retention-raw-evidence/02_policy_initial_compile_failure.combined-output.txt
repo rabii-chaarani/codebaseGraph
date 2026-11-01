@@ -1,0 +1,19 @@
+   Compiling xtask v4.0.5 (/private/tmp/codebasegraph-cod107-20261031/crates/xtask)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.48s
+     Running unittests src/main.rs (target/debug/deps/xtask-269d5b6e7ec16933)
+
+running 1 test
+test tests::workflow_policy_retention_wiring_is_closed ... 
+thread 'tests::workflow_policy_retention_wiring_is_closed' (40213310) panicked at crates/xtask/src/main.rs:3588:9:
+assertion failed: native_retention_policy_valid(&ci, &native)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+
+failures:
+
+failures:
+    tests::workflow_policy_retention_wiring_is_closed
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 82 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p xtask --bin xtask`

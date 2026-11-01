@@ -1,0 +1,119 @@
+[
+  {
+    "name": "format-final",
+    "command": "cargo fmt --all --check > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-local/post-cfg-final/format.log' 2>&1",
+    "cwd": "/private/tmp/codebasegraph-cod107-20261031",
+    "started_at_utc": "2026-11-01T00:03:22.345515+00:00",
+    "status": "completed",
+    "scope": "independent check of newe4d256 snapshot; old47558 format retained separately",
+    "exit_code": 0,
+    "duration_seconds": 2.1054324998985976
+  },
+  {
+    "name": "xtask-inventory",
+    "command": "cargo nextest list --offline --locked -p xtask --bin xtask --cargo-profile native-tests --config-file '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-local/post-cfg-final/nextest.toml' --user-config-file none --profile cod107 --message-format json > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-local/post-cfg-final/xtask-inventory.json' 2> '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-local/post-cfg-final/xtask-inventory-build.log' ",
+    "cwd": "/private/tmp/codebasegraph-cod107-20261031",
+    "started_at_utc": "2026-11-01T00:03:45.174350+00:00",
+    "status": "completed",
+    "scope": "actual full xtask inventory; no filter; native-tests with defaultprofile flags; report-onlyconfig outside repository",
+    "environment": {
+      "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+      "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+      "LBUG_VERSION": "0.19.0",
+      "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+      "MACOSX_DEPLOYMENT_TARGET": "13.3",
+      "CARGO_BUILD_JOBS": "2"
+    },
+    "pid": 29531,
+    "exit_code": 0,
+    "duration_seconds": null,
+    "completion_limitation": "Final BashHandle duration unavailable after kernel restore; actual bash-done pid29531 exit0 received; initial10.011s running snapshot retained. No retry."
+  },
+  {
+    "name": "independent-full-xtask",
+    "command": "cargo nextest run --offline --locked -p xtask --bin xtask --cargo-profile native-tests --config-file '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-local/post-cfg-final/nextest.toml' --user-config-file none --profile cod107 --test-threads 1 --no-tests fail > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-local/post-cfg-final/xtask-run.log' 2>&1",
+    "cwd": "/private/tmp/codebasegraph-cod107-20261031",
+    "started_at_utc": "2026-11-01T00:05:32.134771+00:00",
+    "status": "completed",
+    "expected_cases": 83,
+    "cargo_profile": "native-tests",
+    "reporter_profile": "cod107,retries0,one thread",
+    "junit_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-local/post-cfg-final/xtask-junit.xml",
+    "environment": {
+      "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+      "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+      "LBUG_VERSION": "0.19.0",
+      "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+      "MACOSX_DEPLOYMENT_TARGET": "13.3",
+      "CARGO_BUILD_JOBS": "2"
+    },
+    "source_sha256": "e4d256e451c03f447a4e374ed361d0d0b23d2898977d51953995fa307d896f1e",
+    "pid": 29869,
+    "exit_code": 0,
+    "duration_seconds": 30.916879874886945
+  },
+  {
+    "name": "check-workflows",
+    "command": "cargo run --offline --locked -p xtask -- check-workflows > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-local/post-cfg-final/check-workflows.log' 2>&1",
+    "cwd": "/private/tmp/codebasegraph-cod107-20261031",
+    "started_at_utc": "2026-11-01T00:07:19.181269+00:00",
+    "status": "completed",
+    "environment": {
+      "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+      "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+      "LBUG_VERSION": "0.19.0",
+      "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+      "MACOSX_DEPLOYMENT_TARGET": "13.3",
+      "CARGO_BUILD_JOBS": "2"
+    },
+    "exit_code": 0,
+    "duration_seconds": 1.0171940829604864
+  },
+  {
+    "name": "ordinary-release-gate",
+    "command": "cargo run --offline --locked -p xtask -- release-gate > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-local/post-cfg-final/release-gate.log' 2>&1",
+    "cwd": "/private/tmp/codebasegraph-cod107-20261031",
+    "started_at_utc": "2026-11-01T00:07:36.708053+00:00",
+    "status": "completed",
+    "scope": "ordinary actual projectgate; productionroute covered only by complete disposable fixtures, no liveexternalattestations",
+    "environment": {
+      "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+      "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+      "LBUG_VERSION": "0.19.0",
+      "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+      "MACOSX_DEPLOYMENT_TARGET": "13.3",
+      "CARGO_BUILD_JOBS": "2"
+    },
+    "exit_code": 0,
+    "duration_seconds": 0.46945187519304454
+  },
+  {
+    "name": "strict-workspace-clippy",
+    "command": "cargo clippy --offline --workspace --all-targets --all-features --locked -- -D warnings > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-local/post-cfg-final/strict-workspace-clippy.log' 2>&1",
+    "cwd": "/private/tmp/codebasegraph-cod107-20261031",
+    "started_at_utc": "2026-11-01T00:07:37.179267+00:00",
+    "status": "completed",
+    "environment": {
+      "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+      "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+      "LBUG_VERSION": "0.19.0",
+      "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+      "MACOSX_DEPLOYMENT_TARGET": "13.3",
+      "CARGO_BUILD_JOBS": "2"
+    },
+    "scope": "existinglocalworkspacealltargetsallfeatures-Dwarnings; actualnormaldeveloper environment, no productnativeartifactbuild/runtimecohort",
+    "pid": 34562,
+    "exit_code": 0,
+    "duration_seconds": 68.89762162510306
+  },
+  {
+    "name": "final-whitespace-source-identity",
+    "command": "git --no-optional-locks status --porcelain=v1 -uall; rev-parse HEAD/tree; diff --stat HEAD; diff --check",
+    "cwd": "/private/tmp/codebasegraph-cod107-20261031",
+    "exit_code": 0,
+    "duration_seconds": 0.08583016716875136,
+    "status": "completed",
+    "source_identity": "Exactly same three dirty files and08d2/tree095528; all four assigned/read-only file hashes unchanged",
+    "log": "source-identity-after.txt"
+  }
+]

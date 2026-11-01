@@ -1,0 +1,17 @@
+{
+  "package_id": "path+file:///private/tmp/codebasegraph-cod107-20261031/crates/xtask#4.0.5",
+  "cwd": "/private/tmp/codebasegraph-cod107-20261031/crates/xtask",
+  "binary_path": "/private/tmp/codebasegraph-cod107-20261031/target/native-tests/deps/xtask-eed5a74c0d8f01ef",
+  "binary_sha256": "6af0feb90ae1398cf32fcbc668e13d1236123d33341492f6e593e2688f6a24f1",
+  "source_main_sha256": "e4d256e451c03f447a4e374ed361d0d0b23d2898977d51953995fa307d896f1e",
+  "profile": "native-tests",
+  "target_directory": "/private/tmp/codebasegraph-cod107-20261031/target",
+  "actual_compile_log": "xtask-inventory-build.log",
+  "source_compile_line": [
+    "   Compiling xtask v4.0.5 (/private/tmp/codebasegraph-cod107-20261031/crates/xtask)"
+  ],
+  "features": "xtask declares no features; no explicitfeatures flags used",
+  "new_test_inventory_count": 83,
+  "test_profile_basis": "Actual native-tests command+output directory and unchanged root Cargo profile debug-assertions/overflow/unwind settings",
+  "stale_binary_limit": "Actual cargo inventory source package path/current root compile log+new83cases+binaryhash retained, no other checkout/sharedtarget assumed"
+}

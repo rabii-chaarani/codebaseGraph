@@ -1,0 +1,29 @@
+# COD-107 local qualification evidence — 2026-11-01
+
+This directory versions **closed local executed evidence** with its related COD-107 technical change. It is not a new spec/brief or acceptance verdict. Source changes remain the exact reviewed-input candidate: HEAD08d2c060bba8bf45db069fe53185f06f5b3d6cd9 plus ci.yml/main.rs/docsrelease bytes listed below. The local commit containing this evidence is a reviewable source snapshot for clean packaging; **fresh Final Reviewer acceptance and A03 completion remain pending**. Committing these bytes is not a new test run.
+
+| Technical file | Executed candidate SHA-256 |
+|---|---|
+| `crates/xtask/src/main.rs` | `e4d256e451c03f447a4e374ed361d0d0b23d2898977d51953995fa307d896f1e` |
+| `docs/release.md` | `1e67f4949647c10a48f9184db230454572d666a756b68c203690398f525c7954` |
+| `.github/workflows/ci.yml` | `3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9` |
+
+Read-only native.yml stayscc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683; profile/features/manifests/lock/native commands/90-day native retention/3-day diagnostic retention unchanged. Authority: [approved0.3](https://github.com/rabii-chaarani/codebaseGraph/blob/316be4c4bb81d4f6e025016b12374836b4dcc1a8/docs/specs/COD-103/spec.md), [separate0.3approval](https://github.com/rabii-chaarani/codebaseGraph/blob/0e6008a1f46679a86aba85ac513beb05af94b0c0/docs/specs/COD-103/approvals/2026-10-31-revision-0.3.md), [retentionmethod0.5](https://github.com/rabii-chaarani/codebaseGraph/blob/e5adebfa1196a2074527cec4935522c43c773e39/docs/specs/COD-103/spec.md), [separate0.5approval](https://github.com/rabii-chaarani/codebaseGraph/blob/08d2c060bba8bf45db069fe53185f06f5b3d6cd9/docs/specs/COD-103/approvals/2026-10-31-cod107-native-artifact-retention.md). Existing C103-R03/A03/sourcechg-xd2jtt and canonical detailed brief remain authoritative.
+
+## Evidence layers and actual status
+
+All108files under `prepared-history/` are faithful copies of the closed private preparation bundle, preserving its original indexes/manifests and relative structure. Their earlier “private/not yet independent” wording describes preparation time, **not** the current versioned status or a new verdict. [Production copy manifest](production-copy-manifest.json) maps exact repository paths/private source/size/hash. Original author manifests and source/log/JUnit bytes are unchanged; historical source freezes are evidence, not extra maintained implementation. `production/cod107-retention-selector-syntax-only.sh` is a captured syntax-check input, not a new CI/helper entry point.
+
+- [Initial Backend feature/failure/retention source history](prepared-history/README.md) distinguishes initial feature79tests, first root-prefix failure49cad…, later retention83tests and one-lineUnixcfgfix. Failed compile/fmt/policy/fixture/mutant/Clippy attempts remain, not relabeled passes.
+- [Closed independent initial audit](prepared-history/independent-initial/report.md), SHA652f051ad71b6ca34f868d862154ad4f2df574177567c8588f655d7122005c18: **83/83genuine nextest/JUnit cases,0failure/error/skip**, all7newtests; formatter/workflow/ordinarygate and strict fullworkspace/alltargets/allfeatures Clippy0warnings. GenuineXMLSHA75671e56886ac4caf87c69aa564fb48767073efbfbd4dd21a1bdeb4253d9b4ae binds actual names/inventory. All83are not additive to priorBackend79/83overlap.
+- [Independent increment index](prepared-history/independent-initial-index.md) states the precise missing cells: actual mydocs/knowledge/testing/directoutside.py negatives, incomplete SECURITY, real workflow setup/dependency markers. Those remain **PENDING separate closed CLI supplement**, not proved by83passes. This local-only commit does not include any moving supplement/fresh reviewer/package outputs.
+
+Captured raw logs preserve **combined stdout/stderr** because separate streams were unavailable; no fabricated split. Intermediate per-attempt source hashes were unavailable except retained failed/final freezes, so final hashes are not applied retroactively. Original private absolute paths are provenance and do not claim external artifacts all live Git-adjacent. No test/native binary, compiled product, archive/library, secret or runtime cache is copied.
+
+## Remaining qualification and next handoff
+
+**PENDING:** precise supplemental CLI cells, fresh independent Final Reviewer acceptance of integrated source/evidence/fixes, actual clean root/wiki `.crate` inventories, actual same-source two-target hosted native archives/sidecars/provenance/inventory/warning evidence, current-source authoritative-model reconciliation as applicable. No allow-dirty/fakeclean/source substitution or old archive inventory. Clean package execution needs a separate Verifier Cargo lease **after Production STOP**; no packaging was run to create this record.
+
+This evidence does not assert A03/platform/Windows/native artifact acceptance, COD107→108hand-off, PR/Done/merge/release or aggregate closure. Later related reports/source fixes stay in the **same future COD107PR** under explicit grants. All applicable workflows must be SUCCESS at exact reviewed head/current base before any later merge; retain strict non-bypass/serverfreshness, discussion/review, serial own-main CI and complete six-child queue/release gates. No remote push/PR/CI was authorized or performed by this local commit preparation.
+
+Raw-evidence format note: the complete staged diff whitespace check exits **2** only for byte-preserved historical author diffs/log output (paths and hashes are in Production copy proof). Technical files and current Production-authored index/mapping scoped checks exit0. Raw tool-output bytes remain unchanged; this is not a source/compiler warning and no full raw-diff-clean claim is made. No Git whitespace policy or author evidence was altered.
