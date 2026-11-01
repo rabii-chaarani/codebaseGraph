@@ -1,0 +1,12 @@
+{
+  "worktree": "/private/tmp/codebasegraph-cod107-20261031",
+  "branch": "cod103-stack/cod-107",
+  "actual_head": "2c4ed59bacfdc316f61e202eb6b5eaaa6acca767",
+  "actual_tree": "86b0d6aa4bebf645a59dd5bb12bd7beeffd8ca2d",
+  "status": "Only crates/xtask/src/main.rs modified in working tree; no other tracked/untracked entries shown.",
+  "assigned_source_sha256": "076dd22a1da16a6d651016b7227536f1d65de766ff6c09a3dcb02631c51af5da",
+  "docs_release_sha256": "1e67f4949647c10a48f9184db230454572d666a756b68c203690398f525c7954",
+  "ci_yaml_sha256": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+  "native_yaml_sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+  "clarification": "The prior cod107-windows-path-oracle-fix-handoff.md described older HEAD 08d2c060\u2026/tree095528\u2026 inherited from the prior backend handoff. It did not record this later actual source-fix checkout identity. This appendix supersedes only that snapshot identification; preserve the prior handoff/raw logs unchanged. No source or Cargo operation was performed for this correction."
+}

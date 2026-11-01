@@ -1,0 +1,2 @@
+FAIL: python-file-present: knowledge/helper.py must not be maintained source.
+release gate failed

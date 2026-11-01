@@ -1,0 +1,16 @@
+{
+  "binary_path": "/private/tmp/codebasegraph-cod107-20261031/target/native-tests/deps/xtask-eed5a74c0d8f01ef",
+  "binary_sha256": "7e49ba09a6c2cdba8fe423fe6cf084b27c0f2fac90a02ce666ab6b65077c4b1a",
+  "actual_package": "path+file:///private/tmp/codebasegraph-cod107-20261031/crates/xtask#4.0.5",
+  "actual_cwd": "/private/tmp/codebasegraph-cod107-20261031/crates/xtask",
+  "target_directory": "/private/tmp/codebasegraph-cod107-20261031/target",
+  "source_main_sha256": "076dd22a1da16a6d651016b7227536f1d65de766ff6c09a3dcb02631c51af5da",
+  "source_compile_log": "inventory-build.log",
+  "actual_root_compile_lines": [
+    "   Compiling xtask v4.0.5 (/private/tmp/codebasegraph-cod107-20261031/crates/xtask)",
+    "    Finished `native-tests` profile [optimized] target(s) in 8.83s"
+  ],
+  "Cargo_profile": "native-tests",
+  "no_features_or_target_override": true,
+  "no_other_checkout_executable": true
+}

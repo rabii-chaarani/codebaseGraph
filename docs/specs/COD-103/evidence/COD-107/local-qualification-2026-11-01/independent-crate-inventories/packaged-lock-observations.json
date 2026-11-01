@@ -1,0 +1,189 @@
+{
+  "root": {
+    "workspace_package_count": 223,
+    "packaged_package_count": 127,
+    "actual_packaged_lock_bytes_equal_workspace": false,
+    "source_backed_packages": 126,
+    "source_backed_identity_not_in_workspace": [],
+    "source_backed_entry_differences": [
+      {
+        "name": "cxx-build",
+        "version": "1.0.138",
+        "workspace": {
+          "name": "cxx-build",
+          "version": "1.0.138",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "9a4b7522f539fe056f1d6fc8577d8ab731451f6f33a89b1e5912e22b76c553e7",
+          "dependencies": [
+            "cc",
+            "codespan-reporting",
+            "proc-macro2",
+            "quote",
+            "scratch",
+            "syn 2.0.117"
+          ]
+        },
+        "packaged": {
+          "name": "cxx-build",
+          "version": "1.0.138",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "9a4b7522f539fe056f1d6fc8577d8ab731451f6f33a89b1e5912e22b76c553e7",
+          "dependencies": [
+            "cc",
+            "codespan-reporting",
+            "proc-macro2",
+            "quote",
+            "scratch",
+            "syn"
+          ]
+        }
+      },
+      {
+        "name": "cxxbridge-cmd",
+        "version": "1.0.138",
+        "workspace": {
+          "name": "cxxbridge-cmd",
+          "version": "1.0.138",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "0f01e92ab4ce9fd4d16e3bb11b158d98cbdcca803c1417aa43130a6526fbf208",
+          "dependencies": [
+            "clap",
+            "codespan-reporting",
+            "proc-macro2",
+            "quote",
+            "syn 2.0.117"
+          ]
+        },
+        "packaged": {
+          "name": "cxxbridge-cmd",
+          "version": "1.0.138",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "0f01e92ab4ce9fd4d16e3bb11b158d98cbdcca803c1417aa43130a6526fbf208",
+          "dependencies": [
+            "clap",
+            "codespan-reporting",
+            "proc-macro2",
+            "quote",
+            "syn"
+          ]
+        }
+      },
+      {
+        "name": "cxxbridge-macro",
+        "version": "1.0.138",
+        "workspace": {
+          "name": "cxxbridge-macro",
+          "version": "1.0.138",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "88d82a2f759f0ad3eae43b96604efd42b1d4729a35a6f2dc7bdb797ae25d9284",
+          "dependencies": [
+            "proc-macro2",
+            "quote",
+            "rustversion",
+            "syn 2.0.117"
+          ]
+        },
+        "packaged": {
+          "name": "cxxbridge-macro",
+          "version": "1.0.138",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "88d82a2f759f0ad3eae43b96604efd42b1d4729a35a6f2dc7bdb797ae25d9284",
+          "dependencies": [
+            "proc-macro2",
+            "quote",
+            "rustversion",
+            "syn"
+          ]
+        }
+      },
+      {
+        "name": "serde_derive",
+        "version": "1.0.228",
+        "workspace": {
+          "name": "serde_derive",
+          "version": "1.0.228",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "d540f220d3187173da220f885ab66608367b6574e925011a9353e4badda91d79",
+          "dependencies": [
+            "proc-macro2",
+            "quote",
+            "syn 2.0.117"
+          ]
+        },
+        "packaged": {
+          "name": "serde_derive",
+          "version": "1.0.228",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "d540f220d3187173da220f885ab66608367b6574e925011a9353e4badda91d79",
+          "dependencies": [
+            "proc-macro2",
+            "quote",
+            "syn"
+          ]
+        }
+      },
+      {
+        "name": "wasm-bindgen-macro-support",
+        "version": "0.2.125",
+        "workspace": {
+          "name": "wasm-bindgen-macro-support",
+          "version": "0.2.125",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "fecefd9c35bd935a20fc3fc344b5f29138961e4f47fb03297d88f2587afb5ebd",
+          "dependencies": [
+            "bumpalo",
+            "proc-macro2",
+            "quote",
+            "syn 2.0.117",
+            "wasm-bindgen-shared"
+          ]
+        },
+        "packaged": {
+          "name": "wasm-bindgen-macro-support",
+          "version": "0.2.125",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum": "fecefd9c35bd935a20fc3fc344b5f29138961e4f47fb03297d88f2587afb5ebd",
+          "dependencies": [
+            "bumpalo",
+            "proc-macro2",
+            "quote",
+            "syn",
+            "wasm-bindgen-shared"
+          ]
+        }
+      }
+    ],
+    "local_or_registry_root_entries": [
+      {
+        "name": "codebase-graph",
+        "version": "4.0.5",
+        "source": null,
+        "checksum": null
+      }
+    ],
+    "meaning": "Actual Cargo-generated packaged per-crate lockfile inspected and retained; not assumed byte-identical to workspace lock. No workspace lock mutation by locked package commands."
+  },
+  "wiki": {
+    "workspace_package_count": 223,
+    "packaged_package_count": 211,
+    "actual_packaged_lock_bytes_equal_workspace": false,
+    "source_backed_packages": 209,
+    "source_backed_identity_not_in_workspace": [],
+    "source_backed_entry_differences": [],
+    "local_or_registry_root_entries": [
+      {
+        "name": "codebase-graph",
+        "version": "4.0.5",
+        "source": null,
+        "checksum": null
+      },
+      {
+        "name": "k-wiki",
+        "version": "4.0.5",
+        "source": null,
+        "checksum": null
+      }
+    ],
+    "meaning": "Actual Cargo-generated packaged per-crate lockfile inspected and retained; not assumed byte-identical to workspace lock. No workspace lock mutation by locked package commands."
+  }
+}

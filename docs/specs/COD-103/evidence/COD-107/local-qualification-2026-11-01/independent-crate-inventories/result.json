@@ -1,0 +1,489 @@
+{
+  "schema_version": 1,
+  "work_id": "COD-107",
+  "role": "Evidence Verifier",
+  "mode": "independent_actual_clean_root_and_wiki_crate_inventory",
+  "status": "root_wiki_actual_inventory_pass_no_python_helpers_A03_remaining_gates_pending",
+  "completed_at_utc": "2026-11-01T01:32:01.226088+00:00",
+  "authority": {
+    "requirement": "C103-R03",
+    "acceptance": "C103-A03 package-inventory portion only",
+    "approved_revision0_3": "316be4c4bb81d4f6e025016b12374836b4dcc1a8",
+    "approval0_3": "0e6008a1f46679a86aba85ac513beb05af94b0c0",
+    "approved_design_section6_sha256": "8ae7be05e8dafe6865656dbdcbbbdf13d270cf92e51a327a58884bea8abab8a8",
+    "retention_revision0_5": "e5adebfa1196a2074527cec4935522c43c773e39",
+    "retention_approval": "08d2c060bba8bf45db069fe53185f06f5b3d6cd9",
+    "decision": "5b4b5aad-cbe8-4265-8db9-5ea351b7f386",
+    "source_change": "chg-xd2jtt session scope only; no model mutation"
+  },
+  "source": {
+    "root": "/private/tmp/codebasegraph-cod107-20261031",
+    "branch": "cod103-stack/cod-107",
+    "commit": "2c4ed59bacfdc316f61e202eb6b5eaaa6acca767",
+    "tree": "86b0d6aa4bebf645a59dd5bb12bd7beeffd8ca2d",
+    "parent": "08d2c060bba8bf45db069fe53185f06f5b3d6cd9",
+    "status_before_after": "clean tracked/untracked; exact same HEAD/tree/output",
+    "inputs_before": {
+      "Cargo.toml": {
+        "bytes": 2320,
+        "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4"
+      },
+      "Cargo.lock": {
+        "bytes": 52538,
+        "sha256": "63d868f91aa52acbddf0eb7e9385a101c3a59c02f7e527ced82d1993299f5afb"
+      },
+      "crates/k-wiki/Cargo.toml": {
+        "bytes": 1011,
+        "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572"
+      },
+      "crates/xtask/Cargo.toml": {
+        "bytes": 219,
+        "sha256": "206d3a9af5953963659c0cc292e1356c8905f44288c417568bb7f146c4716198"
+      },
+      ".cargo/config.toml": {
+        "bytes": 99,
+        "sha256": "388ad5407d7e78cae8dacd1c3c556f8c97f43d998c4e09273dcf8fca00eb0f82"
+      },
+      "crates/xtask/src/main.rs": {
+        "bytes": 182034,
+        "sha256": "e4d256e451c03f447a4e374ed361d0d0b23d2898977d51953995fa307d896f1e"
+      },
+      "docs/release.md": {
+        "bytes": 20234,
+        "sha256": "1e67f4949647c10a48f9184db230454572d666a756b68c203690398f525c7954"
+      },
+      ".github/workflows/ci.yml": {
+        "bytes": 5739,
+        "sha256": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9"
+      },
+      ".github/workflows/native.yml": {
+        "bytes": 3860,
+        "sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683"
+      },
+      "build.rs": {
+        "bytes": 1925,
+        "sha256": "cd2da95e498f02c64109bd91cf963ed7bfa502488cd99d658eadb896de35b8de"
+      }
+    },
+    "inputs_after": {
+      "Cargo.toml": {
+        "bytes": 2320,
+        "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4"
+      },
+      "Cargo.lock": {
+        "bytes": 52538,
+        "sha256": "63d868f91aa52acbddf0eb7e9385a101c3a59c02f7e527ced82d1993299f5afb"
+      },
+      "crates/k-wiki/Cargo.toml": {
+        "bytes": 1011,
+        "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572"
+      },
+      "crates/xtask/Cargo.toml": {
+        "bytes": 219,
+        "sha256": "206d3a9af5953963659c0cc292e1356c8905f44288c417568bb7f146c4716198"
+      },
+      ".cargo/config.toml": {
+        "bytes": 99,
+        "sha256": "388ad5407d7e78cae8dacd1c3c556f8c97f43d998c4e09273dcf8fca00eb0f82"
+      },
+      "crates/xtask/src/main.rs": {
+        "bytes": 182034,
+        "sha256": "e4d256e451c03f447a4e374ed361d0d0b23d2898977d51953995fa307d896f1e"
+      },
+      "docs/release.md": {
+        "bytes": 20234,
+        "sha256": "1e67f4949647c10a48f9184db230454572d666a756b68c203690398f525c7954"
+      },
+      ".github/workflows/ci.yml": {
+        "bytes": 5739,
+        "sha256": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9"
+      },
+      ".github/workflows/native.yml": {
+        "bytes": 3860,
+        "sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683"
+      },
+      "build.rs": {
+        "bytes": 1925,
+        "sha256": "cd2da95e498f02c64109bd91cf963ed7bfa502488cd99d658eadb896de35b8de"
+      }
+    },
+    "all_input_hashes_unchanged": true,
+    "production_commit_receipt": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-local-source-evidence-commit.json",
+    "production_receipt_sha256": "0e5a3444f8e9085511a6f82d6a0a5f1c8a0b736854256e42f56b1d56210f4d52"
+  },
+  "commands": [
+    {
+      "name": "root-package-inventory",
+      "command": "cargo package --offline --locked -p codebase-graph --no-verify > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-crate-inventories/root-package.stdout.txt' 2> '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-crate-inventories/root-package.stderr.txt' ",
+      "cwd": "/private/tmp/codebasegraph-cod107-20261031",
+      "source_head": "2c4ed59bacfdc316f61e202eb6b5eaaa6acca767",
+      "started_at_utc": "2026-11-01T00:45:14.035140+00:00",
+      "started_at_unix_ns": 1793493914035159000,
+      "status": "completed",
+      "output_expected": "/private/tmp/codebasegraph-cod107-20261031/target/package/codebase-graph-4.0.5.crate",
+      "environment": {
+        "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+        "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+        "LBUG_VERSION": "0.19.0",
+        "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+        "MACOSX_DEPLOYMENT_TARGET": "13.3",
+        "CARGO_BUILD_JOBS": "2"
+      },
+      "scope": "real root .crate production only, noverify/compile/upload",
+      "pid": 38869,
+      "exit_code": 0,
+      "duration_seconds": 0.5994523749686778
+    },
+    {
+      "name": "wiki-package-inventory",
+      "command": "cargo package --offline --locked -p k-wiki --no-verify --config 'patch.crates-io.codebase-graph.path=\".\"' > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-crate-inventories/wiki-package.stdout.txt' 2> '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-crate-inventories/wiki-package.stderr.txt' ",
+      "cwd": "/private/tmp/codebasegraph-cod107-20261031",
+      "source_head": "2c4ed59bacfdc316f61e202eb6b5eaaa6acca767",
+      "started_at_utc": "2026-11-01T00:45:22.645004+00:00",
+      "started_at_unix_ns": 1793493922645016000,
+      "status": "completed",
+      "output_expected": "/private/tmp/codebasegraph-cod107-20261031/target/package/k-wiki-4.0.5.crate",
+      "environment": {
+        "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+        "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+        "LBUG_VERSION": "0.19.0",
+        "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+        "MACOSX_DEPLOYMENT_TARGET": "13.3",
+        "CARGO_BUILD_JOBS": "2"
+      },
+      "scope": "real unpublished wiki .crate production only; existingCI command-local in-tree dependency patch; no persistentconfig edit,noverify/compile/upload",
+      "pid": 38878,
+      "exit_code": 0,
+      "duration_seconds": 0.16673254198394716
+    },
+    {
+      "name": "final-clean-source-readback",
+      "command": "git --no-optional-locks status --porcelain=v1 -uall; rev-parse root/HEAD/tree; diff --check",
+      "cwd": "/private/tmp/codebasegraph-cod107-20261031",
+      "exit_code": 0,
+      "duration_seconds": 0.07304866588674486,
+      "status": "completed",
+      "source": "Sameclean2c4ed59/tree86b0; all source/manifests/lock inputs unchanged",
+      "log": "identity-after.txt"
+    }
+  ],
+  "output_prestate": {
+    "root": {
+      "path": "/private/tmp/codebasegraph-cod107-20261031/target/package/codebase-graph-4.0.5.crate",
+      "existed": false,
+      "bytes": null,
+      "sha256": null,
+      "mtime_ns": null
+    },
+    "wiki": {
+      "path": "/private/tmp/codebasegraph-cod107-20261031/target/package/k-wiki-4.0.5.crate",
+      "existed": false,
+      "bytes": null,
+      "sha256": null,
+      "mtime_ns": null
+    }
+  },
+  "archives": {
+    "root": {
+      "package_name": "codebase-graph",
+      "version": "4.0.5",
+      "source_archive": "/private/tmp/codebasegraph-cod107-20261031/target/package/codebase-graph-4.0.5.crate",
+      "private_archive": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-crate-inventories/codebase-graph-4.0.5.crate",
+      "compressed_bytes": 8485616,
+      "compressed_sha256": "d5c5da36855c8d5ea7084cf29ab2bebb8107fa35852b8b130a860320c10c211e",
+      "member_count": 220,
+      "regular_count": 220,
+      "total_member_bytes": 14808506,
+      "all_member_bytes_read_and_hashed": true,
+      "duplicates": 0,
+      "unsafe_paths": 0,
+      "nonregular_members": 0,
+      "python_members": [],
+      "docs_helper_members": [],
+      "docs_markdown_members": [
+        "codebase-graph-4.0.5/docs/specs/CBG-PLAT-01/execution/pr163-start-ack/README.md",
+        "codebase-graph-4.0.5/docs/specs/COD-103/evidence/COD-107/local-qualification-2026-11-01/README.md",
+        "codebase-graph-4.0.5/docs/specs/COD-103/evidence/COD-107/local-qualification-2026-11-01/prepared-history/README.md",
+        "codebase-graph-4.0.5/docs/specs/COD-103/evidence/COD-107/local-qualification-2026-11-01/prepared-history/backend/retention-raw-evidence/README.md",
+        "codebase-graph-4.0.5/docs/specs/COD-103/evidence/COD-56/README.md",
+        "codebase-graph-4.0.5/docs/specs/COD-103/evidence/COD-56/hosted-41192405055-attempt1/README.md",
+        "codebase-graph-4.0.5/docs/specs/COD-103/evidence/COD-56/matrix-qualification-2026-10-31/README.md",
+        "codebase-graph-4.0.5/docs/testing/COD-103/COD-105/README.md",
+        "codebase-graph-4.0.5/docs/testing/COD-103/COD-105/integration-2026-10-31/README.md",
+        "codebase-graph-4.0.5/docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/README.md",
+        "codebase-graph-4.0.5/docs/testing/COD-103/COD-106/local-verification-2026-10-31/README.md",
+        "codebase-graph-4.0.5/docs/testing/COD-103/release-baseline-v4.0.4/README.md",
+        "codebase-graph-4.0.5/docs/testing/graph-disk-cleanup-evidence/README.md",
+        "codebase-graph-4.0.5/docs/testing/pr153-review-fixes/README.md",
+        "codebase-graph-4.0.5/docs/testing/release-40851263747/README.md",
+        "codebase-graph-4.0.5/docs/testing/release-pr-162/README.md"
+      ],
+      "vcs_info": {
+        "git": {
+          "sha1": "2c4ed59bacfdc316f61e202eb6b5eaaa6acca767"
+        },
+        "path_in_vcs": ""
+      },
+      "source_sha_exact": true,
+      "dirty_false_or_absent": true,
+      "original_manifest_bytes_match": true,
+      "cargo_lock_present": true,
+      "cargo_lock_bytes_match_workspace": false,
+      "cargo_lock_parsed_package_count": 127,
+      "root_crates_io_limit_bytes": 10485760,
+      "root_crates_io_limit_pass": true,
+      "size_policy": null,
+      "include_explanation": "Actual original include allowlist is preserved. Cargo filename-only include patterns such as README.md match nested basenames too; sixteen actual docs README.md files were observed, not a blank no-docs claim. No Python/docs helper member is present.",
+      "include_exclude": null
+    },
+    "wiki": {
+      "package_name": "k-wiki",
+      "version": "4.0.5",
+      "source_archive": "/private/tmp/codebasegraph-cod107-20261031/target/package/k-wiki-4.0.5.crate",
+      "private_archive": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-crate-inventories/k-wiki-4.0.5.crate",
+      "compressed_bytes": 140437,
+      "compressed_sha256": "45ca763a9899074799ccb2366b7239969570a0e01bf4eee5dfa782b8b477b2fd",
+      "member_count": 64,
+      "regular_count": 64,
+      "total_member_bytes": 711531,
+      "all_member_bytes_read_and_hashed": true,
+      "duplicates": 0,
+      "unsafe_paths": 0,
+      "nonregular_members": 0,
+      "python_members": [],
+      "docs_helper_members": [],
+      "docs_markdown_members": [],
+      "vcs_info": {
+        "git": {
+          "sha1": "2c4ed59bacfdc316f61e202eb6b5eaaa6acca767"
+        },
+        "path_in_vcs": "crates/k-wiki"
+      },
+      "source_sha_exact": true,
+      "dirty_false_or_absent": true,
+      "original_manifest_bytes_match": true,
+      "cargo_lock_present": true,
+      "cargo_lock_bytes_match_workspace": false,
+      "cargo_lock_parsed_package_count": 211,
+      "root_crates_io_limit_bytes": null,
+      "root_crates_io_limit_pass": null,
+      "size_policy": "No10MiB registry limit invented for unpublishedk-wiki",
+      "include_explanation": null,
+      "include_exclude": "No explicit package include/exclude; actual defaultCargo inventory inspected; every non-generated member source-byte matches its crate directory."
+    }
+  },
+  "full_inventory_files": {
+    "root": "root-member-inventory.json",
+    "wiki": "wiki-member-inventory.json",
+    "actual_cargo_metadata": [
+      "root-cargo-metadata.json",
+      "wiki-cargo-metadata.json"
+    ]
+  },
+  "checks": {
+    "both_package_commands_exit0": true,
+    "actual_exact_output_paths_absent_before_and_fresh_after": true,
+    "private_copies_byte_identical": true,
+    "all284_member_bytes_read_and_sha256_hashed": true,
+    "all_members_regular_confined_unique": true,
+    "all_non_generated_member_bytes_match_source": true,
+    "original_manifests_byte_equal_source": true,
+    "both_archived_vcs_info_bind_clean_exact2c4": true,
+    "root_python_docs_helper_members": 0,
+    "wiki_python_docs_helper_members": 0,
+    "root_compressed_bytes_below10MiB": true,
+    "workspace_manifests_lock_source_unchanged": true,
+    "no_compile_or_registry_qualification_claim": true
+  },
+  "cargo_semantics_observations": {
+    "root_original_include": [
+      "src/**",
+      "!src/**/.DS_Store",
+      "tests/**",
+      "assets/*.json",
+      "assets/ladybug-extensions/0.19.0/**/*.xz",
+      "vendor/tree-sitter-wat/**",
+      "build.rs",
+      "README.md",
+      "LICENSE"
+    ],
+    "root_nested_Readme_count": 16,
+    "root_nested_Readme_members": [
+      "codebase-graph-4.0.5/docs/specs/CBG-PLAT-01/execution/pr163-start-ack/README.md",
+      "codebase-graph-4.0.5/docs/specs/COD-103/evidence/COD-107/local-qualification-2026-11-01/README.md",
+      "codebase-graph-4.0.5/docs/specs/COD-103/evidence/COD-107/local-qualification-2026-11-01/prepared-history/README.md",
+      "codebase-graph-4.0.5/docs/specs/COD-103/evidence/COD-107/local-qualification-2026-11-01/prepared-history/backend/retention-raw-evidence/README.md",
+      "codebase-graph-4.0.5/docs/specs/COD-103/evidence/COD-56/README.md",
+      "codebase-graph-4.0.5/docs/specs/COD-103/evidence/COD-56/hosted-41192405055-attempt1/README.md",
+      "codebase-graph-4.0.5/docs/specs/COD-103/evidence/COD-56/matrix-qualification-2026-10-31/README.md",
+      "codebase-graph-4.0.5/docs/testing/COD-103/COD-105/README.md",
+      "codebase-graph-4.0.5/docs/testing/COD-103/COD-105/integration-2026-10-31/README.md",
+      "codebase-graph-4.0.5/docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/README.md",
+      "codebase-graph-4.0.5/docs/testing/COD-103/COD-106/local-verification-2026-10-31/README.md",
+      "codebase-graph-4.0.5/docs/testing/COD-103/release-baseline-v4.0.4/README.md",
+      "codebase-graph-4.0.5/docs/testing/graph-disk-cleanup-evidence/README.md",
+      "codebase-graph-4.0.5/docs/testing/pr153-review-fixes/README.md",
+      "codebase-graph-4.0.5/docs/testing/release-40851263747/README.md",
+      "codebase-graph-4.0.5/docs/testing/release-pr-162/README.md"
+    ],
+    "root_include_note": "Filename-only Cargo include patterns such as README.md match nested basenames. Actual docs README members are ordinary Markdown, not Python/docs helper executable payload. No blanket docs exclusion was approved or claimed.",
+    "wiki_original_publish": false,
+    "wiki_explicit_include_exclude": "Absent; actual Cargo default member bytes inspected, not assumed.",
+    "packaged_lock_audit": "packaged-lock-observations.json",
+    "packaged_lock_diff_summary": {
+      "root": [
+        {
+          "name": "cxx-build",
+          "version": "1.0.138",
+          "changed_fields": [
+            "dependencies"
+          ],
+          "workspace_dependencies": [
+            "cc",
+            "codespan-reporting",
+            "proc-macro2",
+            "quote",
+            "scratch",
+            "syn 2.0.117"
+          ],
+          "packaged_dependencies": [
+            "cc",
+            "codespan-reporting",
+            "proc-macro2",
+            "quote",
+            "scratch",
+            "syn"
+          ],
+          "source_unchanged": true,
+          "checksum_unchanged": true
+        },
+        {
+          "name": "cxxbridge-cmd",
+          "version": "1.0.138",
+          "changed_fields": [
+            "dependencies"
+          ],
+          "workspace_dependencies": [
+            "clap",
+            "codespan-reporting",
+            "proc-macro2",
+            "quote",
+            "syn 2.0.117"
+          ],
+          "packaged_dependencies": [
+            "clap",
+            "codespan-reporting",
+            "proc-macro2",
+            "quote",
+            "syn"
+          ],
+          "source_unchanged": true,
+          "checksum_unchanged": true
+        },
+        {
+          "name": "cxxbridge-macro",
+          "version": "1.0.138",
+          "changed_fields": [
+            "dependencies"
+          ],
+          "workspace_dependencies": [
+            "proc-macro2",
+            "quote",
+            "rustversion",
+            "syn 2.0.117"
+          ],
+          "packaged_dependencies": [
+            "proc-macro2",
+            "quote",
+            "rustversion",
+            "syn"
+          ],
+          "source_unchanged": true,
+          "checksum_unchanged": true
+        },
+        {
+          "name": "serde_derive",
+          "version": "1.0.228",
+          "changed_fields": [
+            "dependencies"
+          ],
+          "workspace_dependencies": [
+            "proc-macro2",
+            "quote",
+            "syn 2.0.117"
+          ],
+          "packaged_dependencies": [
+            "proc-macro2",
+            "quote",
+            "syn"
+          ],
+          "source_unchanged": true,
+          "checksum_unchanged": true
+        },
+        {
+          "name": "wasm-bindgen-macro-support",
+          "version": "0.2.125",
+          "changed_fields": [
+            "dependencies"
+          ],
+          "workspace_dependencies": [
+            "bumpalo",
+            "proc-macro2",
+            "quote",
+            "syn 2.0.117",
+            "wasm-bindgen-shared"
+          ],
+          "packaged_dependencies": [
+            "bumpalo",
+            "proc-macro2",
+            "quote",
+            "syn",
+            "wasm-bindgen-shared"
+          ],
+          "source_unchanged": true,
+          "checksum_unchanged": true
+        }
+      ],
+      "wiki": []
+    },
+    "lock_note": "Both actual packaged Cargo.lock files were read/parsed. Root127/wiki211 packages vs workspace223; source/checksum identities are from locked workspace. Root five syn2-qualified dependency labels become unqualified syn in per-crate lock; other root entries and all wiki source-backed records match. Workspace lock remains byte-identical."
+  },
+  "preserved_inspection_assumption": {
+    "kind": "Inspection predicate assumption, not package/implementation failure",
+    "location": "First post-command in-memory member audit",
+    "actual_error": "AssertionError: docs/specs/CBG-PLAT-01/execution/pr163-start-ack/README.md",
+    "incorrect_assumption": "Unqualified README.md in actual Cargo include was treated as a top-level-only README; also assumed all docs entries must be absent. Neither is the approved criterion.",
+    "correction": "Continue read-only inspection of the same already-generated bytes; accept observed ordinary Markdown README entries under actual filename-pattern include semantics, require no Python/docs-helper executable payload.",
+    "no_rerun_or_input_change": true,
+    "same_root_command_output": "Packaging succeeded220files before analyzer predicate; wiki succeeded64files.",
+    "actual_docs_Readme_member_count": 16,
+    "approved_contract_unchanged": true
+  },
+  "evidence_relation": {
+    "prior_local_checks": "Independent83 actualJUnit + strictworkspaceClippy0warnings and18rawCLI supplement retained unchanged; no tests/reruns in this phase",
+    "new_execution": "Exactly2 actual package --no-verify commands, original required command-local wiki dependency patch; noallow-dirty,findfirst,stalearchive,install,manifestedit or custom packaging script",
+    "vcs_binding": "Original packages truthfully bind2c4 commit; no relabel as future evidence-only head",
+    "future_final_head": "A later evidence-only commit may reuse this inventory only with actual proof unchanged code/manifests/lock/package payload inputs. Root filename README matching means new/changed README docs can alter actual packaged payload: compare exact selected packaging-input bytes, not just product code. If inputs differ, Engineer decides one necessary fresh final clean packaging slot; no automatic evidence/CI loop or fabricated future-source .cargo_vcs_info."
+  },
+  "limitations": [
+    "--no-verify inventories actual generated source archives but does not compile/exercise extracted package or establish publish dry-run/registry/publication qualification; existing hosted compile/size/main/release gates remain.",
+    "Root current package is8485616bytes <=10485760; no root policy threshold weakened and no wiki10MiB policy invented.",
+    "No native artifact archive build/readback/runtime/VM/CI action occurred. Both same-source retained native inventories await actual real COD107PR/fullCI and independent readback under approved retention route.",
+    "No A03complete/PRreadiness/107\u2192108/Done/main/release/platformaggregate closure asserted. FinalReviewer/currentheadfullCI/currentcanonicalmodel reconciliation gates remain owned separately.",
+    "Initial analyzer predicate wrongly assumed top-level-only README/all-docs absent; exact assertion and correction preserved. Cargo/source commands did not fail and were not rerun or changed to satisfy that assumption."
+  ],
+  "settings": {
+    "role_map": "evidence_verifier inherit/inherit",
+    "host": "Existing accepted inherited dispatch; no model/effort override/substitution/nested role",
+    "runtime_metadata": "unexposed"
+  },
+  "environment_file": "environment.json",
+  "writes": {
+    "permitted": "Default isolated target/package outputs and own new private reports/actual archive copies only",
+    "source_Gitrefs_Linear_wiki_model_CI_VM_settings_credentials_dependencies": false,
+    "old_closed_reports_changed": false
+  },
+  "assumptions_constants": "ActualcleanProductionSTOP2c4 snapshot and exclusive package slot used. Existing normal documented native environment/resources reused; no feature/profile/product/size/acceptance/policy constant changed.",
+  "reusable_memory_assessment": "Transient actual package/source inventory; no memory write warranted/authorized.",
+  "next_owner": "Engineer/FinalReviewer/Production consume actual clean2c4 inventories, preserve future-head payload-binding and later native/CI/model gates. Cargo/privatewrites STOP and exclusive lease released after handoff."
+}

@@ -1,0 +1,2 @@
+FAIL: security-policy-incomplete: SECURITY.md must mention "--allow-remote".
+release gate failed

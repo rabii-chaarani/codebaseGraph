@@ -1,0 +1,2 @@
+   Packaging codebase-graph v4.0.5 (/private/tmp/codebasegraph-cod107-20261031)
+    Packaged 220 files, 14.1MiB (8.1MiB compressed)

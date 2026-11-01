@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "commit": "2c4ed59bacfdc316f61e202eb6b5eaaa6acca767",
+  "tree": "86b0d6aa4bebf645a59dd5bb12bd7beeffd8ca2d",
+  "report": "report.md",
+  "result": "result.json",
+  "files": [
+    {
+      "path": "codebase-graph-4.0.5.crate",
+      "bytes": 8485616,
+      "sha256": "d5c5da36855c8d5ea7084cf29ab2bebb8107fa35852b8b130a860320c10c211e"
+    },
+    {
+      "path": "commands.json",
+      "bytes": 3225,
+      "sha256": "01e14efd3cbe26ba062a3f4997947d0a41f77018497db194680f0852ccab318a"
+    },
+    {
+      "path": "environment.json",
+      "bytes": 1411,
+      "sha256": "ef3aef661452d3784ac9bd3b01be9e42959109eba31be1ddcbe4f0ef947bda5e"
+    },
+    {
+      "path": "identity-after.txt",
+      "bytes": 125,
+      "sha256": "05008beba5369d88ac0777ab526400c2566a875124b880052889c76224a5663e"
+    },
+    {
+      "path": "identity-before.txt",
+      "bytes": 125,
+      "sha256": "05008beba5369d88ac0777ab526400c2566a875124b880052889c76224a5663e"
+    },
+    {
+      "path": "k-wiki-4.0.5.crate",
+      "bytes": 140437,
+      "sha256": "45ca763a9899074799ccb2366b7239969570a0e01bf4eee5dfa782b8b477b2fd"
+    },
+    {
+      "path": "package-output-before.json",
+      "bytes": 393,
+      "sha256": "76b0c3a1c60dd90fd11684de21fc11dcae768be83e8364c00f7b7d38f42304f6"
+    },
+    {
+      "path": "packaged-lock-diff-summary.json",
+      "bytes": 2387,
+      "sha256": "22e2567ae1ae5a92baa46e0663426ae7b38e440ab64eed2880bf77d780f8af4b"
+    },
+    {
+      "path": "packaged-lock-observations.json",
+      "bytes": 6037,
+      "sha256": "e144c7187a4ab1c5bf9553f52d644a56e11535bee058c5755744014815bd0edd"
+    },
+    {
+      "path": "preserved-inspection-assumption.json",
+      "bytes": 896,
+      "sha256": "afb111bcf1bc1c86be19c10939a0af673652c2d8fb0906c454d5fd1f838654f5"
+    },
+    {
+      "path": "report.md",
+      "bytes": 9025,
+      "sha256": "10a8cfef2be894a5d007ab32189cfadebf977f209bb8c46585664f31df2c5479"
+    },
+    {
+      "path": "result.json",
+      "bytes": 23702,
+      "sha256": "204d47af329d2efd446042c1c1bc63652a781f1d079994648351a107022d3711"
+    },
+    {
+      "path": "root-cargo-metadata.json",
+      "bytes": 86385,
+      "sha256": "3024f9f30f7c10fc8f933fd707c09d04aa9934b97cc33c90655b53b39c418e36"
+    },
+    {
+      "path": "root-member-inventory.json",
+      "bytes": 131874,
+      "sha256": "1392953f0d7abf2aedc4489b0149be0110dd171077ffeda1ee80ab9310f8a222"
+    },
+    {
+      "path": "root-package.stderr.txt",
+      "bytes": 132,
+      "sha256": "7476cc4cd6eae38c149e5227ca3ed61d14ea5fccfa6d7a6c2781ae5da8f7458a"
+    },
+    {
+      "path": "root-package.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "root-raw-member-headers.json",
+      "bytes": 30603,
+      "sha256": "a7522e278cb7654d2753a6df1e55e1e15f65f78c219022cbfd09b9d5125d050a"
+    },
+    {
+      "path": "source-inputs-after.json",
+      "bytes": 1318,
+      "sha256": "48f39b8a0665aa9fc9a937f01aa10a354e39fca90b29b5140b7ae4748474abe6"
+    },
+    {
+      "path": "source-inputs-before.json",
+      "bytes": 1318,
+      "sha256": "48f39b8a0665aa9fc9a937f01aa10a354e39fca90b29b5140b7ae4748474abe6"
+    },
+    {
+      "path": "wiki-cargo-metadata.json",
+      "bytes": 128341,
+      "sha256": "b59b82bc23776a80181cd08567e1547cb5d1507d2bfd992d3f77d194ac531e9c"
+    },
+    {
+      "path": "wiki-member-inventory.json",
+      "bytes": 33573,
+      "sha256": "0049132bf8a847a91e811445eee23b90649c6a0fcea00be3984afe40ba96524c"
+    },
+    {
+      "path": "wiki-package.stderr.txt",
+      "bytes": 140,
+      "sha256": "07f045e787c52c8262acec84917b13aa3da3d653f5497b8622eb1fa3849b7c71"
+    },
+    {
+      "path": "wiki-package.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "self_digest": "externalhandoffonly"
+}

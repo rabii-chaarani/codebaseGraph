@@ -1,0 +1,116 @@
+{
+  "root": [
+    {
+      "name": "cxx-build",
+      "version": "1.0.138",
+      "changed_fields": [
+        "dependencies"
+      ],
+      "workspace_dependencies": [
+        "cc",
+        "codespan-reporting",
+        "proc-macro2",
+        "quote",
+        "scratch",
+        "syn 2.0.117"
+      ],
+      "packaged_dependencies": [
+        "cc",
+        "codespan-reporting",
+        "proc-macro2",
+        "quote",
+        "scratch",
+        "syn"
+      ],
+      "source_unchanged": true,
+      "checksum_unchanged": true
+    },
+    {
+      "name": "cxxbridge-cmd",
+      "version": "1.0.138",
+      "changed_fields": [
+        "dependencies"
+      ],
+      "workspace_dependencies": [
+        "clap",
+        "codespan-reporting",
+        "proc-macro2",
+        "quote",
+        "syn 2.0.117"
+      ],
+      "packaged_dependencies": [
+        "clap",
+        "codespan-reporting",
+        "proc-macro2",
+        "quote",
+        "syn"
+      ],
+      "source_unchanged": true,
+      "checksum_unchanged": true
+    },
+    {
+      "name": "cxxbridge-macro",
+      "version": "1.0.138",
+      "changed_fields": [
+        "dependencies"
+      ],
+      "workspace_dependencies": [
+        "proc-macro2",
+        "quote",
+        "rustversion",
+        "syn 2.0.117"
+      ],
+      "packaged_dependencies": [
+        "proc-macro2",
+        "quote",
+        "rustversion",
+        "syn"
+      ],
+      "source_unchanged": true,
+      "checksum_unchanged": true
+    },
+    {
+      "name": "serde_derive",
+      "version": "1.0.228",
+      "changed_fields": [
+        "dependencies"
+      ],
+      "workspace_dependencies": [
+        "proc-macro2",
+        "quote",
+        "syn 2.0.117"
+      ],
+      "packaged_dependencies": [
+        "proc-macro2",
+        "quote",
+        "syn"
+      ],
+      "source_unchanged": true,
+      "checksum_unchanged": true
+    },
+    {
+      "name": "wasm-bindgen-macro-support",
+      "version": "0.2.125",
+      "changed_fields": [
+        "dependencies"
+      ],
+      "workspace_dependencies": [
+        "bumpalo",
+        "proc-macro2",
+        "quote",
+        "syn 2.0.117",
+        "wasm-bindgen-shared"
+      ],
+      "packaged_dependencies": [
+        "bumpalo",
+        "proc-macro2",
+        "quote",
+        "syn",
+        "wasm-bindgen-shared"
+      ],
+      "source_unchanged": true,
+      "checksum_unchanged": true
+    }
+  ],
+  "wiki": []
+}

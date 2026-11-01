@@ -1,0 +1,52 @@
+{
+  "before_main_sha256": "e4d256e451c03f447a4e374ed361d0d0b23d2898977d51953995fa307d896f1e",
+  "after_main_sha256": "076dd22a1da16a6d651016b7227536f1d65de766ff6c09a3dcb02631c51af5da",
+  "docs_release_sha256": "1e67f4949647c10a48f9184db230454572d666a756b68c203690398f525c7954",
+  "ci_yaml_sha256": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+  "native_yaml_sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+  "environment": "macOS ARM64; rustc/cargo 1.96.0; Bash 3.2.57; jq 1.7.1; xtask dev/test profile; locked Cargo commands",
+  "change": "Only the new negative-fixture expected path diagnostics now use Path::join(...).display() for docs-extra, src/docs, scripts, src/codebase_graph, docs/allowed.py, outside/linked.py. Fixed string diagnostics for repository tooling, security and workflow policy remain unchanged.",
+  "windows_execution": "Not run; tests are cross-platform authored, but this is not Windows compile or execution evidence.",
+  "commands": [
+    {
+      "label": "fmt",
+      "command_file": "fmt.json",
+      "command_file_sha256": "3f15e8a75864826c25c465674772c7c6b86a58d2df5a9838bb59381e157b8a41",
+      "output_file": "fmt.combined-output.txt",
+      "output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exit_code": 0
+    },
+    {
+      "label": "focused-path-tests",
+      "command_file": "focused-path-tests.json",
+      "command_file_sha256": "ce710ad1294938ed5f615a9f80a1294fae9ed6eac5aaed6bae42afadcbfdd3f0",
+      "output_file": "focused-path-tests.combined-output.txt",
+      "output_sha256": "664f50d5df690c586573c08a727bb330934b27b6d4b4baf2e70680b7af01d33a",
+      "exit_code": 0
+    },
+    {
+      "label": "clippy",
+      "command_file": "clippy.json",
+      "command_file_sha256": "f744aa23a1735c1675205047d735c2b6ada0bf6a065f3434d059956b1d88f166",
+      "output_file": "clippy.combined-output.txt",
+      "output_sha256": "523e61d197fc9fadbac3fefbd4ba0d0181908cfd882f4810c62f1df0190c5f34",
+      "exit_code": 0
+    },
+    {
+      "label": "full-xtask",
+      "command_file": "full-xtask.json",
+      "command_file_sha256": "9a890e6942e43617bc73d0250a578c0945dcea3671a3901318a7209acb184190",
+      "output_file": "full-xtask.combined-output.txt",
+      "output_sha256": "b49cabe8873412311f4b44d413e55512b95688730c79f8ee6204aad0ae893371",
+      "exit_code": 0
+    },
+    {
+      "label": "workflow-and-gate",
+      "command_file": "workflow-and-gate.json",
+      "command_file_sha256": "b0b71b1cabd64fa5d2e3d4e0e1a14596d7a4cd88dcf3047011117bf617c1a822",
+      "output_file": "workflow-and-gate.combined-output.txt",
+      "output_sha256": "ad0c2e6c12e21e5eeb2bfa3f92e2a8e8be4fa121175774794b798d6f0717a2db",
+      "exit_code": 0
+    }
+  ]
+}

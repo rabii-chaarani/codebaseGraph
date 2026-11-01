@@ -1,0 +1,2383 @@
+{
+  "schema_version": 1,
+  "scope": "Faithfulclosedlaterfaninpluscurrenttestoraclefix; noauthorrecordrewrites",
+  "source_parent_before_commit": "2c4ed59bacfdc316f61e202eb6b5eaaa6acca767",
+  "main_sha256": "076dd22a1da16a6d651016b7227536f1d65de766ff6c09a3dcb02631c51af5da",
+  "other_technical_unchanged": {
+    "docs/release.md": "1e67f4949647c10a48f9184db230454572d666a756b68c203690398f525c7954",
+    ".github/workflows/ci.yml": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+    ".github/workflows/native.yml": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683"
+  },
+  "new_copied_file_count": 335,
+  "new_copied_bytes": 2196016,
+  "copies": [
+    {
+      "path": "independent-cli-supplement/result.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/result.json",
+      "bytes": 87578,
+      "sha256": "4cce5f69698cb73eb0824c81012f1f36122c7795395fd3e21acf069b1cd30829",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/report.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/report.md",
+      "bytes": 5753,
+      "sha256": "e5f328b35682ec357f461825be1824fc2eea342f8f6b87211ef5bf5b9263d2d1",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/production-copy-manifest.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/production-copy-manifest.json",
+      "bytes": 120095,
+      "sha256": "f302fc0d02a5d55b8b5f6924ccb010eca0307bdaccdc13dcbc5cd6e36933eaa7",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/completed-results.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/completed-results.json",
+      "bytes": 74979,
+      "sha256": "a2ad57c9132afbd74c57a1a757b9de25581c8a256d03c4ee984717226a5663a2",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/files.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/files.json",
+      "bytes": 53772,
+      "sha256": "3f018fab57c76f257fd94bb52cd4430002f78292708f7dd5640d6ae0616ad11a",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/source-cli-provenance-after.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/source-cli-provenance-after.json",
+      "bytes": 1061,
+      "sha256": "3e0ebb8aaa1133b5459e5b4f08819fc7cff21c7eac7c9655391c6fd63e8654e5",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/source-cli-provenance-before.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/source-cli-provenance-before.json",
+      "bytes": 3387,
+      "sha256": "26f78d83ccff38862380de5f45951231b44c4e0ca704c0217baa31e1624868f2",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/registered-case-plan.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/registered-case-plan.json",
+      "bytes": 8825,
+      "sha256": "19733dd48c29c3952b97da29ef086b013009c1db24890dea1053aa08f2cb7cb1",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/production-index.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/production-index.md",
+      "bytes": 3478,
+      "sha256": "0b7d48e4babeb64ff9df0e621e1d996c3493c07804f526d616dd2e75c9543d2f",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/actual-gate-source-anchors.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/actual-gate-source-anchors.json",
+      "bytes": 6301,
+      "sha256": "2c5f5a84f9109c2c9359d9fdccd22039bdd12228972c4a53684ba12dc2db9687",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/request.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/request.json",
+      "bytes": 3393,
+      "sha256": "77678c40f96b53cc8ef3ff008cd951bf10f33a42a20932498622b5b56031b094",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/stdout.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/result.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/result.json",
+      "bytes": 4191,
+      "sha256": "21a1750f5245ef9705016469402df90f297ade0ff7e5f3d3e6dd5c8a3f8ddc6d",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/stderr.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/stderr.txt",
+      "bytes": 102,
+      "sha256": "ef836d959df2bff8964725e77721730047c92e4daf84d25f02cd31e23bbd169e",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/fixture/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/fixture/Cargo.toml",
+      "bytes": 2320,
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/fixture/release-please-config.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/fixture/release-please-config.json",
+      "bytes": 610,
+      "sha256": "aee0cc12299ec52e26f56bf7621a7e48a50445f0105041da9fed5eea178f5497",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/fixture/SECURITY.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/fixture/SECURITY.md",
+      "bytes": 2145,
+      "sha256": "a838500eac12bd53304f485c21052df40435b4ed37cb2823fe63f3ae225e44e5",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/fixture/crates/k-wiki/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/fixture/crates/k-wiki/Cargo.toml",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/fixture/docs/allowed.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/fixture/docs/allowed.py",
+      "bytes": 57,
+      "sha256": "1fb843e31646bde0f0f94a4f1d3b23bf25ebd3a5701e5698ec33e0d31a613933",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/fixture/.github/workflows/release.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/fixture/.github/workflows/release.yml",
+      "bytes": 33468,
+      "sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/fixture/.github/workflows/native.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/fixture/.github/workflows/native.yml",
+      "bytes": 3860,
+      "sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/fixture/.github/workflows/ci.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/fixture/.github/workflows/ci.yml",
+      "bytes": 5819,
+      "sha256": "5d9a9217cb7db8179464aea18d611cda10749723219a0ee5c31335e72f5b70e7",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/fixture/src/lib.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/fixture/src/lib.rs",
+      "bytes": 995,
+      "sha256": "509f314907f3860c8408f1ed32f8e94867ba79d906b01d7de2e7cc253910d751",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/fixture/src/adapters/cli/mod.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/fixture/src/adapters/cli/mod.rs",
+      "bytes": 339,
+      "sha256": "c574c9f1e30d211fee7ad12d8675c5f52bc87dc2a1d1b2985fe5f030f9f5bd43",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_knowledge_python__confirmed-production/request.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_knowledge_python__confirmed-production/request.json",
+      "bytes": 3375,
+      "sha256": "60f9fe29ca7ee72f22dcb87ff503d9016cfd2f094bf1e79c56fca8997c96ef9e",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_knowledge_python__confirmed-production/stdout.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_knowledge_python__confirmed-production/stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_knowledge_python__confirmed-production/result.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_knowledge_python__confirmed-production/result.json",
+      "bytes": 4169,
+      "sha256": "084a4d8b8309063a40f82df9d627ad851699aa485c927f491558e3a5b1250f18",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_knowledge_python__confirmed-production/stderr.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_knowledge_python__confirmed-production/stderr.txt",
+      "bytes": 98,
+      "sha256": "cec723c7b64d08d3769bb121a9c3c294570f871e37c0c6ea70687b86b4256c5b",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_knowledge_python__confirmed-production/fixture/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_knowledge_python__confirmed-production/fixture/Cargo.toml",
+      "bytes": 2320,
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_knowledge_python__confirmed-production/fixture/release-please-config.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_knowledge_python__confirmed-production/fixture/release-please-config.json",
+      "bytes": 610,
+      "sha256": "aee0cc12299ec52e26f56bf7621a7e48a50445f0105041da9fed5eea178f5497",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_knowledge_python__confirmed-production/fixture/SECURITY.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_knowledge_python__confirmed-production/fixture/SECURITY.md",
+      "bytes": 2145,
+      "sha256": "a838500eac12bd53304f485c21052df40435b4ed37cb2823fe63f3ae225e44e5",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_knowledge_python__confirmed-production/fixture/crates/k-wiki/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_knowledge_python__confirmed-production/fixture/crates/k-wiki/Cargo.toml",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_knowledge_python__confirmed-production/fixture/docs/allowed.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_knowledge_python__confirmed-production/fixture/docs/allowed.py",
+      "bytes": 57,
+      "sha256": "1fb843e31646bde0f0f94a4f1d3b23bf25ebd3a5701e5698ec33e0d31a613933",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_knowledge_python__confirmed-production/fixture/knowledge/helper.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_knowledge_python__confirmed-production/fixture/knowledge/helper.py",
+      "bytes": 56,
+      "sha256": "af9cf2b0441832b8b137a061654d1a42aa7f3148e913c0218880ffce0a2ce854",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_knowledge_python__confirmed-production/fixture/.github/workflows/release.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_knowledge_python__confirmed-production/fixture/.github/workflows/release.yml",
+      "bytes": 33468,
+      "sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_knowledge_python__confirmed-production/fixture/.github/workflows/native.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_knowledge_python__confirmed-production/fixture/.github/workflows/native.yml",
+      "bytes": 3860,
+      "sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_knowledge_python__confirmed-production/fixture/.github/workflows/ci.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_knowledge_python__confirmed-production/fixture/.github/workflows/ci.yml",
+      "bytes": 5739,
+      "sha256": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_knowledge_python__confirmed-production/fixture/src/lib.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_knowledge_python__confirmed-production/fixture/src/lib.rs",
+      "bytes": 995,
+      "sha256": "509f314907f3860c8408f1ed32f8e94867ba79d906b01d7de2e7cc253910d751",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_knowledge_python__confirmed-production/fixture/src/adapters/cli/mod.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_knowledge_python__confirmed-production/fixture/src/adapters/cli/mod.rs",
+      "bytes": 339,
+      "sha256": "c574c9f1e30d211fee7ad12d8675c5f52bc87dc2a1d1b2985fe5f030f9f5bd43",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_incomplete_security__ordinary/request.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_incomplete_security__ordinary/request.json",
+      "bytes": 2934,
+      "sha256": "f3a454d19662cb2e8defbe6fa020977d7736e57541926ae3ab4f98e32b58d2d2",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_incomplete_security__ordinary/stdout.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_incomplete_security__ordinary/stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_incomplete_security__ordinary/result.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_incomplete_security__ordinary/result.json",
+      "bytes": 3729,
+      "sha256": "97c3dfa12044a1efaeb702795aa3c29cc8d56d591b3efbe3c7d8ff963dba7d5c",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_incomplete_security__ordinary/stderr.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_incomplete_security__ordinary/stderr.txt",
+      "bytes": 97,
+      "sha256": "55d1dbeeb44896b0aa5d3579127e1cc810ff99aeff6977dda88dbc0977837f07",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_incomplete_security__ordinary/fixture/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_incomplete_security__ordinary/fixture/Cargo.toml",
+      "bytes": 2320,
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_incomplete_security__ordinary/fixture/release-please-config.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_incomplete_security__ordinary/fixture/release-please-config.json",
+      "bytes": 610,
+      "sha256": "aee0cc12299ec52e26f56bf7621a7e48a50445f0105041da9fed5eea178f5497",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_incomplete_security__ordinary/fixture/SECURITY.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_incomplete_security__ordinary/fixture/SECURITY.md",
+      "bytes": 49,
+      "sha256": "4cf575c84d9dfe6869315e40da1ed03f34e1370f81325ac6373dba06851cf097",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_incomplete_security__ordinary/fixture/crates/k-wiki/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_incomplete_security__ordinary/fixture/crates/k-wiki/Cargo.toml",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_incomplete_security__ordinary/fixture/docs/allowed.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_incomplete_security__ordinary/fixture/docs/allowed.py",
+      "bytes": 57,
+      "sha256": "1fb843e31646bde0f0f94a4f1d3b23bf25ebd3a5701e5698ec33e0d31a613933",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_incomplete_security__ordinary/fixture/.github/workflows/release.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_incomplete_security__ordinary/fixture/.github/workflows/release.yml",
+      "bytes": 33468,
+      "sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_incomplete_security__ordinary/fixture/.github/workflows/native.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_incomplete_security__ordinary/fixture/.github/workflows/native.yml",
+      "bytes": 3860,
+      "sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_incomplete_security__ordinary/fixture/.github/workflows/ci.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_incomplete_security__ordinary/fixture/.github/workflows/ci.yml",
+      "bytes": 5739,
+      "sha256": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_incomplete_security__ordinary/fixture/src/lib.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_incomplete_security__ordinary/fixture/src/lib.rs",
+      "bytes": 995,
+      "sha256": "509f314907f3860c8408f1ed32f8e94867ba79d906b01d7de2e7cc253910d751",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_incomplete_security__ordinary/fixture/src/adapters/cli/mod.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_incomplete_security__ordinary/fixture/src/adapters/cli/mod.rs",
+      "bytes": 339,
+      "sha256": "c574c9f1e30d211fee7ad12d8675c5f52bc87dc2a1d1b2985fe5f030f9f5bd43",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/complete_fixture_baseline__ordinary/request.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/complete_fixture_baseline__ordinary/request.json",
+      "bytes": 2853,
+      "sha256": "e8569dd8919da68e0ff0395e30c298305edfacd007136d396f8fb1baa04917b5",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/complete_fixture_baseline__ordinary/stdout.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/complete_fixture_baseline__ordinary/stdout.txt",
+      "bytes": 20,
+      "sha256": "cbe0d7f953d0f48db2405a1db48967fc4f6e1d880a563f4bbdf5dd7316519cdc",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/complete_fixture_baseline__ordinary/result.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/complete_fixture_baseline__ordinary/result.json",
+      "bytes": 3513,
+      "sha256": "9502bc9de7244654b1a6962957e085be4b6a4be9d2b0f860e200e54f17412fca",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/complete_fixture_baseline__ordinary/stderr.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/complete_fixture_baseline__ordinary/stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/complete_fixture_baseline__ordinary/fixture/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/complete_fixture_baseline__ordinary/fixture/Cargo.toml",
+      "bytes": 2320,
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/complete_fixture_baseline__ordinary/fixture/release-please-config.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/complete_fixture_baseline__ordinary/fixture/release-please-config.json",
+      "bytes": 610,
+      "sha256": "aee0cc12299ec52e26f56bf7621a7e48a50445f0105041da9fed5eea178f5497",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/complete_fixture_baseline__ordinary/fixture/SECURITY.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/complete_fixture_baseline__ordinary/fixture/SECURITY.md",
+      "bytes": 2145,
+      "sha256": "a838500eac12bd53304f485c21052df40435b4ed37cb2823fe63f3ae225e44e5",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/complete_fixture_baseline__ordinary/fixture/crates/k-wiki/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/complete_fixture_baseline__ordinary/fixture/crates/k-wiki/Cargo.toml",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/complete_fixture_baseline__ordinary/fixture/docs/allowed.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/complete_fixture_baseline__ordinary/fixture/docs/allowed.py",
+      "bytes": 57,
+      "sha256": "1fb843e31646bde0f0f94a4f1d3b23bf25ebd3a5701e5698ec33e0d31a613933",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/complete_fixture_baseline__ordinary/fixture/.github/workflows/release.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/complete_fixture_baseline__ordinary/fixture/.github/workflows/release.yml",
+      "bytes": 33468,
+      "sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/complete_fixture_baseline__ordinary/fixture/.github/workflows/native.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/complete_fixture_baseline__ordinary/fixture/.github/workflows/native.yml",
+      "bytes": 3860,
+      "sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/complete_fixture_baseline__ordinary/fixture/.github/workflows/ci.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/complete_fixture_baseline__ordinary/fixture/.github/workflows/ci.yml",
+      "bytes": 5739,
+      "sha256": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/complete_fixture_baseline__ordinary/fixture/src/lib.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/complete_fixture_baseline__ordinary/fixture/src/lib.rs",
+      "bytes": 995,
+      "sha256": "509f314907f3860c8408f1ed32f8e94867ba79d906b01d7de2e7cc253910d751",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/complete_fixture_baseline__ordinary/fixture/src/adapters/cli/mod.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/complete_fixture_baseline__ordinary/fixture/src/adapters/cli/mod.rs",
+      "bytes": 339,
+      "sha256": "c574c9f1e30d211fee7ad12d8675c5f52bc87dc2a1d1b2985fe5f030f9f5bd43",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_knowledge_python__ordinary/request.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_knowledge_python__ordinary/request.json",
+      "bytes": 3098,
+      "sha256": "7354bede7bf9a6cb65e768905739d7f923d575e027080b47b7f8c16e08d36c8b",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_knowledge_python__ordinary/stdout.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_knowledge_python__ordinary/stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_knowledge_python__ordinary/result.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_knowledge_python__ordinary/result.json",
+      "bytes": 3892,
+      "sha256": "15d4c8a054803678fd19322c98cf1d1076a720c299119ddb9d933644da182313",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_knowledge_python__ordinary/stderr.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_knowledge_python__ordinary/stderr.txt",
+      "bytes": 98,
+      "sha256": "cec723c7b64d08d3769bb121a9c3c294570f871e37c0c6ea70687b86b4256c5b",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_knowledge_python__ordinary/fixture/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_knowledge_python__ordinary/fixture/Cargo.toml",
+      "bytes": 2320,
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_knowledge_python__ordinary/fixture/release-please-config.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_knowledge_python__ordinary/fixture/release-please-config.json",
+      "bytes": 610,
+      "sha256": "aee0cc12299ec52e26f56bf7621a7e48a50445f0105041da9fed5eea178f5497",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_knowledge_python__ordinary/fixture/SECURITY.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_knowledge_python__ordinary/fixture/SECURITY.md",
+      "bytes": 2145,
+      "sha256": "a838500eac12bd53304f485c21052df40435b4ed37cb2823fe63f3ae225e44e5",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_knowledge_python__ordinary/fixture/crates/k-wiki/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_knowledge_python__ordinary/fixture/crates/k-wiki/Cargo.toml",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_knowledge_python__ordinary/fixture/docs/allowed.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_knowledge_python__ordinary/fixture/docs/allowed.py",
+      "bytes": 57,
+      "sha256": "1fb843e31646bde0f0f94a4f1d3b23bf25ebd3a5701e5698ec33e0d31a613933",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_knowledge_python__ordinary/fixture/knowledge/helper.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_knowledge_python__ordinary/fixture/knowledge/helper.py",
+      "bytes": 56,
+      "sha256": "af9cf2b0441832b8b137a061654d1a42aa7f3148e913c0218880ffce0a2ce854",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_knowledge_python__ordinary/fixture/.github/workflows/release.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_knowledge_python__ordinary/fixture/.github/workflows/release.yml",
+      "bytes": 33468,
+      "sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_knowledge_python__ordinary/fixture/.github/workflows/native.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_knowledge_python__ordinary/fixture/.github/workflows/native.yml",
+      "bytes": 3860,
+      "sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_knowledge_python__ordinary/fixture/.github/workflows/ci.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_knowledge_python__ordinary/fixture/.github/workflows/ci.yml",
+      "bytes": 5739,
+      "sha256": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_knowledge_python__ordinary/fixture/src/lib.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_knowledge_python__ordinary/fixture/src/lib.rs",
+      "bytes": 995,
+      "sha256": "509f314907f3860c8408f1ed32f8e94867ba79d906b01d7de2e7cc253910d751",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_knowledge_python__ordinary/fixture/src/adapters/cli/mod.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_knowledge_python__ordinary/fixture/src/adapters/cli/mod.rs",
+      "bytes": 339,
+      "sha256": "c574c9f1e30d211fee7ad12d8675c5f52bc87dc2a1d1b2985fe5f030f9f5bd43",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_run__ordinary/request.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_run__ordinary/request.json",
+      "bytes": 3116,
+      "sha256": "b18953c0895e67b8215455bc9cab36cf537a30c39bd76daa20aac4568aedaa75",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_run__ordinary/stdout.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_run__ordinary/stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_run__ordinary/result.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_run__ordinary/result.json",
+      "bytes": 3914,
+      "sha256": "88a016afe6afd2af0cefec364f5ce1f334ceb0f2d773cf4f7b73d57826a439ed",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_run__ordinary/stderr.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_run__ordinary/stderr.txt",
+      "bytes": 102,
+      "sha256": "ef836d959df2bff8964725e77721730047c92e4daf84d25f02cd31e23bbd169e",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_run__ordinary/fixture/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_run__ordinary/fixture/Cargo.toml",
+      "bytes": 2320,
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_run__ordinary/fixture/release-please-config.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_run__ordinary/fixture/release-please-config.json",
+      "bytes": 610,
+      "sha256": "aee0cc12299ec52e26f56bf7621a7e48a50445f0105041da9fed5eea178f5497",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_run__ordinary/fixture/SECURITY.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_run__ordinary/fixture/SECURITY.md",
+      "bytes": 2145,
+      "sha256": "a838500eac12bd53304f485c21052df40435b4ed37cb2823fe63f3ae225e44e5",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_run__ordinary/fixture/crates/k-wiki/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_run__ordinary/fixture/crates/k-wiki/Cargo.toml",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_run__ordinary/fixture/docs/allowed.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_run__ordinary/fixture/docs/allowed.py",
+      "bytes": 57,
+      "sha256": "1fb843e31646bde0f0f94a4f1d3b23bf25ebd3a5701e5698ec33e0d31a613933",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_run__ordinary/fixture/.github/workflows/release.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_run__ordinary/fixture/.github/workflows/release.yml",
+      "bytes": 33468,
+      "sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_run__ordinary/fixture/.github/workflows/native.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_run__ordinary/fixture/.github/workflows/native.yml",
+      "bytes": 3860,
+      "sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_run__ordinary/fixture/.github/workflows/ci.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_run__ordinary/fixture/.github/workflows/ci.yml",
+      "bytes": 5819,
+      "sha256": "5d9a9217cb7db8179464aea18d611cda10749723219a0ee5c31335e72f5b70e7",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_run__ordinary/fixture/src/lib.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_run__ordinary/fixture/src/lib.rs",
+      "bytes": 995,
+      "sha256": "509f314907f3860c8408f1ed32f8e94867ba79d906b01d7de2e7cc253910d751",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_run__ordinary/fixture/src/adapters/cli/mod.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_run__ordinary/fixture/src/adapters/cli/mod.rs",
+      "bytes": 339,
+      "sha256": "c574c9f1e30d211fee7ad12d8675c5f52bc87dc2a1d1b2985fe5f030f9f5bd43",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_testing_python__ordinary/request.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_testing_python__ordinary/request.json",
+      "bytes": 3080,
+      "sha256": "6d992a8423a504f28d0e633c375b0369b708043bcda5be361074435a43be9dcb",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_testing_python__ordinary/stdout.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_testing_python__ordinary/stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_testing_python__ordinary/result.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_testing_python__ordinary/result.json",
+      "bytes": 3872,
+      "sha256": "d3f1889eee3072cab28a07201f43d6a13c8a97602c9f0d17b0564161e68ac8cf",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_testing_python__ordinary/stderr.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_testing_python__ordinary/stderr.txt",
+      "bytes": 96,
+      "sha256": "2604601c6215477e37e79e48223eada7dccda9f3b8983e983180fc9d26563e73",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_testing_python__ordinary/fixture/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_testing_python__ordinary/fixture/Cargo.toml",
+      "bytes": 2320,
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_testing_python__ordinary/fixture/release-please-config.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_testing_python__ordinary/fixture/release-please-config.json",
+      "bytes": 610,
+      "sha256": "aee0cc12299ec52e26f56bf7621a7e48a50445f0105041da9fed5eea178f5497",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_testing_python__ordinary/fixture/SECURITY.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_testing_python__ordinary/fixture/SECURITY.md",
+      "bytes": 2145,
+      "sha256": "a838500eac12bd53304f485c21052df40435b4ed37cb2823fe63f3ae225e44e5",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_testing_python__ordinary/fixture/crates/k-wiki/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_testing_python__ordinary/fixture/crates/k-wiki/Cargo.toml",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_testing_python__ordinary/fixture/docs/allowed.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_testing_python__ordinary/fixture/docs/allowed.py",
+      "bytes": 57,
+      "sha256": "1fb843e31646bde0f0f94a4f1d3b23bf25ebd3a5701e5698ec33e0d31a613933",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_testing_python__ordinary/fixture/testing/helper.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_testing_python__ordinary/fixture/testing/helper.py",
+      "bytes": 56,
+      "sha256": "af9cf2b0441832b8b137a061654d1a42aa7f3148e913c0218880ffce0a2ce854",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_testing_python__ordinary/fixture/.github/workflows/release.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_testing_python__ordinary/fixture/.github/workflows/release.yml",
+      "bytes": 33468,
+      "sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_testing_python__ordinary/fixture/.github/workflows/native.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_testing_python__ordinary/fixture/.github/workflows/native.yml",
+      "bytes": 3860,
+      "sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_testing_python__ordinary/fixture/.github/workflows/ci.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_testing_python__ordinary/fixture/.github/workflows/ci.yml",
+      "bytes": 5739,
+      "sha256": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_testing_python__ordinary/fixture/src/lib.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_testing_python__ordinary/fixture/src/lib.rs",
+      "bytes": 995,
+      "sha256": "509f314907f3860c8408f1ed32f8e94867ba79d906b01d7de2e7cc253910d751",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_testing_python__ordinary/fixture/src/adapters/cli/mod.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_testing_python__ordinary/fixture/src/adapters/cli/mod.rs",
+      "bytes": 339,
+      "sha256": "c574c9f1e30d211fee7ad12d8675c5f52bc87dc2a1d1b2985fe5f030f9f5bd43",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_testing_python__confirmed-production/request.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_testing_python__confirmed-production/request.json",
+      "bytes": 3357,
+      "sha256": "4ae515a2b3c3d6e382dd7635f765e1b07215b9a4299c2d2e57375d4870034415",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_testing_python__confirmed-production/stdout.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_testing_python__confirmed-production/stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_testing_python__confirmed-production/result.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_testing_python__confirmed-production/result.json",
+      "bytes": 4148,
+      "sha256": "5b386f138ae82d16c6b647e49ef6c7be7683813c14d8b2132d03b3e97d222483",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_testing_python__confirmed-production/stderr.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_testing_python__confirmed-production/stderr.txt",
+      "bytes": 96,
+      "sha256": "2604601c6215477e37e79e48223eada7dccda9f3b8983e983180fc9d26563e73",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_testing_python__confirmed-production/fixture/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_testing_python__confirmed-production/fixture/Cargo.toml",
+      "bytes": 2320,
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_testing_python__confirmed-production/fixture/release-please-config.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_testing_python__confirmed-production/fixture/release-please-config.json",
+      "bytes": 610,
+      "sha256": "aee0cc12299ec52e26f56bf7621a7e48a50445f0105041da9fed5eea178f5497",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_testing_python__confirmed-production/fixture/SECURITY.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_testing_python__confirmed-production/fixture/SECURITY.md",
+      "bytes": 2145,
+      "sha256": "a838500eac12bd53304f485c21052df40435b4ed37cb2823fe63f3ae225e44e5",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_testing_python__confirmed-production/fixture/crates/k-wiki/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_testing_python__confirmed-production/fixture/crates/k-wiki/Cargo.toml",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_testing_python__confirmed-production/fixture/docs/allowed.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_testing_python__confirmed-production/fixture/docs/allowed.py",
+      "bytes": 57,
+      "sha256": "1fb843e31646bde0f0f94a4f1d3b23bf25ebd3a5701e5698ec33e0d31a613933",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_testing_python__confirmed-production/fixture/testing/helper.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_testing_python__confirmed-production/fixture/testing/helper.py",
+      "bytes": 56,
+      "sha256": "af9cf2b0441832b8b137a061654d1a42aa7f3148e913c0218880ffce0a2ce854",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_testing_python__confirmed-production/fixture/.github/workflows/release.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_testing_python__confirmed-production/fixture/.github/workflows/release.yml",
+      "bytes": 33468,
+      "sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_testing_python__confirmed-production/fixture/.github/workflows/native.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_testing_python__confirmed-production/fixture/.github/workflows/native.yml",
+      "bytes": 3860,
+      "sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_testing_python__confirmed-production/fixture/.github/workflows/ci.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_testing_python__confirmed-production/fixture/.github/workflows/ci.yml",
+      "bytes": 5739,
+      "sha256": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_testing_python__confirmed-production/fixture/src/lib.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_testing_python__confirmed-production/fixture/src/lib.rs",
+      "bytes": 995,
+      "sha256": "509f314907f3860c8408f1ed32f8e94867ba79d906b01d7de2e7cc253910d751",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_testing_python__confirmed-production/fixture/src/adapters/cli/mod.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_testing_python__confirmed-production/fixture/src/adapters/cli/mod.rs",
+      "bytes": 339,
+      "sha256": "c574c9f1e30d211fee7ad12d8675c5f52bc87dc2a1d1b2985fe5f030f9f5bd43",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/request.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/request.json",
+      "bytes": 3167,
+      "sha256": "b5b94cd780d425e5dd92b55c61647f17a9007eeffbb85d16590adb497f72f378",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/stdout.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/result.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/result.json",
+      "bytes": 3962,
+      "sha256": "7fc8b7e2b8f7396e231281391ca57fdeccd5405cd2d2cb91c2cc3083aceaac1f",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/stderr.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/stderr.txt",
+      "bytes": 99,
+      "sha256": "cd54188fbe236776acaa755bd577ac8990201c8fa432ca3f6446dd55b63985e8",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/fixture/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/fixture/Cargo.toml",
+      "bytes": 2320,
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/fixture/release-please-config.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/fixture/release-please-config.json",
+      "bytes": 610,
+      "sha256": "aee0cc12299ec52e26f56bf7621a7e48a50445f0105041da9fed5eea178f5497",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/fixture/SECURITY.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/fixture/SECURITY.md",
+      "bytes": 2145,
+      "sha256": "a838500eac12bd53304f485c21052df40435b4ed37cb2823fe63f3ae225e44e5",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/fixture/crates/k-wiki/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/fixture/crates/k-wiki/Cargo.toml",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/fixture/docs/allowed.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/fixture/docs/allowed.py",
+      "bytes": 57,
+      "sha256": "1fb843e31646bde0f0f94a4f1d3b23bf25ebd3a5701e5698ec33e0d31a613933",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/fixture/.github/workflows/release.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/fixture/.github/workflows/release.yml",
+      "bytes": 33468,
+      "sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/fixture/.github/workflows/native.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/fixture/.github/workflows/native.yml",
+      "bytes": 3860,
+      "sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/fixture/.github/workflows/ci.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/fixture/.github/workflows/ci.yml",
+      "bytes": 5834,
+      "sha256": "59758d43c12d26c02c839d0cae380062acad87b8de1315ae15d207701f99d75f",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/fixture/src/lib.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/fixture/src/lib.rs",
+      "bytes": 995,
+      "sha256": "509f314907f3860c8408f1ed32f8e94867ba79d906b01d7de2e7cc253910d751",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/fixture/src/adapters/cli/mod.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/fixture/src/adapters/cli/mod.rs",
+      "bytes": 339,
+      "sha256": "c574c9f1e30d211fee7ad12d8675c5f52bc87dc2a1d1b2985fe5f030f9f5bd43",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_outside_python__ordinary/request.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_outside_python__ordinary/request.json",
+      "bytes": 3059,
+      "sha256": "b11e38fc9a07ed618129b3ec2b055530325251e273e242498a0512a2157c6f04",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_outside_python__ordinary/stdout.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_outside_python__ordinary/stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_outside_python__ordinary/result.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_outside_python__ordinary/result.json",
+      "bytes": 3843,
+      "sha256": "30713daeaeb842e0baf241f539e25343a4e6be190470fd98d4c61bfaa4b41e3f",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_outside_python__ordinary/stderr.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_outside_python__ordinary/stderr.txt",
+      "bytes": 89,
+      "sha256": "af7fc1456bdf6a58ea63552caaf29b359fec93359fdb0081347852de643b23b8",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_outside_python__ordinary/fixture/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_outside_python__ordinary/fixture/Cargo.toml",
+      "bytes": 2320,
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_outside_python__ordinary/fixture/outside.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_outside_python__ordinary/fixture/outside.py",
+      "bytes": 56,
+      "sha256": "af9cf2b0441832b8b137a061654d1a42aa7f3148e913c0218880ffce0a2ce854",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_outside_python__ordinary/fixture/release-please-config.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_outside_python__ordinary/fixture/release-please-config.json",
+      "bytes": 610,
+      "sha256": "aee0cc12299ec52e26f56bf7621a7e48a50445f0105041da9fed5eea178f5497",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_outside_python__ordinary/fixture/SECURITY.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_outside_python__ordinary/fixture/SECURITY.md",
+      "bytes": 2145,
+      "sha256": "a838500eac12bd53304f485c21052df40435b4ed37cb2823fe63f3ae225e44e5",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_outside_python__ordinary/fixture/crates/k-wiki/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_outside_python__ordinary/fixture/crates/k-wiki/Cargo.toml",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_outside_python__ordinary/fixture/docs/allowed.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_outside_python__ordinary/fixture/docs/allowed.py",
+      "bytes": 57,
+      "sha256": "1fb843e31646bde0f0f94a4f1d3b23bf25ebd3a5701e5698ec33e0d31a613933",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_outside_python__ordinary/fixture/.github/workflows/release.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_outside_python__ordinary/fixture/.github/workflows/release.yml",
+      "bytes": 33468,
+      "sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_outside_python__ordinary/fixture/.github/workflows/native.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_outside_python__ordinary/fixture/.github/workflows/native.yml",
+      "bytes": 3860,
+      "sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_outside_python__ordinary/fixture/.github/workflows/ci.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_outside_python__ordinary/fixture/.github/workflows/ci.yml",
+      "bytes": 5739,
+      "sha256": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_outside_python__ordinary/fixture/src/lib.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_outside_python__ordinary/fixture/src/lib.rs",
+      "bytes": 995,
+      "sha256": "509f314907f3860c8408f1ed32f8e94867ba79d906b01d7de2e7cc253910d751",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_outside_python__ordinary/fixture/src/adapters/cli/mod.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_outside_python__ordinary/fixture/src/adapters/cli/mod.rs",
+      "bytes": 339,
+      "sha256": "c574c9f1e30d211fee7ad12d8675c5f52bc87dc2a1d1b2985fe5f030f9f5bd43",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/request.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/request.json",
+      "bytes": 3429,
+      "sha256": "b9d1713556bb24a20a80ac3f2193fa0212e563b7d7a99428b4f00a3c3ec62481",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/stdout.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/result.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/result.json",
+      "bytes": 4240,
+      "sha256": "96888091feea71491f718827e6fa0a2e663ba35e47431967a10f06e4e0f9d37e",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/stderr.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/stderr.txt",
+      "bytes": 115,
+      "sha256": "2627eab6ddceaaa972580c1ca2baa2aa6d2af1267dbb4bdf1b9eee4d1b75c767",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/fixture/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/fixture/Cargo.toml",
+      "bytes": 2320,
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/fixture/release-please-config.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/fixture/release-please-config.json",
+      "bytes": 610,
+      "sha256": "aee0cc12299ec52e26f56bf7621a7e48a50445f0105041da9fed5eea178f5497",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/fixture/SECURITY.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/fixture/SECURITY.md",
+      "bytes": 2145,
+      "sha256": "a838500eac12bd53304f485c21052df40435b4ed37cb2823fe63f3ae225e44e5",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/fixture/crates/k-wiki/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/fixture/crates/k-wiki/Cargo.toml",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/fixture/docs/allowed.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/fixture/docs/allowed.py",
+      "bytes": 57,
+      "sha256": "1fb843e31646bde0f0f94a4f1d3b23bf25ebd3a5701e5698ec33e0d31a613933",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/fixture/.github/workflows/release.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/fixture/.github/workflows/release.yml",
+      "bytes": 33468,
+      "sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/fixture/.github/workflows/native.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/fixture/.github/workflows/native.yml",
+      "bytes": 3860,
+      "sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/fixture/.github/workflows/ci.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/fixture/.github/workflows/ci.yml",
+      "bytes": 5817,
+      "sha256": "87dccc4a93d605f5f2cd791500a81ec4d5c6121dfac90e0d11f9df1a2539c005",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/fixture/src/lib.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/fixture/src/lib.rs",
+      "bytes": 995,
+      "sha256": "509f314907f3860c8408f1ed32f8e94867ba79d906b01d7de2e7cc253910d751",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/fixture/src/adapters/cli/mod.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/fixture/src/adapters/cli/mod.rs",
+      "bytes": 339,
+      "sha256": "c574c9f1e30d211fee7ad12d8675c5f52bc87dc2a1d1b2985fe5f030f9f5bd43",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_incomplete_security__confirmed-production/request.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_incomplete_security__confirmed-production/request.json",
+      "bytes": 3211,
+      "sha256": "dfc7948bb06de4973e54eb6258b4609be1a298d57e3cba7fd87ddcb4e9f7b4d4",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_incomplete_security__confirmed-production/stdout.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_incomplete_security__confirmed-production/stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_incomplete_security__confirmed-production/result.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_incomplete_security__confirmed-production/result.json",
+      "bytes": 4006,
+      "sha256": "4023f3910e5bddbbedf8336c75c77761912061a4f85d2b5320bb0017302a7b5d",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_incomplete_security__confirmed-production/stderr.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_incomplete_security__confirmed-production/stderr.txt",
+      "bytes": 97,
+      "sha256": "55d1dbeeb44896b0aa5d3579127e1cc810ff99aeff6977dda88dbc0977837f07",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_incomplete_security__confirmed-production/fixture/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_incomplete_security__confirmed-production/fixture/Cargo.toml",
+      "bytes": 2320,
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_incomplete_security__confirmed-production/fixture/release-please-config.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_incomplete_security__confirmed-production/fixture/release-please-config.json",
+      "bytes": 610,
+      "sha256": "aee0cc12299ec52e26f56bf7621a7e48a50445f0105041da9fed5eea178f5497",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_incomplete_security__confirmed-production/fixture/SECURITY.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_incomplete_security__confirmed-production/fixture/SECURITY.md",
+      "bytes": 49,
+      "sha256": "4cf575c84d9dfe6869315e40da1ed03f34e1370f81325ac6373dba06851cf097",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_incomplete_security__confirmed-production/fixture/crates/k-wiki/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_incomplete_security__confirmed-production/fixture/crates/k-wiki/Cargo.toml",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_incomplete_security__confirmed-production/fixture/docs/allowed.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_incomplete_security__confirmed-production/fixture/docs/allowed.py",
+      "bytes": 57,
+      "sha256": "1fb843e31646bde0f0f94a4f1d3b23bf25ebd3a5701e5698ec33e0d31a613933",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_incomplete_security__confirmed-production/fixture/.github/workflows/release.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_incomplete_security__confirmed-production/fixture/.github/workflows/release.yml",
+      "bytes": 33468,
+      "sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_incomplete_security__confirmed-production/fixture/.github/workflows/native.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_incomplete_security__confirmed-production/fixture/.github/workflows/native.yml",
+      "bytes": 3860,
+      "sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_incomplete_security__confirmed-production/fixture/.github/workflows/ci.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_incomplete_security__confirmed-production/fixture/.github/workflows/ci.yml",
+      "bytes": 5739,
+      "sha256": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_incomplete_security__confirmed-production/fixture/src/lib.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_incomplete_security__confirmed-production/fixture/src/lib.rs",
+      "bytes": 995,
+      "sha256": "509f314907f3860c8408f1ed32f8e94867ba79d906b01d7de2e7cc253910d751",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_incomplete_security__confirmed-production/fixture/src/adapters/cli/mod.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_incomplete_security__confirmed-production/fixture/src/adapters/cli/mod.rs",
+      "bytes": 339,
+      "sha256": "c574c9f1e30d211fee7ad12d8675c5f52bc87dc2a1d1b2985fe5f030f9f5bd43",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/complete_fixture_baseline__confirmed-production/request.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/complete_fixture_baseline__confirmed-production/request.json",
+      "bytes": 3130,
+      "sha256": "50d674b11a5ce55837f088b504dd0781eccbc1413be841ffc9acff0a49f875ea",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/complete_fixture_baseline__confirmed-production/stdout.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/complete_fixture_baseline__confirmed-production/stdout.txt",
+      "bytes": 20,
+      "sha256": "cbe0d7f953d0f48db2405a1db48967fc4f6e1d880a563f4bbdf5dd7316519cdc",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/complete_fixture_baseline__confirmed-production/result.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/complete_fixture_baseline__confirmed-production/result.json",
+      "bytes": 3790,
+      "sha256": "46139a30add1f53aaa87da1434eb0cbc6ac6aa34c77fa6d4f1adb97dcf58c713",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/complete_fixture_baseline__confirmed-production/stderr.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/complete_fixture_baseline__confirmed-production/stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/complete_fixture_baseline__confirmed-production/fixture/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/complete_fixture_baseline__confirmed-production/fixture/Cargo.toml",
+      "bytes": 2320,
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/complete_fixture_baseline__confirmed-production/fixture/release-please-config.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/complete_fixture_baseline__confirmed-production/fixture/release-please-config.json",
+      "bytes": 610,
+      "sha256": "aee0cc12299ec52e26f56bf7621a7e48a50445f0105041da9fed5eea178f5497",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/complete_fixture_baseline__confirmed-production/fixture/SECURITY.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/complete_fixture_baseline__confirmed-production/fixture/SECURITY.md",
+      "bytes": 2145,
+      "sha256": "a838500eac12bd53304f485c21052df40435b4ed37cb2823fe63f3ae225e44e5",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/complete_fixture_baseline__confirmed-production/fixture/crates/k-wiki/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/complete_fixture_baseline__confirmed-production/fixture/crates/k-wiki/Cargo.toml",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/complete_fixture_baseline__confirmed-production/fixture/docs/allowed.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/complete_fixture_baseline__confirmed-production/fixture/docs/allowed.py",
+      "bytes": 57,
+      "sha256": "1fb843e31646bde0f0f94a4f1d3b23bf25ebd3a5701e5698ec33e0d31a613933",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/complete_fixture_baseline__confirmed-production/fixture/.github/workflows/release.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/complete_fixture_baseline__confirmed-production/fixture/.github/workflows/release.yml",
+      "bytes": 33468,
+      "sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/complete_fixture_baseline__confirmed-production/fixture/.github/workflows/native.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/complete_fixture_baseline__confirmed-production/fixture/.github/workflows/native.yml",
+      "bytes": 3860,
+      "sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/complete_fixture_baseline__confirmed-production/fixture/.github/workflows/ci.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/complete_fixture_baseline__confirmed-production/fixture/.github/workflows/ci.yml",
+      "bytes": 5739,
+      "sha256": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/complete_fixture_baseline__confirmed-production/fixture/src/lib.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/complete_fixture_baseline__confirmed-production/fixture/src/lib.rs",
+      "bytes": 995,
+      "sha256": "509f314907f3860c8408f1ed32f8e94867ba79d906b01d7de2e7cc253910d751",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/complete_fixture_baseline__confirmed-production/fixture/src/adapters/cli/mod.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/complete_fixture_baseline__confirmed-production/fixture/src/adapters/cli/mod.rs",
+      "bytes": 339,
+      "sha256": "c574c9f1e30d211fee7ad12d8675c5f52bc87dc2a1d1b2985fe5f030f9f5bd43",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/request.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/request.json",
+      "bytes": 3152,
+      "sha256": "b69c66ab21c140ccc48b4097930462875703376217a9e1871755a5ec77df99a9",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/stdout.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/result.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/result.json",
+      "bytes": 3963,
+      "sha256": "c79fd45693fe87632fec0d22fc166741e2859605ab7f5cc2807653a0419d1eee",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/stderr.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/stderr.txt",
+      "bytes": 115,
+      "sha256": "2627eab6ddceaaa972580c1ca2baa2aa6d2af1267dbb4bdf1b9eee4d1b75c767",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/fixture/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/fixture/Cargo.toml",
+      "bytes": 2320,
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/fixture/release-please-config.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/fixture/release-please-config.json",
+      "bytes": 610,
+      "sha256": "aee0cc12299ec52e26f56bf7621a7e48a50445f0105041da9fed5eea178f5497",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/fixture/SECURITY.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/fixture/SECURITY.md",
+      "bytes": 2145,
+      "sha256": "a838500eac12bd53304f485c21052df40435b4ed37cb2823fe63f3ae225e44e5",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/fixture/crates/k-wiki/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/fixture/crates/k-wiki/Cargo.toml",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/fixture/docs/allowed.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/fixture/docs/allowed.py",
+      "bytes": 57,
+      "sha256": "1fb843e31646bde0f0f94a4f1d3b23bf25ebd3a5701e5698ec33e0d31a613933",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/fixture/.github/workflows/release.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/fixture/.github/workflows/release.yml",
+      "bytes": 33468,
+      "sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/fixture/.github/workflows/native.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/fixture/.github/workflows/native.yml",
+      "bytes": 3860,
+      "sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/fixture/.github/workflows/ci.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/fixture/.github/workflows/ci.yml",
+      "bytes": 5817,
+      "sha256": "87dccc4a93d605f5f2cd791500a81ec4d5c6121dfac90e0d11f9df1a2539c005",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/fixture/src/lib.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/fixture/src/lib.rs",
+      "bytes": 995,
+      "sha256": "509f314907f3860c8408f1ed32f8e94867ba79d906b01d7de2e7cc253910d751",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/fixture/src/adapters/cli/mod.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/fixture/src/adapters/cli/mod.rs",
+      "bytes": 339,
+      "sha256": "c574c9f1e30d211fee7ad12d8675c5f52bc87dc2a1d1b2985fe5f030f9f5bd43",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_mydocs_python__confirmed-production/request.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_mydocs_python__confirmed-production/request.json",
+      "bytes": 3348,
+      "sha256": "743b55a7a47b1f6324f45fb51e72b10dec8209cb4fca18346713f16bd522eccc",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_mydocs_python__confirmed-production/stdout.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_mydocs_python__confirmed-production/stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_mydocs_python__confirmed-production/result.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_mydocs_python__confirmed-production/result.json",
+      "bytes": 4139,
+      "sha256": "d7d0782960172092bd5a6829ea3a0ab3e63a267d1f06f9f672d9f8793647d0c0",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_mydocs_python__confirmed-production/stderr.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_mydocs_python__confirmed-production/stderr.txt",
+      "bytes": 95,
+      "sha256": "8227ed1233f604a420be2bfef8c3ccd041fa981da720c64f834027a2542bbdff",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_mydocs_python__confirmed-production/fixture/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_mydocs_python__confirmed-production/fixture/Cargo.toml",
+      "bytes": 2320,
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_mydocs_python__confirmed-production/fixture/release-please-config.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_mydocs_python__confirmed-production/fixture/release-please-config.json",
+      "bytes": 610,
+      "sha256": "aee0cc12299ec52e26f56bf7621a7e48a50445f0105041da9fed5eea178f5497",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_mydocs_python__confirmed-production/fixture/SECURITY.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_mydocs_python__confirmed-production/fixture/SECURITY.md",
+      "bytes": 2145,
+      "sha256": "a838500eac12bd53304f485c21052df40435b4ed37cb2823fe63f3ae225e44e5",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_mydocs_python__confirmed-production/fixture/crates/k-wiki/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_mydocs_python__confirmed-production/fixture/crates/k-wiki/Cargo.toml",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_mydocs_python__confirmed-production/fixture/docs/allowed.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_mydocs_python__confirmed-production/fixture/docs/allowed.py",
+      "bytes": 57,
+      "sha256": "1fb843e31646bde0f0f94a4f1d3b23bf25ebd3a5701e5698ec33e0d31a613933",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_mydocs_python__confirmed-production/fixture/.github/workflows/release.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_mydocs_python__confirmed-production/fixture/.github/workflows/release.yml",
+      "bytes": 33468,
+      "sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_mydocs_python__confirmed-production/fixture/.github/workflows/native.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_mydocs_python__confirmed-production/fixture/.github/workflows/native.yml",
+      "bytes": 3860,
+      "sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_mydocs_python__confirmed-production/fixture/.github/workflows/ci.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_mydocs_python__confirmed-production/fixture/.github/workflows/ci.yml",
+      "bytes": 5739,
+      "sha256": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_mydocs_python__confirmed-production/fixture/mydocs/helper.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_mydocs_python__confirmed-production/fixture/mydocs/helper.py",
+      "bytes": 56,
+      "sha256": "af9cf2b0441832b8b137a061654d1a42aa7f3148e913c0218880ffce0a2ce854",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_mydocs_python__confirmed-production/fixture/src/lib.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_mydocs_python__confirmed-production/fixture/src/lib.rs",
+      "bytes": 995,
+      "sha256": "509f314907f3860c8408f1ed32f8e94867ba79d906b01d7de2e7cc253910d751",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_mydocs_python__confirmed-production/fixture/src/adapters/cli/mod.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_mydocs_python__confirmed-production/fixture/src/adapters/cli/mod.rs",
+      "bytes": 339,
+      "sha256": "c574c9f1e30d211fee7ad12d8675c5f52bc87dc2a1d1b2985fe5f030f9f5bd43",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/request.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/request.json",
+      "bytes": 3444,
+      "sha256": "57a3fa1c61f0b9fd1a5f7fcedf42b66b5e36346305a4c9bf308604f80440e22e",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/stdout.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/result.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/result.json",
+      "bytes": 4239,
+      "sha256": "6e644bdb44add2e96e306f0d81f25d93dc77ff5a6f3c1c43c1ed367aad95805a",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/stderr.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/stderr.txt",
+      "bytes": 99,
+      "sha256": "cd54188fbe236776acaa755bd577ac8990201c8fa432ca3f6446dd55b63985e8",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/fixture/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/fixture/Cargo.toml",
+      "bytes": 2320,
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/fixture/release-please-config.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/fixture/release-please-config.json",
+      "bytes": 610,
+      "sha256": "aee0cc12299ec52e26f56bf7621a7e48a50445f0105041da9fed5eea178f5497",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/fixture/SECURITY.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/fixture/SECURITY.md",
+      "bytes": 2145,
+      "sha256": "a838500eac12bd53304f485c21052df40435b4ed37cb2823fe63f3ae225e44e5",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/fixture/crates/k-wiki/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/fixture/crates/k-wiki/Cargo.toml",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/fixture/docs/allowed.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/fixture/docs/allowed.py",
+      "bytes": 57,
+      "sha256": "1fb843e31646bde0f0f94a4f1d3b23bf25ebd3a5701e5698ec33e0d31a613933",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/fixture/.github/workflows/release.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/fixture/.github/workflows/release.yml",
+      "bytes": 33468,
+      "sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/fixture/.github/workflows/native.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/fixture/.github/workflows/native.yml",
+      "bytes": 3860,
+      "sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/fixture/.github/workflows/ci.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/fixture/.github/workflows/ci.yml",
+      "bytes": 5834,
+      "sha256": "59758d43c12d26c02c839d0cae380062acad87b8de1315ae15d207701f99d75f",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/fixture/src/lib.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/fixture/src/lib.rs",
+      "bytes": 995,
+      "sha256": "509f314907f3860c8408f1ed32f8e94867ba79d906b01d7de2e7cc253910d751",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/fixture/src/adapters/cli/mod.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/fixture/src/adapters/cli/mod.rs",
+      "bytes": 339,
+      "sha256": "c574c9f1e30d211fee7ad12d8675c5f52bc87dc2a1d1b2985fe5f030f9f5bd43",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_outside_python__confirmed-production/request.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_outside_python__confirmed-production/request.json",
+      "bytes": 3336,
+      "sha256": "a534ebe8027b93be883661eb7fa0df3aac3f024fef79979d772de2742a2eac4e",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_outside_python__confirmed-production/stdout.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_outside_python__confirmed-production/stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_outside_python__confirmed-production/result.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_outside_python__confirmed-production/result.json",
+      "bytes": 4121,
+      "sha256": "4e935bb757aa7d56fdcae0e960ca6c8ccb0a6bb000d4d40ad50ce80d4d3b7280",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_outside_python__confirmed-production/stderr.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_outside_python__confirmed-production/stderr.txt",
+      "bytes": 89,
+      "sha256": "af7fc1456bdf6a58ea63552caaf29b359fec93359fdb0081347852de643b23b8",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_outside_python__confirmed-production/fixture/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_outside_python__confirmed-production/fixture/Cargo.toml",
+      "bytes": 2320,
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_outside_python__confirmed-production/fixture/outside.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_outside_python__confirmed-production/fixture/outside.py",
+      "bytes": 56,
+      "sha256": "af9cf2b0441832b8b137a061654d1a42aa7f3148e913c0218880ffce0a2ce854",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_outside_python__confirmed-production/fixture/release-please-config.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_outside_python__confirmed-production/fixture/release-please-config.json",
+      "bytes": 610,
+      "sha256": "aee0cc12299ec52e26f56bf7621a7e48a50445f0105041da9fed5eea178f5497",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_outside_python__confirmed-production/fixture/SECURITY.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_outside_python__confirmed-production/fixture/SECURITY.md",
+      "bytes": 2145,
+      "sha256": "a838500eac12bd53304f485c21052df40435b4ed37cb2823fe63f3ae225e44e5",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_outside_python__confirmed-production/fixture/crates/k-wiki/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_outside_python__confirmed-production/fixture/crates/k-wiki/Cargo.toml",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_outside_python__confirmed-production/fixture/docs/allowed.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_outside_python__confirmed-production/fixture/docs/allowed.py",
+      "bytes": 57,
+      "sha256": "1fb843e31646bde0f0f94a4f1d3b23bf25ebd3a5701e5698ec33e0d31a613933",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_outside_python__confirmed-production/fixture/.github/workflows/release.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_outside_python__confirmed-production/fixture/.github/workflows/release.yml",
+      "bytes": 33468,
+      "sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_outside_python__confirmed-production/fixture/.github/workflows/native.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_outside_python__confirmed-production/fixture/.github/workflows/native.yml",
+      "bytes": 3860,
+      "sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_outside_python__confirmed-production/fixture/.github/workflows/ci.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_outside_python__confirmed-production/fixture/.github/workflows/ci.yml",
+      "bytes": 5739,
+      "sha256": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_outside_python__confirmed-production/fixture/src/lib.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_outside_python__confirmed-production/fixture/src/lib.rs",
+      "bytes": 995,
+      "sha256": "509f314907f3860c8408f1ed32f8e94867ba79d906b01d7de2e7cc253910d751",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_outside_python__confirmed-production/fixture/src/adapters/cli/mod.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_outside_python__confirmed-production/fixture/src/adapters/cli/mod.rs",
+      "bytes": 339,
+      "sha256": "c574c9f1e30d211fee7ad12d8675c5f52bc87dc2a1d1b2985fe5f030f9f5bd43",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_mydocs_python__ordinary/request.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_mydocs_python__ordinary/request.json",
+      "bytes": 3071,
+      "sha256": "30eb7d34a24400aac25713d7178d9edaba51919f75b25414c448ac8ee6c7f439",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_mydocs_python__ordinary/stdout.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_mydocs_python__ordinary/stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_mydocs_python__ordinary/result.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_mydocs_python__ordinary/result.json",
+      "bytes": 3861,
+      "sha256": "ab8c915b7ae6e46800c0b9cb6ed1a9c23880839f44c0c0ef0da0ef764ff7fdc9",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_mydocs_python__ordinary/stderr.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_mydocs_python__ordinary/stderr.txt",
+      "bytes": 95,
+      "sha256": "8227ed1233f604a420be2bfef8c3ccd041fa981da720c64f834027a2542bbdff",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_mydocs_python__ordinary/fixture/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_mydocs_python__ordinary/fixture/Cargo.toml",
+      "bytes": 2320,
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_mydocs_python__ordinary/fixture/release-please-config.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_mydocs_python__ordinary/fixture/release-please-config.json",
+      "bytes": 610,
+      "sha256": "aee0cc12299ec52e26f56bf7621a7e48a50445f0105041da9fed5eea178f5497",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_mydocs_python__ordinary/fixture/SECURITY.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_mydocs_python__ordinary/fixture/SECURITY.md",
+      "bytes": 2145,
+      "sha256": "a838500eac12bd53304f485c21052df40435b4ed37cb2823fe63f3ae225e44e5",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_mydocs_python__ordinary/fixture/crates/k-wiki/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_mydocs_python__ordinary/fixture/crates/k-wiki/Cargo.toml",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_mydocs_python__ordinary/fixture/docs/allowed.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_mydocs_python__ordinary/fixture/docs/allowed.py",
+      "bytes": 57,
+      "sha256": "1fb843e31646bde0f0f94a4f1d3b23bf25ebd3a5701e5698ec33e0d31a613933",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_mydocs_python__ordinary/fixture/.github/workflows/release.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_mydocs_python__ordinary/fixture/.github/workflows/release.yml",
+      "bytes": 33468,
+      "sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_mydocs_python__ordinary/fixture/.github/workflows/native.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_mydocs_python__ordinary/fixture/.github/workflows/native.yml",
+      "bytes": 3860,
+      "sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_mydocs_python__ordinary/fixture/.github/workflows/ci.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_mydocs_python__ordinary/fixture/.github/workflows/ci.yml",
+      "bytes": 5739,
+      "sha256": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_mydocs_python__ordinary/fixture/mydocs/helper.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_mydocs_python__ordinary/fixture/mydocs/helper.py",
+      "bytes": 56,
+      "sha256": "af9cf2b0441832b8b137a061654d1a42aa7f3148e913c0218880ffce0a2ce854",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_mydocs_python__ordinary/fixture/src/lib.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_mydocs_python__ordinary/fixture/src/lib.rs",
+      "bytes": 995,
+      "sha256": "509f314907f3860c8408f1ed32f8e94867ba79d906b01d7de2e7cc253910d751",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-cli-supplement/reject_mydocs_python__ordinary/fixture/src/adapters/cli/mod.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-cli-supplement/reject_mydocs_python__ordinary/fixture/src/adapters/cli/mod.rs",
+      "bytes": 339,
+      "sha256": "c574c9f1e30d211fee7ad12d8675c5f52bc87dc2a1d1b2985fe5f030f9f5bd43",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-crate-inventories/result.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-crate-inventories/result.json",
+      "bytes": 23702,
+      "sha256": "204d47af329d2efd446042c1c1bc63652a781f1d079994648351a107022d3711",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-crate-inventories/wiki-package.stdout.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-crate-inventories/wiki-package.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-crate-inventories/report.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-crate-inventories/report.md",
+      "bytes": 9025,
+      "sha256": "10a8cfef2be894a5d007ab32189cfadebf977f209bb8c46585664f31df2c5479",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-crate-inventories/root-member-inventory.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-crate-inventories/root-member-inventory.json",
+      "bytes": 131874,
+      "sha256": "1392953f0d7abf2aedc4489b0149be0110dd171077ffeda1ee80ab9310f8a222",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-crate-inventories/root-package.stderr.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-crate-inventories/root-package.stderr.txt",
+      "bytes": 132,
+      "sha256": "7476cc4cd6eae38c149e5227ca3ed61d14ea5fccfa6d7a6c2781ae5da8f7458a",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-crate-inventories/production-copy-manifest.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-crate-inventories/production-copy-manifest.json",
+      "bytes": 9779,
+      "sha256": "574adb0ad813e37b7c38950afd6279e1c1314ea868441ce031e7ed9bcc2bf1ad",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-crate-inventories/commands.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-crate-inventories/commands.json",
+      "bytes": 3225,
+      "sha256": "01e14efd3cbe26ba062a3f4997947d0a41f77018497db194680f0852ccab318a",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-crate-inventories/package-output-before.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-crate-inventories/package-output-before.json",
+      "bytes": 393,
+      "sha256": "76b0c3a1c60dd90fd11684de21fc11dcae768be83e8364c00f7b7d38f42304f6",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-crate-inventories/preserved-inspection-assumption.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-crate-inventories/preserved-inspection-assumption.json",
+      "bytes": 896,
+      "sha256": "afb111bcf1bc1c86be19c10939a0af673652c2d8fb0906c454d5fd1f838654f5",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-crate-inventories/files.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-crate-inventories/files.json",
+      "bytes": 3874,
+      "sha256": "cccc819836fd68034059a8ddecc9123c83a7f3d40877df10d0f93198ecbc5010",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-crate-inventories/source-inputs-before.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-crate-inventories/source-inputs-before.json",
+      "bytes": 1318,
+      "sha256": "48f39b8a0665aa9fc9a937f01aa10a354e39fca90b29b5140b7ae4748474abe6",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-crate-inventories/wiki-member-inventory.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-crate-inventories/wiki-member-inventory.json",
+      "bytes": 33573,
+      "sha256": "0049132bf8a847a91e811445eee23b90649c6a0fcea00be3984afe40ba96524c",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-crate-inventories/production-index.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-crate-inventories/production-index.md",
+      "bytes": 2855,
+      "sha256": "a3753551dc90c120e041d13b0fdad79f56ddbfa673900a445a0d0266507a8f9e",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-crate-inventories/source-inputs-after.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-crate-inventories/source-inputs-after.json",
+      "bytes": 1318,
+      "sha256": "48f39b8a0665aa9fc9a937f01aa10a354e39fca90b29b5140b7ae4748474abe6",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-crate-inventories/root-package.stdout.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-crate-inventories/root-package.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-crate-inventories/identity-after.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-crate-inventories/identity-after.txt",
+      "bytes": 125,
+      "sha256": "05008beba5369d88ac0777ab526400c2566a875124b880052889c76224a5663e",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-crate-inventories/wiki-package.stderr.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-crate-inventories/wiki-package.stderr.txt",
+      "bytes": 140,
+      "sha256": "07f045e787c52c8262acec84917b13aa3da3d653f5497b8622eb1fa3849b7c71",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-crate-inventories/identity-before.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-crate-inventories/identity-before.txt",
+      "bytes": 125,
+      "sha256": "05008beba5369d88ac0777ab526400c2566a875124b880052889c76224a5663e",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-crate-inventories/environment.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-crate-inventories/environment.json",
+      "bytes": 1411,
+      "sha256": "ef3aef661452d3784ac9bd3b01be9e42959109eba31be1ddcbe4f0ef947bda5e",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-crate-inventories/wiki-cargo-metadata.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-crate-inventories/wiki-cargo-metadata.json",
+      "bytes": 128341,
+      "sha256": "b59b82bc23776a80181cd08567e1547cb5d1507d2bfd992d3f77d194ac531e9c",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-crate-inventories/root-raw-member-headers.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-crate-inventories/root-raw-member-headers.json",
+      "bytes": 30603,
+      "sha256": "a7522e278cb7654d2753a6df1e55e1e15f65f78c219022cbfd09b9d5125d050a",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-crate-inventories/packaged-lock-observations.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-crate-inventories/packaged-lock-observations.json",
+      "bytes": 6037,
+      "sha256": "e144c7187a4ab1c5bf9553f52d644a56e11535bee058c5755744014815bd0edd",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-crate-inventories/root-cargo-metadata.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-crate-inventories/root-cargo-metadata.json",
+      "bytes": 86385,
+      "sha256": "3024f9f30f7c10fc8f933fd707c09d04aa9934b97cc33c90655b53b39c418e36",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "independent-crate-inventories/packaged-lock-diff-summary.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2f3ce125/cod107-source-evidence-prepared/independent-crate-inventories/packaged-lock-diff-summary.json",
+      "bytes": 2387,
+      "sha256": "22e2567ae1ae5a92baa46e0663426ae7b38e440ab64eed2880bf77d780f8af4b",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/backend/cod107-windows-path-oracle-identity-correction.json",
+      "source": "/private/tmp/cod107-backend-output/cod107-windows-path-oracle-identity-correction.json",
+      "bytes": 1109,
+      "sha256": "7f0744878c8cfb64e13ac9221ee9d5aef1ba0b5afbdf7da4636fe024f7d228d7",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/backend/cod107-windows-path-oracle-identity-correction.md",
+      "source": "/private/tmp/cod107-backend-output/cod107-windows-path-oracle-identity-correction.md",
+      "bytes": 1111,
+      "sha256": "e6ba1253e3285b1052b30e56f2d304cbfd08c714ab419e0fc50c806a47468a49",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/backend/cod107-windows-path-oracle-fix-handoff.md",
+      "source": "/private/tmp/cod107-backend-output/cod107-windows-path-oracle-fix-handoff.md",
+      "bytes": 3707,
+      "sha256": "bd0169a8bfd30dcaa6d470661ff62817e0e943ef7f41b6f789c74d291a2ae1c7",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/backend/cod107-windows-path-oracle-fix.diff",
+      "source": "/private/tmp/cod107-backend-output/cod107-windows-path-oracle-fix.diff",
+      "bytes": 3415,
+      "sha256": "986b4fc8f59a5ff8ba7f5ad76e3b085504aab1f63e77ab04c2d16d2b4a6cd273",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/backend/cod107-windows-path-oracle-fix-main.rs",
+      "source": "/private/tmp/cod107-backend-output/cod107-windows-path-oracle-fix-main.rs",
+      "bytes": 182913,
+      "sha256": "076dd22a1da16a6d651016b7227536f1d65de766ff6c09a3dcb02631c51af5da",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/backend/retention-raw-evidence/windows-path-oracle-fix/clippy.json",
+      "source": "/private/tmp/cod107-backend-output/retention-raw-evidence/windows-path-oracle-fix/clippy.json",
+      "bytes": 245,
+      "sha256": "f744aa23a1735c1675205047d735c2b6ada0bf6a065f3434d059956b1d88f166",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/backend/retention-raw-evidence/windows-path-oracle-fix/fmt.json",
+      "source": "/private/tmp/cod107-backend-output/retention-raw-evidence/windows-path-oracle-fix/fmt.json",
+      "bytes": 222,
+      "sha256": "3f15e8a75864826c25c465674772c7c6b86a58d2df5a9838bb59381e157b8a41",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/backend/retention-raw-evidence/windows-path-oracle-fix/workflow-and-gate.json",
+      "source": "/private/tmp/cod107-backend-output/retention-raw-evidence/windows-path-oracle-fix/workflow-and-gate.json",
+      "bytes": 279,
+      "sha256": "b0b71b1cabd64fa5d2e3d4e0e1a14596d7a4cd88dcf3047011117bf617c1a822",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/backend/retention-raw-evidence/windows-path-oracle-fix/fmt.combined-output.txt",
+      "source": "/private/tmp/cod107-backend-output/retention-raw-evidence/windows-path-oracle-fix/fmt.combined-output.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/backend/retention-raw-evidence/windows-path-oracle-fix/focused-path-tests.combined-output.txt",
+      "source": "/private/tmp/cod107-backend-output/retention-raw-evidence/windows-path-oracle-fix/focused-path-tests.combined-output.txt",
+      "bytes": 779,
+      "sha256": "664f50d5df690c586573c08a727bb330934b27b6d4b4baf2e70680b7af01d33a",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/backend/retention-raw-evidence/windows-path-oracle-fix/manifest.json",
+      "source": "/private/tmp/cod107-backend-output/retention-raw-evidence/windows-path-oracle-fix/manifest.json",
+      "bytes": 2765,
+      "sha256": "6178c62a2ce121f891aa48fd172648385cb4ffec9b08f080e1889346506d4112",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/backend/retention-raw-evidence/windows-path-oracle-fix/clippy.combined-output.txt",
+      "source": "/private/tmp/cod107-backend-output/retention-raw-evidence/windows-path-oracle-fix/clippy.combined-output.txt",
+      "bytes": 156,
+      "sha256": "523e61d197fc9fadbac3fefbd4ba0d0181908cfd882f4810c62f1df0190c5f34",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/backend/retention-raw-evidence/windows-path-oracle-fix/full-xtask.combined-output.txt",
+      "source": "/private/tmp/cod107-backend-output/retention-raw-evidence/windows-path-oracle-fix/full-xtask.combined-output.txt",
+      "bytes": 7288,
+      "sha256": "b49cabe8873412311f4b44d413e55512b95688730c79f8ee6204aad0ae893371",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/backend/retention-raw-evidence/windows-path-oracle-fix/focused-path-tests.json",
+      "source": "/private/tmp/cod107-backend-output/retention-raw-evidence/windows-path-oracle-fix/focused-path-tests.json",
+      "bytes": 405,
+      "sha256": "ce710ad1294938ed5f615a9f80a1294fae9ed6eac5aaed6bae42afadcbfdd3f0",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/backend/retention-raw-evidence/windows-path-oracle-fix/full-xtask.json",
+      "source": "/private/tmp/cod107-backend-output/retention-raw-evidence/windows-path-oracle-fix/full-xtask.json",
+      "bytes": 214,
+      "sha256": "9a890e6942e43617bc73d0250a578c0945dcea3671a3901318a7209acb184190",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/backend/retention-raw-evidence/windows-path-oracle-fix/workflow-and-gate.combined-output.txt",
+      "source": "/private/tmp/cod107-backend-output/retention-raw-evidence/windows-path-oracle-fix/workflow-and-gate.combined-output.txt",
+      "bytes": 368,
+      "sha256": "ad0c2e6c12e21e5eeb2bfa3f92e2a8e8be4fa121175774794b798d6f0717a2db",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/independent/actual-path-oracle-only.diff",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-path-oracle-fix/actual-path-oracle-only.diff",
+      "bytes": 3415,
+      "sha256": "986b4fc8f59a5ff8ba7f5ad76e3b085504aab1f63e77ab04c2d16d2b4a6cd273",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/independent/binary-provenance.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-path-oracle-fix/binary-provenance.json",
+      "bytes": 906,
+      "sha256": "d5287b702f26c2804451bc831e9488307469fff877055248d0537a517375681b",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/independent/check-workflows.log",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-path-oracle-fix/check-workflows.log",
+      "bytes": 145,
+      "sha256": "097855c9a1c41cd01d916b71b7e5802cc0ea81823b8d013bb8603c4157ad34e9",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/independent/commands.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-path-oracle-fix/commands.json",
+      "bytes": 6878,
+      "sha256": "bb901cb0308fcf9007776f9de206c66d28a5816c5c83a0aee51cae5d6e8f1cbb",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/independent/environment-and-preserved-evidence.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-path-oracle-fix/environment-and-preserved-evidence.json",
+      "bytes": 1270,
+      "sha256": "db0eb4dd4e5db92fd808dc4227ba654287fb6b468d20c224f73173ae4eca53e2",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/independent/files.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-path-oracle-fix/files.json",
+      "bytes": 3928,
+      "sha256": "08d634d80a2acfc9393a3f55d8f25c4418d92919f387f400470c8e39515f3c2e",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/independent/format.log",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-path-oracle-fix/format.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/independent/identity-after.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-path-oracle-fix/identity-after.txt",
+      "bytes": 284,
+      "sha256": "bffc83777cd736c2b5cea28504e6fe6b470d445f61dce1bb5064f73cb63137d3",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/independent/identity-before.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-path-oracle-fix/identity-before.txt",
+      "bytes": 284,
+      "sha256": "bffc83777cd736c2b5cea28504e6fe6b470d445f61dce1bb5064f73cb63137d3",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/independent/inventory-build.log",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-path-oracle-fix/inventory-build.log",
+      "bytes": 151,
+      "sha256": "f5327a44bf05a3fdedd28c3bb7b68328a31d3162929a80446ad0a074a2cee4a5",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/independent/inventory.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-path-oracle-fix/inventory.json",
+      "bytes": 12944,
+      "sha256": "a03631c97adcb3c05c3665d84c705f85d9c62647b692426d594a24d7e9470ce2",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/independent/junit-audit.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-path-oracle-fix/junit-audit.json",
+      "bytes": 7338,
+      "sha256": "16638ae08c1943bfe5f3bf7bde7ab0aaf0d968ae1b9f4ac56c33283afe1b2445",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/independent/nextest.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-path-oracle-fix/nextest.toml",
+      "bytes": 226,
+      "sha256": "128d559f32fe217de40315827d4491a6439445695ba6bc84230857b8d1110d67",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/independent/owner-handoff-copy.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-path-oracle-fix/owner-handoff-copy.md",
+      "bytes": 3707,
+      "sha256": "bd0169a8bfd30dcaa6d470661ff62817e0e943ef7f41b6f789c74d291a2ae1c7",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/independent/preserved-old-reports-after.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-path-oracle-fix/preserved-old-reports-after.json",
+      "bytes": 1090,
+      "sha256": "e1d5b57c1140803f24a4e738673efa1732cf1183d112ecef6bebf964d4e530da",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/independent/release-gate.log",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-path-oracle-fix/release-gate.log",
+      "bytes": 139,
+      "sha256": "67dbc759ee7b98264e77a77ccb03dc171dabb6e4026e29fd7ac97df7daefe936",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/independent/report.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-path-oracle-fix/report.md",
+      "bytes": 6449,
+      "sha256": "72c5550983d58a6397e89f3c1e0c8a07f26e8b0009bd5c60a0b8a489af902213",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/independent/result.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-path-oracle-fix/result.json",
+      "bytes": 29732,
+      "sha256": "9e2f03188b2ccabdc7e3df4d566a1b98780e271827d1d513b0329a9b5964207b",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/independent/source-hashes-after.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-path-oracle-fix/source-hashes-after.json",
+      "bytes": 2052,
+      "sha256": "50e8582070f382e98f4230d5c6f168a370f9b43f52f128cf6cfeea1dee6339bd",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/independent/source-hashes-before.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-path-oracle-fix/source-hashes-before.json",
+      "bytes": 1197,
+      "sha256": "7b898d565df206c359defab17aeb309863581656ca2cb24c20a589a2de27552e",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/independent/strict-workspace-clippy.log",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-path-oracle-fix/strict-workspace-clippy.log",
+      "bytes": 156,
+      "sha256": "09861e96dd61d434c0b108902c43a3e77e99b9efec2903caa9afd79d291ab822",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/independent/unchanged-production-reuse-proof.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-path-oracle-fix/unchanged-production-reuse-proof.json",
+      "bytes": 711,
+      "sha256": "08917e2f254b795bf35fa75f18102eb0cb937a0aaafa01477618d65da46d92b8",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/independent/warnings.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-path-oracle-fix/warnings.json",
+      "bytes": 333,
+      "sha256": "69e85f3eed4819fa578ab517147d6cee3780dd4e7b10ca9a3cb66862fe27110a",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/independent/xtask-junit.xml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-path-oracle-fix/xtask-junit.xml",
+      "bytes": 17140,
+      "sha256": "2cde0488dcf33b8704d607a9a4c86683eb8837dad610ab5bfde441d2a63f3c1c",
+      "copy_readback_equal": true
+    },
+    {
+      "path": "path-oracle-fix/independent/xtask-run.log",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-path-oracle-fix/xtask-run.log",
+      "bytes": 10497,
+      "sha256": "a606b09a060b4fe712573ec093ba61703344da58789b44083ae4f9e5e1652b43",
+      "copy_readback_equal": true
+    }
+  ],
+  "preserved_previous_files": 109,
+  "previous_current_index_only_updated": true,
+  "author_identity_erratum": "Ownerbd0169handoffunchanged; erratum7f074487JSON/e6ba1253md correctactual2c4+076dirty",
+  "excluded_crate_binaries": "Authororiginalmanifestunchanged; two.cratearchivesonlyoriginalprivatepaths per independent-crate-inventories/production-copy-manifest.json",
+  "review": "PENDINGnewfreshSolMaxreview; priorstalled/cancelledno completed verdict; noopenreportcopy",
+  "test_distinction": "Current07683JUnitseparatehistoricale4d83/18rawCLI,2c4crate; no countsum/newexecutionbycommit",
+  "package_inputs": "CurrentnestedREADMEbytes change root packagepayload; actualselectedinputs in privatecommitreceipt; laterreport.md avoids newREADMEpayload",
+  "credential_scan_matches": [],
+  "raw_evidence_whitespace": {
+    "full_staged_diff_check_exit": 2,
+    "scoped_main_and_current_authored_indexes_exit": 0,
+    "byte_preserved_raw_paths": [
+      {
+        "path": "docs/specs/COD-103/evidence/COD-107/local-qualification-2026-11-01/path-oracle-fix/backend/retention-raw-evidence/windows-path-oracle-fix/focused-path-tests.combined-output.txt",
+        "sha256": "664f50d5df690c586573c08a727bb330934b27b6d4b4baf2e70680b7af01d33a"
+      },
+      {
+        "path": "docs/specs/COD-103/evidence/COD-107/local-qualification-2026-11-01/path-oracle-fix/backend/retention-raw-evidence/windows-path-oracle-fix/full-xtask.combined-output.txt",
+        "sha256": "b49cabe8873412311f4b44d413e55512b95688730c79f8ee6204aad0ae893371"
+      }
+    ],
+    "no_raw_normalization_or_Gitpolicy_change": true
+  }
+}

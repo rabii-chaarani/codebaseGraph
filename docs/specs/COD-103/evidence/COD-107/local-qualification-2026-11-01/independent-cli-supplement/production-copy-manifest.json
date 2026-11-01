@@ -1,0 +1,1895 @@
+{
+  "schema_version": 1,
+  "scope": "PrivateclosedCLIincrementonly;268unchangedauthorfilesplusseparateProductionindex/manifest",
+  "author_source_root": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement",
+  "author_report_hash": "e5f328b35682ec357f461825be1824fc2eea342f8f6b87211ef5bf5b9263d2d1",
+  "author_result_hash": "4cce5f69698cb73eb0824c81012f1f36122c7795395fd3e21acf069b1cd30829",
+  "author_manifest_hash": "3f018fab57c76f257fd94bb52cd4430002f78292708f7dd5640d6ae0616ad11a",
+  "author_manifest_entries": 267,
+  "copied_files": 268,
+  "copied_bytes": 1278977,
+  "copy_readback_all_pass": true,
+  "credential_pattern_matches": [],
+  "entries": [
+    {
+      "path": "actual-gate-source-anchors.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/actual-gate-source-anchors.json",
+      "bytes": 6301,
+      "sha256": "2c5f5a84f9109c2c9359d9fdccd22039bdd12228972c4a53684ba12dc2db9687",
+      "readback_match": true
+    },
+    {
+      "path": "complete_fixture_baseline__confirmed-production/fixture/.github/workflows/ci.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/complete_fixture_baseline__confirmed-production/fixture/.github/workflows/ci.yml",
+      "bytes": 5739,
+      "sha256": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+      "readback_match": true
+    },
+    {
+      "path": "complete_fixture_baseline__confirmed-production/fixture/.github/workflows/native.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/complete_fixture_baseline__confirmed-production/fixture/.github/workflows/native.yml",
+      "bytes": 3860,
+      "sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "readback_match": true
+    },
+    {
+      "path": "complete_fixture_baseline__confirmed-production/fixture/.github/workflows/release.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/complete_fixture_baseline__confirmed-production/fixture/.github/workflows/release.yml",
+      "bytes": 33468,
+      "sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "readback_match": true
+    },
+    {
+      "path": "complete_fixture_baseline__confirmed-production/fixture/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/complete_fixture_baseline__confirmed-production/fixture/Cargo.toml",
+      "bytes": 2320,
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "readback_match": true
+    },
+    {
+      "path": "complete_fixture_baseline__confirmed-production/fixture/SECURITY.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/complete_fixture_baseline__confirmed-production/fixture/SECURITY.md",
+      "bytes": 2145,
+      "sha256": "a838500eac12bd53304f485c21052df40435b4ed37cb2823fe63f3ae225e44e5",
+      "readback_match": true
+    },
+    {
+      "path": "complete_fixture_baseline__confirmed-production/fixture/crates/k-wiki/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/complete_fixture_baseline__confirmed-production/fixture/crates/k-wiki/Cargo.toml",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "readback_match": true
+    },
+    {
+      "path": "complete_fixture_baseline__confirmed-production/fixture/docs/allowed.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/complete_fixture_baseline__confirmed-production/fixture/docs/allowed.py",
+      "bytes": 57,
+      "sha256": "1fb843e31646bde0f0f94a4f1d3b23bf25ebd3a5701e5698ec33e0d31a613933",
+      "readback_match": true
+    },
+    {
+      "path": "complete_fixture_baseline__confirmed-production/fixture/release-please-config.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/complete_fixture_baseline__confirmed-production/fixture/release-please-config.json",
+      "bytes": 610,
+      "sha256": "aee0cc12299ec52e26f56bf7621a7e48a50445f0105041da9fed5eea178f5497",
+      "readback_match": true
+    },
+    {
+      "path": "complete_fixture_baseline__confirmed-production/fixture/src/adapters/cli/mod.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/complete_fixture_baseline__confirmed-production/fixture/src/adapters/cli/mod.rs",
+      "bytes": 339,
+      "sha256": "c574c9f1e30d211fee7ad12d8675c5f52bc87dc2a1d1b2985fe5f030f9f5bd43",
+      "readback_match": true
+    },
+    {
+      "path": "complete_fixture_baseline__confirmed-production/fixture/src/lib.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/complete_fixture_baseline__confirmed-production/fixture/src/lib.rs",
+      "bytes": 995,
+      "sha256": "509f314907f3860c8408f1ed32f8e94867ba79d906b01d7de2e7cc253910d751",
+      "readback_match": true
+    },
+    {
+      "path": "complete_fixture_baseline__confirmed-production/request.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/complete_fixture_baseline__confirmed-production/request.json",
+      "bytes": 3130,
+      "sha256": "50d674b11a5ce55837f088b504dd0781eccbc1413be841ffc9acff0a49f875ea",
+      "readback_match": true
+    },
+    {
+      "path": "complete_fixture_baseline__confirmed-production/result.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/complete_fixture_baseline__confirmed-production/result.json",
+      "bytes": 3790,
+      "sha256": "46139a30add1f53aaa87da1434eb0cbc6ac6aa34c77fa6d4f1adb97dcf58c713",
+      "readback_match": true
+    },
+    {
+      "path": "complete_fixture_baseline__confirmed-production/stderr.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/complete_fixture_baseline__confirmed-production/stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "readback_match": true
+    },
+    {
+      "path": "complete_fixture_baseline__confirmed-production/stdout.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/complete_fixture_baseline__confirmed-production/stdout.txt",
+      "bytes": 20,
+      "sha256": "cbe0d7f953d0f48db2405a1db48967fc4f6e1d880a563f4bbdf5dd7316519cdc",
+      "readback_match": true
+    },
+    {
+      "path": "complete_fixture_baseline__ordinary/fixture/.github/workflows/ci.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/complete_fixture_baseline__ordinary/fixture/.github/workflows/ci.yml",
+      "bytes": 5739,
+      "sha256": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+      "readback_match": true
+    },
+    {
+      "path": "complete_fixture_baseline__ordinary/fixture/.github/workflows/native.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/complete_fixture_baseline__ordinary/fixture/.github/workflows/native.yml",
+      "bytes": 3860,
+      "sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "readback_match": true
+    },
+    {
+      "path": "complete_fixture_baseline__ordinary/fixture/.github/workflows/release.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/complete_fixture_baseline__ordinary/fixture/.github/workflows/release.yml",
+      "bytes": 33468,
+      "sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "readback_match": true
+    },
+    {
+      "path": "complete_fixture_baseline__ordinary/fixture/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/complete_fixture_baseline__ordinary/fixture/Cargo.toml",
+      "bytes": 2320,
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "readback_match": true
+    },
+    {
+      "path": "complete_fixture_baseline__ordinary/fixture/SECURITY.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/complete_fixture_baseline__ordinary/fixture/SECURITY.md",
+      "bytes": 2145,
+      "sha256": "a838500eac12bd53304f485c21052df40435b4ed37cb2823fe63f3ae225e44e5",
+      "readback_match": true
+    },
+    {
+      "path": "complete_fixture_baseline__ordinary/fixture/crates/k-wiki/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/complete_fixture_baseline__ordinary/fixture/crates/k-wiki/Cargo.toml",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "readback_match": true
+    },
+    {
+      "path": "complete_fixture_baseline__ordinary/fixture/docs/allowed.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/complete_fixture_baseline__ordinary/fixture/docs/allowed.py",
+      "bytes": 57,
+      "sha256": "1fb843e31646bde0f0f94a4f1d3b23bf25ebd3a5701e5698ec33e0d31a613933",
+      "readback_match": true
+    },
+    {
+      "path": "complete_fixture_baseline__ordinary/fixture/release-please-config.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/complete_fixture_baseline__ordinary/fixture/release-please-config.json",
+      "bytes": 610,
+      "sha256": "aee0cc12299ec52e26f56bf7621a7e48a50445f0105041da9fed5eea178f5497",
+      "readback_match": true
+    },
+    {
+      "path": "complete_fixture_baseline__ordinary/fixture/src/adapters/cli/mod.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/complete_fixture_baseline__ordinary/fixture/src/adapters/cli/mod.rs",
+      "bytes": 339,
+      "sha256": "c574c9f1e30d211fee7ad12d8675c5f52bc87dc2a1d1b2985fe5f030f9f5bd43",
+      "readback_match": true
+    },
+    {
+      "path": "complete_fixture_baseline__ordinary/fixture/src/lib.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/complete_fixture_baseline__ordinary/fixture/src/lib.rs",
+      "bytes": 995,
+      "sha256": "509f314907f3860c8408f1ed32f8e94867ba79d906b01d7de2e7cc253910d751",
+      "readback_match": true
+    },
+    {
+      "path": "complete_fixture_baseline__ordinary/request.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/complete_fixture_baseline__ordinary/request.json",
+      "bytes": 2853,
+      "sha256": "e8569dd8919da68e0ff0395e30c298305edfacd007136d396f8fb1baa04917b5",
+      "readback_match": true
+    },
+    {
+      "path": "complete_fixture_baseline__ordinary/result.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/complete_fixture_baseline__ordinary/result.json",
+      "bytes": 3513,
+      "sha256": "9502bc9de7244654b1a6962957e085be4b6a4be9d2b0f860e200e54f17412fca",
+      "readback_match": true
+    },
+    {
+      "path": "complete_fixture_baseline__ordinary/stderr.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/complete_fixture_baseline__ordinary/stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "readback_match": true
+    },
+    {
+      "path": "complete_fixture_baseline__ordinary/stdout.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/complete_fixture_baseline__ordinary/stdout.txt",
+      "bytes": 20,
+      "sha256": "cbe0d7f953d0f48db2405a1db48967fc4f6e1d880a563f4bbdf5dd7316519cdc",
+      "readback_match": true
+    },
+    {
+      "path": "completed-results.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/completed-results.json",
+      "bytes": 74979,
+      "sha256": "a2ad57c9132afbd74c57a1a757b9de25581c8a256d03c4ee984717226a5663a2",
+      "readback_match": true
+    },
+    {
+      "path": "files.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/files.json",
+      "bytes": 53772,
+      "sha256": "3f018fab57c76f257fd94bb52cd4430002f78292708f7dd5640d6ae0616ad11a",
+      "readback_match": true
+    },
+    {
+      "path": "registered-case-plan.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/registered-case-plan.json",
+      "bytes": 8825,
+      "sha256": "19733dd48c29c3952b97da29ef086b013009c1db24890dea1053aa08f2cb7cb1",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_dependency__confirmed-production/fixture/.github/workflows/ci.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/fixture/.github/workflows/ci.yml",
+      "bytes": 5834,
+      "sha256": "59758d43c12d26c02c839d0cae380062acad87b8de1315ae15d207701f99d75f",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_dependency__confirmed-production/fixture/.github/workflows/native.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/fixture/.github/workflows/native.yml",
+      "bytes": 3860,
+      "sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_dependency__confirmed-production/fixture/.github/workflows/release.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/fixture/.github/workflows/release.yml",
+      "bytes": 33468,
+      "sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_dependency__confirmed-production/fixture/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/fixture/Cargo.toml",
+      "bytes": 2320,
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_dependency__confirmed-production/fixture/SECURITY.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/fixture/SECURITY.md",
+      "bytes": 2145,
+      "sha256": "a838500eac12bd53304f485c21052df40435b4ed37cb2823fe63f3ae225e44e5",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_dependency__confirmed-production/fixture/crates/k-wiki/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/fixture/crates/k-wiki/Cargo.toml",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_dependency__confirmed-production/fixture/docs/allowed.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/fixture/docs/allowed.py",
+      "bytes": 57,
+      "sha256": "1fb843e31646bde0f0f94a4f1d3b23bf25ebd3a5701e5698ec33e0d31a613933",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_dependency__confirmed-production/fixture/release-please-config.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/fixture/release-please-config.json",
+      "bytes": 610,
+      "sha256": "aee0cc12299ec52e26f56bf7621a7e48a50445f0105041da9fed5eea178f5497",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_dependency__confirmed-production/fixture/src/adapters/cli/mod.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/fixture/src/adapters/cli/mod.rs",
+      "bytes": 339,
+      "sha256": "c574c9f1e30d211fee7ad12d8675c5f52bc87dc2a1d1b2985fe5f030f9f5bd43",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_dependency__confirmed-production/fixture/src/lib.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/fixture/src/lib.rs",
+      "bytes": 995,
+      "sha256": "509f314907f3860c8408f1ed32f8e94867ba79d906b01d7de2e7cc253910d751",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_dependency__confirmed-production/request.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/request.json",
+      "bytes": 3444,
+      "sha256": "57a3fa1c61f0b9fd1a5f7fcedf42b66b5e36346305a4c9bf308604f80440e22e",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_dependency__confirmed-production/result.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/result.json",
+      "bytes": 4239,
+      "sha256": "6e644bdb44add2e96e306f0d81f25d93dc77ff5a6f3c1c43c1ed367aad95805a",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_dependency__confirmed-production/stderr.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/stderr.txt",
+      "bytes": 99,
+      "sha256": "cd54188fbe236776acaa755bd577ac8990201c8fa432ca3f6446dd55b63985e8",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_dependency__confirmed-production/stdout.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_dependency__confirmed-production/stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_dependency__ordinary/fixture/.github/workflows/ci.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/fixture/.github/workflows/ci.yml",
+      "bytes": 5834,
+      "sha256": "59758d43c12d26c02c839d0cae380062acad87b8de1315ae15d207701f99d75f",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_dependency__ordinary/fixture/.github/workflows/native.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/fixture/.github/workflows/native.yml",
+      "bytes": 3860,
+      "sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_dependency__ordinary/fixture/.github/workflows/release.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/fixture/.github/workflows/release.yml",
+      "bytes": 33468,
+      "sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_dependency__ordinary/fixture/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/fixture/Cargo.toml",
+      "bytes": 2320,
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_dependency__ordinary/fixture/SECURITY.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/fixture/SECURITY.md",
+      "bytes": 2145,
+      "sha256": "a838500eac12bd53304f485c21052df40435b4ed37cb2823fe63f3ae225e44e5",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_dependency__ordinary/fixture/crates/k-wiki/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/fixture/crates/k-wiki/Cargo.toml",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_dependency__ordinary/fixture/docs/allowed.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/fixture/docs/allowed.py",
+      "bytes": 57,
+      "sha256": "1fb843e31646bde0f0f94a4f1d3b23bf25ebd3a5701e5698ec33e0d31a613933",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_dependency__ordinary/fixture/release-please-config.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/fixture/release-please-config.json",
+      "bytes": 610,
+      "sha256": "aee0cc12299ec52e26f56bf7621a7e48a50445f0105041da9fed5eea178f5497",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_dependency__ordinary/fixture/src/adapters/cli/mod.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/fixture/src/adapters/cli/mod.rs",
+      "bytes": 339,
+      "sha256": "c574c9f1e30d211fee7ad12d8675c5f52bc87dc2a1d1b2985fe5f030f9f5bd43",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_dependency__ordinary/fixture/src/lib.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/fixture/src/lib.rs",
+      "bytes": 995,
+      "sha256": "509f314907f3860c8408f1ed32f8e94867ba79d906b01d7de2e7cc253910d751",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_dependency__ordinary/request.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/request.json",
+      "bytes": 3167,
+      "sha256": "b5b94cd780d425e5dd92b55c61647f17a9007eeffbb85d16590adb497f72f378",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_dependency__ordinary/result.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/result.json",
+      "bytes": 3962,
+      "sha256": "7fc8b7e2b8f7396e231281391ca57fdeccd5405cd2d2cb91c2cc3083aceaac1f",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_dependency__ordinary/stderr.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/stderr.txt",
+      "bytes": 99,
+      "sha256": "cd54188fbe236776acaa755bd577ac8990201c8fa432ca3f6446dd55b63985e8",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_dependency__ordinary/stdout.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_dependency__ordinary/stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_run__confirmed-production/fixture/.github/workflows/ci.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/fixture/.github/workflows/ci.yml",
+      "bytes": 5819,
+      "sha256": "5d9a9217cb7db8179464aea18d611cda10749723219a0ee5c31335e72f5b70e7",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_run__confirmed-production/fixture/.github/workflows/native.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/fixture/.github/workflows/native.yml",
+      "bytes": 3860,
+      "sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_run__confirmed-production/fixture/.github/workflows/release.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/fixture/.github/workflows/release.yml",
+      "bytes": 33468,
+      "sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_run__confirmed-production/fixture/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/fixture/Cargo.toml",
+      "bytes": 2320,
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_run__confirmed-production/fixture/SECURITY.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/fixture/SECURITY.md",
+      "bytes": 2145,
+      "sha256": "a838500eac12bd53304f485c21052df40435b4ed37cb2823fe63f3ae225e44e5",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_run__confirmed-production/fixture/crates/k-wiki/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/fixture/crates/k-wiki/Cargo.toml",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_run__confirmed-production/fixture/docs/allowed.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/fixture/docs/allowed.py",
+      "bytes": 57,
+      "sha256": "1fb843e31646bde0f0f94a4f1d3b23bf25ebd3a5701e5698ec33e0d31a613933",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_run__confirmed-production/fixture/release-please-config.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/fixture/release-please-config.json",
+      "bytes": 610,
+      "sha256": "aee0cc12299ec52e26f56bf7621a7e48a50445f0105041da9fed5eea178f5497",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_run__confirmed-production/fixture/src/adapters/cli/mod.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/fixture/src/adapters/cli/mod.rs",
+      "bytes": 339,
+      "sha256": "c574c9f1e30d211fee7ad12d8675c5f52bc87dc2a1d1b2985fe5f030f9f5bd43",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_run__confirmed-production/fixture/src/lib.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/fixture/src/lib.rs",
+      "bytes": 995,
+      "sha256": "509f314907f3860c8408f1ed32f8e94867ba79d906b01d7de2e7cc253910d751",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_run__confirmed-production/request.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/request.json",
+      "bytes": 3393,
+      "sha256": "77678c40f96b53cc8ef3ff008cd951bf10f33a42a20932498622b5b56031b094",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_run__confirmed-production/result.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/result.json",
+      "bytes": 4191,
+      "sha256": "21a1750f5245ef9705016469402df90f297ade0ff7e5f3d3e6dd5c8a3f8ddc6d",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_run__confirmed-production/stderr.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/stderr.txt",
+      "bytes": 102,
+      "sha256": "ef836d959df2bff8964725e77721730047c92e4daf84d25f02cd31e23bbd169e",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_run__confirmed-production/stdout.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_run__confirmed-production/stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_run__ordinary/fixture/.github/workflows/ci.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_run__ordinary/fixture/.github/workflows/ci.yml",
+      "bytes": 5819,
+      "sha256": "5d9a9217cb7db8179464aea18d611cda10749723219a0ee5c31335e72f5b70e7",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_run__ordinary/fixture/.github/workflows/native.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_run__ordinary/fixture/.github/workflows/native.yml",
+      "bytes": 3860,
+      "sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_run__ordinary/fixture/.github/workflows/release.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_run__ordinary/fixture/.github/workflows/release.yml",
+      "bytes": 33468,
+      "sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_run__ordinary/fixture/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_run__ordinary/fixture/Cargo.toml",
+      "bytes": 2320,
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_run__ordinary/fixture/SECURITY.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_run__ordinary/fixture/SECURITY.md",
+      "bytes": 2145,
+      "sha256": "a838500eac12bd53304f485c21052df40435b4ed37cb2823fe63f3ae225e44e5",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_run__ordinary/fixture/crates/k-wiki/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_run__ordinary/fixture/crates/k-wiki/Cargo.toml",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_run__ordinary/fixture/docs/allowed.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_run__ordinary/fixture/docs/allowed.py",
+      "bytes": 57,
+      "sha256": "1fb843e31646bde0f0f94a4f1d3b23bf25ebd3a5701e5698ec33e0d31a613933",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_run__ordinary/fixture/release-please-config.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_run__ordinary/fixture/release-please-config.json",
+      "bytes": 610,
+      "sha256": "aee0cc12299ec52e26f56bf7621a7e48a50445f0105041da9fed5eea178f5497",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_run__ordinary/fixture/src/adapters/cli/mod.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_run__ordinary/fixture/src/adapters/cli/mod.rs",
+      "bytes": 339,
+      "sha256": "c574c9f1e30d211fee7ad12d8675c5f52bc87dc2a1d1b2985fe5f030f9f5bd43",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_run__ordinary/fixture/src/lib.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_run__ordinary/fixture/src/lib.rs",
+      "bytes": 995,
+      "sha256": "509f314907f3860c8408f1ed32f8e94867ba79d906b01d7de2e7cc253910d751",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_run__ordinary/request.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_run__ordinary/request.json",
+      "bytes": 3116,
+      "sha256": "b18953c0895e67b8215455bc9cab36cf537a30c39bd76daa20aac4568aedaa75",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_run__ordinary/result.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_run__ordinary/result.json",
+      "bytes": 3914,
+      "sha256": "88a016afe6afd2af0cefec364f5ce1f334ceb0f2d773cf4f7b73d57826a439ed",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_run__ordinary/stderr.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_run__ordinary/stderr.txt",
+      "bytes": 102,
+      "sha256": "ef836d959df2bff8964725e77721730047c92e4daf84d25f02cd31e23bbd169e",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_run__ordinary/stdout.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_run__ordinary/stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_setup__confirmed-production/fixture/.github/workflows/ci.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/fixture/.github/workflows/ci.yml",
+      "bytes": 5817,
+      "sha256": "87dccc4a93d605f5f2cd791500a81ec4d5c6121dfac90e0d11f9df1a2539c005",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_setup__confirmed-production/fixture/.github/workflows/native.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/fixture/.github/workflows/native.yml",
+      "bytes": 3860,
+      "sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_setup__confirmed-production/fixture/.github/workflows/release.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/fixture/.github/workflows/release.yml",
+      "bytes": 33468,
+      "sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_setup__confirmed-production/fixture/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/fixture/Cargo.toml",
+      "bytes": 2320,
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_setup__confirmed-production/fixture/SECURITY.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/fixture/SECURITY.md",
+      "bytes": 2145,
+      "sha256": "a838500eac12bd53304f485c21052df40435b4ed37cb2823fe63f3ae225e44e5",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_setup__confirmed-production/fixture/crates/k-wiki/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/fixture/crates/k-wiki/Cargo.toml",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_setup__confirmed-production/fixture/docs/allowed.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/fixture/docs/allowed.py",
+      "bytes": 57,
+      "sha256": "1fb843e31646bde0f0f94a4f1d3b23bf25ebd3a5701e5698ec33e0d31a613933",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_setup__confirmed-production/fixture/release-please-config.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/fixture/release-please-config.json",
+      "bytes": 610,
+      "sha256": "aee0cc12299ec52e26f56bf7621a7e48a50445f0105041da9fed5eea178f5497",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_setup__confirmed-production/fixture/src/adapters/cli/mod.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/fixture/src/adapters/cli/mod.rs",
+      "bytes": 339,
+      "sha256": "c574c9f1e30d211fee7ad12d8675c5f52bc87dc2a1d1b2985fe5f030f9f5bd43",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_setup__confirmed-production/fixture/src/lib.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/fixture/src/lib.rs",
+      "bytes": 995,
+      "sha256": "509f314907f3860c8408f1ed32f8e94867ba79d906b01d7de2e7cc253910d751",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_setup__confirmed-production/request.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/request.json",
+      "bytes": 3429,
+      "sha256": "b9d1713556bb24a20a80ac3f2193fa0212e563b7d7a99428b4f00a3c3ec62481",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_setup__confirmed-production/result.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/result.json",
+      "bytes": 4240,
+      "sha256": "96888091feea71491f718827e6fa0a2e663ba35e47431967a10f06e4e0f9d37e",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_setup__confirmed-production/stderr.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/stderr.txt",
+      "bytes": 115,
+      "sha256": "2627eab6ddceaaa972580c1ca2baa2aa6d2af1267dbb4bdf1b9eee4d1b75c767",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_setup__confirmed-production/stdout.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_setup__confirmed-production/stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_setup__ordinary/fixture/.github/workflows/ci.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/fixture/.github/workflows/ci.yml",
+      "bytes": 5817,
+      "sha256": "87dccc4a93d605f5f2cd791500a81ec4d5c6121dfac90e0d11f9df1a2539c005",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_setup__ordinary/fixture/.github/workflows/native.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/fixture/.github/workflows/native.yml",
+      "bytes": 3860,
+      "sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_setup__ordinary/fixture/.github/workflows/release.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/fixture/.github/workflows/release.yml",
+      "bytes": 33468,
+      "sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_setup__ordinary/fixture/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/fixture/Cargo.toml",
+      "bytes": 2320,
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_setup__ordinary/fixture/SECURITY.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/fixture/SECURITY.md",
+      "bytes": 2145,
+      "sha256": "a838500eac12bd53304f485c21052df40435b4ed37cb2823fe63f3ae225e44e5",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_setup__ordinary/fixture/crates/k-wiki/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/fixture/crates/k-wiki/Cargo.toml",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_setup__ordinary/fixture/docs/allowed.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/fixture/docs/allowed.py",
+      "bytes": 57,
+      "sha256": "1fb843e31646bde0f0f94a4f1d3b23bf25ebd3a5701e5698ec33e0d31a613933",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_setup__ordinary/fixture/release-please-config.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/fixture/release-please-config.json",
+      "bytes": 610,
+      "sha256": "aee0cc12299ec52e26f56bf7621a7e48a50445f0105041da9fed5eea178f5497",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_setup__ordinary/fixture/src/adapters/cli/mod.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/fixture/src/adapters/cli/mod.rs",
+      "bytes": 339,
+      "sha256": "c574c9f1e30d211fee7ad12d8675c5f52bc87dc2a1d1b2985fe5f030f9f5bd43",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_setup__ordinary/fixture/src/lib.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/fixture/src/lib.rs",
+      "bytes": 995,
+      "sha256": "509f314907f3860c8408f1ed32f8e94867ba79d906b01d7de2e7cc253910d751",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_setup__ordinary/request.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/request.json",
+      "bytes": 3152,
+      "sha256": "b69c66ab21c140ccc48b4097930462875703376217a9e1871755a5ec77df99a9",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_setup__ordinary/result.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/result.json",
+      "bytes": 3963,
+      "sha256": "c79fd45693fe87632fec0d22fc166741e2859605ab7f5cc2807653a0419d1eee",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_setup__ordinary/stderr.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/stderr.txt",
+      "bytes": 115,
+      "sha256": "2627eab6ddceaaa972580c1ca2baa2aa6d2af1267dbb4bdf1b9eee4d1b75c767",
+      "readback_match": true
+    },
+    {
+      "path": "reject_actual_workflow_python_setup__ordinary/stdout.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_actual_workflow_python_setup__ordinary/stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "readback_match": true
+    },
+    {
+      "path": "reject_incomplete_security__confirmed-production/fixture/.github/workflows/ci.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_incomplete_security__confirmed-production/fixture/.github/workflows/ci.yml",
+      "bytes": 5739,
+      "sha256": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+      "readback_match": true
+    },
+    {
+      "path": "reject_incomplete_security__confirmed-production/fixture/.github/workflows/native.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_incomplete_security__confirmed-production/fixture/.github/workflows/native.yml",
+      "bytes": 3860,
+      "sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "readback_match": true
+    },
+    {
+      "path": "reject_incomplete_security__confirmed-production/fixture/.github/workflows/release.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_incomplete_security__confirmed-production/fixture/.github/workflows/release.yml",
+      "bytes": 33468,
+      "sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "readback_match": true
+    },
+    {
+      "path": "reject_incomplete_security__confirmed-production/fixture/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_incomplete_security__confirmed-production/fixture/Cargo.toml",
+      "bytes": 2320,
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "readback_match": true
+    },
+    {
+      "path": "reject_incomplete_security__confirmed-production/fixture/SECURITY.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_incomplete_security__confirmed-production/fixture/SECURITY.md",
+      "bytes": 49,
+      "sha256": "4cf575c84d9dfe6869315e40da1ed03f34e1370f81325ac6373dba06851cf097",
+      "readback_match": true
+    },
+    {
+      "path": "reject_incomplete_security__confirmed-production/fixture/crates/k-wiki/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_incomplete_security__confirmed-production/fixture/crates/k-wiki/Cargo.toml",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "readback_match": true
+    },
+    {
+      "path": "reject_incomplete_security__confirmed-production/fixture/docs/allowed.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_incomplete_security__confirmed-production/fixture/docs/allowed.py",
+      "bytes": 57,
+      "sha256": "1fb843e31646bde0f0f94a4f1d3b23bf25ebd3a5701e5698ec33e0d31a613933",
+      "readback_match": true
+    },
+    {
+      "path": "reject_incomplete_security__confirmed-production/fixture/release-please-config.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_incomplete_security__confirmed-production/fixture/release-please-config.json",
+      "bytes": 610,
+      "sha256": "aee0cc12299ec52e26f56bf7621a7e48a50445f0105041da9fed5eea178f5497",
+      "readback_match": true
+    },
+    {
+      "path": "reject_incomplete_security__confirmed-production/fixture/src/adapters/cli/mod.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_incomplete_security__confirmed-production/fixture/src/adapters/cli/mod.rs",
+      "bytes": 339,
+      "sha256": "c574c9f1e30d211fee7ad12d8675c5f52bc87dc2a1d1b2985fe5f030f9f5bd43",
+      "readback_match": true
+    },
+    {
+      "path": "reject_incomplete_security__confirmed-production/fixture/src/lib.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_incomplete_security__confirmed-production/fixture/src/lib.rs",
+      "bytes": 995,
+      "sha256": "509f314907f3860c8408f1ed32f8e94867ba79d906b01d7de2e7cc253910d751",
+      "readback_match": true
+    },
+    {
+      "path": "reject_incomplete_security__confirmed-production/request.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_incomplete_security__confirmed-production/request.json",
+      "bytes": 3211,
+      "sha256": "dfc7948bb06de4973e54eb6258b4609be1a298d57e3cba7fd87ddcb4e9f7b4d4",
+      "readback_match": true
+    },
+    {
+      "path": "reject_incomplete_security__confirmed-production/result.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_incomplete_security__confirmed-production/result.json",
+      "bytes": 4006,
+      "sha256": "4023f3910e5bddbbedf8336c75c77761912061a4f85d2b5320bb0017302a7b5d",
+      "readback_match": true
+    },
+    {
+      "path": "reject_incomplete_security__confirmed-production/stderr.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_incomplete_security__confirmed-production/stderr.txt",
+      "bytes": 97,
+      "sha256": "55d1dbeeb44896b0aa5d3579127e1cc810ff99aeff6977dda88dbc0977837f07",
+      "readback_match": true
+    },
+    {
+      "path": "reject_incomplete_security__confirmed-production/stdout.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_incomplete_security__confirmed-production/stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "readback_match": true
+    },
+    {
+      "path": "reject_incomplete_security__ordinary/fixture/.github/workflows/ci.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_incomplete_security__ordinary/fixture/.github/workflows/ci.yml",
+      "bytes": 5739,
+      "sha256": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+      "readback_match": true
+    },
+    {
+      "path": "reject_incomplete_security__ordinary/fixture/.github/workflows/native.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_incomplete_security__ordinary/fixture/.github/workflows/native.yml",
+      "bytes": 3860,
+      "sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "readback_match": true
+    },
+    {
+      "path": "reject_incomplete_security__ordinary/fixture/.github/workflows/release.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_incomplete_security__ordinary/fixture/.github/workflows/release.yml",
+      "bytes": 33468,
+      "sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "readback_match": true
+    },
+    {
+      "path": "reject_incomplete_security__ordinary/fixture/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_incomplete_security__ordinary/fixture/Cargo.toml",
+      "bytes": 2320,
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "readback_match": true
+    },
+    {
+      "path": "reject_incomplete_security__ordinary/fixture/SECURITY.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_incomplete_security__ordinary/fixture/SECURITY.md",
+      "bytes": 49,
+      "sha256": "4cf575c84d9dfe6869315e40da1ed03f34e1370f81325ac6373dba06851cf097",
+      "readback_match": true
+    },
+    {
+      "path": "reject_incomplete_security__ordinary/fixture/crates/k-wiki/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_incomplete_security__ordinary/fixture/crates/k-wiki/Cargo.toml",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "readback_match": true
+    },
+    {
+      "path": "reject_incomplete_security__ordinary/fixture/docs/allowed.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_incomplete_security__ordinary/fixture/docs/allowed.py",
+      "bytes": 57,
+      "sha256": "1fb843e31646bde0f0f94a4f1d3b23bf25ebd3a5701e5698ec33e0d31a613933",
+      "readback_match": true
+    },
+    {
+      "path": "reject_incomplete_security__ordinary/fixture/release-please-config.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_incomplete_security__ordinary/fixture/release-please-config.json",
+      "bytes": 610,
+      "sha256": "aee0cc12299ec52e26f56bf7621a7e48a50445f0105041da9fed5eea178f5497",
+      "readback_match": true
+    },
+    {
+      "path": "reject_incomplete_security__ordinary/fixture/src/adapters/cli/mod.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_incomplete_security__ordinary/fixture/src/adapters/cli/mod.rs",
+      "bytes": 339,
+      "sha256": "c574c9f1e30d211fee7ad12d8675c5f52bc87dc2a1d1b2985fe5f030f9f5bd43",
+      "readback_match": true
+    },
+    {
+      "path": "reject_incomplete_security__ordinary/fixture/src/lib.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_incomplete_security__ordinary/fixture/src/lib.rs",
+      "bytes": 995,
+      "sha256": "509f314907f3860c8408f1ed32f8e94867ba79d906b01d7de2e7cc253910d751",
+      "readback_match": true
+    },
+    {
+      "path": "reject_incomplete_security__ordinary/request.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_incomplete_security__ordinary/request.json",
+      "bytes": 2934,
+      "sha256": "f3a454d19662cb2e8defbe6fa020977d7736e57541926ae3ab4f98e32b58d2d2",
+      "readback_match": true
+    },
+    {
+      "path": "reject_incomplete_security__ordinary/result.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_incomplete_security__ordinary/result.json",
+      "bytes": 3729,
+      "sha256": "97c3dfa12044a1efaeb702795aa3c29cc8d56d591b3efbe3c7d8ff963dba7d5c",
+      "readback_match": true
+    },
+    {
+      "path": "reject_incomplete_security__ordinary/stderr.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_incomplete_security__ordinary/stderr.txt",
+      "bytes": 97,
+      "sha256": "55d1dbeeb44896b0aa5d3579127e1cc810ff99aeff6977dda88dbc0977837f07",
+      "readback_match": true
+    },
+    {
+      "path": "reject_incomplete_security__ordinary/stdout.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_incomplete_security__ordinary/stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "readback_match": true
+    },
+    {
+      "path": "reject_knowledge_python__confirmed-production/fixture/.github/workflows/ci.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_knowledge_python__confirmed-production/fixture/.github/workflows/ci.yml",
+      "bytes": 5739,
+      "sha256": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+      "readback_match": true
+    },
+    {
+      "path": "reject_knowledge_python__confirmed-production/fixture/.github/workflows/native.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_knowledge_python__confirmed-production/fixture/.github/workflows/native.yml",
+      "bytes": 3860,
+      "sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "readback_match": true
+    },
+    {
+      "path": "reject_knowledge_python__confirmed-production/fixture/.github/workflows/release.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_knowledge_python__confirmed-production/fixture/.github/workflows/release.yml",
+      "bytes": 33468,
+      "sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "readback_match": true
+    },
+    {
+      "path": "reject_knowledge_python__confirmed-production/fixture/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_knowledge_python__confirmed-production/fixture/Cargo.toml",
+      "bytes": 2320,
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "readback_match": true
+    },
+    {
+      "path": "reject_knowledge_python__confirmed-production/fixture/SECURITY.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_knowledge_python__confirmed-production/fixture/SECURITY.md",
+      "bytes": 2145,
+      "sha256": "a838500eac12bd53304f485c21052df40435b4ed37cb2823fe63f3ae225e44e5",
+      "readback_match": true
+    },
+    {
+      "path": "reject_knowledge_python__confirmed-production/fixture/crates/k-wiki/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_knowledge_python__confirmed-production/fixture/crates/k-wiki/Cargo.toml",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "readback_match": true
+    },
+    {
+      "path": "reject_knowledge_python__confirmed-production/fixture/docs/allowed.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_knowledge_python__confirmed-production/fixture/docs/allowed.py",
+      "bytes": 57,
+      "sha256": "1fb843e31646bde0f0f94a4f1d3b23bf25ebd3a5701e5698ec33e0d31a613933",
+      "readback_match": true
+    },
+    {
+      "path": "reject_knowledge_python__confirmed-production/fixture/knowledge/helper.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_knowledge_python__confirmed-production/fixture/knowledge/helper.py",
+      "bytes": 56,
+      "sha256": "af9cf2b0441832b8b137a061654d1a42aa7f3148e913c0218880ffce0a2ce854",
+      "readback_match": true
+    },
+    {
+      "path": "reject_knowledge_python__confirmed-production/fixture/release-please-config.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_knowledge_python__confirmed-production/fixture/release-please-config.json",
+      "bytes": 610,
+      "sha256": "aee0cc12299ec52e26f56bf7621a7e48a50445f0105041da9fed5eea178f5497",
+      "readback_match": true
+    },
+    {
+      "path": "reject_knowledge_python__confirmed-production/fixture/src/adapters/cli/mod.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_knowledge_python__confirmed-production/fixture/src/adapters/cli/mod.rs",
+      "bytes": 339,
+      "sha256": "c574c9f1e30d211fee7ad12d8675c5f52bc87dc2a1d1b2985fe5f030f9f5bd43",
+      "readback_match": true
+    },
+    {
+      "path": "reject_knowledge_python__confirmed-production/fixture/src/lib.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_knowledge_python__confirmed-production/fixture/src/lib.rs",
+      "bytes": 995,
+      "sha256": "509f314907f3860c8408f1ed32f8e94867ba79d906b01d7de2e7cc253910d751",
+      "readback_match": true
+    },
+    {
+      "path": "reject_knowledge_python__confirmed-production/request.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_knowledge_python__confirmed-production/request.json",
+      "bytes": 3375,
+      "sha256": "60f9fe29ca7ee72f22dcb87ff503d9016cfd2f094bf1e79c56fca8997c96ef9e",
+      "readback_match": true
+    },
+    {
+      "path": "reject_knowledge_python__confirmed-production/result.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_knowledge_python__confirmed-production/result.json",
+      "bytes": 4169,
+      "sha256": "084a4d8b8309063a40f82df9d627ad851699aa485c927f491558e3a5b1250f18",
+      "readback_match": true
+    },
+    {
+      "path": "reject_knowledge_python__confirmed-production/stderr.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_knowledge_python__confirmed-production/stderr.txt",
+      "bytes": 98,
+      "sha256": "cec723c7b64d08d3769bb121a9c3c294570f871e37c0c6ea70687b86b4256c5b",
+      "readback_match": true
+    },
+    {
+      "path": "reject_knowledge_python__confirmed-production/stdout.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_knowledge_python__confirmed-production/stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "readback_match": true
+    },
+    {
+      "path": "reject_knowledge_python__ordinary/fixture/.github/workflows/ci.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_knowledge_python__ordinary/fixture/.github/workflows/ci.yml",
+      "bytes": 5739,
+      "sha256": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+      "readback_match": true
+    },
+    {
+      "path": "reject_knowledge_python__ordinary/fixture/.github/workflows/native.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_knowledge_python__ordinary/fixture/.github/workflows/native.yml",
+      "bytes": 3860,
+      "sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "readback_match": true
+    },
+    {
+      "path": "reject_knowledge_python__ordinary/fixture/.github/workflows/release.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_knowledge_python__ordinary/fixture/.github/workflows/release.yml",
+      "bytes": 33468,
+      "sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "readback_match": true
+    },
+    {
+      "path": "reject_knowledge_python__ordinary/fixture/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_knowledge_python__ordinary/fixture/Cargo.toml",
+      "bytes": 2320,
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "readback_match": true
+    },
+    {
+      "path": "reject_knowledge_python__ordinary/fixture/SECURITY.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_knowledge_python__ordinary/fixture/SECURITY.md",
+      "bytes": 2145,
+      "sha256": "a838500eac12bd53304f485c21052df40435b4ed37cb2823fe63f3ae225e44e5",
+      "readback_match": true
+    },
+    {
+      "path": "reject_knowledge_python__ordinary/fixture/crates/k-wiki/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_knowledge_python__ordinary/fixture/crates/k-wiki/Cargo.toml",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "readback_match": true
+    },
+    {
+      "path": "reject_knowledge_python__ordinary/fixture/docs/allowed.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_knowledge_python__ordinary/fixture/docs/allowed.py",
+      "bytes": 57,
+      "sha256": "1fb843e31646bde0f0f94a4f1d3b23bf25ebd3a5701e5698ec33e0d31a613933",
+      "readback_match": true
+    },
+    {
+      "path": "reject_knowledge_python__ordinary/fixture/knowledge/helper.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_knowledge_python__ordinary/fixture/knowledge/helper.py",
+      "bytes": 56,
+      "sha256": "af9cf2b0441832b8b137a061654d1a42aa7f3148e913c0218880ffce0a2ce854",
+      "readback_match": true
+    },
+    {
+      "path": "reject_knowledge_python__ordinary/fixture/release-please-config.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_knowledge_python__ordinary/fixture/release-please-config.json",
+      "bytes": 610,
+      "sha256": "aee0cc12299ec52e26f56bf7621a7e48a50445f0105041da9fed5eea178f5497",
+      "readback_match": true
+    },
+    {
+      "path": "reject_knowledge_python__ordinary/fixture/src/adapters/cli/mod.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_knowledge_python__ordinary/fixture/src/adapters/cli/mod.rs",
+      "bytes": 339,
+      "sha256": "c574c9f1e30d211fee7ad12d8675c5f52bc87dc2a1d1b2985fe5f030f9f5bd43",
+      "readback_match": true
+    },
+    {
+      "path": "reject_knowledge_python__ordinary/fixture/src/lib.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_knowledge_python__ordinary/fixture/src/lib.rs",
+      "bytes": 995,
+      "sha256": "509f314907f3860c8408f1ed32f8e94867ba79d906b01d7de2e7cc253910d751",
+      "readback_match": true
+    },
+    {
+      "path": "reject_knowledge_python__ordinary/request.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_knowledge_python__ordinary/request.json",
+      "bytes": 3098,
+      "sha256": "7354bede7bf9a6cb65e768905739d7f923d575e027080b47b7f8c16e08d36c8b",
+      "readback_match": true
+    },
+    {
+      "path": "reject_knowledge_python__ordinary/result.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_knowledge_python__ordinary/result.json",
+      "bytes": 3892,
+      "sha256": "15d4c8a054803678fd19322c98cf1d1076a720c299119ddb9d933644da182313",
+      "readback_match": true
+    },
+    {
+      "path": "reject_knowledge_python__ordinary/stderr.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_knowledge_python__ordinary/stderr.txt",
+      "bytes": 98,
+      "sha256": "cec723c7b64d08d3769bb121a9c3c294570f871e37c0c6ea70687b86b4256c5b",
+      "readback_match": true
+    },
+    {
+      "path": "reject_knowledge_python__ordinary/stdout.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_knowledge_python__ordinary/stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "readback_match": true
+    },
+    {
+      "path": "reject_mydocs_python__confirmed-production/fixture/.github/workflows/ci.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_mydocs_python__confirmed-production/fixture/.github/workflows/ci.yml",
+      "bytes": 5739,
+      "sha256": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+      "readback_match": true
+    },
+    {
+      "path": "reject_mydocs_python__confirmed-production/fixture/.github/workflows/native.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_mydocs_python__confirmed-production/fixture/.github/workflows/native.yml",
+      "bytes": 3860,
+      "sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "readback_match": true
+    },
+    {
+      "path": "reject_mydocs_python__confirmed-production/fixture/.github/workflows/release.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_mydocs_python__confirmed-production/fixture/.github/workflows/release.yml",
+      "bytes": 33468,
+      "sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "readback_match": true
+    },
+    {
+      "path": "reject_mydocs_python__confirmed-production/fixture/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_mydocs_python__confirmed-production/fixture/Cargo.toml",
+      "bytes": 2320,
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "readback_match": true
+    },
+    {
+      "path": "reject_mydocs_python__confirmed-production/fixture/SECURITY.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_mydocs_python__confirmed-production/fixture/SECURITY.md",
+      "bytes": 2145,
+      "sha256": "a838500eac12bd53304f485c21052df40435b4ed37cb2823fe63f3ae225e44e5",
+      "readback_match": true
+    },
+    {
+      "path": "reject_mydocs_python__confirmed-production/fixture/crates/k-wiki/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_mydocs_python__confirmed-production/fixture/crates/k-wiki/Cargo.toml",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "readback_match": true
+    },
+    {
+      "path": "reject_mydocs_python__confirmed-production/fixture/docs/allowed.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_mydocs_python__confirmed-production/fixture/docs/allowed.py",
+      "bytes": 57,
+      "sha256": "1fb843e31646bde0f0f94a4f1d3b23bf25ebd3a5701e5698ec33e0d31a613933",
+      "readback_match": true
+    },
+    {
+      "path": "reject_mydocs_python__confirmed-production/fixture/mydocs/helper.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_mydocs_python__confirmed-production/fixture/mydocs/helper.py",
+      "bytes": 56,
+      "sha256": "af9cf2b0441832b8b137a061654d1a42aa7f3148e913c0218880ffce0a2ce854",
+      "readback_match": true
+    },
+    {
+      "path": "reject_mydocs_python__confirmed-production/fixture/release-please-config.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_mydocs_python__confirmed-production/fixture/release-please-config.json",
+      "bytes": 610,
+      "sha256": "aee0cc12299ec52e26f56bf7621a7e48a50445f0105041da9fed5eea178f5497",
+      "readback_match": true
+    },
+    {
+      "path": "reject_mydocs_python__confirmed-production/fixture/src/adapters/cli/mod.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_mydocs_python__confirmed-production/fixture/src/adapters/cli/mod.rs",
+      "bytes": 339,
+      "sha256": "c574c9f1e30d211fee7ad12d8675c5f52bc87dc2a1d1b2985fe5f030f9f5bd43",
+      "readback_match": true
+    },
+    {
+      "path": "reject_mydocs_python__confirmed-production/fixture/src/lib.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_mydocs_python__confirmed-production/fixture/src/lib.rs",
+      "bytes": 995,
+      "sha256": "509f314907f3860c8408f1ed32f8e94867ba79d906b01d7de2e7cc253910d751",
+      "readback_match": true
+    },
+    {
+      "path": "reject_mydocs_python__confirmed-production/request.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_mydocs_python__confirmed-production/request.json",
+      "bytes": 3348,
+      "sha256": "743b55a7a47b1f6324f45fb51e72b10dec8209cb4fca18346713f16bd522eccc",
+      "readback_match": true
+    },
+    {
+      "path": "reject_mydocs_python__confirmed-production/result.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_mydocs_python__confirmed-production/result.json",
+      "bytes": 4139,
+      "sha256": "d7d0782960172092bd5a6829ea3a0ab3e63a267d1f06f9f672d9f8793647d0c0",
+      "readback_match": true
+    },
+    {
+      "path": "reject_mydocs_python__confirmed-production/stderr.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_mydocs_python__confirmed-production/stderr.txt",
+      "bytes": 95,
+      "sha256": "8227ed1233f604a420be2bfef8c3ccd041fa981da720c64f834027a2542bbdff",
+      "readback_match": true
+    },
+    {
+      "path": "reject_mydocs_python__confirmed-production/stdout.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_mydocs_python__confirmed-production/stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "readback_match": true
+    },
+    {
+      "path": "reject_mydocs_python__ordinary/fixture/.github/workflows/ci.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_mydocs_python__ordinary/fixture/.github/workflows/ci.yml",
+      "bytes": 5739,
+      "sha256": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+      "readback_match": true
+    },
+    {
+      "path": "reject_mydocs_python__ordinary/fixture/.github/workflows/native.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_mydocs_python__ordinary/fixture/.github/workflows/native.yml",
+      "bytes": 3860,
+      "sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "readback_match": true
+    },
+    {
+      "path": "reject_mydocs_python__ordinary/fixture/.github/workflows/release.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_mydocs_python__ordinary/fixture/.github/workflows/release.yml",
+      "bytes": 33468,
+      "sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "readback_match": true
+    },
+    {
+      "path": "reject_mydocs_python__ordinary/fixture/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_mydocs_python__ordinary/fixture/Cargo.toml",
+      "bytes": 2320,
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "readback_match": true
+    },
+    {
+      "path": "reject_mydocs_python__ordinary/fixture/SECURITY.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_mydocs_python__ordinary/fixture/SECURITY.md",
+      "bytes": 2145,
+      "sha256": "a838500eac12bd53304f485c21052df40435b4ed37cb2823fe63f3ae225e44e5",
+      "readback_match": true
+    },
+    {
+      "path": "reject_mydocs_python__ordinary/fixture/crates/k-wiki/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_mydocs_python__ordinary/fixture/crates/k-wiki/Cargo.toml",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "readback_match": true
+    },
+    {
+      "path": "reject_mydocs_python__ordinary/fixture/docs/allowed.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_mydocs_python__ordinary/fixture/docs/allowed.py",
+      "bytes": 57,
+      "sha256": "1fb843e31646bde0f0f94a4f1d3b23bf25ebd3a5701e5698ec33e0d31a613933",
+      "readback_match": true
+    },
+    {
+      "path": "reject_mydocs_python__ordinary/fixture/mydocs/helper.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_mydocs_python__ordinary/fixture/mydocs/helper.py",
+      "bytes": 56,
+      "sha256": "af9cf2b0441832b8b137a061654d1a42aa7f3148e913c0218880ffce0a2ce854",
+      "readback_match": true
+    },
+    {
+      "path": "reject_mydocs_python__ordinary/fixture/release-please-config.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_mydocs_python__ordinary/fixture/release-please-config.json",
+      "bytes": 610,
+      "sha256": "aee0cc12299ec52e26f56bf7621a7e48a50445f0105041da9fed5eea178f5497",
+      "readback_match": true
+    },
+    {
+      "path": "reject_mydocs_python__ordinary/fixture/src/adapters/cli/mod.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_mydocs_python__ordinary/fixture/src/adapters/cli/mod.rs",
+      "bytes": 339,
+      "sha256": "c574c9f1e30d211fee7ad12d8675c5f52bc87dc2a1d1b2985fe5f030f9f5bd43",
+      "readback_match": true
+    },
+    {
+      "path": "reject_mydocs_python__ordinary/fixture/src/lib.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_mydocs_python__ordinary/fixture/src/lib.rs",
+      "bytes": 995,
+      "sha256": "509f314907f3860c8408f1ed32f8e94867ba79d906b01d7de2e7cc253910d751",
+      "readback_match": true
+    },
+    {
+      "path": "reject_mydocs_python__ordinary/request.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_mydocs_python__ordinary/request.json",
+      "bytes": 3071,
+      "sha256": "30eb7d34a24400aac25713d7178d9edaba51919f75b25414c448ac8ee6c7f439",
+      "readback_match": true
+    },
+    {
+      "path": "reject_mydocs_python__ordinary/result.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_mydocs_python__ordinary/result.json",
+      "bytes": 3861,
+      "sha256": "ab8c915b7ae6e46800c0b9cb6ed1a9c23880839f44c0c0ef0da0ef764ff7fdc9",
+      "readback_match": true
+    },
+    {
+      "path": "reject_mydocs_python__ordinary/stderr.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_mydocs_python__ordinary/stderr.txt",
+      "bytes": 95,
+      "sha256": "8227ed1233f604a420be2bfef8c3ccd041fa981da720c64f834027a2542bbdff",
+      "readback_match": true
+    },
+    {
+      "path": "reject_mydocs_python__ordinary/stdout.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_mydocs_python__ordinary/stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "readback_match": true
+    },
+    {
+      "path": "reject_outside_python__confirmed-production/fixture/.github/workflows/ci.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_outside_python__confirmed-production/fixture/.github/workflows/ci.yml",
+      "bytes": 5739,
+      "sha256": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+      "readback_match": true
+    },
+    {
+      "path": "reject_outside_python__confirmed-production/fixture/.github/workflows/native.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_outside_python__confirmed-production/fixture/.github/workflows/native.yml",
+      "bytes": 3860,
+      "sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "readback_match": true
+    },
+    {
+      "path": "reject_outside_python__confirmed-production/fixture/.github/workflows/release.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_outside_python__confirmed-production/fixture/.github/workflows/release.yml",
+      "bytes": 33468,
+      "sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "readback_match": true
+    },
+    {
+      "path": "reject_outside_python__confirmed-production/fixture/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_outside_python__confirmed-production/fixture/Cargo.toml",
+      "bytes": 2320,
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "readback_match": true
+    },
+    {
+      "path": "reject_outside_python__confirmed-production/fixture/SECURITY.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_outside_python__confirmed-production/fixture/SECURITY.md",
+      "bytes": 2145,
+      "sha256": "a838500eac12bd53304f485c21052df40435b4ed37cb2823fe63f3ae225e44e5",
+      "readback_match": true
+    },
+    {
+      "path": "reject_outside_python__confirmed-production/fixture/crates/k-wiki/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_outside_python__confirmed-production/fixture/crates/k-wiki/Cargo.toml",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "readback_match": true
+    },
+    {
+      "path": "reject_outside_python__confirmed-production/fixture/docs/allowed.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_outside_python__confirmed-production/fixture/docs/allowed.py",
+      "bytes": 57,
+      "sha256": "1fb843e31646bde0f0f94a4f1d3b23bf25ebd3a5701e5698ec33e0d31a613933",
+      "readback_match": true
+    },
+    {
+      "path": "reject_outside_python__confirmed-production/fixture/outside.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_outside_python__confirmed-production/fixture/outside.py",
+      "bytes": 56,
+      "sha256": "af9cf2b0441832b8b137a061654d1a42aa7f3148e913c0218880ffce0a2ce854",
+      "readback_match": true
+    },
+    {
+      "path": "reject_outside_python__confirmed-production/fixture/release-please-config.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_outside_python__confirmed-production/fixture/release-please-config.json",
+      "bytes": 610,
+      "sha256": "aee0cc12299ec52e26f56bf7621a7e48a50445f0105041da9fed5eea178f5497",
+      "readback_match": true
+    },
+    {
+      "path": "reject_outside_python__confirmed-production/fixture/src/adapters/cli/mod.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_outside_python__confirmed-production/fixture/src/adapters/cli/mod.rs",
+      "bytes": 339,
+      "sha256": "c574c9f1e30d211fee7ad12d8675c5f52bc87dc2a1d1b2985fe5f030f9f5bd43",
+      "readback_match": true
+    },
+    {
+      "path": "reject_outside_python__confirmed-production/fixture/src/lib.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_outside_python__confirmed-production/fixture/src/lib.rs",
+      "bytes": 995,
+      "sha256": "509f314907f3860c8408f1ed32f8e94867ba79d906b01d7de2e7cc253910d751",
+      "readback_match": true
+    },
+    {
+      "path": "reject_outside_python__confirmed-production/request.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_outside_python__confirmed-production/request.json",
+      "bytes": 3336,
+      "sha256": "a534ebe8027b93be883661eb7fa0df3aac3f024fef79979d772de2742a2eac4e",
+      "readback_match": true
+    },
+    {
+      "path": "reject_outside_python__confirmed-production/result.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_outside_python__confirmed-production/result.json",
+      "bytes": 4121,
+      "sha256": "4e935bb757aa7d56fdcae0e960ca6c8ccb0a6bb000d4d40ad50ce80d4d3b7280",
+      "readback_match": true
+    },
+    {
+      "path": "reject_outside_python__confirmed-production/stderr.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_outside_python__confirmed-production/stderr.txt",
+      "bytes": 89,
+      "sha256": "af7fc1456bdf6a58ea63552caaf29b359fec93359fdb0081347852de643b23b8",
+      "readback_match": true
+    },
+    {
+      "path": "reject_outside_python__confirmed-production/stdout.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_outside_python__confirmed-production/stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "readback_match": true
+    },
+    {
+      "path": "reject_outside_python__ordinary/fixture/.github/workflows/ci.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_outside_python__ordinary/fixture/.github/workflows/ci.yml",
+      "bytes": 5739,
+      "sha256": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+      "readback_match": true
+    },
+    {
+      "path": "reject_outside_python__ordinary/fixture/.github/workflows/native.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_outside_python__ordinary/fixture/.github/workflows/native.yml",
+      "bytes": 3860,
+      "sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "readback_match": true
+    },
+    {
+      "path": "reject_outside_python__ordinary/fixture/.github/workflows/release.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_outside_python__ordinary/fixture/.github/workflows/release.yml",
+      "bytes": 33468,
+      "sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "readback_match": true
+    },
+    {
+      "path": "reject_outside_python__ordinary/fixture/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_outside_python__ordinary/fixture/Cargo.toml",
+      "bytes": 2320,
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "readback_match": true
+    },
+    {
+      "path": "reject_outside_python__ordinary/fixture/SECURITY.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_outside_python__ordinary/fixture/SECURITY.md",
+      "bytes": 2145,
+      "sha256": "a838500eac12bd53304f485c21052df40435b4ed37cb2823fe63f3ae225e44e5",
+      "readback_match": true
+    },
+    {
+      "path": "reject_outside_python__ordinary/fixture/crates/k-wiki/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_outside_python__ordinary/fixture/crates/k-wiki/Cargo.toml",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "readback_match": true
+    },
+    {
+      "path": "reject_outside_python__ordinary/fixture/docs/allowed.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_outside_python__ordinary/fixture/docs/allowed.py",
+      "bytes": 57,
+      "sha256": "1fb843e31646bde0f0f94a4f1d3b23bf25ebd3a5701e5698ec33e0d31a613933",
+      "readback_match": true
+    },
+    {
+      "path": "reject_outside_python__ordinary/fixture/outside.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_outside_python__ordinary/fixture/outside.py",
+      "bytes": 56,
+      "sha256": "af9cf2b0441832b8b137a061654d1a42aa7f3148e913c0218880ffce0a2ce854",
+      "readback_match": true
+    },
+    {
+      "path": "reject_outside_python__ordinary/fixture/release-please-config.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_outside_python__ordinary/fixture/release-please-config.json",
+      "bytes": 610,
+      "sha256": "aee0cc12299ec52e26f56bf7621a7e48a50445f0105041da9fed5eea178f5497",
+      "readback_match": true
+    },
+    {
+      "path": "reject_outside_python__ordinary/fixture/src/adapters/cli/mod.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_outside_python__ordinary/fixture/src/adapters/cli/mod.rs",
+      "bytes": 339,
+      "sha256": "c574c9f1e30d211fee7ad12d8675c5f52bc87dc2a1d1b2985fe5f030f9f5bd43",
+      "readback_match": true
+    },
+    {
+      "path": "reject_outside_python__ordinary/fixture/src/lib.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_outside_python__ordinary/fixture/src/lib.rs",
+      "bytes": 995,
+      "sha256": "509f314907f3860c8408f1ed32f8e94867ba79d906b01d7de2e7cc253910d751",
+      "readback_match": true
+    },
+    {
+      "path": "reject_outside_python__ordinary/request.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_outside_python__ordinary/request.json",
+      "bytes": 3059,
+      "sha256": "b11e38fc9a07ed618129b3ec2b055530325251e273e242498a0512a2157c6f04",
+      "readback_match": true
+    },
+    {
+      "path": "reject_outside_python__ordinary/result.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_outside_python__ordinary/result.json",
+      "bytes": 3843,
+      "sha256": "30713daeaeb842e0baf241f539e25343a4e6be190470fd98d4c61bfaa4b41e3f",
+      "readback_match": true
+    },
+    {
+      "path": "reject_outside_python__ordinary/stderr.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_outside_python__ordinary/stderr.txt",
+      "bytes": 89,
+      "sha256": "af7fc1456bdf6a58ea63552caaf29b359fec93359fdb0081347852de643b23b8",
+      "readback_match": true
+    },
+    {
+      "path": "reject_outside_python__ordinary/stdout.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_outside_python__ordinary/stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "readback_match": true
+    },
+    {
+      "path": "reject_testing_python__confirmed-production/fixture/.github/workflows/ci.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_testing_python__confirmed-production/fixture/.github/workflows/ci.yml",
+      "bytes": 5739,
+      "sha256": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+      "readback_match": true
+    },
+    {
+      "path": "reject_testing_python__confirmed-production/fixture/.github/workflows/native.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_testing_python__confirmed-production/fixture/.github/workflows/native.yml",
+      "bytes": 3860,
+      "sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "readback_match": true
+    },
+    {
+      "path": "reject_testing_python__confirmed-production/fixture/.github/workflows/release.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_testing_python__confirmed-production/fixture/.github/workflows/release.yml",
+      "bytes": 33468,
+      "sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "readback_match": true
+    },
+    {
+      "path": "reject_testing_python__confirmed-production/fixture/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_testing_python__confirmed-production/fixture/Cargo.toml",
+      "bytes": 2320,
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "readback_match": true
+    },
+    {
+      "path": "reject_testing_python__confirmed-production/fixture/SECURITY.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_testing_python__confirmed-production/fixture/SECURITY.md",
+      "bytes": 2145,
+      "sha256": "a838500eac12bd53304f485c21052df40435b4ed37cb2823fe63f3ae225e44e5",
+      "readback_match": true
+    },
+    {
+      "path": "reject_testing_python__confirmed-production/fixture/crates/k-wiki/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_testing_python__confirmed-production/fixture/crates/k-wiki/Cargo.toml",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "readback_match": true
+    },
+    {
+      "path": "reject_testing_python__confirmed-production/fixture/docs/allowed.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_testing_python__confirmed-production/fixture/docs/allowed.py",
+      "bytes": 57,
+      "sha256": "1fb843e31646bde0f0f94a4f1d3b23bf25ebd3a5701e5698ec33e0d31a613933",
+      "readback_match": true
+    },
+    {
+      "path": "reject_testing_python__confirmed-production/fixture/release-please-config.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_testing_python__confirmed-production/fixture/release-please-config.json",
+      "bytes": 610,
+      "sha256": "aee0cc12299ec52e26f56bf7621a7e48a50445f0105041da9fed5eea178f5497",
+      "readback_match": true
+    },
+    {
+      "path": "reject_testing_python__confirmed-production/fixture/src/adapters/cli/mod.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_testing_python__confirmed-production/fixture/src/adapters/cli/mod.rs",
+      "bytes": 339,
+      "sha256": "c574c9f1e30d211fee7ad12d8675c5f52bc87dc2a1d1b2985fe5f030f9f5bd43",
+      "readback_match": true
+    },
+    {
+      "path": "reject_testing_python__confirmed-production/fixture/src/lib.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_testing_python__confirmed-production/fixture/src/lib.rs",
+      "bytes": 995,
+      "sha256": "509f314907f3860c8408f1ed32f8e94867ba79d906b01d7de2e7cc253910d751",
+      "readback_match": true
+    },
+    {
+      "path": "reject_testing_python__confirmed-production/fixture/testing/helper.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_testing_python__confirmed-production/fixture/testing/helper.py",
+      "bytes": 56,
+      "sha256": "af9cf2b0441832b8b137a061654d1a42aa7f3148e913c0218880ffce0a2ce854",
+      "readback_match": true
+    },
+    {
+      "path": "reject_testing_python__confirmed-production/request.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_testing_python__confirmed-production/request.json",
+      "bytes": 3357,
+      "sha256": "4ae515a2b3c3d6e382dd7635f765e1b07215b9a4299c2d2e57375d4870034415",
+      "readback_match": true
+    },
+    {
+      "path": "reject_testing_python__confirmed-production/result.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_testing_python__confirmed-production/result.json",
+      "bytes": 4148,
+      "sha256": "5b386f138ae82d16c6b647e49ef6c7be7683813c14d8b2132d03b3e97d222483",
+      "readback_match": true
+    },
+    {
+      "path": "reject_testing_python__confirmed-production/stderr.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_testing_python__confirmed-production/stderr.txt",
+      "bytes": 96,
+      "sha256": "2604601c6215477e37e79e48223eada7dccda9f3b8983e983180fc9d26563e73",
+      "readback_match": true
+    },
+    {
+      "path": "reject_testing_python__confirmed-production/stdout.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_testing_python__confirmed-production/stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "readback_match": true
+    },
+    {
+      "path": "reject_testing_python__ordinary/fixture/.github/workflows/ci.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_testing_python__ordinary/fixture/.github/workflows/ci.yml",
+      "bytes": 5739,
+      "sha256": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+      "readback_match": true
+    },
+    {
+      "path": "reject_testing_python__ordinary/fixture/.github/workflows/native.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_testing_python__ordinary/fixture/.github/workflows/native.yml",
+      "bytes": 3860,
+      "sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "readback_match": true
+    },
+    {
+      "path": "reject_testing_python__ordinary/fixture/.github/workflows/release.yml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_testing_python__ordinary/fixture/.github/workflows/release.yml",
+      "bytes": 33468,
+      "sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "readback_match": true
+    },
+    {
+      "path": "reject_testing_python__ordinary/fixture/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_testing_python__ordinary/fixture/Cargo.toml",
+      "bytes": 2320,
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "readback_match": true
+    },
+    {
+      "path": "reject_testing_python__ordinary/fixture/SECURITY.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_testing_python__ordinary/fixture/SECURITY.md",
+      "bytes": 2145,
+      "sha256": "a838500eac12bd53304f485c21052df40435b4ed37cb2823fe63f3ae225e44e5",
+      "readback_match": true
+    },
+    {
+      "path": "reject_testing_python__ordinary/fixture/crates/k-wiki/Cargo.toml",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_testing_python__ordinary/fixture/crates/k-wiki/Cargo.toml",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "readback_match": true
+    },
+    {
+      "path": "reject_testing_python__ordinary/fixture/docs/allowed.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_testing_python__ordinary/fixture/docs/allowed.py",
+      "bytes": 57,
+      "sha256": "1fb843e31646bde0f0f94a4f1d3b23bf25ebd3a5701e5698ec33e0d31a613933",
+      "readback_match": true
+    },
+    {
+      "path": "reject_testing_python__ordinary/fixture/release-please-config.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_testing_python__ordinary/fixture/release-please-config.json",
+      "bytes": 610,
+      "sha256": "aee0cc12299ec52e26f56bf7621a7e48a50445f0105041da9fed5eea178f5497",
+      "readback_match": true
+    },
+    {
+      "path": "reject_testing_python__ordinary/fixture/src/adapters/cli/mod.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_testing_python__ordinary/fixture/src/adapters/cli/mod.rs",
+      "bytes": 339,
+      "sha256": "c574c9f1e30d211fee7ad12d8675c5f52bc87dc2a1d1b2985fe5f030f9f5bd43",
+      "readback_match": true
+    },
+    {
+      "path": "reject_testing_python__ordinary/fixture/src/lib.rs",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_testing_python__ordinary/fixture/src/lib.rs",
+      "bytes": 995,
+      "sha256": "509f314907f3860c8408f1ed32f8e94867ba79d906b01d7de2e7cc253910d751",
+      "readback_match": true
+    },
+    {
+      "path": "reject_testing_python__ordinary/fixture/testing/helper.py",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_testing_python__ordinary/fixture/testing/helper.py",
+      "bytes": 56,
+      "sha256": "af9cf2b0441832b8b137a061654d1a42aa7f3148e913c0218880ffce0a2ce854",
+      "readback_match": true
+    },
+    {
+      "path": "reject_testing_python__ordinary/request.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_testing_python__ordinary/request.json",
+      "bytes": 3080,
+      "sha256": "6d992a8423a504f28d0e633c375b0369b708043bcda5be361074435a43be9dcb",
+      "readback_match": true
+    },
+    {
+      "path": "reject_testing_python__ordinary/result.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_testing_python__ordinary/result.json",
+      "bytes": 3872,
+      "sha256": "d3f1889eee3072cab28a07201f43d6a13c8a97602c9f0d17b0564161e68ac8cf",
+      "readback_match": true
+    },
+    {
+      "path": "reject_testing_python__ordinary/stderr.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_testing_python__ordinary/stderr.txt",
+      "bytes": 96,
+      "sha256": "2604601c6215477e37e79e48223eada7dccda9f3b8983e983180fc9d26563e73",
+      "readback_match": true
+    },
+    {
+      "path": "reject_testing_python__ordinary/stdout.txt",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/reject_testing_python__ordinary/stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "readback_match": true
+    },
+    {
+      "path": "report.md",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/report.md",
+      "bytes": 5753,
+      "sha256": "e5f328b35682ec357f461825be1824fc2eea342f8f6b87211ef5bf5b9263d2d1",
+      "readback_match": true
+    },
+    {
+      "path": "result.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/result.json",
+      "bytes": 87578,
+      "sha256": "4cce5f69698cb73eb0824c81012f1f36122c7795395fd3e21acf069b1cd30829",
+      "readback_match": true
+    },
+    {
+      "path": "source-cli-provenance-after.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/source-cli-provenance-after.json",
+      "bytes": 1061,
+      "sha256": "3e0ebb8aaa1133b5459e5b4f08819fc7cff21c7eac7c9655391c6fd63e8654e5",
+      "readback_match": true
+    },
+    {
+      "path": "source-cli-provenance-before.json",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/source-cli-provenance-before.json",
+      "bytes": 3387,
+      "sha256": "26f78d83ccff38862380de5f45951231b44c4e0ca704c0217baa31e1624868f2",
+      "readback_match": true
+    }
+  ],
+  "evidence_distinction": "18actualrawCLIassertions; prior83JUnitseparate; no101JUnit or fabricatedXML",
+  "not_changed": "Originalprepared71/indexa482/manifeste131,independentinitialclosedlayer,localcommitted2c4source/evidence,repoHEAD and allsource",
+  "pending": "Cleancrate/native/hosted/freshreview/currentmodel/A03/fullqueuegates; noopenoutputscopied",
+  "production_index_sha256": "0b7d48e4babeb64ff9df0e621e1d996c3493c07804f526d616dd2e75c9543d2f"
+}

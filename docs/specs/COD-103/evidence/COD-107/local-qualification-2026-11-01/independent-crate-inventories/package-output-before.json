@@ -1,0 +1,16 @@
+{
+  "root": {
+    "path": "/private/tmp/codebasegraph-cod107-20261031/target/package/codebase-graph-4.0.5.crate",
+    "existed": false,
+    "bytes": null,
+    "sha256": null,
+    "mtime_ns": null
+  },
+  "wiki": {
+    "path": "/private/tmp/codebasegraph-cod107-20261031/target/package/k-wiki-4.0.5.crate",
+    "existed": false,
+    "bytes": null,
+    "sha256": null,
+    "mtime_ns": null
+  }
+}

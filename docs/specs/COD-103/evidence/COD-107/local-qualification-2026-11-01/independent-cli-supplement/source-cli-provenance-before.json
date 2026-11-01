@@ -1,0 +1,51 @@
+{
+  "source_guard": {
+    "crates/xtask/src/main.rs": "e4d256e451c03f447a4e374ed361d0d0b23d2898977d51953995fa307d896f1e",
+    "docs/release.md": "1e67f4949647c10a48f9184db230454572d666a756b68c203690398f525c7954",
+    ".github/workflows/ci.yml": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+    ".github/workflows/native.yml": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683"
+  },
+  "CLI": "/private/tmp/codebasegraph-cod107-20261031/target/debug/xtask",
+  "CLI_sha256": "337d4a7a1996e9d909dcac1651f8b4b6d845ecedf5ac483b67911b11d2745277",
+  "CLI_bytes": 5399288,
+  "CLI_deps_file": "/private/tmp/codebasegraph-cod107-20261031/target/debug/xtask.d",
+  "CLI_deps_text": "/private/tmp/codebasegraph-cod107-20261031/target/debug/xtask: /private/tmp/codebasegraph-cod107-20261031/crates/xtask/src/macos.rs /private/tmp/codebasegraph-cod107-20261031/crates/xtask/src/main.rs /private/tmp/codebasegraph-cod107-20261031/crates/xtask/src/native_tests/shards.rs /private/tmp/codebasegraph-cod107-20261031/crates/xtask/src/native_tests.rs /private/tmp/codebasegraph-cod107-20261031/crates/xtask/src/release.rs\n",
+  "prior_independent_actual_cargo_run_commands": [
+    {
+      "name": "check-workflows",
+      "command": "cargo run --offline --locked -p xtask -- check-workflows > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-local/post-cfg-final/check-workflows.log' 2>&1",
+      "cwd": "/private/tmp/codebasegraph-cod107-20261031",
+      "started_at_utc": "2026-11-01T00:07:19.181269+00:00",
+      "status": "completed",
+      "environment": {
+        "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+        "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+        "LBUG_VERSION": "0.19.0",
+        "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+        "MACOSX_DEPLOYMENT_TARGET": "13.3",
+        "CARGO_BUILD_JOBS": "2"
+      },
+      "exit_code": 0,
+      "duration_seconds": 1.0171940829604864
+    },
+    {
+      "name": "ordinary-release-gate",
+      "command": "cargo run --offline --locked -p xtask -- release-gate > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-local/post-cfg-final/release-gate.log' 2>&1",
+      "cwd": "/private/tmp/codebasegraph-cod107-20261031",
+      "started_at_utc": "2026-11-01T00:07:36.708053+00:00",
+      "status": "completed",
+      "scope": "ordinary actual projectgate; productionroute covered only by complete disposable fixtures, no liveexternalattestations",
+      "environment": {
+        "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+        "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+        "LBUG_VERSION": "0.19.0",
+        "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+        "MACOSX_DEPLOYMENT_TARGET": "13.3",
+        "CARGO_BUILD_JOBS": "2"
+      },
+      "exit_code": 0,
+      "duration_seconds": 0.46945187519304454
+    }
+  ],
+  "binding_method": "Same debug target printed by independent check-workflows/release-gate Cargo commands on frozene4d256; source remains exact, no intervening Cargo/sourcewriter authorized. Actual current debugbinary hash bound for this supplement and checked after. No rebuild."
+}

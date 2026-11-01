@@ -1,0 +1,56 @@
+[
+  {
+    "name": "root-package-inventory",
+    "command": "cargo package --offline --locked -p codebase-graph --no-verify > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-crate-inventories/root-package.stdout.txt' 2> '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-crate-inventories/root-package.stderr.txt' ",
+    "cwd": "/private/tmp/codebasegraph-cod107-20261031",
+    "source_head": "2c4ed59bacfdc316f61e202eb6b5eaaa6acca767",
+    "started_at_utc": "2026-11-01T00:45:14.035140+00:00",
+    "started_at_unix_ns": 1793493914035159000,
+    "status": "completed",
+    "output_expected": "/private/tmp/codebasegraph-cod107-20261031/target/package/codebase-graph-4.0.5.crate",
+    "environment": {
+      "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+      "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+      "LBUG_VERSION": "0.19.0",
+      "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+      "MACOSX_DEPLOYMENT_TARGET": "13.3",
+      "CARGO_BUILD_JOBS": "2"
+    },
+    "scope": "real root .crate production only, noverify/compile/upload",
+    "pid": 38869,
+    "exit_code": 0,
+    "duration_seconds": 0.5994523749686778
+  },
+  {
+    "name": "wiki-package-inventory",
+    "command": "cargo package --offline --locked -p k-wiki --no-verify --config 'patch.crates-io.codebase-graph.path=\".\"' > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-crate-inventories/wiki-package.stdout.txt' 2> '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-crate-inventories/wiki-package.stderr.txt' ",
+    "cwd": "/private/tmp/codebasegraph-cod107-20261031",
+    "source_head": "2c4ed59bacfdc316f61e202eb6b5eaaa6acca767",
+    "started_at_utc": "2026-11-01T00:45:22.645004+00:00",
+    "started_at_unix_ns": 1793493922645016000,
+    "status": "completed",
+    "output_expected": "/private/tmp/codebasegraph-cod107-20261031/target/package/k-wiki-4.0.5.crate",
+    "environment": {
+      "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+      "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+      "LBUG_VERSION": "0.19.0",
+      "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+      "MACOSX_DEPLOYMENT_TARGET": "13.3",
+      "CARGO_BUILD_JOBS": "2"
+    },
+    "scope": "real unpublished wiki .crate production only; existingCI command-local in-tree dependency patch; no persistentconfig edit,noverify/compile/upload",
+    "pid": 38878,
+    "exit_code": 0,
+    "duration_seconds": 0.16673254198394716
+  },
+  {
+    "name": "final-clean-source-readback",
+    "command": "git --no-optional-locks status --porcelain=v1 -uall; rev-parse root/HEAD/tree; diff --check",
+    "cwd": "/private/tmp/codebasegraph-cod107-20261031",
+    "exit_code": 0,
+    "duration_seconds": 0.07304866588674486,
+    "status": "completed",
+    "source": "Sameclean2c4ed59/tree86b0; all source/manifests/lock inputs unchanged",
+    "log": "identity-after.txt"
+  }
+]

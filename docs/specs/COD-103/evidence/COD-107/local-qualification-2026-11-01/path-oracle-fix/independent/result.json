@@ -1,0 +1,487 @@
+{
+  "schema_version": 1,
+  "work_id": "COD-107",
+  "role": "Evidence Verifier",
+  "mode": "independent_affected_verification_after_Windows_path_oracle_test_fix",
+  "status": "assigned_local_checks_passed_remaining_A03_gates_pending",
+  "completed_at_utc": "2026-11-01T02:52:31.156760+00:00",
+  "authority": {
+    "C103_requirement": "R03",
+    "acceptance": "A03 local policy/test portion",
+    "approved_revision0_3": "316be4c4bb81d4f6e025016b12374836b4dcc1a8",
+    "approval0_3": "0e6008a1f46679a86aba85ac513beb05af94b0c0",
+    "approved_retention_revision0_5": "e5adebfa1196a2074527cec4935522c43c773e39",
+    "retention_approval": "08d2c060bba8bf45db069fe53185f06f5b3d6cd9",
+    "existing_source_change": "chg-xd2jtt; no model/maps/ingestion/fold performed",
+    "approval_scope_unchanged": true
+  },
+  "source": {
+    "root": "/private/tmp/codebasegraph-cod107-20261031",
+    "branch": "cod103-stack/cod-107",
+    "actual_HEAD": "2c4ed59bacfdc316f61e202eb6b5eaaa6acca767",
+    "actual_tree": "86b0d6aa4bebf645a59dd5bb12bd7beeffd8ca2d",
+    "dirty_paths": [
+      "crates/xtask/src/main.rs"
+    ],
+    "tested_source_identity": "ActualHEAD/tree PLUS only main.rs dirty SHA076dd22a1da16a6d651016b7227536f1d65de766ff6c09a3dcb02631c51af5da; not cleanHEAD-alone execution",
+    "before_after_hashes": {
+      "crates/xtask/src/main.rs": {
+        "before_sha256": "076dd22a1da16a6d651016b7227536f1d65de766ff6c09a3dcb02631c51af5da",
+        "after_sha256": "076dd22a1da16a6d651016b7227536f1d65de766ff6c09a3dcb02631c51af5da",
+        "bytes": 182913
+      },
+      "docs/release.md": {
+        "before_sha256": "1e67f4949647c10a48f9184db230454572d666a756b68c203690398f525c7954",
+        "after_sha256": "1e67f4949647c10a48f9184db230454572d666a756b68c203690398f525c7954",
+        "bytes": 20234
+      },
+      ".github/workflows/ci.yml": {
+        "before_sha256": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+        "after_sha256": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+        "bytes": 5739
+      },
+      ".github/workflows/native.yml": {
+        "before_sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+        "after_sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+        "bytes": 3860
+      },
+      "Cargo.toml": {
+        "before_sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+        "after_sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+        "bytes": 2320
+      },
+      "Cargo.lock": {
+        "before_sha256": "63d868f91aa52acbddf0eb7e9385a101c3a59c02f7e527ced82d1993299f5afb",
+        "after_sha256": "63d868f91aa52acbddf0eb7e9385a101c3a59c02f7e527ced82d1993299f5afb",
+        "bytes": 52538
+      },
+      "crates/xtask/Cargo.toml": {
+        "before_sha256": "206d3a9af5953963659c0cc292e1356c8905f44288c417568bb7f146c4716198",
+        "after_sha256": "206d3a9af5953963659c0cc292e1356c8905f44288c417568bb7f146c4716198",
+        "bytes": 219
+      },
+      "crates/k-wiki/Cargo.toml": {
+        "before_sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+        "after_sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+        "bytes": 1011
+      },
+      ".cargo/config.toml": {
+        "before_sha256": "388ad5407d7e78cae8dacd1c3c556f8c97f43d998c4e09273dcf8fca00eb0f82",
+        "after_sha256": "388ad5407d7e78cae8dacd1c3c556f8c97f43d998c4e09273dcf8fca00eb0f82",
+        "bytes": 99
+      }
+    },
+    "status_HEAD_tree_diff_stat_identical": true,
+    "diff_check_exit_code": 0
+  },
+  "owner_handoff": {
+    "path": "/private/tmp/cod107-backend-output/cod107-windows-path-oracle-fix-handoff.md",
+    "sha256": "bd0169a8bfd30dcaa6d470661ff62817e0e943ef7f41b6f789c74d291a2ae1c7",
+    "identity_correction": "Original handoff mistakenly lists08d2/tree0955. It is preserved verbatim; independent actual Git read identifies2c4/tree86b0+single dirty main. No result relies on stale heading."
+  },
+  "fix_audit": {
+    "actual_diff_file": "actual-path-oracle-only.diff",
+    "actual_diff_sha256": "986b4fc8f59a5ff8ba7f5ad76e3b085504aab1f63e77ab04c2d16d2b4a6cd273",
+    "changed_scope": "Only two existing test functions expected diagnostic path formatting, owned Strings and borrowed &str lists",
+    "production_prefix_unchanged": true,
+    "production_prefix_sha256": "569b9bfcb669917a172408cb0c315d4791564f6c29fb21257eb5661fc7fbe70e",
+    "path_expectations": [
+      {
+        "path_components": [
+          "docs-extra",
+          "neighbor.py"
+        ],
+        "use": "expected forbidden candidate diagnostic"
+      },
+      {
+        "path_components": [
+          "src",
+          "docs",
+          "neighbor.py"
+        ],
+        "use": "expected forbidden candidate diagnostic"
+      },
+      {
+        "path_components": [
+          "scripts",
+          "helper.py"
+        ],
+        "use": "expected forbidden candidate diagnostic"
+      },
+      {
+        "path_components": [
+          "src",
+          "codebase_graph",
+          "helper.py"
+        ],
+        "use": "expected forbidden candidate diagnostic"
+      },
+      {
+        "path_components": [
+          "docs",
+          "allowed.py"
+        ],
+        "use": "forbidden false-positive diagnostic guard retained"
+      },
+      {
+        "path_components": [
+          "outside",
+          "linked.py"
+        ],
+        "use": "expected outside symlink diagnostic"
+      }
+    ],
+    "mechanism": "Path::new(...).join(...).display() follows platform-native path rendering also used by actual production relative.to_string_lossy(); no output normalization, alternate separator allowance, new cfg skip or expected success change.",
+    "fixed_diagnostic_prefixes": "Root-tooling/security/workflow fixed-string diagnostics remain literal, matching actual production formatting.",
+    "allowed_docs_false_positive_guard": "Retained and now uses same native Path display; still asserts no rejection of valid docs helper",
+    "Windows_claim": "Static source-semantic correction plus actual Mac tests only; no Windows compile/execution pass asserted"
+  },
+  "actual_checks": {
+    "all_commands_exit0": true,
+    "format_exit_code": 0,
+    "actual_full_xtask_tests": 83,
+    "genuine_JUnit": {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-path-oracle-fix/xtask-junit.xml",
+      "sha256": "2cde0488dcf33b8704d607a9a4c86683eb8837dad610ab5bfde441d2a63f3c1c",
+      "run_id": "35a05db1-a42f-440e-8385-828272d0c7fe",
+      "cases": 83,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "inventory_match": true,
+      "actual_case_names": [
+        "macos::tests::dependency_parser_preserves_paths_with_spaces",
+        "macos::tests::dylib_dependency_parser_filters_only_matching_install_id",
+        "macos::tests::minimum_version_parser_reads_macos_build_and_legacy_commands",
+        "macos::tests::rpath_parser_reads_and_rejects_malformed_entries",
+        "macos::tests::source_archive_accepts_comment_metadata_without_extracting_it",
+        "macos_installer_tests::dry_run_validates_all_payloads_without_creating_destination",
+        "macos_installer_tests::invalid_inventory_rows_and_mixed_versions_preserve_destination",
+        "macos_installer_tests::missing_corrupt_and_symlink_payloads_preserve_existing_destination_files",
+        "macos_installer_tests::nonzero_binary_probe_preserves_existing_destination_files",
+        "macos_installer_tests::real_install_places_verified_runtime_license_and_binaries_in_spaced_directory",
+        "native_tests::shards::tests::empty_shard_never_runs_an_unfiltered_suite",
+        "native_tests::shards::tests::selected_exact_filters_execute_the_expected_real_harness_cases",
+        "native_tests::shards::tests::shards_cover_every_listed_case_once_and_bound_windows_arguments",
+        "native_tests::tests::captured_cli_survives_cargo_replacing_its_output",
+        "native_tests::tests::partitions_every_test_target_and_keeps_new_integration_targets",
+        "native_tests::tests::windows_regressions_precede_the_complete_unfiltered_suite",
+        "release::tests::metadata_rejects_inconsistent_versions",
+        "release::tests::notes_only_include_the_exact_release",
+        "release::tests::notes_reject_missing_duplicate_and_empty_sections",
+        "release::workflow_tests::accepted_writes_with_lost_responses_resume_without_replay",
+        "release::workflow_tests::ci_run_recovery_dry_run_validates_without_authorizing_publication",
+        "release::workflow_tests::draft_partial_upload_resumes_and_latest_is_selected_at_publication",
+        "release::workflow_tests::existing_tag_mode_remains_assets_only_for_draft_mutable_and_immutable_releases",
+        "release::workflow_tests::existing_tag_resolver_accepts_historical_lightweight_and_annotated_ancestors",
+        "release::workflow_tests::existing_tag_resolver_rejects_nonancestors_and_bad_identity_before_authorizing",
+        "release::workflow_tests::immutable_missing_or_mismatched_assets_fail_without_mutation",
+        "release::workflow_tests::immutable_release_uploads_before_publication_and_retries_without_writes",
+        "release::workflow_tests::legacy_dry_run_resolves_without_scheduling_the_publisher",
+        "release::workflow_tests::legacy_publisher_rechecks_fresh_tag_and_main_before_upload_and_allows_advancement",
+        "release::workflow_tests::legacy_publisher_rejects_late_history_and_tag_races_without_mutation",
+        "release::workflow_tests::ordinary_commit_cannot_authorize_release_and_tagged_retry_still_can",
+        "release::workflow_tests::proposal_reports_pending_release_then_proceeds_after_finalization",
+        "release::workflow_tests::published_mutable_partial_assets_can_resume_without_republishing",
+        "release::workflow_tests::publisher_rejects_conflicting_tags_and_does_not_regress_latest",
+        "release::workflow_tests::publisher_rejects_identity_metadata_prerelease_and_ambiguous_drafts_before_writes",
+        "release::workflow_tests::publisher_targets_original_sha_and_is_idempotent",
+        "release::workflow_tests::recovery_requires_one_target_and_forbids_ci_run_rebuilds",
+        "release::workflow_tests::staged_assets_match_the_supported_native_targets",
+        "release::workflow_tests::upload_or_remote_byte_failure_never_publishes",
+        "release::workflow_tests::verified_release_rejects_failed_ci_and_untrusted_run_identity",
+        "release::workflow_tests::verified_release_rejects_untrusted_prs_and_removed_history",
+        "release::workflow_tests::verified_release_survives_main_advancing_and_ignores_other_pending_releases",
+        "tests::archive_contract_rejects_unexpected_entries",
+        "tests::complete_artifact_set_rejects_mixed_provenance",
+        "tests::crate_size_validation_enforces_the_registry_limit",
+        "tests::docs_python_exception_rejects_component_aliases_and_symlinks",
+        "tests::docs_python_gate_accepts_root_and_nested_helpers_in_both_modes",
+        "tests::docs_python_gate_rejects_neighbors_root_tooling_and_workflow_python",
+        "tests::installer_rejects_removed_hosts_before_reading_archives_or_writing_destinations",
+        "tests::macos_smoke_commands_use_a_fixture_home_and_system_path",
+        "tests::mcp_smoke_accepts_valid_initialize_and_tools",
+        "tests::mcp_smoke_rejects_errors_missing_malformed_duplicate_and_decoy_responses",
+        "tests::mcp_smoke_rejects_nonzero_child_with_success_payload",
+        "tests::native_capture_requires_unique_source_bound_normal_cli_artifact",
+        "tests::native_capture_reuses_the_exact_test_profile_and_features",
+        "tests::native_payload_integrity_covers_runtime_files_and_preserves_windows_inventory",
+        "tests::native_retention_actual_body_is_cod107_only",
+        "tests::native_retention_invalid_input_cannot_succeed",
+        "tests::native_target_contract_maps_names_and_binaries",
+        "tests::native_test_failure_cannot_authorize_artifact_production",
+        "tests::release_identity_validation_is_strict",
+        "tests::required_rejects_retention_selector_failure",
+        "tests::windows_native_tests_forward_bundled_extensions",
+        "tests::workflow_policy_accepts_exact_cod103_stack_bases",
+        "tests::workflow_policy_rejects_automatic_rebuild_recovery",
+        "tests::workflow_policy_rejects_direct_release_push_trigger",
+        "tests::workflow_policy_rejects_github_sha_for_release_identity",
+        "tests::workflow_policy_rejects_missing_ci_success_guard",
+        "tests::workflow_policy_rejects_missing_crate_publish_retry",
+        "tests::workflow_policy_rejects_missing_crate_size_gates",
+        "tests::workflow_policy_rejects_missing_repository_release_gate",
+        "tests::workflow_policy_rejects_missing_triggering_run_binding",
+        "tests::workflow_policy_rejects_privileged_pr_event",
+        "tests::workflow_policy_rejects_release_queue_replacement",
+        "tests::workflow_policy_rejects_unapproved_pull_request_activity",
+        "tests::workflow_policy_rejects_unconditional_release_publication",
+        "tests::workflow_policy_rejects_unknown_stack_base_and_push_namespace",
+        "tests::workflow_policy_rejects_unvalidated_publishers",
+        "tests::workflow_policy_requires_ci_completion_release_trigger",
+        "tests::workflow_policy_requires_publication_revalidation",
+        "tests::workflow_policy_retention_wiring_is_closed",
+        "tests::workflow_yaml_validation_rejects_unindented_heredoc_body",
+        "tests::workflows_reject_removed_platform_targets"
+      ],
+      "affected_two_tests": [
+        {
+          "name": "tests::docs_python_gate_rejects_neighbors_root_tooling_and_workflow_python",
+          "occurrences": 1
+        },
+        {
+          "name": "tests::docs_python_exception_rejects_component_aliases_and_symlinks",
+          "occurrences": 1
+        }
+      ],
+      "reported_duration_seconds": "30.338"
+    },
+    "check_workflows_exit_code": 0,
+    "ordinary_release_gate_exit_code": 0,
+    "strict_workspace_all_targets_all_features_Clippy_exit_code": 0,
+    "observed_compiler_warnings": 0,
+    "commands": [
+      {
+        "name": "format",
+        "command": "cargo fmt --all --check > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-path-oracle-fix/format.log' 2>&1",
+        "cwd": "/private/tmp/codebasegraph-cod107-20261031",
+        "started_at_utc": "2026-11-01T02:10:28.429251+00:00",
+        "status": "completed",
+        "source_main_sha256": "076dd22a1da16a6d651016b7227536f1d65de766ff6c09a3dcb02631c51af5da",
+        "exit_code": 0,
+        "duration_seconds": 2.090460291132331
+      },
+      {
+        "name": "inventory",
+        "command": "cargo nextest list --offline --locked -p xtask --bin xtask --cargo-profile native-tests --config-file '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-path-oracle-fix/nextest.toml' --user-config-file none --profile pathfix --message-format json > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-path-oracle-fix/inventory.json' 2> '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-path-oracle-fix/inventory-build.log' ",
+        "cwd": "/private/tmp/codebasegraph-cod107-20261031",
+        "started_at_utc": "2026-11-01T02:11:00.400927+00:00",
+        "status": "completed",
+        "source_main_sha256": "076dd22a1da16a6d651016b7227536f1d65de766ff6c09a3dcb02631c51af5da",
+        "environment": {
+          "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+          "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+          "LBUG_VERSION": "0.19.0",
+          "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+          "MACOSX_DEPLOYMENT_TARGET": "13.3",
+          "CARGO_BUILD_JOBS": "2"
+        },
+        "scope": "Actualfull83xtask; native-tests, no filtering/retries/configfeaturesoverride",
+        "pid": 44031,
+        "exit_code": 0,
+        "duration_seconds": null,
+        "duration_limitation": "Final BashHandle duration lost on kernel restore; bash-done pid44031 exit0 received; actual inventory/source compile log retained. Initial running snapshot10.012s, no retry."
+      },
+      {
+        "name": "full-xtask-independent",
+        "command": "cargo nextest run --offline --locked -p xtask --bin xtask --cargo-profile native-tests --config-file '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-path-oracle-fix/nextest.toml' --user-config-file none --profile pathfix --test-threads 1 --no-tests fail > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-path-oracle-fix/xtask-run.log' 2>&1",
+        "cwd": "/private/tmp/codebasegraph-cod107-20261031",
+        "started_at_utc": "2026-11-01T02:20:29.588408+00:00",
+        "status": "completed",
+        "source_main_sha256": "076dd22a1da16a6d651016b7227536f1d65de766ff6c09a3dcb02631c51af5da",
+        "expected_tests": 83,
+        "cargo_profile": "native-tests",
+        "reporting_profile": "pathfix, retries0, one thread",
+        "environment": {
+          "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+          "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+          "LBUG_VERSION": "0.19.0",
+          "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+          "MACOSX_DEPLOYMENT_TARGET": "13.3",
+          "CARGO_BUILD_JOBS": "2"
+        },
+        "JUnit_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-path-oracle-fix/xtask-junit.xml",
+        "pid": 44085,
+        "exit_code": 0,
+        "duration_seconds": 30.71359045803547
+      },
+      {
+        "name": "check-workflows",
+        "command": "cargo run --offline --locked -p xtask -- check-workflows > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-path-oracle-fix/check-workflows.log' 2>&1",
+        "cwd": "/private/tmp/codebasegraph-cod107-20261031",
+        "started_at_utc": "2026-11-01T02:45:17.393365+00:00",
+        "status": "completed",
+        "environment": {
+          "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+          "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+          "LBUG_VERSION": "0.19.0",
+          "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+          "MACOSX_DEPLOYMENT_TARGET": "13.3",
+          "CARGO_BUILD_JOBS": "2"
+        },
+        "exit_code": 0,
+        "duration_seconds": 0.8718835001345724
+      },
+      {
+        "name": "ordinary-release-gate",
+        "command": "cargo run --offline --locked -p xtask -- release-gate > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-path-oracle-fix/release-gate.log' 2>&1",
+        "cwd": "/private/tmp/codebasegraph-cod107-20261031",
+        "started_at_utc": "2026-11-01T02:45:37.486098+00:00",
+        "status": "completed",
+        "scope": "normal actual project gate, no external production confirmation",
+        "environment": {
+          "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+          "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+          "LBUG_VERSION": "0.19.0",
+          "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+          "MACOSX_DEPLOYMENT_TARGET": "13.3",
+          "CARGO_BUILD_JOBS": "2"
+        },
+        "exit_code": 0,
+        "duration_seconds": 0.4721738339867443
+      },
+      {
+        "name": "strict-workspace-clippy",
+        "command": "cargo clippy --offline --workspace --all-targets --all-features --locked -- -D warnings > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-path-oracle-fix/strict-workspace-clippy.log' 2>&1",
+        "cwd": "/private/tmp/codebasegraph-cod107-20261031",
+        "started_at_utc": "2026-11-01T02:45:37.959745+00:00",
+        "status": "completed",
+        "scope": "existing assigned local workspace/all-target/all-feature compiler warning gate; no native archive/runtime build",
+        "environment": {
+          "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+          "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+          "LBUG_VERSION": "0.19.0",
+          "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+          "MACOSX_DEPLOYMENT_TARGET": "13.3",
+          "CARGO_BUILD_JOBS": "2"
+        },
+        "pid": 48807,
+        "exit_code": 0,
+        "duration_seconds": 1.2595329999458045
+      },
+      {
+        "name": "final-whitespace-and-source-guard",
+        "command": "git --no-optional-locks status --porcelain=v1 -uall; rev-parse root/HEAD/tree; diff --stat HEAD; diff --check",
+        "cwd": "/private/tmp/codebasegraph-cod107-20261031",
+        "exit_code": 0,
+        "duration_seconds": 0.0933015828486532,
+        "status": "completed",
+        "same_source_status_HEAD_tree": true,
+        "log": "identity-after.txt"
+      }
+    ],
+    "source_bound_binary": {
+      "binary_path": "/private/tmp/codebasegraph-cod107-20261031/target/native-tests/deps/xtask-eed5a74c0d8f01ef",
+      "binary_sha256": "7e49ba09a6c2cdba8fe423fe6cf084b27c0f2fac90a02ce666ab6b65077c4b1a",
+      "actual_package": "path+file:///private/tmp/codebasegraph-cod107-20261031/crates/xtask#4.0.5",
+      "actual_cwd": "/private/tmp/codebasegraph-cod107-20261031/crates/xtask",
+      "target_directory": "/private/tmp/codebasegraph-cod107-20261031/target",
+      "source_main_sha256": "076dd22a1da16a6d651016b7227536f1d65de766ff6c09a3dcb02631c51af5da",
+      "source_compile_log": "inventory-build.log",
+      "actual_root_compile_lines": [
+        "   Compiling xtask v4.0.5 (/private/tmp/codebasegraph-cod107-20261031/crates/xtask)",
+        "    Finished `native-tests` profile [optimized] target(s) in 8.83s"
+      ],
+      "Cargo_profile": "native-tests",
+      "no_features_or_target_override": true,
+      "no_other_checkout_executable": true
+    }
+  },
+  "criterion_trace": [
+    {
+      "criterion": "Affected negative path diagnostics under actual ordinary/confirmed-production complete gate fixtures",
+      "test": "tests::docs_python_gate_rejects_neighbors_root_tooling_and_workflow_python",
+      "actual_result": "Actual unique JUnit testcase passed after new compilation; expected forbidden native-rendered paths plus literal root-tooling/security/workflow prefixes asserted; allowed docs helper false-positive guard retained",
+      "limits": "Mac execution does not prove Windows runtime separator/branch results"
+    },
+    {
+      "criterion": "Alias/symlink branch plus outside-to-docs native-rendered diagnostic",
+      "test": "tests::docs_python_exception_rejects_component_aliases_and_symlinks",
+      "actual_result": "Actual unique JUnit testcase passed on capable Mac, exercising unchanged aliases/metadata and both gate routes for symlinks",
+      "limits": "Windows drive assertion/symlink privilege/runtime branch accounting remains later hosted evidence"
+    },
+    {
+      "criterion": "No regression to positive/docs policy/retention/required gate invariants",
+      "test": "Entire discovered83-test xtask suite including all seven COD107 tests",
+      "actual_result": "83passed,0failed/errors/skips; exact full inventory matches genuine JUnit; native-tests/retries0/one thread",
+      "limits": "No product full-native runtime cohort or actual retained artifact byte inventory here"
+    },
+    {
+      "criterion": "Local source/warning gates",
+      "test": "fmt,check-workflows,ordinary release-gate,strictworkspaceClippy(all-targets,all-features,-Dwarnings)",
+      "actual_result": "All actual exit0,0 compiler warning lines",
+      "limits": "No Windows-host/global CI warning pass inferred"
+    }
+  ],
+  "reused_historical_evidence": {
+    "reports_preserved": {
+      "initial_report": {
+        "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-local/report.md",
+        "expected_sha256": "652f051ad71b6ca34f868d862154ad4f2df574177567c8588f655d7122005c18",
+        "actual_sha256": "652f051ad71b6ca34f868d862154ad4f2df574177567c8588f655d7122005c18"
+      },
+      "CLI_supplement_report": {
+        "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/report.md",
+        "expected_sha256": "e5f328b35682ec357f461825be1824fc2eea342f8f6b87211ef5bf5b9263d2d1",
+        "actual_sha256": "e5f328b35682ec357f461825be1824fc2eea342f8f6b87211ef5bf5b9263d2d1"
+      },
+      "historical_crate_report": {
+        "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-crate-inventories/report.md",
+        "expected_sha256": "10a8cfef2be894a5d007ab32189cfadebf977f209bb8c46585664f31df2c5479",
+        "actual_sha256": "10a8cfef2be894a5d007ab32189cfadebf977f209bb8c46585664f31df2c5479"
+      }
+    },
+    "initial83_JUnit": "Original75671e... remains prior e4d256 execution, not relabelled current076d source",
+    "CLI_supplement18": "Reused only as previous actual CLI behavior evidence because production prefix and fixture input behavior are unchanged. No new18CLI invocation and no new-source hash label.",
+    "crate_inventory2c4": "Actual archive bytes/VCS2c4 from clean earlier inventory remain historical; current main is dirty, no package or allow-dirty command executed",
+    "no_unique_test_count_inflation": "Current83 are affected rerun of same cases, not added83unique tests."
+  },
+  "limitations": [
+    "All actual execution here is MacARM64, not Windows compiler/runtime/host qualification; actual later native Windows test-branch and warning inventory remains required.",
+    "Inventory final completion crossed kernel restore; exit0 notification/source compile log/full actual83 inventory preserved, exact final duration unavailable; no repeat for timing.",
+    "CurrentcanonicalScryerroot remains f69, not future107dirty source; no maps, anchors, report ingestion, fold, claim or global drift operations.",
+    "No package/native archive/VM/CI/product-runtime build or action beyond assigned formatting/xtask/policy/workspace Clippy checks.",
+    "Fresh required FinalReviewer/fix acceptance and faithful related commit/PR/full same-head CI plus actual same-source retained native archive/sidecar/provenance inventories and applicable final-head crate payload/VCS binding remain pending.",
+    "No completeA03/107\u2192108/Done/main/release/platformaggregate closure asserted."
+  ],
+  "settings": {
+    "role_map": "evidence_verifier inherit/inherit",
+    "host": "Existing accepted original dispatch reused; no override/model effort switch/substitution/nested role",
+    "runtime_metadata": "unexposed"
+  },
+  "environment": {
+    "environment": {
+      "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+      "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+      "LBUG_VERSION": "0.19.0",
+      "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+      "MACOSX_DEPLOYMENT_TARGET": "13.3",
+      "CARGO_BUILD_JOBS": "2"
+    },
+    "unset": {
+      "CARGO_TARGET_DIR": null,
+      "RUSTFLAGS": null,
+      "CARGO_ENCODED_RUSTFLAGS": null,
+      "LBUG_SHARED": null,
+      "LBUG_BUILD_FROM_SOURCE": null,
+      "LBUG_RUST_BUILD_FROM_SOURCE": null
+    },
+    "project_config": "[env]\nRUST_TEST_THREADS = \"1\"\nHOME = { value = \"target/test-home\", relative = true, force = true }\n",
+    "reused_environment_proof": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-local/post-cfg-final/environment.json",
+    "no_deps_install_or_feature_profile_settings_changes": true,
+    "prior_closed_report_hashes": {
+      "initial_report": "652f051ad71b6ca34f868d862154ad4f2df574177567c8588f655d7122005c18",
+      "CLI_supplement_report": "e5f328b35682ec357f461825be1824fc2eea342f8f6b87211ef5bf5b9263d2d1",
+      "historical_clean_crate_report": "10a8cfef2be894a5d007ab32189cfadebf977f209bb8c46585664f31df2c5479"
+    }
+  },
+  "writes": {
+    "permitted": "OwnNEW private outputs/JUnit/report config and ordinary isolated default target build/test outputs",
+    "source_Git_refs_tracking_model_CI_VM_settings_dependencies": false,
+    "old_closed_reports_overwritten": false,
+    "package_build_allow_dirty_native_archive_runtime_cohort": false
+  },
+  "assumptions_constants": "OwnerSTOP and exclusive localCargo slot respected; documented existing native019/OpenSSL/deployment/jobs2 environment used unchanged. No product behavior/diagnostic policy/test outcome oracle/feature/profile/resource constant changed by verifier.",
+  "reusable_memory_assessment": "Transient source-specific verification; no new reusable memory warranted or authorized.",
+  "next_owner": "Engineer accepts affected local evidence and obtains same fresh FinalReviewer fix acceptance; Production owns commit/PR/payload ordering. All Cargo/source/private writes STOP and lease released after handoff."
+}

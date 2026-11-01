@@ -1,0 +1,80 @@
+diff --git a/crates/xtask/src/main.rs b/crates/xtask/src/main.rs
+index ac47bb4..b6c7bf8 100644
+--- a/crates/xtask/src/main.rs
++++ b/crates/xtask/src/main.rs
+@@ -4788,26 +4788,43 @@ mod tests {
+         let test_name =
+             "tests::docs_python_gate_rejects_neighbors_root_tooling_and_workflow_python";
+         let expected = [
+-            "security-policy-missing",
+-            "python-tooling-present: pyproject.toml",
+-            "python-tooling-present: requirements-dev.txt",
+-            "python-surface-present: scripts",
+-            "python-surface-present: src/codebase_graph",
+-            "python-file-present: docs-extra/neighbor.py",
+-            "python-file-present: src/docs/neighbor.py",
+-            "python-file-present: root.py",
+-            "python-file-present: scripts/helper.py",
+-            "python-file-present: src/codebase_graph/helper.py",
+-            "workflow-python-tooling-present: .github/workflows/ci.yml",
++            "security-policy-missing".to_string(),
++            "python-tooling-present: pyproject.toml".to_string(),
++            "python-tooling-present: requirements-dev.txt".to_string(),
++            "python-surface-present: scripts".to_string(),
++            "python-surface-present: src/codebase_graph".to_string(),
++            format!(
++                "python-file-present: {}",
++                Path::new("docs-extra").join("neighbor.py").display()
++            ),
++            format!(
++                "python-file-present: {}",
++                Path::new("src").join("docs").join("neighbor.py").display()
++            ),
++            "python-file-present: root.py".to_string(),
++            format!(
++                "python-file-present: {}",
++                Path::new("scripts").join("helper.py").display()
++            ),
++            format!(
++                "python-file-present: {}",
++                Path::new("src")
++                    .join("codebase_graph")
++                    .join("helper.py")
++                    .display()
++            ),
++            "workflow-python-tooling-present: .github/workflows/ci.yml".to_string(),
+         ];
++        let docs_helper_path = Path::new("docs").join("allowed.py");
++        let docs_helper_rejection = format!("python-file-present: {}", docs_helper_path.display());
+         for production in [false, true] {
+             run_gate_fixture_route(
+                 test_name,
+                 &root,
+                 production,
+                 false,
+-                &expected,
+-                &["python-file-present: docs/allowed.py"],
++                &expected.iter().map(String::as_str).collect::<Vec<_>>(),
++                &[docs_helper_rejection.as_str()],
+             );
+         }
+         fs::remove_dir_all(root).unwrap();
+@@ -4883,13 +4900,17 @@ mod tests {
+             }
+             panic!("could not create outside-to-docs symlink: {error}");
+         }
++        let outside_link_rejection = format!(
++            "python-file-present: {}",
++            Path::new("outside").join("linked.py").display()
++        );
+         for production in [false, true] {
+             run_gate_fixture_route(
+                 test_name,
+                 &root,
+                 production,
+                 false,
+-                &["python-file-present: outside/linked.py"],
++                &[outside_link_rejection.as_str()],
+                 &[],
+             );
+         }

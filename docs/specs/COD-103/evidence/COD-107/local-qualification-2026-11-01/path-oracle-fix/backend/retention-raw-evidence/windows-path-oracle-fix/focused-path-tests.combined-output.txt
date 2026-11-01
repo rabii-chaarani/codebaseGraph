@@ -1,0 +1,17 @@
+   Compiling xtask v4.0.5 (/private/tmp/codebasegraph-cod107-20261031/crates/xtask)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.30s
+     Running unittests src/main.rs (target/debug/deps/xtask-269d5b6e7ec16933)
+
+running 1 test
+test tests::docs_python_gate_rejects_neighbors_root_tooling_and_workflow_python ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 82 filtered out; finished in 0.04s
+
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.05s
+     Running unittests src/main.rs (target/debug/deps/xtask-269d5b6e7ec16933)
+
+running 1 test
+test tests::docs_python_exception_rejects_component_aliases_and_symlinks ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 82 filtered out; finished in 0.10s
+

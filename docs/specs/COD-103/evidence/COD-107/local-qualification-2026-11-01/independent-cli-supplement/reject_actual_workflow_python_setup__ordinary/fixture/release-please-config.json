@@ -1,0 +1,24 @@
+{
+  "bootstrap-sha": "7038e66ff8271ffddc511f879cf8d28353a09b2d",
+  "packages": {
+    ".": {
+      "release-type": "rust",
+      "package-name": "codebase-graph",
+      "include-v-in-tag": true,
+      "include-component-in-tag": false,
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": [
+        {
+          "type": "toml",
+          "path": "crates/k-wiki/Cargo.toml",
+          "jsonpath": "$.package.version"
+        },
+        {
+          "type": "toml",
+          "path": "crates/k-wiki/Cargo.toml",
+          "jsonpath": "$.dependencies['codebase-graph'].version"
+        }
+      ]
+    }
+  }
+}

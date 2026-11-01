@@ -1,0 +1,85 @@
+{
+  "id": "complete_fixture_baseline",
+  "kind": "baseline",
+  "expected_success": true,
+  "expected_diagnostic": null,
+  "mode": "ordinary",
+  "case_id": "complete_fixture_baseline__ordinary",
+  "command": "cd /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/complete_fixture_baseline__ordinary/fixture && /private/tmp/codebasegraph-cod107-20261031/target/debug/xtask release-gate > /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/complete_fixture_baseline__ordinary/stdout.txt 2> /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/complete_fixture_baseline__ordinary/stderr.txt",
+  "argv": [
+    "/private/tmp/codebasegraph-cod107-20261031/target/debug/xtask",
+    "release-gate"
+  ],
+  "child_cwd": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/complete_fixture_baseline__ordinary/fixture",
+  "started_at_utc": "2026-11-01T00:39:33.439225+00:00",
+  "CLI_sha256_before": "337d4a7a1996e9d909dcac1651f8b4b6d845ecedf5ac483b67911b11d2745277",
+  "input_files": [
+    {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+      "bytes": 5739
+    },
+    {
+      "path": ".github/workflows/native.yml",
+      "sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "bytes": 3860
+    },
+    {
+      "path": ".github/workflows/release.yml",
+      "sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "bytes": 33468
+    },
+    {
+      "path": "Cargo.toml",
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "bytes": 2320
+    },
+    {
+      "path": "SECURITY.md",
+      "sha256": "a838500eac12bd53304f485c21052df40435b4ed37cb2823fe63f3ae225e44e5",
+      "bytes": 2145
+    },
+    {
+      "path": "crates/k-wiki/Cargo.toml",
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "bytes": 1011
+    },
+    {
+      "path": "docs/allowed.py",
+      "sha256": "1fb843e31646bde0f0f94a4f1d3b23bf25ebd3a5701e5698ec33e0d31a613933",
+      "bytes": 57
+    },
+    {
+      "path": "release-please-config.json",
+      "sha256": "aee0cc12299ec52e26f56bf7621a7e48a50445f0105041da9fed5eea178f5497",
+      "bytes": 610
+    },
+    {
+      "path": "src/adapters/cli/mod.rs",
+      "sha256": "c574c9f1e30d211fee7ad12d8675c5f52bc87dc2a1d1b2985fe5f030f9f5bd43",
+      "bytes": 339
+    },
+    {
+      "path": "src/lib.rs",
+      "sha256": "509f314907f3860c8408f1ed32f8e94867ba79d906b01d7de2e7cc253910d751",
+      "bytes": 995
+    }
+  ],
+  "status": "completed",
+  "pid": 38423,
+  "exit_code": 0,
+  "duration_seconds": 0.035348833072930574,
+  "assertions": {
+    "true_process_outcome": true,
+    "allowed_docs_helper_not_rejected": true,
+    "no_YAML_parse_failure": true,
+    "no_incomplete_fixture_or_confirmation_failure": true,
+    "complete_gate_success": true,
+    "no_failure_diagnostics": true
+  },
+  "result": "pass",
+  "failure_diagnostics": [],
+  "stdout_sha256": "cbe0d7f953d0f48db2405a1db48967fc4f6e1d880a563f4bbdf5dd7316519cdc",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "CLI_sha256_after": "337d4a7a1996e9d909dcac1651f8b4b6d845ecedf5ac483b67911b11d2745277"
+}

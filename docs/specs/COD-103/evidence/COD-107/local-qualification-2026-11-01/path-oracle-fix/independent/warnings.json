@@ -1,0 +1,12 @@
+{
+  "observed_warning_count": 0,
+  "logs": {
+    "release-gate.log": [],
+    "format.log": [],
+    "inventory-build.log": [],
+    "strict-workspace-clippy.log": [],
+    "check-workflows.log": [],
+    "xtask-run.log": []
+  },
+  "scope": "Actual currentMaccompile/test/policy/Clippylogs; notWindows-host/native/archivequalification"
+}
