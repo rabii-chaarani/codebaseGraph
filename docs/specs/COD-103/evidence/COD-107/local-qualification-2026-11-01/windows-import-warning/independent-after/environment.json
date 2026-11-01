@@ -1,0 +1,27 @@
+{
+  "environment": {
+    "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+    "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+    "LBUG_VERSION": "0.19.0",
+    "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+    "MACOSX_DEPLOYMENT_TARGET": "13.3",
+    "CARGO_BUILD_JOBS": "2"
+  },
+  "unset_before": {
+    "CARGO_TARGET_DIR": null,
+    "RUSTFLAGS": null,
+    "CARGO_ENCODED_RUSTFLAGS": null,
+    "LBUG_SHARED": null,
+    "LBUG_BUILD_FROM_SOURCE": null,
+    "LBUG_RUST_BUILD_FROM_SOURCE": null
+  },
+  "effective_CARGO_TARGET_DIR": null,
+  "effective_RUSTFLAGS": null,
+  "effective_CARGO_ENCODED_RUSTFLAGS": null,
+  "target_mode": "default worktree-local target, no shared target override",
+  "project_config": "[env]\nRUST_TEST_THREADS = \"1\"\nHOME = { value = \"target/test-home\", relative = true, force = true }\n",
+  "reporting_config": "[profile.importfix]\nretries = 0\ntest-threads = 1\n\n[profile.importfix.junit]\npath = \"/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-import-warning-fix/xtask-junit.xml\"\n",
+  "reporting_only_change": "new private report directory/profile name; native-tests Cargo profile/resources/retries0/thread1 unchanged",
+  "settings": "[agents.evidence_verifier]\nskill = \"../codebasegraph-evidence-verifier/SKILL.md\"\nmodel = \"inherit\"\nreasoning_effort = \"inherit\"\n\n[agents.proposal_reviewer]\nskill = \"../codebasegraph-proposal-reviewer/SKILL.md\"\nmodel = \"gpt-6.1-sol\"\nreasoning_effort = \"high\"\n\n[agents.final_reviewer]\nskill = \"../codebasegraph-final-reviewer/SKILL.md\"\nmodel = \"gpt-6.1-sol\"\nreasoning_effort = \"max\"\n\n[agents.production]\nskill = \"../codeba",
+  "prior_evidence_reused": "same authorized normal native019/OpenSSL environment; no install/custom flags/features/profile/target override"
+}

@@ -1,0 +1,261 @@
+{
+  "schema_version": 1,
+  "work_id": "COD-107",
+  "role": "Evidence Verifier",
+  "status": "AUTHORIZED_LOCAL_IMPORT_WARNING_FIX_VERIFICATION_PASS_WINDOWS_HOSTED_GATE_PENDING",
+  "completed_at_utc": "2026-11-01T03:59:04.013164+00:00",
+  "authority": {
+    "C103_requirement": "R03",
+    "acceptance": "A03 local policy/test portion",
+    "approved_revision0_3": "316be4c4bb81d4f6e025016b12374836b4dcc1a8",
+    "approval0_3": "0e6008a1f46679a86aba85ac513beb05af94b0c0",
+    "approved_retention_revision0_5": "e5adebfa1196a2074527cec4935522c43c773e39",
+    "retention_approval": "08d2c060bba8bf45db069fe53185f06f5b3d6cd9",
+    "existing_source_change": "chg-xd2jtt; no model/maps/ingestion/fold performed",
+    "approval_scope_unchanged": true
+  },
+  "source": {
+    "root": "/private/tmp/codebasegraph-cod107-20261031",
+    "HEAD": "996967eb50d5f84f477525e4dccdc2f73421a029",
+    "tree": "301ec679880ca35888258dc7f4993f1a06b91959",
+    "actual_dirty_path_only": "crates/xtask/src/main.rs",
+    "actual_main_sha256": "26837ce559fd1bd973584321ab1fc7cd912ea6dd939b1714b9c956fe76be9594",
+    "HEAD_tree_status_and_exactdiff_before_after_identical": true,
+    "all1931tracked_input_contents_unchanged_afterchecks": true,
+    "candidate268_wholefile_not_equal_canonical076": true,
+    "canonical_root": "/Users/rabii/Projects/Repositories/codebaseGraph",
+    "canonical_stays944_main076": "076dd22a1da16a6d651016b7227536f1d65de766ff6c09a3dcb02631c51af5da",
+    "actual_diff": "source-head-diff-before.txt / after.txt",
+    "production_prefix_sha256": "569b9bfcb669917a172408cb0c315d4791564f6c29fb21257eb5661fc7fbe70e",
+    "only_reversal_of_test_moduleuse_makes_candidate_global_byteidentical_to_canonical": true,
+    "every_production_test_function_body_signature_unchanged": true
+  },
+  "owner_handoff": {
+    "original_path": "/private/tmp/cod107-backend-output/cod107-windows-import-warning-fix-handoff.md",
+    "original_sha256": "14678b927dc40aab1fd2047bbe1e2fe60955fca9420d211f1aadcb1f03e3f17d",
+    "original_historical_wording_preserved": true,
+    "separate_use_audit_correction_path": "/private/tmp/cod107-backend-output/cod107-windows-import-warning-use-audit-correction.json",
+    "correction_sha256": "215cc6e68ce204229a8792fcf65c3c53b1ff0cebb615349006eb7abe5f069d01",
+    "actual_use_audit": "actual-use-cfg-audit-and-owner-erratum.json",
+    "finding": "All3importedname testmodulecallers Unixonly; productionparentmodulecallersunconditional/unchanged. Historicalcontradictorywordingexplicitlycorrectedbyownerappendix; no sourcecorrectnessblocker."
+  },
+  "actual_checks": {
+    "format": {
+      "exit_code": 0,
+      "log": "format.log"
+    },
+    "nextest_inventory": {
+      "exit_code": 0,
+      "actual_discovered": 83,
+      "ignored": 0,
+      "binary_compiled_after_latestedit": true,
+      "inventory": "inventory.json",
+      "compiler_log": "inventory-build.log",
+      "binary_provenance": "binary-provenance.json"
+    },
+    "full_nextest": {
+      "exit_code": 0,
+      "genuine_cases": 83,
+      "passed": 83,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "retries": 0,
+      "threads": 1,
+      "cargo_profile": "native-tests",
+      "actual_run_uuid": "236c28a8-7128-4d7a-a6cb-d13e7811dd75",
+      "actual_JUnit": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-import-warning-fix/xtask-junit.xml",
+      "actual_JUnit_SHA256": "b9c2ed3354a67f1193701c0d07e288775a1f9cb076be16eb89f8be4105c29df1",
+      "case_names_match_actual83inventory": true,
+      "log": "xtask-run.log"
+    },
+    "strict_workspace_clippy": {
+      "exit_code": 0,
+      "scope": "--offline --workspace --all-targets --all-features --locked -- -D warnings",
+      "log": "strict-workspace-clippy.log"
+    },
+    "check_workflows": {
+      "exit_code": 0,
+      "actual_result": "workflow policy passed",
+      "log": "check-workflows.log"
+    },
+    "ordinary_release_gate": {
+      "exit_code": 0,
+      "actual_result": "release gate passed",
+      "log": "release-gate.log"
+    },
+    "compiler_warning_lines_all_logs": 0,
+    "actual_commands": "commands.json"
+  },
+  "criterion_trace": [
+    {
+      "criterion": "C103-R03/A03 narrow warning repair, local portion",
+      "claim": "Existing resp14/15; no new claims",
+      "anchors": "main.rs test-moduleuse3015-3025; actualUnixcaller native_retention_step3588-3594/required_rejects_retention_selector_failure4306-4312",
+      "method": "Exact candidate268\u2192canonical076 reversal only test-moduleuse + all1930otherfilebytes unchanged; actualgenuine83 nextest/retries0serial; strictworkspacealltarget/allfeatureClippy-Dwarnings",
+      "result": "PASS local83/83 andzero compilerwarnings; fullWindowswarning repair not yet qualified"
+    },
+    {
+      "criterion": "Existing staticworkflow andordinaryreleasegate behavior",
+      "claim": "resp14/15/unchangedproductionprefix",
+      "anchors": "check_rust_only_files/is_docs_helper_path/has_generated_component/check_workflows/check_workflow_policy/native_retention_policy_valid",
+      "method": "cargo run --offline --locked -p xtask -- check-workflows; cargo run --offline --locked -p xtask -- release-gate",
+      "result": "PASS bothrealCLIcommands; all13actualassignedtests in83passed; no separateCLI18rerunneeded"
+    },
+    {
+      "criterion": "Preserve unchanged packagepayload scope",
+      "claim": "Existing package/native contract, no model change",
+      "anchors": "RootCargo.tomlinclude/wikiownroot, all17README/manifestslockconfig; xtaskmainnotselected",
+      "method": "Current1931fileinputaudit + actualprior944crate member\u2192source hashes216+60; no cargo package",
+      "result": "PASS inputequality. HistoricalarchivesVCS944truthful; no newarchives/nativepayloadqualification"
+    },
+    {
+      "criterion": "Currentmodel/fingerprintinputpreservation",
+      "claim": "Exactsamecanonicalresp14/15",
+      "anchors": "actualsourceMap3+3/testMap3+10; actualrecorded13attachmentfingerprints",
+      "method": "Readcurrentmodel.scry/.test-results.json/.anchors.json; exactclosedmapandrecordequality, beforeafterhash; entirefunctionbodybyteproof",
+      "result": "PASS unchangedscopedinputs/currentrecords. No map/ingest/fold/newradius/globaldriftmutation"
+    },
+    {
+      "criterion": "SupportedWindows/no-warningfullCI and actualnativearchiveA03 qualification",
+      "claim": "OriginalCI/nativeplatform gates unchanged",
+      "anchors": "Oldrun41269015161a1 sourceS13d319 warnings; latercorrectedheadfullCI ownedProduction/Engineer",
+      "method": "Notexecutedlocally; oldhostedwarning all32closedentries preserved",
+      "result": "PENDING nextactualheadfullhostedCI/Windowscompilerwarning audit and bothactualnativearchives; neverrelabeloldwarningoroldarchive"
+    }
+  ],
+  "preserved_model_fingerprint_inputs": {
+    "current_model_readonly": {
+      "actual_source_map_matches_closed_mapping_exactly": true,
+      "actual_test_map_matches_closed_mapping_exactly": true,
+      "source_map_counts": {
+        "resp-14": 3,
+        "resp-15": 3
+      },
+      "test_map_counts": {
+        "resp-14": 3,
+        "resp-15": 10
+      },
+      "all13_attachments_present_and_passed_current_genuine83": true,
+      "no_new_ingest_or_test_fingerprint_claim": "Existing recorded values unchanged; inputbodybyteequality proven, newJUnit kept independent/not ingested",
+      "actual_same_model_metadata_hashes_before_after": {
+        "model.scry": "882d6ec5f98874670b6c9ecbc9cba0e7dcd0b1ec280a62172871c8045c02fc65",
+        ".test-results.json": "32e0e0f9928f95ed568d0e9e8f793c803447638c5684d00bed0129bb00fa0be8",
+        ".anchors.json": "c4c32fde62977c474c4271e2b6ffef13ceea44579fd63a7429409986285df106"
+      },
+      "metadata_equal_before_after": true,
+      "currentcanonical076_vs268_file_difference_truthful": true,
+      "canonical_test_output_not_overwritten": true,
+      "original83_XML_SHA256_unchanged": "2cde0488dcf33b8704d607a9a4c86683eb8837dad610ab5bfde441d2a63f3c1c"
+    },
+    "source_test_inputs_equality_receipt": "same-model-anchor-test-fingerprint-input-equality.json",
+    "actual_current_maps_and_metadata": "actual-current-model-maps-and-metadata.json",
+    "currentscopedrecordsfingerprints": "Readactualsamecanonicalmodel unchanged, not recomputed at candidate/newingest.",
+    "unrelated_radius": "Priorclosed31files68stales/53unmatched345unseenpreserved asoriginalingestlimits; no currentglobalreconciliationclaim."
+  },
+  "package_input_equality": {
+    "receipt": "package-selected-payload-input-equality.json",
+    "root_actualprior_payload_sources_equal": 216,
+    "wiki_actualprior_payload_sources_equal": 60,
+    "all17READMEs_and_manifest_lock_config_resources_unchanged": true,
+    "xtaskchangedfileexcludedrootwiki": true,
+    "archival_VCS": "Actualprior944unchanged, neverrelabelledas996/268",
+    "no_package_or_native_rebuild": true
+  },
+  "reused_historical_evidence": {
+    "83_prior": {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-path-oracle-fix/report.md",
+      "sha256": "72c5550983d58a6397e89f3c1e0c8a07f26e8b0009bd5c60a0b8a489af902213",
+      "expected": "72c5550983d58a6397e89f3c1e0c8a07f26e8b0009bd5c60a0b8a489af902213"
+    },
+    "old_hosted_warning_cp2": {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-hosted-41269015161-attempt1/availability-checkpoint02/report.md",
+      "sha256": "542b90efda59cef9711e511373122ba871b6661986ce56c9370af9371ec760b4",
+      "expected": "542b90efda59cef9711e511373122ba871b6661986ce56c9370af9371ec760b4"
+    },
+    "same_model": {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-same-model-reconciliation-executed/report.md",
+      "sha256": "f09dfda6360272ba96e4c636ed558fb6da4c1b117d3bb61a5f44375bd1567ad9",
+      "expected": "f09dfda6360272ba96e4c636ed558fb6da4c1b117d3bb61a5f44375bd1567ad9"
+    },
+    "actual944crate": {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-final-clean-crate-inventories/report.md",
+      "sha256": "55d77a67b57d18d3698427f38c67d8493a52fcbc2044e0a10d4f7766843e5ca9",
+      "expected": "55d77a67b57d18d3698427f38c67d8493a52fcbc2044e0a10d4f7766843e5ca9"
+    },
+    "996binding": {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-final-prepush-source-binding/report.md",
+      "sha256": "1b314dd82df9d0568ebe28c6368ae64c104e19c8673f333c00b28e8256f0d42d",
+      "expected": "1b314dd82df9d0568ebe28c6368ae64c104e19c8673f333c00b28e8256f0d42d"
+    },
+    "18historicalCLI": {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-cli-supplement/report.md",
+      "sha256": "e5f328b35682ec357f461825be1824fc2eea342f8f6b87211ef5bf5b9263d2d1",
+      "expected": "e5f328b35682ec357f461825be1824fc2eea342f8f6b87211ef5bf5b9263d2d1"
+    }
+  },
+  "old_hosted_warning_preserved": {
+    "closed_report_sha256": "542b90efda59cef9711e511373122ba871b6661986ce56c9370af9371ec760b4",
+    "closed32manifest_entries_fullbytes_unchanged": true,
+    "run": 41269015161,
+    "attempt": 1,
+    "actualbuildS": "13d319e442e06b137d46ac5065018e2677b13ae9",
+    "warning_at_source": "Threeunusedimports atoldmain076 Windows test build",
+    "not_cleared_by_Darwin_localpass": true,
+    "GitHubjobstatus_vs_warning": "Oldjobsuccessdoesnotestablishzero warningacceptance"
+  },
+  "environment": {
+    "environment": {
+      "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+      "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+      "LBUG_VERSION": "0.19.0",
+      "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+      "MACOSX_DEPLOYMENT_TARGET": "13.3",
+      "CARGO_BUILD_JOBS": "2"
+    },
+    "unset_before": {
+      "CARGO_TARGET_DIR": null,
+      "RUSTFLAGS": null,
+      "CARGO_ENCODED_RUSTFLAGS": null,
+      "LBUG_SHARED": null,
+      "LBUG_BUILD_FROM_SOURCE": null,
+      "LBUG_RUST_BUILD_FROM_SOURCE": null
+    },
+    "effective_CARGO_TARGET_DIR": null,
+    "effective_RUSTFLAGS": null,
+    "effective_CARGO_ENCODED_RUSTFLAGS": null,
+    "target_mode": "default worktree-local target, no shared target override",
+    "project_config": "[env]\nRUST_TEST_THREADS = \"1\"\nHOME = { value = \"target/test-home\", relative = true, force = true }\n",
+    "reporting_config": "[profile.importfix]\nretries = 0\ntest-threads = 1\n\n[profile.importfix.junit]\npath = \"/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-import-warning-fix/xtask-junit.xml\"\n",
+    "reporting_only_change": "new private report directory/profile name; native-tests Cargo profile/resources/retries0/thread1 unchanged",
+    "settings": "[agents.evidence_verifier]\nskill = \"../codebasegraph-evidence-verifier/SKILL.md\"\nmodel = \"inherit\"\nreasoning_effort = \"inherit\"\n\n[agents.proposal_reviewer]\nskill = \"../codebasegraph-proposal-reviewer/SKILL.md\"\nmodel = \"gpt-6.1-sol\"\nreasoning_effort = \"high\"\n\n[agents.final_reviewer]\nskill = \"../codebasegraph-final-reviewer/SKILL.md\"\nmodel = \"gpt-6.1-sol\"\nreasoning_effort = \"max\"\n\n[agents.production]\nskill = \"../codeba",
+    "prior_evidence_reused": "same authorized normal native019/OpenSSL environment; no install/custom flags/features/profile/target override"
+  },
+  "settings": {
+    "role_map": "evidence_verifier inherit/inherit",
+    "accepted_dispatch": "Originalacceptedinheritdispatch,noexplicitmodel/effortoverride/switch/substitution/delegation",
+    "exposed_runtime_metadata": "unexposed"
+  },
+  "limitations": [
+    "Allnewchecks executedDarwinarm64 Rust/Cargo1.96.0 on actual996+dirty268, not Windowscompile andnotfuturecommittedhead/newCIrun.",
+    "ActualcorrectedheadfullhostedWindows/compiler-warningaudit and completeapplicableworkflowSUCCESSremainmandatorybeforeanyallowedmerge; thisscopeauthorizesnomerge.",
+    "No rawWindows/nativepayloadarchive/CIwatch/APIreads inthisphase; oldwarningremainsoldsourcebound evidence.",
+    "No newmodelmap/ingest/fold/currentradius mutation. Newgenuine83JUnit kept independent; originalXML/run remains historical2cde/35a05db1 not relabelled.",
+    "Existingactual944crates/notcurrentnativearchives retainoriginalVCS. Equalityonlydoesnotreplaceactualfuturebothnativepayloadqualification.",
+    "No A03handoff/107\u2192108/Done/finalreview/push/PR/newhead/main/release/publication/aggregatecompleteclaim."
+  ],
+  "writes": {
+    "source_Git_API_CI_model_tracker_wiki_settings_credentials": false,
+    "only_private_evidence_and_authorized_localCargo_target": true,
+    "paths": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-import-warning-fix",
+    "no_deps_install_features_resources_profiles_changed": true,
+    "reportingconfig_only": "Privateprofilelabelimportfix+JUnitpath; retries0/thread1/native-tests/resourcesunchanged",
+    "old_reports_and_original_handoff_unchanged": true
+  },
+  "orchestration_notes": [
+    "No projecttest/command failures or retries. BeforeCargo an overlyliteral check expected requestprofile text inside oldresponse-onlygraphreceipt; correctedasresponse-onlyreuse. Laterofflineaudit queried nestedlocationsasflatpattern andwascorrectedusingactualschema; noAPI/source/model/testrerun caused."
+  ],
+  "assumptions_constants": "Exact268sourcefreeze/onlytestimportcfgsplit used; no behavior/oracle/contract/helperpolicy/platform/resource constantchanged. Native019/OpenSSLnormalexisting environment reused; no customflags/sharedtarget/fallback/install.",
+  "reusable_memory_assessment": "No newdurableclaim beyondexistingno-warningplatformgate; transientsource/evidence recordedhere, no memorywritewarranted/authorized.",
+  "next_owner": "Engineer+requiredFinalReviewer consume268frozenlocalproof; Production owns authorizedsource/evidencecommit/PR174newhead/fullCI separately. STOPallCargo/privatewritesafterclosedhandoff."
+}

@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "status": "closed",
+  "report": "report.md",
+  "result": "result.json",
+  "snapshot": {
+    "worktree": "/private/tmp/codebasegraph-cod107-20261031",
+    "branch": "cod103-stack/cod-107",
+    "HEAD": "996967eb50d5f84f477525e4dccdc2f73421a029",
+    "tree": "301ec679880ca35888258dc7f4993f1a06b91959",
+    "working_state": "only crates/xtask/src/main.rs dirty",
+    "main_sha256": "26837ce559fd1bd973584321ab1fc7cd912ea6dd939b1714b9c956fe76be9594",
+    "other1930files_unchanged_to996": true,
+    "all1931input_digests_same_before_after": true,
+    "technical_readonly_hashes": {
+      "docs/release.md": "1e67f4949647c10a48f9184db230454572d666a756b68c203690398f525c7954",
+      ".github/workflows/ci.yml": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+      ".github/workflows/native.yml": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "Cargo.toml": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "Cargo.lock": "63d868f91aa52acbddf0eb7e9385a101c3a59c02f7e527ced82d1993299f5afb",
+      "crates/k-wiki/Cargo.toml": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "crates/xtask/Cargo.toml": "206d3a9af5953963659c0cc292e1356c8905f44288c417568bb7f146c4716198",
+      ".cargo/config.toml": "388ad5407d7e78cae8dacd1c3c556f8c97f43d998c4e09273dcf8fca00eb0f82",
+      "build.rs": "cd2da95e498f02c64109bd91cf963ed7bfa502488cd99d658eadb896de35b8de"
+    }
+  },
+  "files": [
+    {
+      "path": "hosted-warning-raw-ZIP-audit.json",
+      "bytes": 29744,
+      "sha256": "c5e8bdd22b83cc95d81af920d27e0c72a060a872c5b85d53d394293cfdd7a4d0"
+    },
+    {
+      "path": "independent-local-evidence-audit.json",
+      "bytes": 12823,
+      "sha256": "804bf20ff66adab5934eba2c576c8c792ce305494d823dc4437fc892627d8093"
+    },
+    {
+      "path": "report.md",
+      "bytes": 7778,
+      "sha256": "ba049aa14414880252079ca2ba55d45f775f77c6d9f7b72440b8aaa1c71d1fca"
+    },
+    {
+      "path": "result.json",
+      "bytes": 14332,
+      "sha256": "b02182248ab505267b8843a3a1f5c80fbfbebe67c10e28bce0e0cd81974823c2"
+    },
+    {
+      "path": "source-and-cfg-static-audit.json",
+      "bytes": 5883,
+      "sha256": "a29405fc916374d98f38ce0b82efa08136a97866da11ea0daebef4db25950c96"
+    },
+    {
+      "path": "source-delta.diff",
+      "bytes": 815,
+      "sha256": "7eb114cd8552ac64a15a2f2e846a036b6262608e2a7d9cea4cc4d57796a961c3"
+    }
+  ],
+  "self_hash_excluded": true
+}

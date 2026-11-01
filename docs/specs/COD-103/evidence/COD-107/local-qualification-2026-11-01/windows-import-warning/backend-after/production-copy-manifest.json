@@ -1,0 +1,156 @@
+{
+  "scope": "ClosedBackendimportfixonlyprivateprep; noindependentopenreports",
+  "copies": [
+    {
+      "path": "cod107-windows-import-warning-use-audit-correction.md",
+      "source": "/private/tmp/cod107-backend-output/cod107-windows-import-warning-use-audit-correction.md",
+      "bytes": 1678,
+      "sha256": "b17b4c68528d4d5f1df0d784e083810f22b7eedcbb068b14dc93a11bcf7777e6",
+      "readback_equal": true
+    },
+    {
+      "path": "cod107-windows-import-warning-fix-handoff.md",
+      "source": "/private/tmp/cod107-backend-output/cod107-windows-import-warning-fix-handoff.md",
+      "bytes": 3793,
+      "sha256": "14678b927dc40aab1fd2047bbe1e2fe60955fca9420d211f1aadcb1f03e3f17d",
+      "readback_equal": true
+    },
+    {
+      "path": "cod107-windows-import-warning-use-audit-correction.json",
+      "source": "/private/tmp/cod107-backend-output/cod107-windows-import-warning-use-audit-correction.json",
+      "bytes": 2323,
+      "sha256": "215cc6e68ce204229a8792fcf65c3c53b1ff0cebb615349006eb7abe5f069d01",
+      "readback_equal": true
+    },
+    {
+      "path": "cod107-windows-import-warning-fix/final-main.rs",
+      "source": "/private/tmp/cod107-backend-output/cod107-windows-import-warning-fix/final-main.rs",
+      "bytes": 182947,
+      "sha256": "26837ce559fd1bd973584321ab1fc7cd912ea6dd939b1714b9c956fe76be9594",
+      "readback_equal": true
+    },
+    {
+      "path": "cod107-windows-import-warning-fix/format.combined-output.txt",
+      "source": "/private/tmp/cod107-backend-output/cod107-windows-import-warning-fix/format.combined-output.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "readback_equal": true
+    },
+    {
+      "path": "cod107-windows-import-warning-fix/strict-clippy.json",
+      "source": "/private/tmp/cod107-backend-output/cod107-windows-import-warning-fix/strict-clippy.json",
+      "bytes": 246,
+      "sha256": "70aaaae60aac225fe1a730e6e5bfd29e4db95921634951099e627ef407afa0d1",
+      "readback_equal": true
+    },
+    {
+      "path": "cod107-windows-import-warning-fix/workflow-and-gate.json",
+      "source": "/private/tmp/cod107-backend-output/cod107-windows-import-warning-fix/workflow-and-gate.json",
+      "bytes": 280,
+      "sha256": "5f2a709b701acf180d00c221c4ece580172692d2a55a7aafac3fd7fd0a1ebc2a",
+      "readback_equal": true
+    },
+    {
+      "path": "cod107-windows-import-warning-fix/strict-clippy.combined-output.txt",
+      "source": "/private/tmp/cod107-backend-output/cod107-windows-import-warning-fix/strict-clippy.combined-output.txt",
+      "bytes": 156,
+      "sha256": "a50d291d923d308325b1a6dbdf62341eaeee1d5ff934dbf0464aeee7591a9716",
+      "readback_equal": true
+    },
+    {
+      "path": "cod107-windows-import-warning-fix/manifest.json",
+      "source": "/private/tmp/cod107-backend-output/cod107-windows-import-warning-fix/manifest.json",
+      "bytes": 2285,
+      "sha256": "21321f2cb5224d9b2cd879ac6cdb23502dcc87ddacfb267b93b7a0b3346a7cec",
+      "readback_equal": true
+    },
+    {
+      "path": "cod107-windows-import-warning-fix/source-delta.diff",
+      "source": "/private/tmp/cod107-backend-output/cod107-windows-import-warning-fix/source-delta.diff",
+      "bytes": 952,
+      "sha256": "30baf25404676aa4495e5b51f5ffb2662cfd6616406a6610a96011d1a6bb4e13",
+      "readback_equal": true
+    },
+    {
+      "path": "cod107-windows-import-warning-fix/full-xtask.combined-output.txt",
+      "source": "/private/tmp/cod107-backend-output/cod107-windows-import-warning-fix/full-xtask.combined-output.txt",
+      "bytes": 7372,
+      "sha256": "2d8638e6c16c4521e6124fec4edb7975dfe494b94d27fd75a6f3cd85ae5b3fda",
+      "readback_equal": true
+    },
+    {
+      "path": "cod107-windows-import-warning-fix/full-xtask.json",
+      "source": "/private/tmp/cod107-backend-output/cod107-windows-import-warning-fix/full-xtask.json",
+      "bytes": 215,
+      "sha256": "9c72e923f9fff670037eb4e782bb4164dd9774a58b2d7018a00466549019284f",
+      "readback_equal": true
+    },
+    {
+      "path": "cod107-windows-import-warning-fix/format.json",
+      "source": "/private/tmp/cod107-backend-output/cod107-windows-import-warning-fix/format.json",
+      "bytes": 223,
+      "sha256": "56e41206d464e75466f585d751261e706d74ef03de9b1823d140cec29dad10b0",
+      "readback_equal": true
+    },
+    {
+      "path": "cod107-windows-import-warning-fix/workflow-and-gate.combined-output.txt",
+      "source": "/private/tmp/cod107-backend-output/cod107-windows-import-warning-fix/workflow-and-gate.combined-output.txt",
+      "bytes": 368,
+      "sha256": "6518acfbd0561b76566104e1643285fcc6f858e8ccad61509dd5b01560ff3c86",
+      "readback_equal": true
+    }
+  ],
+  "raw_manifest_verified_pairs": [
+    {
+      "path": "cod107-windows-import-warning-fix/format.json",
+      "sha256": "56e41206d464e75466f585d751261e706d74ef03de9b1823d140cec29dad10b0",
+      "matches_author_manifest": true
+    },
+    {
+      "path": "cod107-windows-import-warning-fix/format.combined-output.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "matches_author_manifest": true
+    },
+    {
+      "path": "cod107-windows-import-warning-fix/strict-clippy.json",
+      "sha256": "70aaaae60aac225fe1a730e6e5bfd29e4db95921634951099e627ef407afa0d1",
+      "matches_author_manifest": true
+    },
+    {
+      "path": "cod107-windows-import-warning-fix/strict-clippy.combined-output.txt",
+      "sha256": "a50d291d923d308325b1a6dbdf62341eaeee1d5ff934dbf0464aeee7591a9716",
+      "matches_author_manifest": true
+    },
+    {
+      "path": "cod107-windows-import-warning-fix/full-xtask.json",
+      "sha256": "9c72e923f9fff670037eb4e782bb4164dd9774a58b2d7018a00466549019284f",
+      "matches_author_manifest": true
+    },
+    {
+      "path": "cod107-windows-import-warning-fix/full-xtask.combined-output.txt",
+      "sha256": "2d8638e6c16c4521e6124fec4edb7975dfe494b94d27fd75a6f3cd85ae5b3fda",
+      "matches_author_manifest": true
+    },
+    {
+      "path": "cod107-windows-import-warning-fix/workflow-and-gate.json",
+      "sha256": "5f2a709b701acf180d00c221c4ece580172692d2a55a7aafac3fd7fd0a1ebc2a",
+      "matches_author_manifest": true
+    },
+    {
+      "path": "cod107-windows-import-warning-fix/workflow-and-gate.combined-output.txt",
+      "sha256": "6518acfbd0561b76566104e1643285fcc6f858e8ccad61509dd5b01560ff3c86",
+      "matches_author_manifest": true
+    }
+  ],
+  "source_after_sha256": "26837ce559fd1bd973584321ab1fc7cd912ea6dd939b1714b9c956fe76be9594",
+  "actual_immediate_before_source_sha256": "076dd22a1da16a6d651016b7227536f1d65de766ff6c09a3dcb02631c51af5da",
+  "author_handoff_sha256": "14678b927dc40aab1fd2047bbe1e2fe60955fca9420d211f1aadcb1f03e3f17d",
+  "author_erratum_json_sha256": "215cc6e68ce204229a8792fcf65c3c53b1ff0cebb615349006eb7abe5f069d01",
+  "author_erratum_md_sha256": "b17b4c68528d4d5f1df0d784e083810f22b7eedcbb068b14dc93a11bcf7777e6",
+  "author_raw_manifest_sha256": "21321f2cb5224d9b2cd879ac6cdb23502dcc87ddacfb267b93b7a0b3346a7cec",
+  "preserved_inaccurate_author_fields": "Originalmanifestbeforehash=e4d256 and originalcallerclaims are historical/stale; not rewrittenorendorsed; source-delta/handoff076/currenterratumstateactual",
+  "closed_independent_report_review": "PENDING notcopied",
+  "credential_findings": [],
+  "noREADME": true,
+  "no_repo_Cargo_CI_model_action": true
+}

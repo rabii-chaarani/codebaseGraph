@@ -1,0 +1,136 @@
+{
+  "status": "static_review_complete_independent_affected_checks_pending",
+  "finding_id": "COD107-FR-002",
+  "priority": "P2",
+  "old_main_sha256": "076dd22a1da16a6d651016b7227536f1d65de766ff6c09a3dcb02631c51af5da",
+  "fixed_main_sha256": "26837ce559fd1bd973584321ab1fc7cd912ea6dd939b1714b9c956fe76be9594",
+  "source_identity": "IsolatedHEAD996967eb50d5f84f477525e4dccdc2f73421a029/tree301ec679880ca35888258dc7f4993f1a06b91959 plus only main.rs dirty26837; not a new committed/headCI pass.",
+  "scope": "Only move yaml_path/yaml_step_by_id/yaml_step_by_name test-module imports into cfg(unix) use. Production definitions/callers and all test bodies/assertions unchanged.",
+  "production_prefix_same": true,
+  "production_prefix_sha256": "569b9bfcb669917a172408cb0c315d4791564f6c29fb21257eb5661fc7fbe70e",
+  "all_test_bodies_after_imports_same": true,
+  "test_suffix_sha256": "1b3dcebfee7941fae2502a63f7d616b6e4fc6c885d519325d750022a3050dc8e",
+  "all_direct_test_symbol_references": {
+    "yaml_path": [
+      {
+        "line": 3025,
+        "text": "use super::{yaml_path, yaml_step_by_id, yaml_step_by_name};"
+      },
+      {
+        "line": 3591,
+        "text": "yaml_path(ci, &[\"jobs\", \"native_retention\"]).unwrap(),"
+      },
+      {
+        "line": 3594,
+        "text": ".and_then(|step| yaml_path(step, &[\"run\"]))"
+      },
+      {
+        "line": 4310,
+        "text": "let required = yaml_path(&ci, &[\"jobs\", \"required\"]).unwrap();"
+      },
+      {
+        "line": 4312,
+        "text": "let run = yaml_path(step, &[\"run\"])"
+      }
+    ],
+    "yaml_step_by_id": [
+      {
+        "line": 3025,
+        "text": "use super::{yaml_path, yaml_step_by_id, yaml_step_by_name};"
+      },
+      {
+        "line": 3590,
+        "text": "yaml_step_by_id("
+      }
+    ],
+    "yaml_step_by_name": [
+      {
+        "line": 3025,
+        "text": "use super::{yaml_path, yaml_step_by_id, yaml_step_by_name};"
+      },
+      {
+        "line": 4311,
+        "text": "let step = yaml_step_by_name(required, \"Require every mandatory job\").unwrap();"
+      }
+    ]
+  },
+  "cfg_of_callers": {
+    "native_retention_step": {
+      "line": 3589,
+      "attributes": [
+        "    #[cfg(unix)]"
+      ],
+      "head": "    fn native_retention_step(ci: &YamlValue) -> &str {"
+    },
+    "assert_retention_result": {
+      "line": 3617,
+      "attributes": [
+        "    #[cfg(unix)]"
+      ],
+      "head": "    fn assert_retention_result("
+    },
+    "run_required_result": {
+      "line": 3652,
+      "attributes": [
+        "    #[cfg(unix)]"
+      ],
+      "head": "    fn run_required_result(run: &str, results: &Value) -> Output {"
+    },
+    "native_retention_actual_body_is_cod107_only": {
+      "line": 3893,
+      "attributes": [
+        "    #[cfg(unix)]",
+        "    #[test]"
+      ],
+      "head": "    fn native_retention_actual_body_is_cod107_only() {"
+    },
+    "native_retention_invalid_input_cannot_succeed": {
+      "line": 4279,
+      "attributes": [
+        "    #[cfg(unix)]",
+        "    #[test]"
+      ],
+      "head": "    fn native_retention_invalid_input_cannot_succeed() {"
+    },
+    "required_rejects_retention_selector_failure": {
+      "line": 4308,
+      "attributes": [
+        "    #[cfg(unix)]",
+        "    #[test]"
+      ],
+      "head": "    fn required_rejects_retention_selector_failure() {"
+    }
+  },
+  "nonUnix_reasoning": "cfg(unix) test import and both only direct caller items are removed on Windows/nonUnix. Unconditional parent-module definitions/production users are outside child tests module and unaffected. No missing helper name remains in nonUnix test scope; no existing test is newly disabled.",
+  "Unix_reasoning": "All three imports remain available to exact unchanged Unix-only callers and their tests. No altered signature or test body.",
+  "payload_inputs": {
+    "xtask_main_absent_from_actual944_root_and_wiki_members": true,
+    "unchanged_packaging_inputs": {
+      "docs/release.md": "1e67f4949647c10a48f9184db230454572d666a756b68c203690398f525c7954",
+      ".github/workflows/ci.yml": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+      ".github/workflows/native.yml": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "Cargo.toml": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "Cargo.lock": "63d868f91aa52acbddf0eb7e9385a101c3a59c02f7e527ced82d1993299f5afb",
+      "crates/k-wiki/Cargo.toml": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "crates/xtask/Cargo.toml": "206d3a9af5953963659c0cc292e1356c8905f44288c417568bb7f146c4716198",
+      ".cargo/config.toml": "388ad5407d7e78cae8dacd1c3c556f8c97f43d998c4e09273dcf8fca00eb0f82",
+      "build.rs": "cd2da95e498f02c64109bd91cf963ed7bfa502488cd99d658eadb896de35b8de"
+    },
+    "actual944VCS_preserved": true,
+    "new_archives_not_claimed": true,
+    "production_prefix_equal": true,
+    "all_existing_test_bodies_equal": true
+  },
+  "owner_handoff": {
+    "path": "/private/tmp/cod107-backend-output/cod107-windows-import-warning-fix-handoff.md",
+    "sha256": "14678b927dc40aab1fd2047bbe1e2fe60955fca9420d211f1aadcb1f03e3f17d",
+    "wording_limit": "Original inaccurate platform-independent-test-use assertion corrected by separate erratum; actual source/cfg trace governs."
+  },
+  "owner_erratum": {
+    "path": "/private/tmp/cod107-backend-output/cod107-windows-import-warning-use-audit-correction.md",
+    "sha256": "b17b4c68528d4d5f1df0d784e083810f22b7eedcbb068b14dc93a11bcf7777e6",
+    "json_sha256": "215cc6e68ce204229a8792fcf65c3c53b1ff0cebb615349006eb7abe5f069d01"
+  },
+  "required_affected_evidence": "Independent current268 closedreport/trueactual83JUnit+format/strictClippy/workflowgate still awaited. StaticMac/cfg reasoning not Windowshost pass.",
+  "writes": "Own private artifacts only; no Cargo/source/Git/model/API/CI mutation."
+}

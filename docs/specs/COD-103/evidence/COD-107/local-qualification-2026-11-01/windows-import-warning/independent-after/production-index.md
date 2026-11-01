@@ -1,0 +1,9 @@
+# Production index — closed independent import-warning fix
+
+Private faithful selection only. Author report3e62e049/result6d0a02be/files97a7fe4a unchanged. All28originalmanifestentriesverified;27selectedauthorfilesplusfiles.json=28copies. One broadcurrentmodelmetadata JSON remainsprivate with exacthashpointer; originalauthormanifest truthfullystilllistsit. Narrowread-onlyfingerprint/inputequality/sourceproofs are copied, not fullScryerstate.
+
+ActualHEAD996+dirtymain268 executed83/83genuineJUnit(b9c2ed3354a67f1193701c0d07e288775a1f9cb076be16eb89f8be4105c29df1/run236c28a8), fmt/fullworkspace-alltargets-allfeatures strictClippy0warnings/workflow/ordinarygatePASS. No newcountaddition/Windowsqualification. Use-onlydelta reverses to076; production/testbody/signature/mappedfingerprintinputs unchanged. Canonical944wholefile076is NOTwholefileequal268; no falsecanonicalwholehashclaim.
+
+Other1930trackedinputs/17README/package-selectedpayload equal; actual944archives keepVCS944. Originalclosed83/18CLI/944crate/model/996binding/Windowswarningevidence stayhistorical. ThisMacpassdoesnotretroclearoldCI41269015161a1/S13d319warnings. CorrectedheadWindowsfullCI/warningaudit/bothretainednativearchives+sidecars/provenance/payload/A03remainpending. SAMEreviewerfinalclosedverdictPENDINGseparatehandoff; noopenreviewcopied. Backend14/handoff14678+erratum215cc6/b17b4c preservedseparately.
+
+No repo/Git/source/Cargo/API/CI/model/trackingwrite; nonREADMEfilesonly. FutureONEsource+closedwarning/evidence/reviewcommit/pushneedsEngineergrant, notautomaticCIloop. NoA03/107→108/Done/merge/releaseclaim. STOPprivatewrites.

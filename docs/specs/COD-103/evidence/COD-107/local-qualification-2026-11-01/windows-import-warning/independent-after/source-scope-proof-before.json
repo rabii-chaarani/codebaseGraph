@@ -1,0 +1,26 @@
+{
+  "HEAD": "996967eb50d5f84f477525e4dccdc2f73421a029",
+  "tree": "301ec679880ca35888258dc7f4993f1a06b91959",
+  "dirty_only": "crates/xtask/src/main.rs",
+  "main_sha256": "26837ce559fd1bd973584321ab1fc7cd912ea6dd939b1714b9c956fe76be9594",
+  "canonical_main_sha256": "076dd22a1da16a6d651016b7227536f1d65de766ff6c09a3dcb02631c51af5da",
+  "whole_file_equal_after_only_import_reversal": true,
+  "production_prefix_sha256": "569b9bfcb669917a172408cb0c315d4791564f6c29fb21257eb5661fc7fbe70e",
+  "production_prefix_unchanged": true,
+  "every_function_body_and_signature_unchanged": true,
+  "old_import": "        workflow_yaml_error, yaml_path, yaml_step_by_id, yaml_step_by_name, NativeProvenance,\n        NativeTarget, YamlValue, CRATES_IO_PACKAGE_LIMIT_BYTES, NATIVE_TARGETS,\n    };\n    use serde_json::{json, Value};",
+  "new_import": "        workflow_yaml_error, NativeProvenance, NativeTarget, YamlValue,\n        CRATES_IO_PACKAGE_LIMIT_BYTES, NATIVE_TARGETS,\n    };\n    #[cfg(unix)]\n    use super::{yaml_path, yaml_step_by_id, yaml_step_by_name};\n    use serde_json::{json, Value};",
+  "all1930_othertracked_content_inputs_unchanged": true,
+  "all17READMEinputs_unchanged": true,
+  "prior_graph_discovery": {
+    "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-same-model-reconciliation-executed/graph-discovery.json",
+    "sha256": "b735bda2038a711710f54c44b9dd19e527e71de38a65345bed0ce2e4d415191c",
+    "semantic_search_and_explicit_context_reused": true,
+    "profile_limitation": "Saved graph_context is response-only; exact requestprofile not serialized there, no new architectural conclusion required for unchanged bodyproof."
+  },
+  "same_scope_rules_reused": {
+    "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-same-model-reconciliation-executed/governing-rules.txt",
+    "sha256": "75ee7b70bfc9a6d17b1fb0e56a922ee4f5cabedc5d9030b57b981302d30b70bd"
+  },
+  "no_externalAPI_or_model_mutation": true
+}

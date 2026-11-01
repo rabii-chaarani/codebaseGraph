@@ -1,0 +1,268 @@
+{
+  "schema_version": 1,
+  "status": "closed",
+  "verdict": "PASS_FOCUSED_IMPORT_WARNING_FIX_PRE_PUSH_REVIEW",
+  "completed_at_utc": "2026-11-01T04:01:11.917409+00:00",
+  "scope": "Authorized SAME required reviewer focused verification of actualWindows unused-import compiler finding and original-owner fix; no fullintegratedreviewrestart.",
+  "execution_settings": {
+    "role": "Final Reviewer",
+    "map_path": "/Users/rabii/Projects/Repositories/skills/codebasegraph-engineer/models.toml",
+    "map_entry": "agents.final_reviewer",
+    "mapped_model": "gpt-6.1-sol",
+    "mapped_reasoning_effort": "max",
+    "host_accepted": {
+      "name": "cod107-final-review-complete",
+      "model": "openai-codex/gpt-6.1-sol",
+      "thinking": "max",
+      "rlm_child_id": "sub-dfdeb22a"
+    },
+    "host_context": "native fresh default; no conversation fork; only prompt supplied",
+    "runtime_self_metadata": "unexposed",
+    "known_mismatch_or_rejection": false,
+    "method": "/Users/rabii/.codex/skills/adversarial-review-engineer/SKILL.md",
+    "independence": "Fresh reviewer; did not implement; no nested dispatch; no substitutions."
+  },
+  "snapshot": {
+    "worktree": "/private/tmp/codebasegraph-cod107-20261031",
+    "branch": "cod103-stack/cod-107",
+    "HEAD": "996967eb50d5f84f477525e4dccdc2f73421a029",
+    "tree": "301ec679880ca35888258dc7f4993f1a06b91959",
+    "working_state": "only crates/xtask/src/main.rs dirty",
+    "main_sha256": "26837ce559fd1bd973584321ab1fc7cd912ea6dd939b1714b9c956fe76be9594",
+    "other1930files_unchanged_to996": true,
+    "all1931input_digests_same_before_after": true,
+    "technical_readonly_hashes": {
+      "docs/release.md": "1e67f4949647c10a48f9184db230454572d666a756b68c203690398f525c7954",
+      ".github/workflows/ci.yml": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+      ".github/workflows/native.yml": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      "Cargo.toml": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "Cargo.lock": "63d868f91aa52acbddf0eb7e9385a101c3a59c02f7e527ced82d1993299f5afb",
+      "crates/k-wiki/Cargo.toml": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "crates/xtask/Cargo.toml": "206d3a9af5953963659c0cc292e1356c8905f44288c417568bb7f146c4716198",
+      ".cargo/config.toml": "388ad5407d7e78cae8dacd1c3c556f8c97f43d998c4e09273dcf8fca00eb0f82",
+      "build.rs": "cd2da95e498f02c64109bd91cf963ed7bfa502488cd99d658eadb896de35b8de"
+    }
+  },
+  "canonical_inputs": "Existing C103-R03/A03, approved316be4c4bb81d4f6e025016b12374836b4dcc1a8/separate0e6008a1f46679a86aba85ac513beb05af94b0c0; retentione5adebfa1196a2074527cec4935522c43c773e39/separate08d2c060bba8bf45db069fe53185f06f5b3d6cd9; user5b4b5aad-cbe8-4265-8db9-5ea351b7f386; sourcechg-xd2jtt unchanged. No newclaim/intent/approval.",
+  "unresolved_confirmed_findings": [],
+  "resolved_finding": {
+    "id": "COD107-FR-002",
+    "priority": "P2",
+    "title": "Unconditional imports of Unix-only test helpers emit Windows compiler warnings",
+    "original_snapshot": {
+      "head": "996967eb50d5f84f477525e4dccdc2f73421a029",
+      "tree": "301ec679880ca35888258dc7f4993f1a06b91959",
+      "main_sha256": "076dd22a1da16a6d651016b7227536f1d65de766ff6c09a3dcb02631c51af5da",
+      "actual_hosted_build_S": "13d319e442e06b137d46ac5065018e2677b13ae9",
+      "CI_run": 41269015161,
+      "attempt": 1
+    },
+    "original_location": "crates/xtask/src/main.rs:3021 within #[cfg(test)] mod tests use super",
+    "trigger": "Supported Windows native-tests compiler captures/builds xtask test binary; cfg(unix) excludes all direct child-test-module uses of yaml_path/yaml_step_by_id/yaml_step_by_name, but original child imports remain unconditional.",
+    "contract_and_consequence": "Repository requires resolved compiler warnings before acceptance. Actual Windows compiler emits unused_imports despite four observed jobs succeeding; old-source zero-warning/qualification gate remains blocked. This is not a failed-test or audit-advisory claim.",
+    "evidence": "Four actual diagnostic ZIP platform-test.log bytes independently hashed/read; each contains the three names and3021 compiler span. Default warn(unused_imports); repeated captures grouped as one defect.",
+    "baseline_comparison": "Three child test imports were added by COD107 retention tests; absent from f69baseline. Parent-module policy helpers already/now used in production do not consume child-module imports.",
+    "strongest_safeguards_examined": [
+      "Parent-module production calls use parent scope, not child imports",
+      "All only direct test references lie in two immediately cfg(unix) items",
+      "Unix helper callers/test cases also immediately cfg(unix)",
+      "Actual job success cannot satisfy independent zero-warning requirement"
+    ],
+    "owner": "Original Backend107 owner via Engineer",
+    "smallest_remedy": "Move exactly three imported names out of unconditional child use into one #[cfg(unix)] use super; keep production/helper/test bodies, signatures, assertions, test selection and lints unchanged.",
+    "corrected_location": "crates/xtask/src/main.rs:3017-3025",
+    "corrected_main_sha256": "26837ce559fd1bd973584321ab1fc7cd912ea6dd939b1714b9c956fe76be9594",
+    "status": "resolved_for_corrected_source_pre_push_review",
+    "focused_verification": "Independent exactdiff and complete cfg/scope trace; production prefix and all test bodies byte-identical; current independent genuine83/83/fullworkspaceClippy/format/workflow/gate passes0warnings on macOS. Actual corrected Windows execution remains mandatory later.",
+    "windows_no_warning_execution_claim": false
+  },
+  "conditional_risks": [],
+  "actual_static_verification": {
+    "only_changed_scope": "8line import-only diff, onecfg(unix)import",
+    "production_prefix_byte_identical": true,
+    "all_test_bodies_signatures_assertions_byte_identical": true,
+    "production_prefix_sha256": "569b9bfcb669917a172408cb0c315d4791564f6c29fb21257eb5661fc7fbe70e",
+    "test_body_suffix_sha256": "1b3dcebfee7941fae2502a63f7d616b6e4fc6c885d519325d750022a3050dc8e",
+    "all_direct_test_symbol_references": {
+      "yaml_path": [
+        {
+          "line": 3025,
+          "text": "use super::{yaml_path, yaml_step_by_id, yaml_step_by_name};"
+        },
+        {
+          "line": 3591,
+          "text": "yaml_path(ci, &[\"jobs\", \"native_retention\"]).unwrap(),"
+        },
+        {
+          "line": 3594,
+          "text": ".and_then(|step| yaml_path(step, &[\"run\"]))"
+        },
+        {
+          "line": 4310,
+          "text": "let required = yaml_path(&ci, &[\"jobs\", \"required\"]).unwrap();"
+        },
+        {
+          "line": 4312,
+          "text": "let run = yaml_path(step, &[\"run\"])"
+        }
+      ],
+      "yaml_step_by_id": [
+        {
+          "line": 3025,
+          "text": "use super::{yaml_path, yaml_step_by_id, yaml_step_by_name};"
+        },
+        {
+          "line": 3590,
+          "text": "yaml_step_by_id("
+        }
+      ],
+      "yaml_step_by_name": [
+        {
+          "line": 3025,
+          "text": "use super::{yaml_path, yaml_step_by_id, yaml_step_by_name};"
+        },
+        {
+          "line": 4311,
+          "text": "let step = yaml_step_by_name(required, \"Require every mandatory job\").unwrap();"
+        }
+      ]
+    },
+    "cfg_of_helpers_and_tests": {
+      "native_retention_step": {
+        "line": 3589,
+        "attributes": [
+          "    #[cfg(unix)]"
+        ],
+        "head": "    fn native_retention_step(ci: &YamlValue) -> &str {"
+      },
+      "assert_retention_result": {
+        "line": 3617,
+        "attributes": [
+          "    #[cfg(unix)]"
+        ],
+        "head": "    fn assert_retention_result("
+      },
+      "run_required_result": {
+        "line": 3652,
+        "attributes": [
+          "    #[cfg(unix)]"
+        ],
+        "head": "    fn run_required_result(run: &str, results: &Value) -> Output {"
+      },
+      "native_retention_actual_body_is_cod107_only": {
+        "line": 3893,
+        "attributes": [
+          "    #[cfg(unix)]",
+          "    #[test]"
+        ],
+        "head": "    fn native_retention_actual_body_is_cod107_only() {"
+      },
+      "native_retention_invalid_input_cannot_succeed": {
+        "line": 4279,
+        "attributes": [
+          "    #[cfg(unix)]",
+          "    #[test]"
+        ],
+        "head": "    fn native_retention_invalid_input_cannot_succeed() {"
+      },
+      "required_rejects_retention_selector_failure": {
+        "line": 4308,
+        "attributes": [
+          "    #[cfg(unix)]",
+          "    #[test]"
+        ],
+        "head": "    fn required_rejects_retention_selector_failure() {"
+      }
+    },
+    "nonUnix_compilation_trace": "Affected imports and their only direct caller items absent together; unconditional production parent-scope definitions/calls remain. No nonUnix child code needs removed names. No new testskip/lintallow/bodychange.",
+    "Unix_trace": "All3imports still in scope for same Unixcallers; actual current83namedcases pass."
+  },
+  "independent_affected_evidence": {
+    "directory": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-independent-import-warning-fix",
+    "closed_top": {
+      "report.md": {
+        "sha256": "3e62e049f9ab85ac2478d68fec53208333723475a5f99c01983dd0fce5046e50",
+        "matches": true
+      },
+      "result.json": {
+        "sha256": "6d0a02be2c04cfee1899e3177996bce33ad5b54f1e8b5ad0068a96eff938a0ef",
+        "matches": true
+      },
+      "files.json": {
+        "sha256": "97a7fe4a092ab09e26153e74ba1e04bba856931adde89c05d6aaf3c7978ceefe",
+        "matches": true
+      }
+    },
+    "all28manifest_entries_match": true,
+    "JUnit_sha256": "b9c2ed3354a67f1193701c0d07e288775a1f9cb076be16eb89f8be4105c29df1",
+    "run_id": "236c28a8-7128-4d7a-a6cb-d13e7811dd75",
+    "tests": 83,
+    "failures_errors_skips": 0,
+    "all_case_names_exact_actual_inventory": true,
+    "native_tests_profile": true,
+    "retries": 0,
+    "test_threads": 1,
+    "actual_binary_sha256": "477e2fe9e7f1ea16ce472cda20b51ce1845106871ea9bccc942b5d55bddec55e",
+    "allformat_fullworkspace_alltargets_allfeatures_Clippy_workflow_ordinarygate_exits": 0,
+    "compiler_warning_lines": 0,
+    "environment": "DarwinARM64/RustCargo1.96.0/nextest0.9.140; existingnative019/OpenSSL3.6.2/deployment13.3/jobs2; noinstall.",
+    "reviewer_Cargo_execution": false
+  },
+  "hosted_original_evidence": {
+    "directory": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-hosted-41269015161-attempt1/availability-checkpoint02",
+    "report_sha256": "542b90efda59cef9711e511373122ba871b6661986ce56c9370af9371ec760b4",
+    "all32closedfiles_verified": true,
+    "all4ZIPs_rehashed_warninglogs_read": true,
+    "ZIPaudit": "hosted-warning-raw-ZIP-audit.json",
+    "old_warning_not_cleared": true,
+    "old_run_job_success_not_qualification": true
+  },
+  "owner_wording": {
+    "original_handoff_sha256": "14678b927dc40aab1fd2047bbe1e2fe60955fca9420d211f1aadcb1f03e3f17d",
+    "erratum_JSON_sha256": "215cc6e68ce204229a8792fcf65c3c53b1ff0cebb615349006eb7abe5f069d01",
+    "erratum_MD_sha256": "b17b4c68528d4d5f1df0d784e083810f22b7eedcbb068b14dc93a11bcf7777e6",
+    "disposition": "Original preserved; inaccurate platform-independent child-test caller assertion superseded by separate actualcfg audit. Source trace not oldwording establishes fix."
+  },
+  "payload_and_model_evidence_reuse": {
+    "only_changed_file_xtask_not_selected_by_root_or_wiki": true,
+    "all17README_manifests_locks_config_resources_same": true,
+    "actual944_non_generated_source_members_equal": {
+      "root": 216,
+      "wiki": 60
+    },
+    "archiveVCS_stays944_not996_or268": true,
+    "no_newpackage_or_native_build_claim": true,
+    "mapped_function_bodies_and_fingerprint_inputs_unchanged": true,
+    "canonical_wholefile076_not268": true,
+    "no_model_operations_new_ingest_fingerprint_algorithm": true
+  },
+  "prior_closed_reports_unchanged": {
+    "integrated": {
+      "cod107-integrated-final-review.md": true,
+      "result.json": true,
+      "files.json": true
+    },
+    "crate_focused": {
+      "cod107-final-clean-crate-focused-review.md": true,
+      "result.json": true,
+      "files.json": true
+    },
+    "prepush996": {
+      "report.md": true,
+      "result.json": true,
+      "files.json": true
+    }
+  },
+  "COD107_FR_001_status": "Original six native-path oracle assertions remain exactlyfixed; no Windows runtime claim inferred.",
+  "remaining_gates": [
+    "Production reviews/commits current268fix and faithful relatedevidence on PR174; boundedfinalcommitidentity wrap ifneeded, not repeatedfullreview.",
+    "Freshcorrectedhead/currentbase fullCI with allapplicableworkflowSUCCESS, actualWindowszero-warningaudit plus applicable native/platformbranch accounting. OldS13d319/996warnedexecution remainshistorical.",
+    "Bothactualsame-source nativearchives/sidecars/provenance mustbindactualgeneratedPRmergeS/head/base/tree and bebyte/member/hashverified beforecurrentheadC103-A03/107\u2192108acceptance. No oldSarchiveprepushprerequisite or substitution.",
+    "Existing scopedcurrentmodel/evidence preservation/finalhandoff, allgreen-before-anymerge/nonbypassstrictfreshness/serialownmergeSHAfullmainCI/fullqueue/release/publication/aggregateowner gates remain. No mergegrant."
+  ],
+  "assumptions_constants": "StandardRustcfg lexicalscope semantics; no sourcepolicy, API, behavior, testselection, assertion, buildrecipe/default, dependency, payload, README, lintlevel or constants changed. No warning suppression.",
+  "writes": "Onlyownnewprivatefocusedreview directory. Read-onlyGit/source/closedreports andgraph/rules/memory context; no Cargo/model/Gitwrite/API/CIaction/sourcefix or oldreportrewrite.",
+  "knowledge_assessment": "Reusablelesson already follows existing platformmatchingcfg requirement; this source-specificfinding/evidence belongs with canonicalwork, no newmemorywrite warranted/authorized.",
+  "next_owner": "Engineer/Production for correctedsource/evidencecommit+PR174push underexistingauthority; Verifier for freshcorrectedheadWindows/fullCI/nativeA03 qualification.",
+  "stop": "AllreviewwritesSTOPafterclosedhandoff."
+}

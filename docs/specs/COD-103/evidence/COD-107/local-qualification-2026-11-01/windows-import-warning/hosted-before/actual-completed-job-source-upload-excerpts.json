@@ -1,0 +1,250 @@
+[
+  {
+    "job_id": 124737747242,
+    "job_name": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)",
+    "excerpts": [
+      {
+        "line": 33,
+        "text": "2026-11-01T03:24:16.0438036Z Uses: rabii-chaarani/codebaseGraph/.github/workflows/native.yml@refs/pull/174/merge (13d319e442e06b137d46ac5065018e2677b13ae9)"
+      },
+      {
+        "line": 36,
+        "text": "2026-11-01T03:24:16.0444291Z   source-sha: 13d319e442e06b137d46ac5065018e2677b13ae9"
+      },
+      {
+        "line": 44,
+        "text": "2026-11-01T03:24:16.1975443Z   ref: 13d319e442e06b137d46ac5065018e2677b13ae9"
+      },
+      {
+        "line": 100,
+        "text": "2026-11-01T03:24:19.3744495Z [command]\"C:\\Program Files\\Git\\bin\\git.exe\" -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin 13d319e442e06b137d46ac5065018e2677b13ae9"
+      },
+      {
+        "line": 102,
+        "text": "2026-11-01T03:24:20.8873078Z  * branch            13d319e442e06b137d46ac5065018e2677b13ae9 -> FETCH_HEAD"
+      },
+      {
+        "line": 103,
+        "text": "2026-11-01T03:24:20.8923057Z [command]\"C:\\Program Files\\Git\\bin\\git.exe\" rev-parse --verify --quiet 13d319e442e06b137d46ac5065018e2677b13ae9^{object}"
+      },
+      {
+        "line": 104,
+        "text": "2026-11-01T03:24:20.9258449Z 13d319e442e06b137d46ac5065018e2677b13ae9"
+      },
+      {
+        "line": 111,
+        "text": "2026-11-01T03:24:20.9960271Z [command]\"C:\\Program Files\\Git\\bin\\git.exe\" checkout --progress --force 13d319e442e06b137d46ac5065018e2677b13ae9"
+      },
+      {
+        "line": 112,
+        "text": "2026-11-01T03:24:21.4744350Z Note: switching to '13d319e442e06b137d46ac5065018e2677b13ae9'."
+      },
+      {
+        "line": 132,
+        "text": "2026-11-01T03:24:21.5638070Z 13d319e442e06b137d46ac5065018e2677b13ae9"
+      },
+      {
+        "line": 384,
+        "text": "2026-11-01T03:30:30.5851361Z   SOURCE_SHA: 13d319e442e06b137d46ac5065018e2677b13ae9"
+      },
+      {
+        "line": 1353,
+        "text": "2026-11-01T03:44:42.0881193Z Artifact test-diagnostics-windows-x86_64-unit-shard2-1 successfully finalized. Artifact ID 13068778350"
+      },
+      {
+        "line": 1354,
+        "text": "2026-11-01T03:44:42.0882352Z Artifact test-diagnostics-windows-x86_64-unit-shard2-1 has been successfully uploaded! Final size is 55285 bytes. Artifact ID is 13068778350"
+      },
+      {
+        "line": 1355,
+        "text": "2026-11-01T03:44:42.0887377Z Artifact download URL: https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41269015161/artifacts/13068778350"
+      }
+    ]
+  },
+  {
+    "job_id": 124737747277,
+    "job_name": "native (windows-x86_64) / native tests (windows-x86_64, generation, shard 2)",
+    "excerpts": [
+      {
+        "line": 33,
+        "text": "2026-11-01T03:24:06.6344013Z Uses: rabii-chaarani/codebaseGraph/.github/workflows/native.yml@refs/pull/174/merge (13d319e442e06b137d46ac5065018e2677b13ae9)"
+      },
+      {
+        "line": 36,
+        "text": "2026-11-01T03:24:06.6350820Z   source-sha: 13d319e442e06b137d46ac5065018e2677b13ae9"
+      },
+      {
+        "line": 44,
+        "text": "2026-11-01T03:24:06.8303499Z   ref: 13d319e442e06b137d46ac5065018e2677b13ae9"
+      },
+      {
+        "line": 100,
+        "text": "2026-11-01T03:24:10.3931367Z [command]\"C:\\Program Files\\Git\\bin\\git.exe\" -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin 13d319e442e06b137d46ac5065018e2677b13ae9"
+      },
+      {
+        "line": 102,
+        "text": "2026-11-01T03:24:12.1736364Z  * branch            13d319e442e06b137d46ac5065018e2677b13ae9 -> FETCH_HEAD"
+      },
+      {
+        "line": 103,
+        "text": "2026-11-01T03:24:12.1796121Z [command]\"C:\\Program Files\\Git\\bin\\git.exe\" rev-parse --verify --quiet 13d319e442e06b137d46ac5065018e2677b13ae9^{object}"
+      },
+      {
+        "line": 104,
+        "text": "2026-11-01T03:24:12.2144727Z 13d319e442e06b137d46ac5065018e2677b13ae9"
+      },
+      {
+        "line": 111,
+        "text": "2026-11-01T03:24:12.2828399Z [command]\"C:\\Program Files\\Git\\bin\\git.exe\" checkout --progress --force 13d319e442e06b137d46ac5065018e2677b13ae9"
+      },
+      {
+        "line": 112,
+        "text": "2026-11-01T03:24:12.7601623Z Note: switching to '13d319e442e06b137d46ac5065018e2677b13ae9'."
+      },
+      {
+        "line": 132,
+        "text": "2026-11-01T03:24:12.8573488Z 13d319e442e06b137d46ac5065018e2677b13ae9"
+      },
+      {
+        "line": 385,
+        "text": "2026-11-01T03:30:35.8631045Z   SOURCE_SHA: 13d319e442e06b137d46ac5065018e2677b13ae9"
+      },
+      {
+        "line": 844,
+        "text": "2026-11-01T03:42:21.7494265Z Artifact test-diagnostics-windows-x86_64-generation-shard2-1 successfully finalized. Artifact ID 13068807777"
+      },
+      {
+        "line": 845,
+        "text": "2026-11-01T03:42:21.7495524Z Artifact test-diagnostics-windows-x86_64-generation-shard2-1 has been successfully uploaded! Final size is 6487 bytes. Artifact ID is 13068807777"
+      },
+      {
+        "line": 846,
+        "text": "2026-11-01T03:42:21.7500803Z Artifact download URL: https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41269015161/artifacts/13068807777"
+      }
+    ]
+  },
+  {
+    "job_id": 124737747308,
+    "job_name": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 4)",
+    "excerpts": [
+      {
+        "line": 33,
+        "text": "2026-11-01T03:24:06.3852379Z Uses: rabii-chaarani/codebaseGraph/.github/workflows/native.yml@refs/pull/174/merge (13d319e442e06b137d46ac5065018e2677b13ae9)"
+      },
+      {
+        "line": 36,
+        "text": "2026-11-01T03:24:06.3855989Z   source-sha: 13d319e442e06b137d46ac5065018e2677b13ae9"
+      },
+      {
+        "line": 44,
+        "text": "2026-11-01T03:24:06.5025930Z   ref: 13d319e442e06b137d46ac5065018e2677b13ae9"
+      },
+      {
+        "line": 100,
+        "text": "2026-11-01T03:24:09.1974149Z [command]\"C:\\Program Files\\Git\\bin\\git.exe\" -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin 13d319e442e06b137d46ac5065018e2677b13ae9"
+      },
+      {
+        "line": 102,
+        "text": "2026-11-01T03:24:11.3575112Z  * branch            13d319e442e06b137d46ac5065018e2677b13ae9 -> FETCH_HEAD"
+      },
+      {
+        "line": 103,
+        "text": "2026-11-01T03:24:11.3608146Z [command]\"C:\\Program Files\\Git\\bin\\git.exe\" rev-parse --verify --quiet 13d319e442e06b137d46ac5065018e2677b13ae9^{object}"
+      },
+      {
+        "line": 104,
+        "text": "2026-11-01T03:24:11.3889715Z 13d319e442e06b137d46ac5065018e2677b13ae9"
+      },
+      {
+        "line": 111,
+        "text": "2026-11-01T03:24:11.4496615Z [command]\"C:\\Program Files\\Git\\bin\\git.exe\" checkout --progress --force 13d319e442e06b137d46ac5065018e2677b13ae9"
+      },
+      {
+        "line": 112,
+        "text": "2026-11-01T03:24:11.7658450Z Note: switching to '13d319e442e06b137d46ac5065018e2677b13ae9'."
+      },
+      {
+        "line": 132,
+        "text": "2026-11-01T03:24:11.8570348Z 13d319e442e06b137d46ac5065018e2677b13ae9"
+      },
+      {
+        "line": 385,
+        "text": "2026-11-01T03:28:10.7943093Z   SOURCE_SHA: 13d319e442e06b137d46ac5065018e2677b13ae9"
+      },
+      {
+        "line": 1096,
+        "text": "2026-11-01T03:41:05.9847568Z Artifact test-diagnostics-windows-x86_64-integration-shard4-1 successfully finalized. Artifact ID 13069030952"
+      },
+      {
+        "line": 1097,
+        "text": "2026-11-01T03:41:05.9848297Z Artifact test-diagnostics-windows-x86_64-integration-shard4-1 has been successfully uploaded! Final size is 32882 bytes. Artifact ID is 13069030952"
+      },
+      {
+        "line": 1098,
+        "text": "2026-11-01T03:41:05.9851985Z Artifact download URL: https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41269015161/artifacts/13069030952"
+      }
+    ]
+  },
+  {
+    "job_id": 124737747358,
+    "job_name": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)",
+    "excerpts": [
+      {
+        "line": 33,
+        "text": "2026-11-01T03:24:05.7038409Z Uses: rabii-chaarani/codebaseGraph/.github/workflows/native.yml@refs/pull/174/merge (13d319e442e06b137d46ac5065018e2677b13ae9)"
+      },
+      {
+        "line": 36,
+        "text": "2026-11-01T03:24:05.7042195Z   source-sha: 13d319e442e06b137d46ac5065018e2677b13ae9"
+      },
+      {
+        "line": 44,
+        "text": "2026-11-01T03:24:05.8388432Z   ref: 13d319e442e06b137d46ac5065018e2677b13ae9"
+      },
+      {
+        "line": 100,
+        "text": "2026-11-01T03:24:08.3972991Z [command]\"C:\\Program Files\\Git\\bin\\git.exe\" -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin 13d319e442e06b137d46ac5065018e2677b13ae9"
+      },
+      {
+        "line": 102,
+        "text": "2026-11-01T03:24:10.0768420Z  * branch            13d319e442e06b137d46ac5065018e2677b13ae9 -> FETCH_HEAD"
+      },
+      {
+        "line": 103,
+        "text": "2026-11-01T03:24:10.0798054Z [command]\"C:\\Program Files\\Git\\bin\\git.exe\" rev-parse --verify --quiet 13d319e442e06b137d46ac5065018e2677b13ae9^{object}"
+      },
+      {
+        "line": 104,
+        "text": "2026-11-01T03:24:10.1042583Z 13d319e442e06b137d46ac5065018e2677b13ae9"
+      },
+      {
+        "line": 111,
+        "text": "2026-11-01T03:24:10.1526844Z [command]\"C:\\Program Files\\Git\\bin\\git.exe\" checkout --progress --force 13d319e442e06b137d46ac5065018e2677b13ae9"
+      },
+      {
+        "line": 112,
+        "text": "2026-11-01T03:24:10.4836207Z Note: switching to '13d319e442e06b137d46ac5065018e2677b13ae9'."
+      },
+      {
+        "line": 132,
+        "text": "2026-11-01T03:24:10.5613201Z 13d319e442e06b137d46ac5065018e2677b13ae9"
+      },
+      {
+        "line": 384,
+        "text": "2026-11-01T03:28:16.8412767Z   SOURCE_SHA: 13d319e442e06b137d46ac5065018e2677b13ae9"
+      },
+      {
+        "line": 1156,
+        "text": "2026-11-01T03:43:41.0222556Z Artifact test-diagnostics-windows-x86_64-integration-shard1-1 successfully finalized. Artifact ID 13068718229"
+      },
+      {
+        "line": 1157,
+        "text": "2026-11-01T03:43:41.0223726Z Artifact test-diagnostics-windows-x86_64-integration-shard1-1 has been successfully uploaded! Final size is 34532 bytes. Artifact ID is 13068718229"
+      },
+      {
+        "line": 1158,
+        "text": "2026-11-01T03:43:41.0228767Z Artifact download URL: https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41269015161/artifacts/13068718229"
+      }
+    ]
+  }
+]

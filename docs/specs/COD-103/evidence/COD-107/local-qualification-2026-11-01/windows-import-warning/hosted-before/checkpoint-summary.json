@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "observed_at_utc": "2026-11-01T03:47:08.850945+00:00",
+  "scope": "Parent-authorized single availability milestone; not final closure",
+  "run_id": 41269015161,
+  "run_attempt": 1,
+  "run_status": "in_progress",
+  "run_conclusion": null,
+  "head_metadata": "996967eb50d5f84f477525e4dccdc2f73421a029",
+  "actual_build_source": "13d319e442e06b137d46ac5065018e2677b13ae9",
+  "checkpoint_job_count": 20,
+  "completed_success_jobs": 9,
+  "remaining_running_native_test_jobs": 11,
+  "new_completed_job_logs_downloaded": 4,
+  "earlier5_completed_logs_retained_not_redownloaded": true,
+  "actual_artifacts_available_downloaded": 4,
+  "actual_native_product_archive_artifacts_available": 0,
+  "all4ZIP_API_digest_and_size_equal_full_download_bytes": true,
+  "all4_source_sha_report_and_source_file": "13d319e442e06b137d46ac5065018e2677b13ae9",
+  "all4_report_command_execution_errors": null,
+  "all4_report_cli_unchanged": true,
+  "warning_gate_blocker": {
+    "kind": "real Windows compiler unused_imports",
+    "source": "crates/xtask/src/main.rs:3021:30",
+    "symbols": [
+      "yaml_path",
+      "yaml_step_by_id",
+      "yaml_step_by_name"
+    ],
+    "observed_in_all4_logs": true,
+    "not_cargo_audit_advisory": true,
+    "not_github_job_failure": true,
+    "no_source_fix_or_waiver_attempted": true,
+    "evidence": "actual-compiler-warning-evidence.json"
+  },
+  "raw_log_group_totals_not_unique_counts": [
+    {
+      "artifact_id": 13069030952,
+      "name": "test-diagnostics-windows-x86_64-integration-shard4-1",
+      "invocations": 2,
+      "totals": {
+        "passed": 106,
+        "failed": 0,
+        "ignored": 2,
+        "measured": 0,
+        "filtered": 328
+      },
+      "case_line_parser_count_incomplete_due_to_interleaved_stdout": 103
+    },
+    {
+      "artifact_id": 13068807777,
+      "name": "test-diagnostics-windows-x86_64-generation-shard2-1",
+      "invocations": 1,
+      "totals": {
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 4
+      },
+      "case_line_parser_count_incomplete_due_to_interleaved_stdout": 1
+    },
+    {
+      "artifact_id": 13068778350,
+      "name": "test-diagnostics-windows-x86_64-unit-shard2-1",
+      "invocations": 3,
+      "totals": {
+        "passed": 223,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 2447
+      },
+      "case_line_parser_count_incomplete_due_to_interleaved_stdout": 191
+    },
+    {
+      "artifact_id": 13068718229,
+      "name": "test-diagnostics-windows-x86_64-integration-shard1-1",
+      "invocations": 3,
+      "totals": {
+        "passed": 113,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 326
+      },
+      "case_line_parser_count_incomplete_due_to_interleaved_stdout": 104
+    }
+  ],
+  "ignored_cases_counted_not_laundered": true,
+  "expected_negative_compile_errors": "Two rawerror abort records inintegration1 belongcompile_fail doctests E0505/E0507 thenok; entire3doccaseinvocationpassed. Context retained, not markedCI failure.",
+  "limitations": [
+    "Only4of15 native diagnostic artifacts available at this checkpoint. Productbuild jobs/archive artifacts not available; no payload/native success claimed.",
+    "Raw Cargo text is not JUnit and no XML synthesis/model ingestion was performed.",
+    "Displayed raw test-result sums include per-invocation repeats and filtered counts, not unique platform coverage. Full inventory/Windows drive+symlink branch accounting awaits available full artifact set.",
+    "All exact-run raw logs/ZIPs/actual hashes/errors retained. Production remains sole watcher; no duplicate watch/poll/sleep/CIactions."
+  ],
+  "next": "Await parent actual completion or another scheduled meaningful availability milestone. No active waiting-loop."
+}

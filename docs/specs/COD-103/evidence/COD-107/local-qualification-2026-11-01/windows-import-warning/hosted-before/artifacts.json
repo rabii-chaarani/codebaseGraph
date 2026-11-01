@@ -1,0 +1,85 @@
+{
+  "total_count": 4,
+  "artifacts": [
+    {
+      "id": 13069030952,
+      "node_id": "MDg6QXJ0aWZhY3QxMzA2OTAzMDk1Mg==",
+      "name": "test-diagnostics-windows-x86_64-integration-shard4-1",
+      "size_in_bytes": 32882,
+      "url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/artifacts/13069030952",
+      "archive_download_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/artifacts/13069030952/zip",
+      "expired": false,
+      "digest": "sha256:a744c7a2c16a0a7fd6235d9143586f7f2f199cbd22982d57f4539201b396e744",
+      "created_at": "2026-11-01T03:41:05Z",
+      "updated_at": "2026-11-01T03:41:05Z",
+      "expires_at": "2026-11-04T03:41:04Z",
+      "workflow_run": {
+        "id": 41269015161,
+        "repository_id": 1235031738,
+        "head_repository_id": 1235031738,
+        "head_branch": "cod103-stack/cod-107",
+        "head_sha": "996967eb50d5f84f477525e4dccdc2f73421a029"
+      }
+    },
+    {
+      "id": 13068807777,
+      "node_id": "MDg6QXJ0aWZhY3QxMzA2ODgwNzc3Nw==",
+      "name": "test-diagnostics-windows-x86_64-generation-shard2-1",
+      "size_in_bytes": 6487,
+      "url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/artifacts/13068807777",
+      "archive_download_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/artifacts/13068807777/zip",
+      "expired": false,
+      "digest": "sha256:b756fa5b8d7f0527a43a28ef736d630822b443468c51cbad9f191c7ca31fea26",
+      "created_at": "2026-11-01T03:42:21Z",
+      "updated_at": "2026-11-01T03:42:21Z",
+      "expires_at": "2026-11-04T03:42:20Z",
+      "workflow_run": {
+        "id": 41269015161,
+        "repository_id": 1235031738,
+        "head_repository_id": 1235031738,
+        "head_branch": "cod103-stack/cod-107",
+        "head_sha": "996967eb50d5f84f477525e4dccdc2f73421a029"
+      }
+    },
+    {
+      "id": 13068778350,
+      "node_id": "MDg6QXJ0aWZhY3QxMzA2ODc3ODM1MA==",
+      "name": "test-diagnostics-windows-x86_64-unit-shard2-1",
+      "size_in_bytes": 55285,
+      "url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/artifacts/13068778350",
+      "archive_download_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/artifacts/13068778350/zip",
+      "expired": false,
+      "digest": "sha256:18896ed91afda0e61fd2cd7e59a03a51206b031e07acf1c761bf031e81dc338c",
+      "created_at": "2026-11-01T03:44:41Z",
+      "updated_at": "2026-11-01T03:44:41Z",
+      "expires_at": "2026-11-04T03:44:40Z",
+      "workflow_run": {
+        "id": 41269015161,
+        "repository_id": 1235031738,
+        "head_repository_id": 1235031738,
+        "head_branch": "cod103-stack/cod-107",
+        "head_sha": "996967eb50d5f84f477525e4dccdc2f73421a029"
+      }
+    },
+    {
+      "id": 13068718229,
+      "node_id": "MDg6QXJ0aWZhY3QxMzA2ODcxODIyOQ==",
+      "name": "test-diagnostics-windows-x86_64-integration-shard1-1",
+      "size_in_bytes": 34532,
+      "url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/artifacts/13068718229",
+      "archive_download_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/artifacts/13068718229/zip",
+      "expired": false,
+      "digest": "sha256:2a1dbc9da3c8ad22f83d1f71402a3169ad89afcf3032f1b9df18f2a1893c84d8",
+      "created_at": "2026-11-01T03:43:40Z",
+      "updated_at": "2026-11-01T03:43:40Z",
+      "expires_at": "2026-11-04T03:43:40Z",
+      "workflow_run": {
+        "id": 41269015161,
+        "repository_id": 1235031738,
+        "head_repository_id": 1235031738,
+        "head_branch": "cod103-stack/cod-107",
+        "head_sha": "996967eb50d5f84f477525e4dccdc2f73421a029"
+      }
+    }
+  ]
+}
