@@ -1,0 +1,713 @@
+{
+  "author_copy_bytes": 3426855,
+  "author_copy_count": 76,
+  "author_manifest_original_counts": {
+    "backend_raw_logs": 16,
+    "backend_report_result": 2,
+    "before": 26,
+    "reviewer": 5,
+    "verifier": 28
+  },
+  "copies": [
+    {
+      "bytes": 868,
+      "destination": "before/API-read-receipts.json",
+      "destination_mode": "100644",
+      "role": "before",
+      "sha256": "fb45eb18a490ccbb733a266c96dc1ffe28367e4105c768b623034b8524f74e4e",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41317523731-attempt1/availability-checkpoint03-failure/API-read-receipts.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 1449,
+      "destination": "before/actual-failing-case-frozen-source.txt",
+      "destination_mode": "100644",
+      "role": "before",
+      "sha256": "55bce2bf03adc13e57ea10a8c0a9e6a08ee2091acce96d2369d52d96c0c2618b",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41317523731-attempt1/availability-checkpoint03-failure/actual-failing-case-frozen-source.txt",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 11557,
+      "destination": "before/actual-three-diagnostic-ZIP-full-member-inventories.json",
+      "destination_mode": "100644",
+      "role": "before",
+      "sha256": "108e11bfb607de94fdeb5c45007c60f0143450e4c5745538485da140954dc71d",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41317523731-attempt1/availability-checkpoint03-failure/actual-three-diagnostic-ZIP-full-member-inventories.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 655963,
+      "destination": "before/actual-three-platform-reports-cases-and-failure-audit.json",
+      "destination_mode": "100644",
+      "role": "before",
+      "sha256": "27a502d5c36324395397d887ce07cb2265af5979c1edc589cc46f6acb109acd3",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41317523731-attempt1/availability-checkpoint03-failure/actual-three-platform-reports-cases-and-failure-audit.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 22391,
+      "destination": "before/actual-three-whole-job-log-audits.json",
+      "destination_mode": "100644",
+      "role": "before",
+      "sha256": "2ef83554dd4a81f60c8d812d15730cd8ec87e06a927eaf802283b7618474fb96",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41317523731-attempt1/availability-checkpoint03-failure/actual-three-whole-job-log-audits.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 0,
+      "destination": "before/artifact-13088199023.stderr.txt",
+      "destination_mode": "100644",
+      "role": "before",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41317523731-attempt1/availability-checkpoint03-failure/artifact-13088199023.stderr.txt",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 0,
+      "destination": "before/artifact-13088343525.stderr.txt",
+      "destination_mode": "100644",
+      "role": "before",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41317523731-attempt1/availability-checkpoint03-failure/artifact-13088343525.stderr.txt",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 0,
+      "destination": "before/artifact-13088990365.stderr.txt",
+      "destination_mode": "100644",
+      "role": "before",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41317523731-attempt1/availability-checkpoint03-failure/artifact-13088990365.stderr.txt",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 3688,
+      "destination": "before/artifacts.json",
+      "destination_mode": "100644",
+      "role": "before",
+      "sha256": "443f953783106501bb3a6de442c4ba46d798ead90617121970ee298611501ab8",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41317523731-attempt1/availability-checkpoint03-failure/artifacts.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 9581,
+      "destination": "before/available-download-receipts.json",
+      "destination_mode": "100644",
+      "role": "before",
+      "sha256": "195f1b0f55538841e1f9d98a46d70e36cc4b9e818d5966208b5e63916f8bd501",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41317523731-attempt1/availability-checkpoint03-failure/available-download-receipts.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 113416,
+      "destination": "before/checks.json",
+      "destination_mode": "100644",
+      "role": "before",
+      "sha256": "2bed8f4cf451f5303fe2cc2a0a96559857b6c222fa89e2e398cf2b175b1d3bb0",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41317523731-attempt1/availability-checkpoint03-failure/checks.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 22418,
+      "destination": "before/failed-job-actual-assertion-excerpts.json",
+      "destination_mode": "100644",
+      "role": "before",
+      "sha256": "b417ec3298af6f2dae4ced51287fc3bee5bfd2b3f13cf9a864eb8e02dad80b35",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41317523731-attempt1/availability-checkpoint03-failure/failed-job-actual-assertion-excerpts.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 362705,
+      "destination": "before/job-124880650822.log",
+      "destination_mode": "100644",
+      "role": "before",
+      "sha256": "6b9587fec485f1364e3b1f1724f7298c46a144ad52995d7437ffde47fbfa3423",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41317523731-attempt1/availability-checkpoint03-failure/job-124880650822.log",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 0,
+      "destination": "before/job-124880650822.stderr.txt",
+      "destination_mode": "100644",
+      "role": "before",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41317523731-attempt1/availability-checkpoint03-failure/job-124880650822.stderr.txt",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 107164,
+      "destination": "before/job-124880650873.log",
+      "destination_mode": "100644",
+      "role": "before",
+      "sha256": "87adc806b79a3a085f3ffeafb73739a5026df5ebf92065abf5db393ed5ad6d5e",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41317523731-attempt1/availability-checkpoint03-failure/job-124880650873.log",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 0,
+      "destination": "before/job-124880650873.stderr.txt",
+      "destination_mode": "100644",
+      "role": "before",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41317523731-attempt1/availability-checkpoint03-failure/job-124880650873.stderr.txt",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 147570,
+      "destination": "before/job-124880650882.log",
+      "destination_mode": "100644",
+      "role": "before",
+      "sha256": "cd42b3e23fc476ba38ae99c2aa023a77d3e3b77136babb9487a96ef0f51af9a6",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41317523731-attempt1/availability-checkpoint03-failure/job-124880650882.log",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 0,
+      "destination": "before/job-124880650882.stderr.txt",
+      "destination_mode": "100644",
+      "role": "before",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41317523731-attempt1/availability-checkpoint03-failure/job-124880650882.stderr.txt",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 62035,
+      "destination": "before/jobs.json",
+      "destination_mode": "100644",
+      "role": "before",
+      "sha256": "e9605d34774ed29f058940951278f757943319a6318db27690b7b2b5f5b63f9a",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41317523731-attempt1/availability-checkpoint03-failure/jobs.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 679,
+      "destination": "before/prior-closed-checkpoints-preserved.json",
+      "destination_mode": "100644",
+      "role": "before",
+      "sha256": "d19fdd809f71e0d4d3e617f617980056be257faaf2d4c2b2d6efd5c125acc23e",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41317523731-attempt1/availability-checkpoint03-failure/prior-closed-checkpoints-preserved.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 4187,
+      "destination": "before/report.md",
+      "destination_mode": "100644",
+      "role": "before",
+      "sha256": "53e4a65a03456f72b0e11195c7ba86f6bea9bfe42f5b699afa622f802c1f1e96",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41317523731-attempt1/availability-checkpoint03-failure/report.md",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 77571,
+      "destination": "before/result.json",
+      "destination_mode": "100644",
+      "role": "before",
+      "sha256": "d08ebca005bf7c0d698c5f011e00bed16d3bd9a0a01ea05d9b881140d84f3bc9",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41317523731-attempt1/availability-checkpoint03-failure/result.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 5366,
+      "destination": "before/verified-root-cause-and-owner-recommendation.json",
+      "destination_mode": "100644",
+      "role": "before",
+      "sha256": "c56026eb34d2dd31399ac6064e8314f1d086c87ed144fa2c99fb360ad78318c1",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41317523731-attempt1/availability-checkpoint03-failure/verified-root-cause-and-owner-recommendation.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 4940,
+      "destination": "before/files.json",
+      "destination_mode": "100644",
+      "role": "before",
+      "sha256": "837dcb66fa786bf97240b7f60e2dc61b8ad7c8be096336b14424e14a569ad489",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41317523731-attempt1/availability-checkpoint03-failure/files.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 6048,
+      "destination": "backend/result.json",
+      "destination_mode": "100644",
+      "role": "backend",
+      "sha256": "684832737bd033c4f1d7a25a186e1fcae9d26a3aad653bbe0679f5a1dc05a41d",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/windows-fixture-fix/result.json",
+      "source_mode": "0o600"
+    },
+    {
+      "bytes": 4874,
+      "destination": "backend/report.md",
+      "destination_mode": "100644",
+      "role": "backend",
+      "sha256": "d0f738e8e48f403d42b7600c001f35ff22aeac70dce9b786bb16f83441ddffb8",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/windows-fixture-fix/report.md",
+      "source_mode": "0o600"
+    },
+    {
+      "bytes": 1561,
+      "destination": "backend/files.json",
+      "destination_mode": "100644",
+      "role": "backend",
+      "sha256": "7691898f9a06486ca4781f75e646856968c8875db66c9f51e22c923462206fd0",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/windows-fixture-fix/files.json",
+      "source_mode": "0o600"
+    },
+    {
+      "bytes": 624,
+      "destination": "backend/raw/focused-portable-added-path.log",
+      "destination_mode": "100644",
+      "role": "backend",
+      "sha256": "19d8974855636c752e91bff15ded220e7d3cc2275d0a10e1f7e072903d3f9667",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/windows-fixture-fix/raw/focused-portable-added-path.log",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 1573,
+      "destination": "backend/raw/focused-ci-module-final-2.log",
+      "destination_mode": "100644",
+      "role": "backend",
+      "sha256": "a5ed5da8549e839193b5baaa1adb8fea794fde6bc4bf1be00bb9cedf925e1778",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/windows-fixture-fix/raw/focused-ci-module-final-2.log",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 578,
+      "destination": "backend/raw/focused-all-platform-raw-parser.log",
+      "destination_mode": "100644",
+      "role": "backend",
+      "sha256": "a5853410e8ce9467b670d3eddee83e8875a8fe1b9919a23173caa3eebe9cf5d1",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/windows-fixture-fix/raw/focused-all-platform-raw-parser.log",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 95,
+      "destination": "backend/raw/cargo-fmt-check-final.log",
+      "destination_mode": "100644",
+      "role": "backend",
+      "sha256": "5cc9ad0dfba2453ae3a0e5765f3a869193e950bc7300a0b3c8ded036bbbc9cbe",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/windows-fixture-fix/raw/cargo-fmt-check-final.log",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 508,
+      "destination": "backend/raw/focused-unix-newline-path-final.log",
+      "destination_mode": "100644",
+      "role": "backend",
+      "sha256": "26856bdf79d34e338e616441bb5aa530384eae17350b74748a261c1416c071dc",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/windows-fixture-fix/raw/focused-unix-newline-path-final.log",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 1657,
+      "destination": "backend/raw/focused-ci-module-final.log",
+      "destination_mode": "100644",
+      "role": "backend",
+      "sha256": "de09a7fb1e35526196f61282809918ad613fb5c3824ae65a3d27963301c92d9b",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/windows-fixture-fix/raw/focused-ci-module-final.log",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 1573,
+      "destination": "backend/raw/focused-ci-module-tests.log",
+      "destination_mode": "100644",
+      "role": "backend",
+      "sha256": "a5ed5da8549e839193b5baaa1adb8fea794fde6bc4bf1be00bb9cedf925e1778",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/windows-fixture-fix/raw/focused-ci-module-tests.log",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 224,
+      "destination": "backend/raw/cargo-clippy-final.log",
+      "destination_mode": "100644",
+      "role": "backend",
+      "sha256": "7d05919360a65b15ff026e87dda0327a0cc176a705a76513e77b3bdde4bbc31d",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/windows-fixture-fix/raw/cargo-clippy-final.log",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 308,
+      "destination": "backend/raw/cargo-clippy-strict.log",
+      "destination_mode": "100644",
+      "role": "backend",
+      "sha256": "2366c12bb04290978d258016ce0d6c9121d9ebacb919632d593cdb2859253bca",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/windows-fixture-fix/raw/cargo-clippy-strict.log",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 578,
+      "destination": "backend/raw/focused-rawdiff-all-platform-final.log",
+      "destination_mode": "100644",
+      "role": "backend",
+      "sha256": "a5853410e8ce9467b670d3eddee83e8875a8fe1b9919a23173caa3eebe9cf5d1",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/windows-fixture-fix/raw/focused-rawdiff-all-platform-final.log",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 508,
+      "destination": "backend/raw/focused-unix-newline-path.log",
+      "destination_mode": "100644",
+      "role": "backend",
+      "sha256": "26856bdf79d34e338e616441bb5aa530384eae17350b74748a261c1416c071dc",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/windows-fixture-fix/raw/focused-unix-newline-path.log",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 9149,
+      "destination": "backend/raw/cargo-test-xtask-final-afterfmt.log",
+      "destination_mode": "100644",
+      "role": "backend",
+      "sha256": "af3a55c82d38c27cc1991a522eda6bcd40cdf3a5680f35158be867acc475a2e6",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/windows-fixture-fix/raw/cargo-test-xtask-final-afterfmt.log",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 744,
+      "destination": "backend/raw/cargo-fmt-check.log",
+      "destination_mode": "100644",
+      "role": "backend",
+      "sha256": "86725e8d54ec96687983a81eb0ad87e2b7242a39261aa69cf11beb975cc160dc",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/windows-fixture-fix/raw/cargo-fmt-check.log",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 95,
+      "destination": "backend/raw/cargo-fmt-final.log",
+      "destination_mode": "100644",
+      "role": "backend",
+      "sha256": "5cc9ad0dfba2453ae3a0e5765f3a869193e950bc7300a0b3c8ded036bbbc9cbe",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/windows-fixture-fix/raw/cargo-fmt-final.log",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 540,
+      "destination": "backend/raw/focused-portable-added-path-final.log",
+      "destination_mode": "100644",
+      "role": "backend",
+      "sha256": "62cae8f71219ac965169a493c59e7de2047e35edd0ff993bead878855089217b",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/windows-fixture-fix/raw/focused-portable-added-path-final.log",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 9149,
+      "destination": "backend/raw/cargo-test-xtask-final.log",
+      "destination_mode": "100644",
+      "role": "backend",
+      "sha256": "58a9ae2da2ffbe98d3a9069be67a6137adfdbe69add22cfb84b87c3c35ce5e74",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/windows-fixture-fix/raw/cargo-test-xtask-final.log",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 641806,
+      "destination": "verifier/all2293-source-inputs-after.json",
+      "destination_mode": "100644",
+      "role": "verifier",
+      "sha256": "e0fc86cc1ab0c4f7b2931f2f47b5f7a511d48d4e2bf60267cb919e448d068bc9",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-windows-fixture-fix/all2293-source-inputs-after.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 969187,
+      "destination": "verifier/all2293-source-inputs-before.json",
+      "destination_mode": "100644",
+      "role": "verifier",
+      "sha256": "03175fe433b7ba4d17191c434cceb2b85e16a68a21435adef9c8d7b2d1e0d6c8",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-windows-fixture-fix/all2293-source-inputs-before.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 9371,
+      "destination": "verifier/binary-provenance-before-run.json",
+      "destination_mode": "100644",
+      "role": "verifier",
+      "sha256": "47d9b4a463949cf40582c4d6c47cb86ff495eaea23341f85d8ad802468e5e3d4",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-windows-fixture-fix/binary-provenance-before-run.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 12423,
+      "destination": "verifier/binary-provenance-final.json",
+      "destination_mode": "100644",
+      "role": "verifier",
+      "sha256": "a060f36867b2809f3d4334e2c551d8ef1ce699428db0741020d4fcb6e8e98aee",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-windows-fixture-fix/binary-provenance-final.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 229,
+      "destination": "verifier/check-workflows.log",
+      "destination_mode": "100644",
+      "role": "verifier",
+      "sha256": "fcc6a1660c45371ad9ba0342c992413dcf02caa750636444e8f6c5bb47550a8a",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-windows-fixture-fix/check-workflows.log",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 8740,
+      "destination": "verifier/commands.json",
+      "destination_mode": "100644",
+      "role": "verifier",
+      "sha256": "5267407c256798d1a158ece6ee5fa49065beda6588084a3b03d94d5648c10dd4",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-windows-fixture-fix/commands.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 979,
+      "destination": "verifier/compiler-warning-audit.json",
+      "destination_mode": "100644",
+      "role": "verifier",
+      "sha256": "8e1db338235336a58aa0d04dce645987ee7aea08c2a9532ffcac3a361749b88e",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-windows-fixture-fix/compiler-warning-audit.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 1479,
+      "destination": "verifier/environment.json",
+      "destination_mode": "100644",
+      "role": "verifier",
+      "sha256": "6642f9c89608dcce7928f55a4731404b36cbf80c37409ba60a922ee120de628b",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-windows-fixture-fix/environment.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 0,
+      "destination": "verifier/format.log",
+      "destination_mode": "100644",
+      "role": "verifier",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-windows-fixture-fix/format.log",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 2936,
+      "destination": "verifier/genuine-current103-JUnit-summary.json",
+      "destination_mode": "100644",
+      "role": "verifier",
+      "sha256": "c7dcbd638980f3cf1de94d4bab8c1af360bc455a3382358fe8c5e65637cb0b54",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-windows-fixture-fix/genuine-current103-JUnit-summary.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 151,
+      "destination": "verifier/inventory-build.log",
+      "destination_mode": "100644",
+      "role": "verifier",
+      "sha256": "7ac3c677efac9a729063df2fadc83c086e9c9c5091ef1c8bc566dbb512d58a55",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-windows-fixture-fix/inventory-build.log",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 15858,
+      "destination": "verifier/inventory.json",
+      "destination_mode": "100644",
+      "role": "verifier",
+      "sha256": "e64caef83bff414b8ff9b6b99df6c28e296b601377cec085cabc0a658347c8eb",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-windows-fixture-fix/inventory.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 236,
+      "destination": "verifier/nextest.toml",
+      "destination_mode": "100644",
+      "role": "verifier",
+      "sha256": "41f68521d873276c1e5df84dc06d971c93e0f0686a3d48e739c4805e5560be4a",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-windows-fixture-fix/nextest.toml",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 8810,
+      "destination": "verifier/owner-evidence-readback.json",
+      "destination_mode": "100644",
+      "role": "verifier",
+      "sha256": "590838e15475823ae6471ccfaf7949b0797ffbc211bfc25e79ef1ff36ffedd23",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-windows-fixture-fix/owner-evidence-readback.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 1154,
+      "destination": "verifier/prior-local102-and-real-Windows-failure-preserved.json",
+      "destination_mode": "100644",
+      "role": "verifier",
+      "sha256": "3fdfbd935aa5afa53cae6727c19f627ff7c5f20ec4ea55335e2072b8e82888bf",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-windows-fixture-fix/prior-local102-and-real-Windows-failure-preserved.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 139,
+      "destination": "verifier/release-gate.log",
+      "destination_mode": "100644",
+      "role": "verifier",
+      "sha256": "459c074511a1f98a6a1db6ffa5ae3514591d32f3f4ee9b7259085f435d5d9dc4",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-windows-fixture-fix/release-gate.log",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 5009,
+      "destination": "verifier/report.md",
+      "destination_mode": "100644",
+      "role": "verifier",
+      "sha256": "541474dfcaaca583d2985932d4106bde090584a7e2f8954ef3b9fa62273b974f",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-windows-fixture-fix/report.md",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 17914,
+      "destination": "verifier/result.json",
+      "destination_mode": "100644",
+      "role": "verifier",
+      "sha256": "860df6a40b96dbe52e49abc9f7f314cc895ab471a07357080aa0b473f22d85c8",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-windows-fixture-fix/result.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 563,
+      "destination": "verifier/runtime-versions.txt",
+      "destination_mode": "100644",
+      "role": "verifier",
+      "sha256": "7cab3aa8ebf34abff08bb83df3033a9cdf3ea2e80e83e2cd027d867d36a5426e",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-windows-fixture-fix/runtime-versions.txt",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 2595,
+      "destination": "verifier/source-identity-diff-after.txt",
+      "destination_mode": "100644",
+      "role": "verifier",
+      "sha256": "e6f6d0e39584868a0644b3c7cb2202e7dc7f44286655ed7618066c7d4af37244",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-windows-fixture-fix/source-identity-diff-after.txt",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 2595,
+      "destination": "verifier/source-identity-diff-before.txt",
+      "destination_mode": "100644",
+      "role": "verifier",
+      "sha256": "e6f6d0e39584868a0644b3c7cb2202e7dc7f44286655ed7618066c7d4af37244",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-windows-fixture-fix/source-identity-diff-before.txt",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 72,
+      "destination": "verifier/strict-xtask-clippy.log",
+      "destination_mode": "100644",
+      "role": "verifier",
+      "sha256": "f0788aa36d1c86b6ccdfb7f4042a5574102d82061c046422a2d42e008a1e4710",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-windows-fixture-fix/strict-xtask-clippy.log",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 4497,
+      "destination": "verifier/test-only-diff-oracle-and-production-prefix-proof.json",
+      "destination_mode": "100644",
+      "role": "verifier",
+      "sha256": "721365d272dff0a4a15965656ce52e1d72cd0659e5d2b08ede1903d423a9a1e1",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-windows-fixture-fix/test-only-diff-oracle-and-production-prefix-proof.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 2703,
+      "destination": "verifier/unaffected-prior-evidence-and-input-reuse.json",
+      "destination_mode": "100644",
+      "role": "verifier",
+      "sha256": "06f8ca53b98a3b9872d6085bf1fa0ed742b70ff21b31d3e5083e51e30329bbe3",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-windows-fixture-fix/unaffected-prior-evidence-and-input-reuse.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 21255,
+      "destination": "verifier/xtask-junit.xml",
+      "destination_mode": "100644",
+      "role": "verifier",
+      "sha256": "809c8d1142a3489976d463780e315b361d5491265d2c827398d2c0b50cb5b9a5",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-windows-fixture-fix/xtask-junit.xml",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 13222,
+      "destination": "verifier/xtask-run.log",
+      "destination_mode": "100644",
+      "role": "verifier",
+      "sha256": "42bd4b6f43c4125ba28098b4936707a489ccc3553ae48fa09a0f3f6973fc7a58",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-windows-fixture-fix/xtask-run.log",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 5070,
+      "destination": "verifier/files.json",
+      "destination_mode": "100644",
+      "role": "verifier",
+      "sha256": "a3064120c64cc7555e93b2ba081c90d1a3b4142ba8c6bc826aea4e460ba49d6d",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-windows-fixture-fix/files.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 4385,
+      "destination": "reviewer/causal-fix-trace.json",
+      "destination_mode": "100644",
+      "role": "reviewer",
+      "sha256": "bdab660a3b479b7584adab8dd8162507db0a3492c0db7811ee9c45ff2c2c9384",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-85e8e92c/cod108-windows-fixture-focused-review/causal-fix-trace.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 3111,
+      "destination": "reviewer/independent-corrected-evidence-readback.json",
+      "destination_mode": "100644",
+      "role": "reviewer",
+      "sha256": "24c8e499b9d28d0b358e20f823aae23e4a3bb26212834a8f050e884372ec0fd6",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-85e8e92c/cod108-windows-fixture-focused-review/independent-corrected-evidence-readback.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 8471,
+      "destination": "reviewer/report.md",
+      "destination_mode": "100644",
+      "role": "reviewer",
+      "sha256": "4c5ec948c42460b859d55bd2de1ded52e2271a1b18d50cd5a3eeca369cb53b4d",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-85e8e92c/cod108-windows-fixture-focused-review/report.md",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 4258,
+      "destination": "reviewer/result.json",
+      "destination_mode": "100644",
+      "role": "reviewer",
+      "sha256": "4d8632959faf26c43c6447799aca71c75429a5d83d201be1d62d9f1f78885254",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-85e8e92c/cod108-windows-fixture-focused-review/result.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 2615,
+      "destination": "reviewer/reviewed-ci-rs-only.diff",
+      "destination_mode": "100644",
+      "role": "reviewer",
+      "sha256": "62d3b1d71c875a76356d64e6b13d95ad77797b5e45980af49f599b2a55a0a85f",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-85e8e92c/cod108-windows-fixture-focused-review/reviewed-ci-rs-only.diff",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 1088,
+      "destination": "reviewer/files.json",
+      "destination_mode": "100644",
+      "role": "reviewer",
+      "sha256": "80dee207b0387d1014fbae22561b39ecb353996355faa354d7b5423e48828602",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-85e8e92c/cod108-windows-fixture-focused-review/files.json",
+      "source_mode": "0o644"
+    }
+  ],
+  "exclusions": {
+    "backend": "All report/result/originalmanifest+raw16 copied. Original manifest has explicit two top-level entries plus raw directory/count, not invented raw hash entries; actual raw hashes supplied in this copy map.",
+    "before": "Three diagnosticZIP binaries excluded; original manifest and full member/hash/raw text proof retained unchanged. No original failure relabelled.",
+    "general": "No binary/native/executable/.git/model/private unrelated API payloads added. No author newline/absolute-path/whitespace normalization; empty author logs preserved. Destination text fixtures nonexecutable0644.",
+    "verifier": "Exclude binary/NUL head157a-tree.nul and redundant tested-ci.rs only; original manifest retained unchanged. Source prefix/diff/allpriorinput proof, original JUnit/raw commands/provenance retained."
+  },
+  "limits": "Local correctedDarwin103JUnit is not Windows/hosted pass; priorf98/102/d278 and oldrun41317523731a1/head157a/Sc2e6 failure remain historical as authored. No tests rerun by Production.",
+  "scope": "Faithful before/after test fixture portability evidence only; no original evidence rewritten",
+  "unchanged": {
+    "README_package_paths": 17,
+    "all2292otherprior_blob_modes": true,
+    "main_YAML_docs_manifests_lock_config_native_actions": "unchanged",
+    "production_prefix_bytes": 28536,
+    "production_prefix_sha256": "1233773bf939f15216e20e61e42e55c4676edd75aa316baa2240852f0379c9e7"
+  },
+  "work_id": "COD-108"
+}

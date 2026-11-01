@@ -1,0 +1,25 @@
+{
+  "production_prefix_bytes": 28536,
+  "production_prefix_SHA256": "1233773bf939f15216e20e61e42e55c4676edd75aa316baa2240852f0379c9e7",
+  "whole_prefix_equal_old_b897": true,
+  "only_test_module_delta": true,
+  "portable_allOS_body": {
+    "line": 1239,
+    "source": "    fn git_path_names_are_nul_delimited_and_extra_paths_force_full() {\n        let fixture = Fixture::new();\n        let base = base_files();\n        let base_sha = fixture.commit(&base, \"base\");\n        let head = bumped(&base, \"4.0.5\", \"4.0.6\");\n        let head_sha = fixture.commit(&head, \"release\");\n        let extra = fixture.root.join(\"unrelated-extra.txt\");\n        fs::write(&extra, \"not metadata\\n\").unwrap();\n        git(&fixture.root, [\"add\", \"--all\"]);\n        git(\n            &fixture.root,\n            [\n                \"-c\",\n                \"user.name=COD-108 tests\",\n                \"-c\",\n                \"user.email=cod108@example.invalid\",\n                \"commit\",\n                \"--quiet\",\n                \"-m\",\n                \"extra portable path\",\n            ],\n        );\n        let with_extra = String::from_utf8(git_output(&fixture.root, [\"rev-parse\", \"HEAD\"]).stdout)\n            .unwrap()\n            .trim()\n            .to_string();\n        assert_eq!(\n            acquire_and_classify(&fixture.root, &head_sha, &with_extra),\n            MetadataDecision::Full {\n                reason_code: \"changed-path-set\"\n            }\n        );\n        assert_ne!(base_sha, head_sha);\n    }\n\n",
+    "not_ignored_or_cfg_disabled": true
+  },
+  "new_unix_actual_newline_body": {
+    "line": 1276,
+    "source": "    fn git_newline_path_names_remain_nul_delimited() {\n        let fixture = Fixture::new();\n        let base = base_files();\n        fixture.commit(&base, \"base\");\n        let head = bumped(&base, \"4.0.5\", \"4.0.6\");\n        let head_sha = fixture.commit(&head, \"release\");\n        let newline_path = fixture.root.join(\"unrelated name\\nwith newline.txt\");\n        fs::write(&newline_path, \"not metadata\\n\").unwrap();\n        git(&fixture.root, [\"add\", \"--all\"]);\n        git(\n            &fixture.root,\n            [\n                \"-c\",\n                \"user.name=COD-108 tests\",\n                \"-c\",\n                \"user.email=cod108@example.invalid\",\n                \"commit\",\n                \"--quiet\",\n                \"-m\",\n                \"newline path\",\n            ],\n        );\n        let with_newline =\n            String::from_utf8(git_output(&fixture.root, [\"rev-parse\", \"HEAD\"]).stdout)\n                .unwrap()\n                .trim()\n                .to_string();\n        assert_eq!(\n            acquire_and_classify(&fixture.root, &head_sha, &with_newline),\n            MetadataDecision::Full {\n                reason_code: \"changed-path-set\"\n            }\n        );\n    }\n\n",
+    "cfg": "unix only"
+  },
+  "allOS_raw_NUL_newline_parser": {
+    "line": 1337,
+    "source": "    fn raw_diff_parser_accepts_newline_names_and_rejects_unknown_or_truncated_records() {\n        use super::parse_raw_diff;\n\n        let valid = b\":100644 100644 1111111111111111111111111111111111111111 2222222222222222222222222222222222222222 M\\0a\\nfile.txt\\0\";\n        let parsed = parse_raw_diff(valid).unwrap();\n        assert_eq!(parsed.len(), 1);\n        assert_eq!(parsed[0].path, \"a\\nfile.txt\");\n        assert!(matches!(parse_raw_diff(b\":100644 100644 1111111111111111111111111111111111111111 2222222222222222222222222222222222222222 Q\\0name\\0\"), Err(\"git-acquisition-failed\")));\n        assert!(matches!(parse_raw_diff(b\":100644 100644 1111111111111111111111111111111111111111 2222222222222222222222222222222222222222 M\\0\"), Err(\"git-acquisition-failed\")));\n        assert!(matches!(parse_raw_diff(b\":100644 100644 1111111111111111111111111111111111111111 2222222222222222222222222222222222222222 M\\0path\\0trailing\"), Err(\"git-acquisition-failed\")));\n    }\n\n",
+    "byte_identical_old_body": true,
+    "not_cfg_disabled": true
+  },
+  "no_production_CLI_schema_trust_workflow_or_resourceconstant_change": true,
+  "all2292otherfilesmodeblob_equal157a": true,
+  "no_additional_original26CLI_or12aggregate_rerun_required": "Actualproductionprefix+main/YAML/docsinputsbyteidentical, priorf98evidencekeepsactualhistoricalsourceidentity; newfull103executestheaffectedfixture/coreandconsumerregressions."
+}

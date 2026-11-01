@@ -1,0 +1,4 @@
+   Compiling xtask v4.0.5 (/private/tmp/codebasegraph-cod108-20261101/crates/xtask)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.73s
+     Running `target/debug/xtask check-workflows`
+workflow policy passed

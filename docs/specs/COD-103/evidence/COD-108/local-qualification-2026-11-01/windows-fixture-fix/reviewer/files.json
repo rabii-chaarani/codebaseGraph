@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "work_id": "COD-108",
+  "status": "closed-focused-Windows-fixture-fix-review",
+  "expected_closed_file_count": 5,
+  "closed_files": [
+    {
+      "path": "causal-fix-trace.json",
+      "bytes": 4385,
+      "sha256": "bdab660a3b479b7584adab8dd8162507db0a3492c0db7811ee9c45ff2c2c9384"
+    },
+    {
+      "path": "independent-corrected-evidence-readback.json",
+      "bytes": 3111,
+      "sha256": "24c8e499b9d28d0b358e20f823aae23e4a3bb26212834a8f050e884372ec0fd6"
+    },
+    {
+      "path": "report.md",
+      "bytes": 8471,
+      "sha256": "4c5ec948c42460b859d55bd2de1ded52e2271a1b18d50cd5a3eeca369cb53b4d"
+    },
+    {
+      "path": "result.json",
+      "bytes": 4258,
+      "sha256": "4d8632959faf26c43c6447799aca71c75429a5d83d201be1d62d9f1f78885254"
+    },
+    {
+      "path": "reviewed-ci-rs-only.diff",
+      "bytes": 2615,
+      "sha256": "62d3b1d71c875a76356d64e6b13d95ad77797b5e45980af49f599b2a55a0a85f"
+    }
+  ],
+  "manifest_self_hash": "externalhandoffonly,notrecursive",
+  "all_closed_entries_nonempty": true,
+  "total_files_including_manifest": 6
+}

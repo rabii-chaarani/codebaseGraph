@@ -1,0 +1,14 @@
+[
+  {
+    "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41317523731-attempt1/availability-checkpoint01/files.json",
+    "sha256": "40fd998a147158f2bb4d3ee8cb2fee8a97e05e9484dedd23533bb83c8dec6f41",
+    "closed_entry_count": 29,
+    "all_fullbytes_unchanged": true
+  },
+  {
+    "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41317523731-attempt1/availability-checkpoint02/files.json",
+    "sha256": "be9107c962ab92716545b54ed41cae29b157d28f9847c90927eefef82abd31c0",
+    "closed_entry_count": 13,
+    "all_fullbytes_unchanged": true
+  }
+]

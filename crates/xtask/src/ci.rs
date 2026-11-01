@@ -1242,8 +1242,45 @@ mod tests {
         let base_sha = fixture.commit(&base, "base");
         let head = bumped(&base, "4.0.5", "4.0.6");
         let head_sha = fixture.commit(&head, "release");
-        let odd = fixture.root.join("unrelated name\nwith newline.txt");
-        fs::write(&odd, "not metadata\n").unwrap();
+        let extra = fixture.root.join("unrelated-extra.txt");
+        fs::write(&extra, "not metadata\n").unwrap();
+        git(&fixture.root, ["add", "--all"]);
+        git(
+            &fixture.root,
+            [
+                "-c",
+                "user.name=COD-108 tests",
+                "-c",
+                "user.email=cod108@example.invalid",
+                "commit",
+                "--quiet",
+                "-m",
+                "extra portable path",
+            ],
+        );
+        let with_extra = String::from_utf8(git_output(&fixture.root, ["rev-parse", "HEAD"]).stdout)
+            .unwrap()
+            .trim()
+            .to_string();
+        assert_eq!(
+            acquire_and_classify(&fixture.root, &head_sha, &with_extra),
+            MetadataDecision::Full {
+                reason_code: "changed-path-set"
+            }
+        );
+        assert_ne!(base_sha, head_sha);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn git_newline_path_names_remain_nul_delimited() {
+        let fixture = Fixture::new();
+        let base = base_files();
+        fixture.commit(&base, "base");
+        let head = bumped(&base, "4.0.5", "4.0.6");
+        let head_sha = fixture.commit(&head, "release");
+        let newline_path = fixture.root.join("unrelated name\nwith newline.txt");
+        fs::write(&newline_path, "not metadata\n").unwrap();
         git(&fixture.root, ["add", "--all"]);
         git(
             &fixture.root,
@@ -1258,17 +1295,17 @@ mod tests {
                 "newline path",
             ],
         );
-        let with_extra = String::from_utf8(git_output(&fixture.root, ["rev-parse", "HEAD"]).stdout)
-            .unwrap()
-            .trim()
-            .to_string();
+        let with_newline =
+            String::from_utf8(git_output(&fixture.root, ["rev-parse", "HEAD"]).stdout)
+                .unwrap()
+                .trim()
+                .to_string();
         assert_eq!(
-            acquire_and_classify(&fixture.root, &head_sha, &with_extra),
+            acquire_and_classify(&fixture.root, &head_sha, &with_newline),
             MetadataDecision::Full {
                 reason_code: "changed-path-set"
             }
         );
-        assert_ne!(base_sha, head_sha);
     }
 
     #[test]

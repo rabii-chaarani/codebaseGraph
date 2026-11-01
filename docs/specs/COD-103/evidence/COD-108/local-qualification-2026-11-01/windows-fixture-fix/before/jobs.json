@@ -1,0 +1,1813 @@
+{
+  "total_count": 22,
+  "jobs": [
+    {
+      "id": 124880621688,
+      "run_id": 41317523731,
+      "workflow_name": "CI",
+      "head_branch": "cod103-stack/cod-108",
+      "run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/runs/41317523731",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSZ0Wus8AAAAdE3cQeA",
+      "head_sha": "157a4170f21d8f75d7d02611dd4e4bdfc5ca1dfa",
+      "url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/jobs/124880621688",
+      "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41317523731/job/124880621688",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-11-01T14:42:33Z",
+      "started_at": "2026-11-01T14:42:35Z",
+      "completed_at": "2026-11-01T14:43:10Z",
+      "name": "repository policy",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-01T14:42:36Z",
+          "completed_at": "2026-11-01T14:42:36Z"
+        },
+        {
+          "name": "Check out repository",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-01T14:42:36Z",
+          "completed_at": "2026-11-01T14:42:38Z"
+        },
+        {
+          "name": "Check repository release policy",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-01T14:42:38Z",
+          "completed_at": "2026-11-01T14:42:57Z"
+        },
+        {
+          "name": "Check classifier and workflow regressions",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-11-01T14:42:57Z",
+          "completed_at": "2026-11-01T14:43:08Z"
+        },
+        {
+          "name": "Post Check out repository",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8,
+          "started_at": "2026-11-01T14:43:08Z",
+          "completed_at": "2026-11-01T14:43:09Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9,
+          "started_at": "2026-11-01T14:43:09Z",
+          "completed_at": "2026-11-01T14:43:09Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/check-runs/124880621688",
+      "labels": [
+        "ubuntu-latest"
+      ],
+      "runner_id": 1000009284,
+      "runner_name": "GitHub Actions 1000009284",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 124880621817,
+      "run_id": 41317523731,
+      "workflow_name": "CI",
+      "head_branch": "cod103-stack/cod-108",
+      "run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/runs/41317523731",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSZ0Wus8AAAAdE3cQ-Q",
+      "head_sha": "157a4170f21d8f75d7d02611dd4e4bdfc5ca1dfa",
+      "url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/jobs/124880621817",
+      "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41317523731/job/124880621817",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-11-01T14:42:33Z",
+      "started_at": "2026-11-01T14:42:35Z",
+      "completed_at": "2026-11-01T14:42:37Z",
+      "name": "native artifact retention",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-01T14:42:35Z",
+          "completed_at": "2026-11-01T14:42:35Z"
+        },
+        {
+          "name": "Select native artifact retention",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-01T14:42:35Z",
+          "completed_at": "2026-11-01T14:42:35Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-01T14:42:35Z",
+          "completed_at": "2026-11-01T14:42:35Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/check-runs/124880621817",
+      "labels": [
+        "ubuntu-latest"
+      ],
+      "runner_id": 1000009282,
+      "runner_name": "GitHub Actions 1000009282",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 124880621834,
+      "run_id": 41317523731,
+      "workflow_name": "CI",
+      "head_branch": "cod103-stack/cod-108",
+      "run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/runs/41317523731",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSZ0Wus8AAAAdE3cRCg",
+      "head_sha": "157a4170f21d8f75d7d02611dd4e4bdfc5ca1dfa",
+      "url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/jobs/124880621834",
+      "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41317523731/job/124880621834",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-11-01T14:42:33Z",
+      "started_at": "2026-11-01T14:42:35Z",
+      "completed_at": "2026-11-01T14:42:47Z",
+      "name": "cargo audit",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-01T14:42:36Z",
+          "completed_at": "2026-11-01T14:42:36Z"
+        },
+        {
+          "name": "Check out repository",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-01T14:42:36Z",
+          "completed_at": "2026-11-01T14:42:38Z"
+        },
+        {
+          "name": "Restore cargo-audit",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-01T14:42:38Z",
+          "completed_at": "2026-11-01T14:42:39Z"
+        },
+        {
+          "name": "Install cargo-audit",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 4,
+          "started_at": "2026-11-01T14:42:39Z",
+          "completed_at": "2026-11-01T14:42:39Z"
+        },
+        {
+          "name": "Run Rust advisory scan",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-11-01T14:42:39Z",
+          "completed_at": "2026-11-01T14:42:45Z"
+        },
+        {
+          "name": "Post Restore cargo-audit",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9,
+          "started_at": "2026-11-01T14:42:45Z",
+          "completed_at": "2026-11-01T14:42:45Z"
+        },
+        {
+          "name": "Post Check out repository",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10,
+          "started_at": "2026-11-01T14:42:45Z",
+          "completed_at": "2026-11-01T14:42:45Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-11-01T14:42:45Z",
+          "completed_at": "2026-11-01T14:42:45Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/check-runs/124880621834",
+      "labels": [
+        "ubuntu-latest"
+      ],
+      "runner_id": 1000009283,
+      "runner_name": "GitHub Actions 1000009283",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 124880621910,
+      "run_id": 41317523731,
+      "workflow_name": "CI",
+      "head_branch": "cod103-stack/cod-108",
+      "run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/runs/41317523731",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSZ0Wus8AAAAdE3cRVg",
+      "head_sha": "157a4170f21d8f75d7d02611dd4e4bdfc5ca1dfa",
+      "url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/jobs/124880621910",
+      "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41317523731/job/124880621910",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-11-01T14:42:33Z",
+      "started_at": "2026-11-01T14:42:35Z",
+      "completed_at": "2026-11-01T14:42:40Z",
+      "name": "classify CI mode",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-01T14:42:36Z",
+          "completed_at": "2026-11-01T14:42:36Z"
+        },
+        {
+          "name": "Read current CI identity",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-01T14:42:36Z",
+          "completed_at": "2026-11-01T14:42:38Z"
+        },
+        {
+          "name": "Check out immutable protected base",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 3,
+          "started_at": "2026-11-01T14:42:38Z",
+          "completed_at": "2026-11-01T14:42:38Z"
+        },
+        {
+          "name": "Check out separate Git object store",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 4,
+          "started_at": "2026-11-01T14:42:38Z",
+          "completed_at": "2026-11-01T14:42:38Z"
+        },
+        {
+          "name": "Select verified CI mode",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-11-01T14:42:38Z",
+          "completed_at": "2026-11-01T14:42:38Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-11-01T14:42:38Z",
+          "completed_at": "2026-11-01T14:42:38Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/check-runs/124880621910",
+      "labels": [
+        "ubuntu-latest"
+      ],
+      "runner_id": 1000009285,
+      "runner_name": "GitHub Actions 1000009285",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 124880622041,
+      "run_id": 41317523731,
+      "workflow_name": "CI",
+      "head_branch": "cod103-stack/cod-108",
+      "run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/runs/41317523731",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSZ0Wus8AAAAdE3cR2Q",
+      "head_sha": "157a4170f21d8f75d7d02611dd4e4bdfc5ca1dfa",
+      "url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/jobs/124880622041",
+      "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41317523731/job/124880622041",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-11-01T14:42:33Z",
+      "started_at": "2026-11-01T14:42:35Z",
+      "completed_at": "2026-11-01T14:42:44Z",
+      "name": "cargo fmt",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-01T14:42:36Z",
+          "completed_at": "2026-11-01T14:42:36Z"
+        },
+        {
+          "name": "Check out repository",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-01T14:42:36Z",
+          "completed_at": "2026-11-01T14:42:38Z"
+        },
+        {
+          "name": "Check formatting",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-01T14:42:38Z",
+          "completed_at": "2026-11-01T14:42:42Z"
+        },
+        {
+          "name": "Post Check out repository",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-11-01T14:42:42Z",
+          "completed_at": "2026-11-01T14:42:42Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-11-01T14:42:42Z",
+          "completed_at": "2026-11-01T14:42:42Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/check-runs/124880622041",
+      "labels": [
+        "ubuntu-latest"
+      ],
+      "runner_id": 1000009286,
+      "runner_name": "GitHub Actions 1000009286",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 124880650699,
+      "run_id": 41317523731,
+      "workflow_name": "CI",
+      "head_branch": "cod103-stack/cod-108",
+      "run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/runs/41317523731",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSZ0Wus8AAAAdE3eByw",
+      "head_sha": "157a4170f21d8f75d7d02611dd4e4bdfc5ca1dfa",
+      "url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/jobs/124880650699",
+      "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41317523731/job/124880650699",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-11-01T14:42:40Z",
+      "started_at": "2026-11-01T14:42:42Z",
+      "completed_at": "2026-11-01T14:43:49Z",
+      "name": "cargo publish dry-run",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-01T14:42:43Z",
+          "completed_at": "2026-11-01T14:42:43Z"
+        },
+        {
+          "name": "Check out repository",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-01T14:42:43Z",
+          "completed_at": "2026-11-01T14:42:45Z"
+        },
+        {
+          "name": "Verify crates.io package",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-01T14:42:45Z",
+          "completed_at": "2026-11-01T14:43:36Z"
+        },
+        {
+          "name": "Enforce crates.io package size limit",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-11-01T14:43:36Z",
+          "completed_at": "2026-11-01T14:43:46Z"
+        },
+        {
+          "name": "Verify Knowledge Wiki package archive",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-11-01T14:43:46Z",
+          "completed_at": "2026-11-01T14:43:47Z"
+        },
+        {
+          "name": "Post Check out repository",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10,
+          "started_at": "2026-11-01T14:43:47Z",
+          "completed_at": "2026-11-01T14:43:47Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-11-01T14:43:47Z",
+          "completed_at": "2026-11-01T14:43:47Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/check-runs/124880650699",
+      "labels": [
+        "ubuntu-latest"
+      ],
+      "runner_id": 1000009291,
+      "runner_name": "GitHub Actions 1000009291",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 124880650820,
+      "run_id": 41317523731,
+      "workflow_name": "CI",
+      "head_branch": "cod103-stack/cod-108",
+      "run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/runs/41317523731",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSZ0Wus8AAAAdE3eCRA",
+      "head_sha": "157a4170f21d8f75d7d02611dd4e4bdfc5ca1dfa",
+      "url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/jobs/124880650820",
+      "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41317523731/job/124880650820",
+      "status": "in_progress",
+      "conclusion": null,
+      "created_at": "2026-11-01T14:42:40Z",
+      "started_at": "2026-11-01T14:42:42Z",
+      "completed_at": null,
+      "name": "native (macos-arm64) / native tests (macos-arm64, integration)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-01T14:42:42Z",
+          "completed_at": "2026-11-01T14:42:42Z"
+        },
+        {
+          "name": "Check out source SHA",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-01T14:42:42Z",
+          "completed_at": "2026-11-01T14:42:45Z"
+        },
+        {
+          "name": "Set up native dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-01T14:42:45Z",
+          "completed_at": "2026-11-01T14:42:46Z"
+        },
+        {
+          "name": "Run platform tests",
+          "status": "in_progress",
+          "conclusion": null,
+          "number": 4,
+          "started_at": "2026-11-01T14:42:46Z",
+          "completed_at": null
+        },
+        {
+          "name": "Upload native test diagnostics",
+          "status": "pending",
+          "conclusion": null,
+          "number": 5,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "name": "Post Set up native dependencies",
+          "status": "pending",
+          "conclusion": null,
+          "number": 9,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "name": "Post Check out source SHA",
+          "status": "pending",
+          "conclusion": null,
+          "number": 10,
+          "started_at": null,
+          "completed_at": null
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/check-runs/124880650820",
+      "labels": [
+        "macos-latest"
+      ],
+      "runner_id": 1000009290,
+      "runner_name": "GitHub Actions 1000009290",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 124880650822,
+      "run_id": 41317523731,
+      "workflow_name": "CI",
+      "head_branch": "cod103-stack/cod-108",
+      "run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/runs/41317523731",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSZ0Wus8AAAAdE3eCRg",
+      "head_sha": "157a4170f21d8f75d7d02611dd4e4bdfc5ca1dfa",
+      "url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/jobs/124880650822",
+      "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41317523731/job/124880650822",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-11-01T14:42:40Z",
+      "started_at": "2026-11-01T14:42:42Z",
+      "completed_at": "2026-11-01T15:05:43Z",
+      "name": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 4)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-01T14:42:43Z",
+          "completed_at": "2026-11-01T14:42:44Z"
+        },
+        {
+          "name": "Check out source SHA",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-01T14:42:44Z",
+          "completed_at": "2026-11-01T14:42:50Z"
+        },
+        {
+          "name": "Set up native dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-01T14:42:50Z",
+          "completed_at": "2026-11-01T14:47:43Z"
+        },
+        {
+          "name": "Run platform tests",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-11-01T14:47:43Z",
+          "completed_at": "2026-11-01T15:05:37Z"
+        },
+        {
+          "name": "Upload native test diagnostics",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-11-01T15:05:37Z",
+          "completed_at": "2026-11-01T15:05:39Z"
+        },
+        {
+          "name": "Post Set up native dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9,
+          "started_at": "2026-11-01T15:05:39Z",
+          "completed_at": "2026-11-01T15:05:39Z"
+        },
+        {
+          "name": "Post Check out source SHA",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10,
+          "started_at": "2026-11-01T15:05:39Z",
+          "completed_at": "2026-11-01T15:05:41Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-11-01T15:05:41Z",
+          "completed_at": "2026-11-01T15:05:41Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/check-runs/124880650822",
+      "labels": [
+        "windows-2022"
+      ],
+      "runner_id": 1000009287,
+      "runner_name": "GitHub Actions 1000009287",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 124880650826,
+      "run_id": 41317523731,
+      "workflow_name": "CI",
+      "head_branch": "cod103-stack/cod-108",
+      "run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/runs/41317523731",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSZ0Wus8AAAAdE3eCSg",
+      "head_sha": "157a4170f21d8f75d7d02611dd4e4bdfc5ca1dfa",
+      "url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/jobs/124880650826",
+      "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41317523731/job/124880650826",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-11-01T14:42:40Z",
+      "started_at": "2026-11-01T14:42:42Z",
+      "completed_at": "2026-11-01T14:58:30Z",
+      "name": "native (windows-x86_64) / native tests (windows-x86_64, generation, shard 2)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-01T14:42:43Z",
+          "completed_at": "2026-11-01T14:42:44Z"
+        },
+        {
+          "name": "Check out source SHA",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-01T14:42:44Z",
+          "completed_at": "2026-11-01T14:42:50Z"
+        },
+        {
+          "name": "Set up native dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-01T14:42:50Z",
+          "completed_at": "2026-11-01T14:47:56Z"
+        },
+        {
+          "name": "Run platform tests",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-11-01T14:47:56Z",
+          "completed_at": "2026-11-01T14:58:24Z"
+        },
+        {
+          "name": "Upload native test diagnostics",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-11-01T14:58:24Z",
+          "completed_at": "2026-11-01T14:58:25Z"
+        },
+        {
+          "name": "Post Set up native dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9,
+          "started_at": "2026-11-01T14:58:25Z",
+          "completed_at": "2026-11-01T14:58:26Z"
+        },
+        {
+          "name": "Post Check out source SHA",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10,
+          "started_at": "2026-11-01T14:58:26Z",
+          "completed_at": "2026-11-01T14:58:28Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-11-01T14:58:28Z",
+          "completed_at": "2026-11-01T14:58:28Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/check-runs/124880650826",
+      "labels": [
+        "windows-2022"
+      ],
+      "runner_id": 1000009289,
+      "runner_name": "GitHub Actions 1000009289",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 124880650840,
+      "run_id": 41317523731,
+      "workflow_name": "CI",
+      "head_branch": "cod103-stack/cod-108",
+      "run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/runs/41317523731",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSZ0Wus8AAAAdE3eCWA",
+      "head_sha": "157a4170f21d8f75d7d02611dd4e4bdfc5ca1dfa",
+      "url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/jobs/124880650840",
+      "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41317523731/job/124880650840",
+      "status": "in_progress",
+      "conclusion": null,
+      "created_at": "2026-11-01T14:42:40Z",
+      "started_at": "2026-11-01T14:42:43Z",
+      "completed_at": null,
+      "name": "native (macos-arm64) / native tests (macos-arm64, generation)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-01T14:42:44Z",
+          "completed_at": "2026-11-01T14:42:46Z"
+        },
+        {
+          "name": "Check out source SHA",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-01T14:42:46Z",
+          "completed_at": "2026-11-01T14:42:50Z"
+        },
+        {
+          "name": "Set up native dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-01T14:42:50Z",
+          "completed_at": "2026-11-01T14:42:53Z"
+        },
+        {
+          "name": "Run platform tests",
+          "status": "in_progress",
+          "conclusion": null,
+          "number": 4,
+          "started_at": "2026-11-01T14:42:53Z",
+          "completed_at": null
+        },
+        {
+          "name": "Upload native test diagnostics",
+          "status": "pending",
+          "conclusion": null,
+          "number": 5,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "name": "Post Set up native dependencies",
+          "status": "pending",
+          "conclusion": null,
+          "number": 9,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "name": "Post Check out source SHA",
+          "status": "pending",
+          "conclusion": null,
+          "number": 10,
+          "started_at": null,
+          "completed_at": null
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/check-runs/124880650840",
+      "labels": [
+        "macos-latest"
+      ],
+      "runner_id": 1000009296,
+      "runner_name": "GitHub Actions 1000009296",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 124880650847,
+      "run_id": 41317523731,
+      "workflow_name": "CI",
+      "head_branch": "cod103-stack/cod-108",
+      "run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/runs/41317523731",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSZ0Wus8AAAAdE3eCXw",
+      "head_sha": "157a4170f21d8f75d7d02611dd4e4bdfc5ca1dfa",
+      "url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/jobs/124880650847",
+      "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41317523731/job/124880650847",
+      "status": "in_progress",
+      "conclusion": null,
+      "created_at": "2026-11-01T14:42:40Z",
+      "started_at": "2026-11-01T14:42:42Z",
+      "completed_at": null,
+      "name": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 3)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-01T14:42:43Z",
+          "completed_at": "2026-11-01T14:42:43Z"
+        },
+        {
+          "name": "Check out source SHA",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-01T14:42:44Z",
+          "completed_at": "2026-11-01T14:42:50Z"
+        },
+        {
+          "name": "Set up native dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-01T14:42:50Z",
+          "completed_at": "2026-11-01T14:49:39Z"
+        },
+        {
+          "name": "Run platform tests",
+          "status": "in_progress",
+          "conclusion": null,
+          "number": 4,
+          "started_at": "2026-11-01T14:49:39Z",
+          "completed_at": null
+        },
+        {
+          "name": "Upload native test diagnostics",
+          "status": "pending",
+          "conclusion": null,
+          "number": 5,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "name": "Post Set up native dependencies",
+          "status": "pending",
+          "conclusion": null,
+          "number": 9,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "name": "Post Check out source SHA",
+          "status": "pending",
+          "conclusion": null,
+          "number": 10,
+          "started_at": null,
+          "completed_at": null
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/check-runs/124880650847",
+      "labels": [
+        "windows-2022"
+      ],
+      "runner_id": 1000009292,
+      "runner_name": "GitHub Actions 1000009292",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 124880650852,
+      "run_id": 41317523731,
+      "workflow_name": "CI",
+      "head_branch": "cod103-stack/cod-108",
+      "run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/runs/41317523731",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSZ0Wus8AAAAdE3eCZA",
+      "head_sha": "157a4170f21d8f75d7d02611dd4e4bdfc5ca1dfa",
+      "url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/jobs/124880650852",
+      "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41317523731/job/124880650852",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-11-01T14:42:40Z",
+      "started_at": "2026-11-01T14:42:42Z",
+      "completed_at": "2026-11-01T14:43:37Z",
+      "name": "cargo clippy",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-01T14:42:43Z",
+          "completed_at": "2026-11-01T14:42:44Z"
+        },
+        {
+          "name": "Check out repository",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-01T14:42:44Z",
+          "completed_at": "2026-11-01T14:42:47Z"
+        },
+        {
+          "name": "Run clippy",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-01T14:42:47Z",
+          "completed_at": "2026-11-01T14:43:35Z"
+        },
+        {
+          "name": "Post Check out repository",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-11-01T14:43:35Z",
+          "completed_at": "2026-11-01T14:43:35Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-11-01T14:43:35Z",
+          "completed_at": "2026-11-01T14:43:35Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/check-runs/124880650852",
+      "labels": [
+        "ubuntu-latest"
+      ],
+      "runner_id": 1000009293,
+      "runner_name": "GitHub Actions 1000009293",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 124880650856,
+      "run_id": 41317523731,
+      "workflow_name": "CI",
+      "head_branch": "cod103-stack/cod-108",
+      "run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/runs/41317523731",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSZ0Wus8AAAAdE3eCaA",
+      "head_sha": "157a4170f21d8f75d7d02611dd4e4bdfc5ca1dfa",
+      "url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/jobs/124880650856",
+      "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41317523731/job/124880650856",
+      "status": "in_progress",
+      "conclusion": null,
+      "created_at": "2026-11-01T14:42:40Z",
+      "started_at": "2026-11-01T14:42:42Z",
+      "completed_at": null,
+      "name": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 2)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-01T14:42:43Z",
+          "completed_at": "2026-11-01T14:42:43Z"
+        },
+        {
+          "name": "Check out source SHA",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-01T14:42:43Z",
+          "completed_at": "2026-11-01T14:42:49Z"
+        },
+        {
+          "name": "Set up native dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-01T14:42:49Z",
+          "completed_at": "2026-11-01T14:49:18Z"
+        },
+        {
+          "name": "Run platform tests",
+          "status": "in_progress",
+          "conclusion": null,
+          "number": 4,
+          "started_at": "2026-11-01T14:49:18Z",
+          "completed_at": null
+        },
+        {
+          "name": "Upload native test diagnostics",
+          "status": "pending",
+          "conclusion": null,
+          "number": 5,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "name": "Post Set up native dependencies",
+          "status": "pending",
+          "conclusion": null,
+          "number": 9,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "name": "Post Check out source SHA",
+          "status": "pending",
+          "conclusion": null,
+          "number": 10,
+          "started_at": null,
+          "completed_at": null
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/check-runs/124880650856",
+      "labels": [
+        "windows-2022"
+      ],
+      "runner_id": 1000009288,
+      "runner_name": "GitHub Actions 1000009288",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 124880650858,
+      "run_id": 41317523731,
+      "workflow_name": "CI",
+      "head_branch": "cod103-stack/cod-108",
+      "run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/runs/41317523731",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSZ0Wus8AAAAdE3eCag",
+      "head_sha": "157a4170f21d8f75d7d02611dd4e4bdfc5ca1dfa",
+      "url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/jobs/124880650858",
+      "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41317523731/job/124880650858",
+      "status": "in_progress",
+      "conclusion": null,
+      "created_at": "2026-11-01T14:42:40Z",
+      "started_at": "2026-11-01T14:42:42Z",
+      "completed_at": null,
+      "name": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-01T14:42:43Z",
+          "completed_at": "2026-11-01T14:42:44Z"
+        },
+        {
+          "name": "Check out source SHA",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-01T14:42:44Z",
+          "completed_at": "2026-11-01T14:42:49Z"
+        },
+        {
+          "name": "Set up native dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-01T14:42:49Z",
+          "completed_at": "2026-11-01T14:48:55Z"
+        },
+        {
+          "name": "Run platform tests",
+          "status": "in_progress",
+          "conclusion": null,
+          "number": 4,
+          "started_at": "2026-11-01T14:48:55Z",
+          "completed_at": null
+        },
+        {
+          "name": "Upload native test diagnostics",
+          "status": "pending",
+          "conclusion": null,
+          "number": 5,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "name": "Post Set up native dependencies",
+          "status": "pending",
+          "conclusion": null,
+          "number": 9,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "name": "Post Check out source SHA",
+          "status": "pending",
+          "conclusion": null,
+          "number": 10,
+          "started_at": null,
+          "completed_at": null
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/check-runs/124880650858",
+      "labels": [
+        "windows-2022"
+      ],
+      "runner_id": 1000009295,
+      "runner_name": "GitHub Actions 1000009295",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 124880650873,
+      "run_id": 41317523731,
+      "workflow_name": "CI",
+      "head_branch": "cod103-stack/cod-108",
+      "run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/runs/41317523731",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSZ0Wus8AAAAdE3eCeQ",
+      "head_sha": "157a4170f21d8f75d7d02611dd4e4bdfc5ca1dfa",
+      "url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/jobs/124880650873",
+      "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41317523731/job/124880650873",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-11-01T14:42:40Z",
+      "started_at": "2026-11-01T14:42:42Z",
+      "completed_at": "2026-11-01T15:02:47Z",
+      "name": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-01T14:42:43Z",
+          "completed_at": "2026-11-01T14:42:43Z"
+        },
+        {
+          "name": "Check out source SHA",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-01T14:42:43Z",
+          "completed_at": "2026-11-01T14:42:48Z"
+        },
+        {
+          "name": "Set up native dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-01T14:42:48Z",
+          "completed_at": "2026-11-01T14:47:08Z"
+        },
+        {
+          "name": "Run platform tests",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-11-01T14:47:08Z",
+          "completed_at": "2026-11-01T15:02:42Z"
+        },
+        {
+          "name": "Upload native test diagnostics",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-11-01T15:02:42Z",
+          "completed_at": "2026-11-01T15:02:43Z"
+        },
+        {
+          "name": "Post Set up native dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9,
+          "started_at": "2026-11-01T15:02:43Z",
+          "completed_at": "2026-11-01T15:02:44Z"
+        },
+        {
+          "name": "Post Check out source SHA",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10,
+          "started_at": "2026-11-01T15:02:44Z",
+          "completed_at": "2026-11-01T15:02:45Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-11-01T15:02:45Z",
+          "completed_at": "2026-11-01T15:02:45Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/check-runs/124880650873",
+      "labels": [
+        "windows-2022"
+      ],
+      "runner_id": 1000009298,
+      "runner_name": "GitHub Actions 1000009298",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 124880650882,
+      "run_id": 41317523731,
+      "workflow_name": "CI",
+      "head_branch": "cod103-stack/cod-108",
+      "run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/runs/41317523731",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSZ0Wus8AAAAdE3eCgg",
+      "head_sha": "157a4170f21d8f75d7d02611dd4e4bdfc5ca1dfa",
+      "url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/jobs/124880650882",
+      "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41317523731/job/124880650882",
+      "status": "completed",
+      "conclusion": "failure",
+      "created_at": "2026-11-01T14:42:40Z",
+      "started_at": "2026-11-01T14:42:42Z",
+      "completed_at": "2026-11-01T15:02:42Z",
+      "name": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-01T14:42:43Z",
+          "completed_at": "2026-11-01T14:42:44Z"
+        },
+        {
+          "name": "Check out source SHA",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-01T14:42:44Z",
+          "completed_at": "2026-11-01T14:42:53Z"
+        },
+        {
+          "name": "Set up native dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-01T14:42:53Z",
+          "completed_at": "2026-11-01T14:49:23Z"
+        },
+        {
+          "name": "Run platform tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "number": 4,
+          "started_at": "2026-11-01T14:49:23Z",
+          "completed_at": "2026-11-01T15:02:36Z"
+        },
+        {
+          "name": "Upload native test diagnostics",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-11-01T15:02:36Z",
+          "completed_at": "2026-11-01T15:02:38Z"
+        },
+        {
+          "name": "Post Set up native dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9,
+          "started_at": "2026-11-01T15:02:38Z",
+          "completed_at": "2026-11-01T15:02:38Z"
+        },
+        {
+          "name": "Post Check out source SHA",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10,
+          "started_at": "2026-11-01T15:02:38Z",
+          "completed_at": "2026-11-01T15:02:39Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-11-01T15:02:40Z",
+          "completed_at": "2026-11-01T15:02:40Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/check-runs/124880650882",
+      "labels": [
+        "windows-2022"
+      ],
+      "runner_id": 1000009300,
+      "runner_name": "GitHub Actions 1000009300",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 124880650885,
+      "run_id": 41317523731,
+      "workflow_name": "CI",
+      "head_branch": "cod103-stack/cod-108",
+      "run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/runs/41317523731",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSZ0Wus8AAAAdE3eChQ",
+      "head_sha": "157a4170f21d8f75d7d02611dd4e4bdfc5ca1dfa",
+      "url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/jobs/124880650885",
+      "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41317523731/job/124880650885",
+      "status": "in_progress",
+      "conclusion": null,
+      "created_at": "2026-11-01T14:42:40Z",
+      "started_at": "2026-11-01T14:42:42Z",
+      "completed_at": null,
+      "name": "native (windows-x86_64) / native tests (windows-x86_64, generation, shard 4)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-01T14:42:43Z",
+          "completed_at": "2026-11-01T14:42:44Z"
+        },
+        {
+          "name": "Check out source SHA",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-01T14:42:44Z",
+          "completed_at": "2026-11-01T14:42:50Z"
+        },
+        {
+          "name": "Set up native dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-01T14:42:50Z",
+          "completed_at": "2026-11-01T14:48:59Z"
+        },
+        {
+          "name": "Run platform tests",
+          "status": "in_progress",
+          "conclusion": null,
+          "number": 4,
+          "started_at": "2026-11-01T14:48:59Z",
+          "completed_at": null
+        },
+        {
+          "name": "Upload native test diagnostics",
+          "status": "pending",
+          "conclusion": null,
+          "number": 5,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "name": "Post Set up native dependencies",
+          "status": "pending",
+          "conclusion": null,
+          "number": 9,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "name": "Post Check out source SHA",
+          "status": "pending",
+          "conclusion": null,
+          "number": 10,
+          "started_at": null,
+          "completed_at": null
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/check-runs/124880650885",
+      "labels": [
+        "windows-2022"
+      ],
+      "runner_id": 1000009294,
+      "runner_name": "GitHub Actions 1000009294",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 124880650890,
+      "run_id": 41317523731,
+      "workflow_name": "CI",
+      "head_branch": "cod103-stack/cod-108",
+      "run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/runs/41317523731",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSZ0Wus8AAAAdE3eCig",
+      "head_sha": "157a4170f21d8f75d7d02611dd4e4bdfc5ca1dfa",
+      "url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/jobs/124880650890",
+      "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41317523731/job/124880650890",
+      "status": "in_progress",
+      "conclusion": null,
+      "created_at": "2026-11-01T14:42:40Z",
+      "started_at": "2026-11-01T14:42:42Z",
+      "completed_at": null,
+      "name": "native (macos-arm64) / native tests (macos-arm64, unit)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-01T14:42:43Z",
+          "completed_at": "2026-11-01T14:42:44Z"
+        },
+        {
+          "name": "Check out source SHA",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-01T14:42:44Z",
+          "completed_at": "2026-11-01T14:42:48Z"
+        },
+        {
+          "name": "Set up native dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-01T14:42:48Z",
+          "completed_at": "2026-11-01T14:42:49Z"
+        },
+        {
+          "name": "Run platform tests",
+          "status": "in_progress",
+          "conclusion": null,
+          "number": 4,
+          "started_at": "2026-11-01T14:42:49Z",
+          "completed_at": null
+        },
+        {
+          "name": "Upload native test diagnostics",
+          "status": "pending",
+          "conclusion": null,
+          "number": 5,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "name": "Post Set up native dependencies",
+          "status": "pending",
+          "conclusion": null,
+          "number": 9,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "name": "Post Check out source SHA",
+          "status": "pending",
+          "conclusion": null,
+          "number": 10,
+          "started_at": null,
+          "completed_at": null
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/check-runs/124880650890",
+      "labels": [
+        "macos-latest"
+      ],
+      "runner_id": 1000009302,
+      "runner_name": "GitHub Actions 1000009302",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 124880650893,
+      "run_id": 41317523731,
+      "workflow_name": "CI",
+      "head_branch": "cod103-stack/cod-108",
+      "run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/runs/41317523731",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSZ0Wus8AAAAdE3eCjQ",
+      "head_sha": "157a4170f21d8f75d7d02611dd4e4bdfc5ca1dfa",
+      "url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/jobs/124880650893",
+      "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41317523731/job/124880650893",
+      "status": "in_progress",
+      "conclusion": null,
+      "created_at": "2026-11-01T14:42:40Z",
+      "started_at": "2026-11-01T14:42:42Z",
+      "completed_at": null,
+      "name": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 4)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-01T14:42:43Z",
+          "completed_at": "2026-11-01T14:42:44Z"
+        },
+        {
+          "name": "Check out source SHA",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-01T14:42:44Z",
+          "completed_at": "2026-11-01T14:42:51Z"
+        },
+        {
+          "name": "Set up native dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-01T14:42:51Z",
+          "completed_at": "2026-11-01T14:50:00Z"
+        },
+        {
+          "name": "Run platform tests",
+          "status": "in_progress",
+          "conclusion": null,
+          "number": 4,
+          "started_at": "2026-11-01T14:50:00Z",
+          "completed_at": null
+        },
+        {
+          "name": "Upload native test diagnostics",
+          "status": "pending",
+          "conclusion": null,
+          "number": 5,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "name": "Post Set up native dependencies",
+          "status": "pending",
+          "conclusion": null,
+          "number": 9,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "name": "Post Check out source SHA",
+          "status": "pending",
+          "conclusion": null,
+          "number": 10,
+          "started_at": null,
+          "completed_at": null
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/check-runs/124880650893",
+      "labels": [
+        "windows-2022"
+      ],
+      "runner_id": 1000009299,
+      "runner_name": "GitHub Actions 1000009299",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 124880650895,
+      "run_id": 41317523731,
+      "workflow_name": "CI",
+      "head_branch": "cod103-stack/cod-108",
+      "run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/runs/41317523731",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSZ0Wus8AAAAdE3eCjw",
+      "head_sha": "157a4170f21d8f75d7d02611dd4e4bdfc5ca1dfa",
+      "url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/jobs/124880650895",
+      "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41317523731/job/124880650895",
+      "status": "in_progress",
+      "conclusion": null,
+      "created_at": "2026-11-01T14:42:40Z",
+      "started_at": "2026-11-01T14:42:42Z",
+      "completed_at": null,
+      "name": "native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-01T14:42:43Z",
+          "completed_at": "2026-11-01T14:42:44Z"
+        },
+        {
+          "name": "Check out source SHA",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-01T14:42:44Z",
+          "completed_at": "2026-11-01T14:42:50Z"
+        },
+        {
+          "name": "Set up native dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-01T14:42:50Z",
+          "completed_at": "2026-11-01T14:49:13Z"
+        },
+        {
+          "name": "Run platform tests",
+          "status": "in_progress",
+          "conclusion": null,
+          "number": 4,
+          "started_at": "2026-11-01T14:49:13Z",
+          "completed_at": null
+        },
+        {
+          "name": "Upload native test diagnostics",
+          "status": "pending",
+          "conclusion": null,
+          "number": 5,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "name": "Post Set up native dependencies",
+          "status": "pending",
+          "conclusion": null,
+          "number": 9,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "name": "Post Check out source SHA",
+          "status": "pending",
+          "conclusion": null,
+          "number": 10,
+          "started_at": null,
+          "completed_at": null
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/check-runs/124880650895",
+      "labels": [
+        "windows-2022"
+      ],
+      "runner_id": 1000009303,
+      "runner_name": "GitHub Actions 1000009303",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 124880650906,
+      "run_id": 41317523731,
+      "workflow_name": "CI",
+      "head_branch": "cod103-stack/cod-108",
+      "run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/runs/41317523731",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSZ0Wus8AAAAdE3eCmg",
+      "head_sha": "157a4170f21d8f75d7d02611dd4e4bdfc5ca1dfa",
+      "url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/jobs/124880650906",
+      "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41317523731/job/124880650906",
+      "status": "in_progress",
+      "conclusion": null,
+      "created_at": "2026-11-01T14:42:40Z",
+      "started_at": "2026-11-01T14:42:42Z",
+      "completed_at": null,
+      "name": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-01T14:42:43Z",
+          "completed_at": "2026-11-01T14:42:43Z"
+        },
+        {
+          "name": "Check out source SHA",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-01T14:42:43Z",
+          "completed_at": "2026-11-01T14:42:49Z"
+        },
+        {
+          "name": "Set up native dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-01T14:42:49Z",
+          "completed_at": "2026-11-01T14:49:01Z"
+        },
+        {
+          "name": "Run platform tests",
+          "status": "in_progress",
+          "conclusion": null,
+          "number": 4,
+          "started_at": "2026-11-01T14:49:01Z",
+          "completed_at": null
+        },
+        {
+          "name": "Upload native test diagnostics",
+          "status": "pending",
+          "conclusion": null,
+          "number": 5,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "name": "Post Set up native dependencies",
+          "status": "pending",
+          "conclusion": null,
+          "number": 9,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "name": "Post Check out source SHA",
+          "status": "pending",
+          "conclusion": null,
+          "number": 10,
+          "started_at": null,
+          "completed_at": null
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/check-runs/124880650906",
+      "labels": [
+        "windows-2022"
+      ],
+      "runner_id": 1000009297,
+      "runner_name": "GitHub Actions 1000009297",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 124880650914,
+      "run_id": 41317523731,
+      "workflow_name": "CI",
+      "head_branch": "cod103-stack/cod-108",
+      "run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/runs/41317523731",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOSZ0Wus8AAAAdE3eCog",
+      "head_sha": "157a4170f21d8f75d7d02611dd4e4bdfc5ca1dfa",
+      "url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/jobs/124880650914",
+      "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41317523731/job/124880650914",
+      "status": "in_progress",
+      "conclusion": null,
+      "created_at": "2026-11-01T14:42:40Z",
+      "started_at": "2026-11-01T14:42:42Z",
+      "completed_at": null,
+      "name": "native (windows-x86_64) / native tests (windows-x86_64, generation, shard 3)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-01T14:42:43Z",
+          "completed_at": "2026-11-01T14:42:44Z"
+        },
+        {
+          "name": "Check out source SHA",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-01T14:42:44Z",
+          "completed_at": "2026-11-01T14:42:52Z"
+        },
+        {
+          "name": "Set up native dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-01T14:42:52Z",
+          "completed_at": "2026-11-01T14:48:07Z"
+        },
+        {
+          "name": "Run platform tests",
+          "status": "in_progress",
+          "conclusion": null,
+          "number": 4,
+          "started_at": "2026-11-01T14:48:07Z",
+          "completed_at": null
+        },
+        {
+          "name": "Upload native test diagnostics",
+          "status": "pending",
+          "conclusion": null,
+          "number": 5,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "name": "Post Set up native dependencies",
+          "status": "pending",
+          "conclusion": null,
+          "number": 9,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "name": "Post Check out source SHA",
+          "status": "pending",
+          "conclusion": null,
+          "number": 10,
+          "started_at": null,
+          "completed_at": null
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/check-runs/124880650914",
+      "labels": [
+        "windows-2022"
+      ],
+      "runner_id": 1000009301,
+      "runner_name": "GitHub Actions 1000009301",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    }
+  ]
+}

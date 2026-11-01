@@ -1,0 +1,150 @@
+{
+  "schema_version": 1,
+  "work_id": "COD-108",
+  "run_id": 41317523731,
+  "attempt": 1,
+  "head": "157a4170f21d8f75d7d02611dd4e4bdfc5ca1dfa",
+  "actual_source_S": "c2e6a277d884036fa5170cba6933c4825706a1b0",
+  "scope": "closedactualWindowsfailurecheckpoint",
+  "expected_closed_file_count": 26,
+  "closed_files": [
+    {
+      "path": "API-read-receipts.json",
+      "bytes": 868,
+      "sha256": "fb45eb18a490ccbb733a266c96dc1ffe28367e4105c768b623034b8524f74e4e"
+    },
+    {
+      "path": "actual-failing-case-frozen-source.txt",
+      "bytes": 1449,
+      "sha256": "55bce2bf03adc13e57ea10a8c0a9e6a08ee2091acce96d2369d52d96c0c2618b"
+    },
+    {
+      "path": "actual-three-diagnostic-ZIP-full-member-inventories.json",
+      "bytes": 11557,
+      "sha256": "108e11bfb607de94fdeb5c45007c60f0143450e4c5745538485da140954dc71d"
+    },
+    {
+      "path": "actual-three-platform-reports-cases-and-failure-audit.json",
+      "bytes": 655963,
+      "sha256": "27a502d5c36324395397d887ce07cb2265af5979c1edc589cc46f6acb109acd3"
+    },
+    {
+      "path": "actual-three-whole-job-log-audits.json",
+      "bytes": 22391,
+      "sha256": "2ef83554dd4a81f60c8d812d15730cd8ec87e06a927eaf802283b7618474fb96"
+    },
+    {
+      "path": "artifact-13088199023-test-diagnostics-windows-x86_64-unit-shard2-1.zip",
+      "bytes": 55858,
+      "sha256": "ddd1c3a354b08a84dfc974e822af7e2f5f35c85ee232ff219d56dbb53a6e6f1b"
+    },
+    {
+      "path": "artifact-13088199023.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "artifact-13088343525-test-diagnostics-windows-x86_64-integration-shard3-1.zip",
+      "bytes": 33260,
+      "sha256": "a3c7d4e2e7d1891fc22201b79b6c2e25f3d86d210dab43afcb3bbe9920da7158"
+    },
+    {
+      "path": "artifact-13088343525.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "artifact-13088990365-test-diagnostics-windows-x86_64-unit-shard4-1.zip",
+      "bytes": 59490,
+      "sha256": "d4bb78aa2583a9f804e2c46a23e06093a4906ee7191ab9bb0722869eb6802fc6"
+    },
+    {
+      "path": "artifact-13088990365.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "artifacts.json",
+      "bytes": 3688,
+      "sha256": "443f953783106501bb3a6de442c4ba46d798ead90617121970ee298611501ab8"
+    },
+    {
+      "path": "available-download-receipts.json",
+      "bytes": 9581,
+      "sha256": "195f1b0f55538841e1f9d98a46d70e36cc4b9e818d5966208b5e63916f8bd501"
+    },
+    {
+      "path": "checks.json",
+      "bytes": 113416,
+      "sha256": "2bed8f4cf451f5303fe2cc2a0a96559857b6c222fa89e2e398cf2b175b1d3bb0"
+    },
+    {
+      "path": "failed-job-actual-assertion-excerpts.json",
+      "bytes": 22418,
+      "sha256": "b417ec3298af6f2dae4ced51287fc3bee5bfd2b3f13cf9a864eb8e02dad80b35"
+    },
+    {
+      "path": "job-124880650822.log",
+      "bytes": 362705,
+      "sha256": "6b9587fec485f1364e3b1f1724f7298c46a144ad52995d7437ffde47fbfa3423"
+    },
+    {
+      "path": "job-124880650822.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "job-124880650873.log",
+      "bytes": 107164,
+      "sha256": "87adc806b79a3a085f3ffeafb73739a5026df5ebf92065abf5db393ed5ad6d5e"
+    },
+    {
+      "path": "job-124880650873.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "job-124880650882.log",
+      "bytes": 147570,
+      "sha256": "cd42b3e23fc476ba38ae99c2aa023a77d3e3b77136babb9487a96ef0f51af9a6"
+    },
+    {
+      "path": "job-124880650882.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "jobs.json",
+      "bytes": 62035,
+      "sha256": "e9605d34774ed29f058940951278f757943319a6318db27690b7b2b5f5b63f9a"
+    },
+    {
+      "path": "prior-closed-checkpoints-preserved.json",
+      "bytes": 679,
+      "sha256": "d19fdd809f71e0d4d3e617f617980056be257faaf2d4c2b2d6efd5c125acc23e"
+    },
+    {
+      "path": "report.md",
+      "bytes": 4187,
+      "sha256": "53e4a65a03456f72b0e11195c7ba86f6bea9bfe42f5b699afa622f802c1f1e96"
+    },
+    {
+      "path": "result.json",
+      "bytes": 77571,
+      "sha256": "d08ebca005bf7c0d698c5f011e00bed16d3bd9a0a01ea05d9b881140d84f3bc9"
+    },
+    {
+      "path": "verified-root-cause-and-owner-recommendation.json",
+      "bytes": 5366,
+      "sha256": "c56026eb34d2dd31399ac6064e8314f1d086c87ed144fa2c99fb360ad78318c1"
+    }
+  ],
+  "sample": [
+    {
+      "path": "API-read-receipts.json",
+      "bytes": 868,
+      "sha256": "fb45eb18a490ccbb733a266c96dc1ffe28367e4105c768b623034b8524f74e4e"
+    }
+  ],
+  "manifest_self_hash": "externalhandoffonly,notrecursive"
+}

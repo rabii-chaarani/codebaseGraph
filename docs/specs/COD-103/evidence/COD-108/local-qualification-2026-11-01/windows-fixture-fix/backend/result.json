@@ -1,0 +1,105 @@
+{
+  "schema": "COD108 existing Windows portability test correction",
+  "task": "Restore actual classifier Git-path regression contract for Windows while retaining newline/NUL coverage on supported Unix filesystems.",
+  "snapshot": {
+    "branch": "cod103-stack/cod-108",
+    "head": "157a4170f21d8f75d7d02611dd4e4bdfc5ca1dfa",
+    "tree": "2f8d78fab4fb9a11a21290e92da7f894fff0fd81",
+    "worktree": "/private/tmp/codebasegraph-cod108-20261101"
+  },
+  "only_changed_path": "crates/xtask/src/ci.rs",
+  "ci_source": {
+    "baseline_bytes": 48671,
+    "baseline_sha256": "b8971114c0ed2d79675b94cfb41133482c185c5ee8609a4282ed565c9136967f",
+    "final_bytes": 49894,
+    "final_sha256": "52595249047f49a2b8c9dece9fb48fbbafda6cd5e70849c5b8ffaf252c0f400c",
+    "production_prefix_unchanged": true,
+    "production_prefix_bytes": 28536,
+    "production_prefix_sha256": "1233773bf939f15216e20e61e42e55c4676edd75aa316baa2240852f0379c9e7"
+  },
+  "other_owned_or_unowned_files": {
+    "main.rs_sha256": "94e36cb3ceed27f45b552e42c9d6a52aa7cfef8dd70876f6e6ab4e562ec8891d",
+    "workflow_tests.rs_sha256": "66c2921315dae1dad20a1cfd4eed620019d702da6c0e7e6ec3c1c43ff8ab0450",
+    "ci_yaml_sha256": "b59d7028101120f6885870cec054a65d9788f55d364dc0f2eb2b53bd4fd9c339",
+    "docs_release_sha256": "90d84f6614be6cd74b8340dd73b1a2c1000457af319475cf8939b1c316ebf486",
+    "Cargo_manifests_lock_changed": false,
+    "tracked_status": "M crates/xtask/src/ci.rs"
+  },
+  "cause_and_repair": {
+    "preserved_hosted_run": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41317523731 (attempt1; Windows unit job124880650882)",
+    "failure": "`ci::tests::git_path_names_are_nul_delimited_and_extra_paths_force_full` attempted `fs::write` to an actual filename containing newline; Windows failed with OS error123 / `InvalidFilename` before the classifier assertion.",
+    "raw_log_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41317523731-attempt1/availability-checkpoint03-failure/job-124880650882.log",
+    "raw_log_bytes": 147570,
+    "raw_log_sha256": "cd42b3e23fc476ba38ae99c2aa023a77d3e3b77136babb9487a96ef0f51af9a6",
+    "frozen_source_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41317523731-attempt1/availability-checkpoint03-failure/actual-failing-case-frozen-source.txt",
+    "frozen_source_sha256": "55bce2bf03adc13e57ea10a8c0a9e6a08ee2091acce96d2369d52d96c0c2618b",
+    "classification": "Hosted failure is a Windows fixture portability defect, not a production classifier failure, intermittent failure, or pre-existing skipped test.",
+    "correction": "The existing all-platform real-Git added-path test now uses `unrelated-extra.txt` and still requires full/changed-path-set. A separate `#[cfg(unix)]` test commits an actual newline-bearing Git path and requires full. The in-memory raw NUL/newline parser test remains unguarded and runs on all platforms."
+  },
+  "tests": [
+    {
+      "name": "ci::tests::git_path_names_are_nul_delimited_and_extra_paths_force_full",
+      "command": "cargo test -p xtask --locked ci::tests::git_path_names_are_nul_delimited_and_extra_paths_force_full -- --nocapture",
+      "status": 0,
+      "result": "1 passed",
+      "log": "raw/focused-portable-added-path-final.log"
+    },
+    {
+      "name": "ci::tests::git_newline_path_names_remain_nul_delimited",
+      "command": "cargo test -p xtask --locked ci::tests::git_newline_path_names_remain_nul_delimited -- --nocapture",
+      "status": 0,
+      "result": "1 passed (current macOS/Unix case; source cfg(unix))",
+      "log": "raw/focused-unix-newline-path-final.log"
+    },
+    {
+      "name": "ci::tests::raw_diff_parser_accepts_newline_names_and_rejects_unknown_or_truncated_records",
+      "command": "cargo test -p xtask --locked ci::tests::raw_diff_parser_accepts_newline_names_and_rejects_unknown_or_truncated_records -- --nocapture",
+      "status": 0,
+      "result": "1 passed; no cfg guard, runs on every platform",
+      "log": "raw/focused-rawdiff-all-platform-final.log"
+    },
+    {
+      "name": "CI module",
+      "command": "cargo test -p xtask --locked ci::tests::",
+      "status": 0,
+      "result": "14 passed; 0 failed",
+      "log": "raw/focused-ci-module-final-2.log"
+    },
+    {
+      "name": "xtask package",
+      "command": "cargo test -p xtask --locked",
+      "status": 0,
+      "result": "103 passed; 0 failed",
+      "log": "raw/cargo-test-xtask-final.log"
+    },
+    {
+      "name": "format",
+      "command": "cargo fmt --check",
+      "status": 0,
+      "result": "passed",
+      "log": "raw/cargo-fmt-final.log"
+    },
+    {
+      "name": "strict clippy",
+      "command": "cargo clippy -p xtask --all-targets --all-features --locked -- -D warnings",
+      "status": 0,
+      "result": "passed; no warnings",
+      "log": "raw/cargo-clippy-final.log"
+    }
+  ],
+  "historical_failures": [
+    {
+      "command": "cargo fmt --check before applying rustfmt’s exact test-only format correction",
+      "status": 1,
+      "disposition": "fixed using exact edit; final cargo fmt --check passes",
+      "log": "raw/cargo-fmt-check.log"
+    }
+  ],
+  "platform_limits": [
+    "This host is macOS Darwin 25.6 arm64, not Windows; the exact Windows CI failure remains the authoritative reproducer. No Windows check was rerun or claimed.",
+    "No GitHub dispatch/re-run/cancel, API/CI settings, branch, dependency, production source, manifest or lockfile changes."
+  ],
+  "editing_method_history": "This is a narrow fixture-only source correction using exact-unique edit replacements. The previously disclosed initial core Path.write_text incident and subsequent parent-approved procedural correction remain recorded in the prior COD108 handoff; this correction does not rewrite history or claim retroactive compliance.",
+  "raw_log_directory": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/windows-fixture-fix/raw",
+  "raw_logs_count": 16
+}

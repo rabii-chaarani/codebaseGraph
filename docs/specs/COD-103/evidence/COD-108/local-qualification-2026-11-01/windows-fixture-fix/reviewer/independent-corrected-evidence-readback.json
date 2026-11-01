@@ -1,0 +1,64 @@
+{
+  "closed_report_paths": {
+    "directory": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-windows-fixture-fix",
+    "report.md": "541474dfcaaca583d2985932d4106bde090584a7e2f8954ef3b9fa62273b974f",
+    "result.json": "860df6a40b96dbe52e49abc9f7f314cc895ab471a07357080aa0b473f22d85c8",
+    "files.json": "a3064120c64cc7555e93b2ba081c90d1a3b4142ba8c6bc826aea4e460ba49d6d"
+  },
+  "manifest_entries_checked": 28,
+  "manifest_mismatches": [],
+  "junit": {
+    "sha256": "809c8d1142a3489976d463780e315b361d5491265d2c827398d2c0b50cb5b9a5",
+    "name": "nextest-run",
+    "tests": "103",
+    "failures": "0",
+    "errors": "0",
+    "uuid": "e3e5aba4-afa5-4857-a5c3-a7d88b8f2701",
+    "timestamp": "2026-11-02T00:58:45.075+09:30",
+    "time": "28.565",
+    "actual_case_count": 103,
+    "discovery_name_match": true,
+    "core_case_count": 14,
+    "affected_case_names": [
+      "ci::tests::git_path_names_are_nul_delimited_and_extra_paths_force_full",
+      "ci::tests::git_newline_path_names_remain_nul_delimited",
+      "ci::tests::raw_diff_parser_accepts_newline_names_and_rejects_unknown_or_truncated_records"
+    ],
+    "failure_or_error_or_skip_elements": 0
+  },
+  "source_identity": {
+    "crates/xtask/src/ci.rs": {
+      "bytes": 49894,
+      "sha256": "52595249047f49a2b8c9dece9fb48fbbafda6cd5e70849c5b8ffaf252c0f400c"
+    },
+    "crates/xtask/src/main.rs": {
+      "bytes": 235135,
+      "sha256": "94e36cb3ceed27f45b552e42c9d6a52aa7cfef8dd70876f6e6ab4e562ec8891d"
+    },
+    ".github/workflows/ci.yml": {
+      "bytes": 21095,
+      "sha256": "b59d7028101120f6885870cec054a65d9788f55d364dc0f2eb2b53bd4fd9c339"
+    },
+    "docs/release.md": {
+      "bytes": 22125,
+      "sha256": "90d84f6614be6cd74b8340dd73b1a2c1000457af319475cf8939b1c316ebf486"
+    },
+    "crates/xtask/src/release/workflow_tests.rs": {
+      "bytes": 44385,
+      "sha256": "66c2921315dae1dad20a1cfd4eed620019d702da6c0e7e6ec3c1c43ff8ab0450"
+    }
+  },
+  "source_equal_independent_tested_copy": true,
+  "final_git_status_and_diff_equal_start": true,
+  "production_prefix_unchanged_bytes": 28536,
+  "production_prefix_SHA256": "1233773bf939f15216e20e61e42e55c4676edd75aa316baa2240852f0379c9e7",
+  "original_integrated_review_artifacts_unchanged": {
+    "report.md": "d2781946727fdbcf1cf0218b2e6c36a69b9eb99bae17f4d07e7dab7df0ebe52e",
+    "result.json": "2827ac661fe9d926520e3205c568707146968427f5e14d69bf2769dd1c9bafea",
+    "files.json": "50032d0996f14278372b7c6e424b2dd7f99e9e0633688446478a81a009cac3d6"
+  },
+  "original_commit_confirmation_report_unchanged_SHA256": "c54715a66e21798cea940a9b88d2cfc5126d69ef2e2e80902085abc92cce622c",
+  "old_windows_failure_report_preserved_SHA256": "53e4a65a03456f72b0e11195c7ba86f6bea9bfe42f5b699afa622f802c1f1e96",
+  "reviewer_execution": "Read-only static source/Git/evidence/hash/XML only; no Cargo, test, platform probe, API write, model, tracker, Git mutation or watch.",
+  "platform_limit": "All new passing execution is Darwin; added103rd case is Unix-only; corrected-head actualWindows/fullCI pending after separatepush."
+}

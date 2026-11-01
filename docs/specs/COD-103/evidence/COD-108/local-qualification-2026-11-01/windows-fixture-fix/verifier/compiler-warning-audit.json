@@ -1,0 +1,32 @@
+[
+  {
+    "log": "format.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "actual_compiler_warning_lines": []
+  },
+  {
+    "log": "inventory-build.log",
+    "sha256": "7ac3c677efac9a729063df2fadc83c086e9c9c5091ef1c8bc566dbb512d58a55",
+    "actual_compiler_warning_lines": []
+  },
+  {
+    "log": "xtask-run.log",
+    "sha256": "42bd4b6f43c4125ba28098b4936707a489ccc3553ae48fa09a0f3f6973fc7a58",
+    "actual_compiler_warning_lines": []
+  },
+  {
+    "log": "strict-xtask-clippy.log",
+    "sha256": "f0788aa36d1c86b6ccdfb7f4042a5574102d82061c046422a2d42e008a1e4710",
+    "actual_compiler_warning_lines": []
+  },
+  {
+    "log": "check-workflows.log",
+    "sha256": "fcc6a1660c45371ad9ba0342c992413dcf02caa750636444e8f6c5bb47550a8a",
+    "actual_compiler_warning_lines": []
+  },
+  {
+    "log": "release-gate.log",
+    "sha256": "459c074511a1f98a6a1db6ffa5ae3514591d32f3f4ee9b7259085f435d5d9dc4",
+    "actual_compiler_warning_lines": []
+  }
+]

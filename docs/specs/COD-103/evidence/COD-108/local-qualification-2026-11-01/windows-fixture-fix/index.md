@@ -1,0 +1,19 @@
+# COD-108 — Windows fixture portability correction
+
+This source correction and its before/after evidence belong to the same PR175. It fixes a real test-fixture defect, not production classification. Original157a evidence/index and its f98/102-test/d278 review history remain unchanged. No new approval, claim, model verdict/fold, Done, main integration, COD-110 or release scope is introduced.
+
+## Before: actual Windows failure
+
+[Original failure report](before/report.md), [result](before/result.json), [unchanged author manifest](before/files.json), raw job logs and diagnostic ZIP member/hash inventories preserve run41317523731/attempt1 at head157a4170f21d8f75d7d02611dd4e4bdfc5ca1dfa and actual checkoutc2e6a277d884036fa5170cba6933c4825706a1b0. The old b8971114… ci.rs fixture tried to create a newline filename on Windows; unit2 job124880650882 failed with InvalidFilename/code123 before the classifier assertion. This remains a real failure, not a flake or retrospective pass. ZIP13088199023 SHA256ddd1c3a3… is described by its original full member/receipt proof; binary ZIPs are physically excluded, not rewritten.
+
+## Source correction and after evidence
+
+The all-platform Git extra-path fixture now uses unrelated-extra.txt and still executes the changed-path-set classifier assertion. Unix-only real newline-path coverage remains separate, and the raw NUL-parser regression remains active on all platforms. Only test code in crates/xtask/src/ci.rs changed:49894 bytes, SHA25652595249047f49a2b8c9dece9fb48fbbafda6cd5e70849c5b8ffaf252c0f400c. The first28536 production bytes are unchanged; the copy map records their full hash. All2292 other prior tracked blob/mode pairs,17 README.md package paths, manifests/lock/config/native recipes/actions/main/YAML/release docs remain unchanged.
+
+- [Backend correction report](backend/report.md), [result](backend/result.json), original [manifest](backend/files.json) and16 original raw logs preserve actual attempts without reconstructed entries.
+- [Independent corrected local verification](verifier/report.md), [result](verifier/result.json), original [manifest](verifier/files.json) and genuine [JUnit](verifier/xtask-junit.xml):103 Darwin tests, zero failures/errors/skips/retries; formatting, strict xtask Clippy and policy gates passed with zero compiler warnings. The new Unix case increases the Darwin count; this is NOT corrected Windows qualification. Production ran no Cargo/tests/builds.
+- [Same focused Final Reviewer](reviewer/report.md), [result](reviewer/result.json), original [manifest](reviewer/files.json): PASS for the narrow correction and affected local evidence. COD108-FR-001/P2 source and affected Darwin behavior are resolved; actual corrected Windows/new-head full CI remains pending.
+
+[copy-selection-map.json](copy-selection-map.json) records every original source path/hash/size/mode and exact copy readback scope. Original report/result/manifests retain absolute private references, CRLF/newlines, raw historical whitespace and empty streams. Manifests describe full original closures, including explicitly excluded ZIP/NUL/redundant source payloads. No README/executable/binary/model payload or credential is added. Existing original evidence is not superseded silently.
+
+After committed identity confirmation and separately authorized normal push, PR175 must obtain fresh FULL CI on the corrected head, including real Windows execution. Old remaining run jobs/artifacts or an unborn new CI run are not prerequisites to pushing the reviewed fix. No manual dispatch/rerun/cancel, retention expansion or settings change is authorized here. Normal push may invoke the unchanged workflow concurrency policy. Full A04/A05/model reconciliation and post-main trusted lightweight rollout gates remain at their approved stages; no passing hosted result is claimed by these local files.

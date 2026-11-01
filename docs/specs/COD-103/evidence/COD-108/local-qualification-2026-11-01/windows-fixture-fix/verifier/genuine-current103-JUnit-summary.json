@@ -1,0 +1,64 @@
+{
+  "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-windows-fixture-fix/xtask-junit.xml",
+  "sha256": "809c8d1142a3489976d463780e315b361d5491265d2c827398d2c0b50cb5b9a5",
+  "run_uuid": "e3e5aba4-afa5-4857-a5c3-a7d88b8f2701",
+  "tests": 103,
+  "passed": 103,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "retries": 0,
+  "threads": 1,
+  "profile": "native-tests/privatefixturefix",
+  "all_names_match_actual_discovery": true,
+  "actual3affected_cases": [
+    {
+      "name": "ci::tests::git_path_names_are_nul_delimited_and_extra_paths_force_full",
+      "attributes": {
+        "name": "ci::tests::git_path_names_are_nul_delimited_and_extra_paths_force_full",
+        "classname": "xtask::bin/xtask",
+        "timestamp": "2026-11-02T00:58:45.215+09:30",
+        "time": "0.081"
+      },
+      "status": "passed"
+    },
+    {
+      "name": "ci::tests::git_newline_path_names_remain_nul_delimited",
+      "attributes": {
+        "name": "ci::tests::git_newline_path_names_remain_nul_delimited",
+        "classname": "xtask::bin/xtask",
+        "timestamp": "2026-11-02T00:58:45.135+09:30",
+        "time": "0.080"
+      },
+      "status": "passed"
+    },
+    {
+      "name": "ci::tests::raw_diff_parser_accepts_newline_names_and_rejects_unknown_or_truncated_records",
+      "attributes": {
+        "name": "ci::tests::raw_diff_parser_accepts_newline_names_and_rejects_unknown_or_truncated_records",
+        "classname": "xtask::bin/xtask",
+        "timestamp": "2026-11-02T00:58:45.704+09:30",
+        "time": "0.004"
+      },
+      "status": "passed"
+    }
+  ],
+  "actual14_core_cases": [
+    "ci::tests::classifier_requires_strictly_increasing_versions_and_new_changelog_section",
+    "ci::tests::git_acquisition_failures_select_full_and_same_sha_is_full",
+    "ci::tests::git_newline_path_names_remain_nul_delimited",
+    "ci::tests::git_path_names_are_nul_delimited_and_extra_paths_force_full",
+    "ci::tests::immutable_git_diff_rejects_added_deleted_and_symlink_paths",
+    "ci::tests::immutable_git_diff_rejects_executable_metadata_modes",
+    "ci::tests::immutable_git_diff_rejects_submodule_mode",
+    "ci::tests::immutable_git_diff_requires_ancestor_and_exact_metadata_paths",
+    "ci::tests::metadata_classifier_rejects_duplicate_and_decoy_contexts",
+    "ci::tests::metadata_classifier_rejects_partial_mismatch_external_lock_and_history_edits",
+    "ci::tests::metadata_recognizers_reject_multiline_comment_context_and_duplicate_workspace_records",
+    "ci::tests::pr165_shaped_complete_metadata_transition_is_lightweight",
+    "ci::tests::pr167_shaped_complete_metadata_transition_is_lightweight",
+    "ci::tests::raw_diff_parser_accepts_newline_names_and_rejects_unknown_or_truncated_records"
+  ],
+  "only_added_vs_historical102": "ci::tests::git_newline_path_names_remain_nul_delimited (cfg(unix))",
+  "not_synthetic_XML_or_modelingest": true
+}
