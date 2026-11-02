@@ -1,0 +1,20 @@
+ACTUAL_COMMAND_START C:\Users\rabii\.rustup\toolchains\stable-x86_64-pc-windows-msvc\bin\cargo.exe build --offline --locked -p xtask --bin xtask --profile native-tests
+ACTUAL_COMMAND_END exit=0
+ACTUAL_COMMAND_START C:\Program Files\Git\cmd\git.exe init --quiet
+ACTUAL_COMMAND_END exit=0
+ACTUAL_COMMAND_START C:\Program Files\Git\cmd\git.exe config --local core.autocrlf true
+ACTUAL_COMMAND_END exit=0
+ACTUAL_COMMAND_START C:\Program Files\Git\cmd\git.exe add -- Cargo.toml Cargo.lock crates/k-wiki/Cargo.toml crates/xtask/Cargo.toml .release-please-manifest.json CHANGELOG.md
+ACTUAL_COMMAND_END exit=0
+ACTUAL_COMMAND_START C:\Program Files\Git\cmd\git.exe -c user.name=COD110-final-verifier -c user.email=cod110-final@example.invalid -c commit.gpgsign=false -c core.hooksPath=NUL commit -m "test: bind committed metadata fixture"
+ACTUAL_COMMAND_END exit=0
+ACTUAL_COMMAND_START C:\Program Files\Git\cmd\git.exe rev-parse HEAD
+ACTUAL_COMMAND_END exit=0
+ACTUAL_COMMAND_START C:\Users\rabii\AppData\Local\Temp\c110-final-b5aa2377\target\native-tests\xtask.exe release-metadata --source-dir "C:\Users\rabii\AppData\Local\Temp\c110-final-b5aa2377\cli-six-metadata-fixture" --source-sha 96d44cd9203a725f7c8fb1bec0af18b22488b567
+ACTUAL_COMMAND_END exit=0
+ACTUAL_COMMAND_START C:\Users\rabii\AppData\Local\Temp\c110-final-b5aa2377\target\native-tests\xtask.exe release-metadata --source-dir "C:\Users\rabii\AppData\Local\Temp\c110-final-b5aa2377\cli-six-metadata-fixture" --source-sha 96d44cd9203a725f7c8fb1bec0af18b22488b567
+ACTUAL_COMMAND_END exit=0
+ACTUAL_COMMAND_START C:\Users\rabii\AppData\Local\Temp\c110-final-b5aa2377\target\native-tests\xtask.exe release-metadata --source-dir "C:\Users\rabii\AppData\Local\Temp\c110-final-b5aa2377\cli-six-metadata-fixture" --source-sha 96d44cd9203a725f7c8fb1bec0af18b22488b567
+ACTUAL_COMMAND_END exit=0
+ACTUAL_COMMAND_START C:\Users\rabii\AppData\Local\Temp\c110-final-b5aa2377\target\native-tests\xtask.exe release-metadata --source-dir "C:\Users\rabii\AppData\Local\Temp\c110-final-b5aa2377\cli-six-metadata-fixture" --source-sha 96d44cd9203a725f7c8fb1bec0af18b22488b567
+ACTUAL_COMMAND_END exit=1

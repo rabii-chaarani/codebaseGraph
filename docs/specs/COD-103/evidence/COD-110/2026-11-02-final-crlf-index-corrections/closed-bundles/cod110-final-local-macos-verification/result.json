@@ -1,0 +1,284 @@
+{
+  "status": "PASS_LOCAL_MACOS_ASSIGNED_SCOPE",
+  "closed_utc": "2026-11-02T11:18:02.564740+00:00",
+  "source": {
+    "repository": "/private/tmp/codebasegraph-cod110-20261101",
+    "HEAD": "862bb3b3c40c36b21cdcd388f596d52ad482530b",
+    "tree": "02cd3ebed5a1861bef4506f678449d836e7e2bf8",
+    "dirty_files": {
+      "crates/xtask/src/ci.rs": {
+        "bytes": 95794,
+        "mode": "0o644",
+        "sha256": "9cce67411b43c86a6797d35f5538bf2cc72227713c4dfa0baae5a02eb258e2fd"
+      },
+      "crates/xtask/src/release.rs": {
+        "bytes": 33789,
+        "mode": "0o644",
+        "sha256": "06b674185df7f7ac4e7cf3cd2642c2d75b4eb62169ee922c3c2f9724fd760594"
+      }
+    },
+    "dirty_patch": {
+      "path": "17-dirty-source.patch",
+      "bytes": 8097,
+      "mode": "0o644",
+      "sha256": "3438843aea02a1de52173b61203a498f34da993c2738233463e9e008cc5cb1e5"
+    },
+    "source_inventory_files": 2696,
+    "all_before_after_entries_identical": true,
+    "unchanged_other_source_files": 2694,
+    "protected_before_after_identical": true
+  },
+  "execution_settings": {
+    "role": "Evidence Verifier",
+    "host_accepted_from_parent": "explicit openai-codex/gpt-6.1-sol / XHIGH / default / fresh non-fork",
+    "mapped_model": "gpt-6.1-sol",
+    "mapped_effort": "xhigh",
+    "runtime_self_inspection": "unexposed; no known mismatch",
+    "nested_dispatch": false
+  },
+  "traceability": [
+    {
+      "criterion": "Release-candidate metadata accepts LF/all-six CRLF/mixed physical bytes without changing checked-out metadata or Git index",
+      "requirement": "COD110 release-candidate shared metadata boundary; no new ID invented",
+      "claim": "No assigned claim mutation or fold",
+      "anchors": "crates/xtask/src/ci.rs::validate_release_candidate / normalize_crlf_pairs; release.rs::metadata_command / read_metadata",
+      "method": "Full actual current 158-test nextest + three new actual non-test CLI fixture runs",
+      "result": "PASS; all positive output version/tag/notes equivalent and source_sha equals own fixture HEAD; full raw index/file content/modes unchanged"
+    },
+    {
+      "criterion": "Stale stat cache does not write index on a clean accepted checkout (COD110-FR-001)",
+      "requirement": "Existing read-only checkout contract",
+      "claim": "No assigned claim mutation or fold",
+      "anchors": "ci.rs:585 diff.autoRefreshIndex=false; ci::tests::verify_checkout_accepts_stale_stat_without_mutating_index",
+      "method": "Current test executed + Cargo.toml mtime shifted back exactly 10 s in each positive private fixture before raw capture",
+      "result": "PASS; all three actual CLI accepted with exact raw before/after index byte equality"
+    },
+    {
+      "criterion": "Dirty tracked metadata still fails without mutation",
+      "requirement": "Existing checkout source binding",
+      "claim": "No assigned claim mutation or fold",
+      "anchors": "ci.rs::verify_checkout and full current staged/unstaged/flagged/mode cases",
+      "method": "Actual CLI on dirty tracked Cargo.toml plus full current suite",
+      "result": "PASS exit1; raw error identifies worktree change Cargo.toml; full index/files unchanged"
+    },
+    {
+      "criterion": "Classifier and ordinary reader compatibility remain intact",
+      "requirement": "Approved compatibility scope; no classifier/ordinary reader normalization",
+      "claim": "No assigned claim mutation or fold",
+      "anchors": "ci::tests::classifier_keeps_raw_crlf_metadata_ineligible; tests::ordinary_release_version_readers_keep_existing_permissive_manifest_behavior",
+      "method": "Both named cases in exact current158 inventory/JUnit; ordinary gates actual execution",
+      "result": "PASS"
+    },
+    {
+      "criterion": "Repository formatting, lint and policy gates",
+      "requirement": "Existing repository check gates",
+      "claim": "Not a model claim",
+      "anchors": "Cargo fmt/Clippy; xtask check-workflows/release-gate",
+      "method": "Exact raw command/start/result evidence files",
+      "result": "PASS; zero Rust compiler warnings"
+    }
+  ],
+  "junit": {
+    "bytes": 77242,
+    "mode": "0o644",
+    "sha256": "714ac93274e22e22b39c164b697688f72e0fffd5581e51bcfbed9a87aaa19f34",
+    "uuid": "04f09f6e-edf5-47f4-85ea-d1c9a0e744e7",
+    "tests": 158,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0,
+    "names_match_inventory": true,
+    "runner_duration_seconds": "71.499",
+    "executed_once": true
+  },
+  "binary": {
+    "binary_path": "/private/tmp/codebasegraph-cod110-20261101/target/native-tests/xtask",
+    "identity": {
+      "bytes": 2194688,
+      "mode": "0o755",
+      "sha256": "aa514794c5303514964bd80077aca9688b6f641ae16845d4e1818440c220d42c"
+    },
+    "compiled_by": "08-check-workflows",
+    "compile_result_exit": 0,
+    "source_HEAD": "862bb3b3c40c36b21cdcd388f596d52ad482530b",
+    "source_tree": "02cd3ebed5a1861bef4506f678449d836e7e2bf8",
+    "source_inventory": "00-source-before.json",
+    "current_dirty_files": {
+      "crates/xtask/src/ci.rs": {
+        "bytes": 95794,
+        "mode": "0o644",
+        "sha256": "9cce67411b43c86a6797d35f5538bf2cc72227713c4dfa0baae5a02eb258e2fd"
+      },
+      "crates/xtask/src/release.rs": {
+        "bytes": 33789,
+        "mode": "0o644",
+        "sha256": "06b674185df7f7ac4e7cf3cd2642c2d75b4eb62169ee922c3c2f9724fd760594"
+      }
+    },
+    "depfile_identity": {
+      "bytes": 503,
+      "mode": "0o644",
+      "sha256": "897533823bcc23b54214eae220b262e4464d1b9d8524cd247e8b2bbb214ddeca"
+    },
+    "depfile_contains_current_ci": true,
+    "depfile_contains_current_release": true,
+    "no_refresh_anchors": [
+      {
+        "line": 585,
+        "text": "            \"diff.autoRefreshIndex=false\","
+      },
+      {
+        "line": 1579,
+        "text": "    fn verify_checkout_accepts_stale_stat_without_mutating_index() {"
+      }
+    ]
+  },
+  "commands_executed": 15,
+  "command_results": [
+    {
+      "name": "03-fmt",
+      "command": "cargo fmt --all --check",
+      "cwd": "/private/tmp/codebasegraph-cod110-20261101",
+      "exit_code": 0,
+      "duration_seconds": 2.0853160419501364
+    },
+    {
+      "name": "04-xtask-inventory",
+      "command": "cargo nextest list --offline --locked -p xtask --bin xtask --cargo-profile native-tests --config-file /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-c8e15d01/cod110-final-local-macos-verification/nextest.toml --message-format json",
+      "cwd": "/private/tmp/codebasegraph-cod110-20261101",
+      "exit_code": 0,
+      "duration_seconds": 0.6247043751645833
+    },
+    {
+      "name": "05-xtask-full",
+      "command": "cargo nextest run --offline --locked -p xtask --bin xtask --cargo-profile native-tests --config-file /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-c8e15d01/cod110-final-local-macos-verification/nextest.toml --no-fail-fast --retries 0 --test-threads 1",
+      "cwd": "/private/tmp/codebasegraph-cod110-20261101",
+      "exit_code": 0,
+      "duration_seconds": 71.78306491696276
+    },
+    {
+      "name": "07-clippy",
+      "command": "cargo clippy --offline --locked --workspace --all-targets --all-features -- -D warnings",
+      "cwd": "/private/tmp/codebasegraph-cod110-20261101",
+      "exit_code": 0,
+      "duration_seconds": 1.8390191250946373
+    },
+    {
+      "name": "08-check-workflows",
+      "command": "cargo run --offline --locked -p xtask --bin xtask --profile native-tests -- check-workflows",
+      "cwd": "/private/tmp/codebasegraph-cod110-20261101",
+      "exit_code": 0,
+      "duration_seconds": 8.713927499949932
+    },
+    {
+      "name": "09-release-gate",
+      "command": "cargo run --offline --locked -p xtask --bin xtask --profile native-tests -- release-gate",
+      "cwd": "/private/tmp/codebasegraph-cod110-20261101",
+      "exit_code": 0,
+      "duration_seconds": 0.43407750013284385
+    },
+    {
+      "name": "11-setup-all-six-crlf",
+      "command": "/opt/homebrew/Cellar/git/2.52.0_1/bin/git init -q /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-c8e15d01/cod110-final-local-macos-verification/fixtures/all-six-crlf && /opt/homebrew/Cellar/git/2.52.0_1/bin/git -C /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-c8e15d01/cod110-final-local-macos-verification/fixtures/all-six-crlf config --local core.autocrlf true && /opt/homebrew/Cellar/git/2.52.0_1/bin/git -C /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-c8e15d01/cod110-final-local-macos-verification/fixtures/all-six-crlf -c user.name=COD110-Mac-Private-Fixture -c user.email=cod110-private-fixture@example.invalid add -- . && /opt/homebrew/Cellar/git/2.52.0_1/bin/git -C /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-c8e15d01/cod110-final-local-macos-verification/fixtures/all-six-crlf -c user.name=COD110-Mac-Private-Fixture -c user.email=cod110-private-fixture@example.invalid commit -q -m \"test: final COD110 private metadata fixture\" && /opt/homebrew/Cellar/git/2.52.0_1/bin/git -C /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-c8e15d01/cod110-final-local-macos-verification/fixtures/all-six-crlf rev-parse HEAD",
+      "cwd": "/private/tmp/codebasegraph-cod110-20261101",
+      "exit_code": 0,
+      "duration_seconds": 0.0718277080450207
+    },
+    {
+      "name": "11-setup-dirty-tracked",
+      "command": "/opt/homebrew/Cellar/git/2.52.0_1/bin/git init -q /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-c8e15d01/cod110-final-local-macos-verification/fixtures/dirty-tracked && /opt/homebrew/Cellar/git/2.52.0_1/bin/git -C /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-c8e15d01/cod110-final-local-macos-verification/fixtures/dirty-tracked config --local core.autocrlf true && /opt/homebrew/Cellar/git/2.52.0_1/bin/git -C /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-c8e15d01/cod110-final-local-macos-verification/fixtures/dirty-tracked -c user.name=COD110-Mac-Private-Fixture -c user.email=cod110-private-fixture@example.invalid add -- . && /opt/homebrew/Cellar/git/2.52.0_1/bin/git -C /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-c8e15d01/cod110-final-local-macos-verification/fixtures/dirty-tracked -c user.name=COD110-Mac-Private-Fixture -c user.email=cod110-private-fixture@example.invalid commit -q -m \"test: final COD110 private metadata fixture\" && /opt/homebrew/Cellar/git/2.52.0_1/bin/git -C /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-c8e15d01/cod110-final-local-macos-verification/fixtures/dirty-tracked rev-parse HEAD",
+      "cwd": "/private/tmp/codebasegraph-cod110-20261101",
+      "exit_code": 0,
+      "duration_seconds": 0.0651915417984128
+    },
+    {
+      "name": "11-setup-lf",
+      "command": "/opt/homebrew/Cellar/git/2.52.0_1/bin/git init -q /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-c8e15d01/cod110-final-local-macos-verification/fixtures/lf && /opt/homebrew/Cellar/git/2.52.0_1/bin/git -C /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-c8e15d01/cod110-final-local-macos-verification/fixtures/lf config --local core.autocrlf true && /opt/homebrew/Cellar/git/2.52.0_1/bin/git -C /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-c8e15d01/cod110-final-local-macos-verification/fixtures/lf -c user.name=COD110-Mac-Private-Fixture -c user.email=cod110-private-fixture@example.invalid add -- . && /opt/homebrew/Cellar/git/2.52.0_1/bin/git -C /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-c8e15d01/cod110-final-local-macos-verification/fixtures/lf -c user.name=COD110-Mac-Private-Fixture -c user.email=cod110-private-fixture@example.invalid commit -q -m \"test: final COD110 private metadata fixture\" && /opt/homebrew/Cellar/git/2.52.0_1/bin/git -C /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-c8e15d01/cod110-final-local-macos-verification/fixtures/lf rev-parse HEAD",
+      "cwd": "/private/tmp/codebasegraph-cod110-20261101",
+      "exit_code": 0,
+      "duration_seconds": 0.09539154218509793
+    },
+    {
+      "name": "11-setup-mixed",
+      "command": "/opt/homebrew/Cellar/git/2.52.0_1/bin/git init -q /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-c8e15d01/cod110-final-local-macos-verification/fixtures/mixed && /opt/homebrew/Cellar/git/2.52.0_1/bin/git -C /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-c8e15d01/cod110-final-local-macos-verification/fixtures/mixed config --local core.autocrlf true && /opt/homebrew/Cellar/git/2.52.0_1/bin/git -C /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-c8e15d01/cod110-final-local-macos-verification/fixtures/mixed -c user.name=COD110-Mac-Private-Fixture -c user.email=cod110-private-fixture@example.invalid add -- . && /opt/homebrew/Cellar/git/2.52.0_1/bin/git -C /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-c8e15d01/cod110-final-local-macos-verification/fixtures/mixed -c user.name=COD110-Mac-Private-Fixture -c user.email=cod110-private-fixture@example.invalid commit -q -m \"test: final COD110 private metadata fixture\" && /opt/homebrew/Cellar/git/2.52.0_1/bin/git -C /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-c8e15d01/cod110-final-local-macos-verification/fixtures/mixed rev-parse HEAD",
+      "cwd": "/private/tmp/codebasegraph-cod110-20261101",
+      "exit_code": 0,
+      "duration_seconds": 0.068315832875669
+    },
+    {
+      "name": "13-metadata-all-six-crlf",
+      "command": "/private/tmp/codebasegraph-cod110-20261101/target/native-tests/xtask release-metadata --source-sha 4fc1470aef5f00e44b1152e1539fd4ac68a27ee7 --source-dir /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-c8e15d01/cod110-final-local-macos-verification/fixtures/all-six-crlf",
+      "cwd": "/private/tmp/codebasegraph-cod110-20261101",
+      "exit_code": 0,
+      "duration_seconds": 0.21238391590304673
+    },
+    {
+      "name": "13-metadata-dirty-tracked",
+      "command": "/private/tmp/codebasegraph-cod110-20261101/target/native-tests/xtask release-metadata --source-sha 37be054aa932d53513be3f79e4b1170a7b3c0c20 --source-dir /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-c8e15d01/cod110-final-local-macos-verification/fixtures/dirty-tracked",
+      "cwd": "/private/tmp/codebasegraph-cod110-20261101",
+      "exit_code": 1,
+      "duration_seconds": 0.10310429194942117
+    },
+    {
+      "name": "13-metadata-lf",
+      "command": "/private/tmp/codebasegraph-cod110-20261101/target/native-tests/xtask release-metadata --source-sha 4fc1470aef5f00e44b1152e1539fd4ac68a27ee7 --source-dir /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-c8e15d01/cod110-final-local-macos-verification/fixtures/lf",
+      "cwd": "/private/tmp/codebasegraph-cod110-20261101",
+      "exit_code": 0,
+      "duration_seconds": 0.22632579179480672
+    },
+    {
+      "name": "13-metadata-mixed",
+      "command": "/private/tmp/codebasegraph-cod110-20261101/target/native-tests/xtask release-metadata --source-sha 4fc1470aef5f00e44b1152e1539fd4ac68a27ee7 --source-dir /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-c8e15d01/cod110-final-local-macos-verification/fixtures/mixed",
+      "cwd": "/private/tmp/codebasegraph-cod110-20261101",
+      "exit_code": 0,
+      "duration_seconds": 0.23225399991497397
+    },
+    {
+      "name": "14-final-native-and-source",
+      "command": "cargo --version && rustc --version && cargo nextest --version && git --version && uname -a && sw_vers && git rev-parse HEAD HEAD^{tree} && git status --short --untracked-files=all && git -c diff.autoRefreshIndex=false diff --binary --no-ext-diff && ps -axo pid,ppid,command",
+      "cwd": "/private/tmp/codebasegraph-cod110-20261101",
+      "exit_code": 0,
+      "duration_seconds": 0.3367400411516428
+    }
+  ],
+  "CLI_fixture_results": {
+    "lf": {
+      "exit_code": 0,
+      "duration_seconds": 0.22632579179480672,
+      "index_byte_identical": true,
+      "full_private_files_bytes_modes_unchanged": true
+    },
+    "all-six-crlf": {
+      "exit_code": 0,
+      "duration_seconds": 0.21238391590304673,
+      "index_byte_identical": true,
+      "full_private_files_bytes_modes_unchanged": true
+    },
+    "mixed": {
+      "exit_code": 0,
+      "duration_seconds": 0.23225399991497397,
+      "index_byte_identical": true,
+      "full_private_files_bytes_modes_unchanged": true
+    },
+    "dirty-tracked": {
+      "exit_code": 1,
+      "duration_seconds": 0.10310429194942117,
+      "index_byte_identical": true,
+      "full_private_files_bytes_modes_unchanged": true
+    }
+  },
+  "source_changed_during_verification": false,
+  "product_protected_changed": false,
+  "constants_changed": "None in product; private fixture Cargo.toml mtime moved back exactly10s as assigned trigger, not an oracle change. Fixture version/tag/bytes from actual source metadata.",
+  "old_bundle": "cod110-crlf-macos-remaining-verification/ remains CLOSED FAIL-index and immutable; no original proof relabeled as current execution",
+  "limitations": [
+    "LOCAL macOS arm64 qualification only; separate Windows verifier evidence is parent-owned.",
+    "No full root-application/native-engine runtime suite, registry/package publish, CI/GitHub/PR mutation, graph rebind or dependency installation.",
+    "No Scryer/model/Linear mutation, JUnit ingestion or fold. Unrelated model delta is unassessed; no blanket model invariance or attribution.",
+    "Canonical authority, approval/design/rules/graph context reused as explicitly assigned by Engineer; no new approval, planning or architecture gate asserted."
+  ],
+  "remaining_gate_owner": "Engineer and original Final Reviewer: assess COD110-FR-001 resolution at exact final source and both platform evidence; no independent gate closure authority here.",
+  "knowledge_assessment": "Reusable lesson is the stat-cache side effect and explicit diff.autoRefreshIndex=false fix; no wiki/memory mutation within read-only scope.",
+  "owned_Bash_live": 0,
+  "source_lease": "NONE; read/private/Cargo leases STOPPED after artifact closure"
+}

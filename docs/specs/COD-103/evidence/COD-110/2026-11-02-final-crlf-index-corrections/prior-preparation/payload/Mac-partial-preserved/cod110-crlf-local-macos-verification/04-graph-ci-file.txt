@@ -1,0 +1,7 @@
+q ci.rs layer=semantic
+file path crates/xtask/src/ci.rs
+- File ci.rs  rank_score=0.90 id=File:aff04ea00469f7552bf6 layer=semantic
+- Module crates.xtask.src.ci L1-L1486 rank_score=0.79 id=Module:f076b99109b8ae5077ee layer=semantic
+
+file path src/storage/maintenance_legacy_association.rs
+- Symbol rs  rank_score=0.29 id=Symbol:805c12b9cc430940278a layer=semantic

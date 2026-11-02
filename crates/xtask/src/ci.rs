@@ -92,7 +92,7 @@ pub(super) fn validate_release_candidate(
                 "release metadata {path} exceeds the supported size"
             ));
         }
-        blobs.insert(path, bytes);
+        blobs.insert(path, normalize_crlf_pairs(&bytes));
     }
 
     let root_versions = recognize_toml(&blobs["Cargo.toml"], TomlTarget::Package, "codebase-graph")
@@ -153,6 +153,21 @@ pub(super) fn validate_release_candidate(
         .map_err(|_| "CHANGELOG.md is not valid UTF-8".to_string())?;
     let notes = release_notes(changelog, &version)?;
     Ok(ReleaseCandidate { version, notes })
+}
+
+fn normalize_crlf_pairs(bytes: &[u8]) -> Vec<u8> {
+    let mut normalized = Vec::with_capacity(bytes.len());
+    let mut index = 0;
+    while index < bytes.len() {
+        if bytes[index] == b'\r' && bytes.get(index + 1) == Some(&b'\n') {
+            normalized.push(b'\n');
+            index += 2;
+        } else {
+            normalized.push(bytes[index]);
+            index += 1;
+        }
+    }
+    normalized
 }
 
 pub(super) fn release_notes(changelog: &str, version: &str) -> Result<String, String> {
@@ -563,8 +578,19 @@ pub(super) fn verify_checkout(root: &Path, expected_sha: &str) -> Result<(), Str
         }
     }
 
-    let worktree = git(&root, ["diff", "--quiet", expected_sha, "--"], 0)
-        .map_err(|_| "could not verify source checkout tracked state".to_string())?;
+    let worktree = git(
+        &root,
+        [
+            "-c",
+            "diff.autoRefreshIndex=false",
+            "diff",
+            "--quiet",
+            expected_sha,
+            "--",
+        ],
+        0,
+    )
+    .map_err(|_| "could not verify source checkout tracked state".to_string())?;
     match worktree.status.code() {
         Some(0) => {}
         Some(1) => {
@@ -1550,6 +1576,29 @@ mod tests {
     }
 
     #[test]
+    fn verify_checkout_accepts_stale_stat_without_mutating_index() {
+        let (fixture, sha) = checkout_fixture();
+        let cargo = fixture.root.join("Cargo.toml");
+        let contents = fs::read(&cargo).unwrap();
+        let modified = fs::metadata(&cargo).unwrap().modified().unwrap();
+        let stale_modified = modified - std::time::Duration::from_secs(10);
+        fs::OpenOptions::new()
+            .write(true)
+            .open(&cargo)
+            .unwrap()
+            .set_times(std::fs::FileTimes::new().set_modified(stale_modified))
+            .unwrap();
+        assert!(fs::metadata(&cargo).unwrap().modified().unwrap() < modified);
+        assert_eq!(fs::read(&cargo).unwrap(), contents);
+
+        let index_path = fixture.root.join(".git/index");
+        let index_before = fs::read(&index_path).unwrap();
+        assert_eq!(super::verify_checkout(&fixture.root, &sha), Ok(()));
+        assert_eq!(fs::read(&cargo).unwrap(), contents);
+        assert_eq!(fs::read(&index_path).unwrap(), index_before);
+    }
+
+    #[test]
     fn verify_checkout_rejects_invalid_or_mismatched_sha_and_changed_head() {
         let (fixture, sha) = checkout_fixture();
         assert!(super::verify_checkout(&fixture.root, "abc")
@@ -2178,6 +2227,20 @@ mod tests {
             }
         );
     }
+    #[test]
+    fn classifier_keeps_raw_crlf_metadata_ineligible() {
+        let base = base_files();
+        let mut head = bumped(&base, "4.0.5", "4.0.6");
+        for path in METADATA_PATHS {
+            let text = String::from_utf8(head[path].clone()).unwrap();
+            head.insert(path.to_string(), text.replace('\n', "\r\n").into_bytes());
+        }
+        assert!(matches!(
+            classify_metadata_diff(&base, &head),
+            MetadataDecision::Full { .. }
+        ));
+    }
+
     #[test]
     fn pr167_shaped_complete_metadata_transition_is_lightweight() {
         let base = base_files();

@@ -1,0 +1,19 @@
+﻿{
+    "case":  "mixed",
+    "exit_code":  0,
+    "source_sha":  "96d44cd9203a725f7c8fb1bec0af18b22488b567",
+    "version":  "4.0.5",
+    "tag_name":  "v4.0.5",
+    "schema":  [
+                   "notes",
+                   "source_sha",
+                   "tag_name",
+                   "version"
+               ],
+    "notes_equal_exact_committed_section":  true,
+    "metadata_unchanged":  true,
+    "raw_index_bytes_equal":  true,
+    "index_before_sha256":  "03a836107cc7d7d7e6832b2057a73216d303d512671ec9a709bbd3c90a641879",
+    "index_after_sha256":  "03a836107cc7d7d7e6832b2057a73216d303d512671ec9a709bbd3c90a641879",
+    "mtime_stale_seconds":  -10
+}

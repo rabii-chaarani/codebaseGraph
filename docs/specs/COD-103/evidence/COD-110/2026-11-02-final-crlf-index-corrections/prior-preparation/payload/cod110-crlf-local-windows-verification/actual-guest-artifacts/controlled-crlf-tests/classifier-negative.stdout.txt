@@ -1,0 +1,6 @@
+
+running 1 test
+test ci::tests::classifier_keeps_raw_crlf_metadata_ineligible ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 93 filtered out; finished in 0.00s
+

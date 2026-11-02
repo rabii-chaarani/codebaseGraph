@@ -1,0 +1,100 @@
+﻿2026-11-02T05:26:17.9160170Z Prepare all required actions
+2026-11-02T05:26:17.9161860Z Getting action download info
+2026-11-02T05:26:18.0422550Z Download action repository 'actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae' (SHA:27d5ce7f107fe9357f9df03efb73ab90386fccae)
+2026-11-02T05:26:18.2542780Z ##[group]Run ./.github/actions/setup-native
+2026-11-02T05:26:18.2543670Z with:
+2026-11-02T05:26:18.2544280Z   target: macos-arm64
+2026-11-02T05:26:18.2544930Z env:
+2026-11-02T05:26:18.2545540Z   MACOSX_DEPLOYMENT_TARGET: 13.3
+2026-11-02T05:26:18.2546290Z   CARGO_HTTP_MULTIPLEXING: false
+2026-11-02T05:26:18.2547000Z   CARGO_NET_RETRY: 10
+2026-11-02T05:26:18.2547690Z ##[endgroup]
+2026-11-02T05:26:18.2610560Z ##[start-action display=Validate target host;id=__self.__run]
+2026-11-02T05:26:18.2662020Z ##[group]Run set -euo pipefail
+2026-11-02T05:26:18.2662830Z [36;1mset -euo pipefail[0m
+2026-11-02T05:26:18.2663550Z [36;1mcase "${NATIVE_TARGET}:${RUNNER_OS}:${RUNNER_ARCH}" in[0m
+2026-11-02T05:26:18.2664410Z [36;1m  macos-arm64:macOS:ARM64|windows-x86_64:Windows:X64) ;;[0m
+2026-11-02T05:26:18.2665300Z [36;1m  *)[0m
+2026-11-02T05:26:18.2666070Z [36;1m    echo "Target ${NATIVE_TARGET} does not match ${RUNNER_OS}/${RUNNER_ARCH}." >&2[0m
+2026-11-02T05:26:18.2666950Z [36;1m    exit 1[0m
+2026-11-02T05:26:18.2667520Z [36;1m    ;;[0m
+2026-11-02T05:26:18.2668070Z [36;1mesac[0m
+2026-11-02T05:26:18.2717710Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+2026-11-02T05:26:18.2718490Z env:
+2026-11-02T05:26:18.2719100Z   MACOSX_DEPLOYMENT_TARGET: 13.3
+2026-11-02T05:26:18.2719760Z   CARGO_HTTP_MULTIPLEXING: false
+2026-11-02T05:26:18.2720380Z   CARGO_NET_RETRY: 10
+2026-11-02T05:26:18.2721410Z   NATIVE_TARGET: macos-arm64
+2026-11-02T05:26:18.2722090Z ##[endgroup]
+2026-11-02T05:26:18.3158120Z ##[end-action id=__self.__run;outcome=success;conclusion=success;duration_ms=54]
+2026-11-02T05:26:18.3179210Z ##[start-action display=Prepare Windows OpenSSL static libraries;id=__self.__run_2]
+2026-11-02T05:26:18.3199760Z ##[end-action id=__self.__run_2;outcome=skipped;conclusion=skipped;duration_ms=0]
+2026-11-02T05:26:18.3204460Z ##[start-action display=Resolve Ladybug dependency;id=__self.ladybug]
+2026-11-02T05:26:18.3240020Z ##[group]Run set -euo pipefail
+2026-11-02T05:26:18.3240720Z [36;1mset -euo pipefail[0m
+2026-11-02T05:26:18.3241580Z [36;1mversion="$(awk '/^name = "lbug"/ { found=1 } found && /^version = / { gsub(/"/, "", $3); print $3; exit }' Cargo.lock)"[0m
+2026-11-02T05:26:18.3242460Z [36;1mcase "$NATIVE_TARGET" in[0m
+2026-11-02T05:26:18.3243170Z [36;1m  macos-arm64) archive='liblbug-static-osx-arm64.tar.gz' ;;[0m
+2026-11-02T05:26:18.3244020Z [36;1m  windows-x86_64) archive='liblbug-static-windows-x86_64.zip' ;;[0m
+2026-11-02T05:26:18.3244940Z [36;1m  *) echo "Unsupported native target: $NATIVE_TARGET" >&2; exit 1 ;;[0m
+2026-11-02T05:26:18.3245680Z [36;1mesac[0m
+2026-11-02T05:26:18.3246220Z [36;1m{[0m
+2026-11-02T05:26:18.3246790Z [36;1m  echo "version=$version"[0m
+2026-11-02T05:26:18.3247440Z [36;1m  echo "archive=$archive"[0m
+2026-11-02T05:26:18.3248240Z [36;1m  echo "cache-dir=$GITHUB_WORKSPACE/.cache/lbug-prebuilt/$version/$NATIVE_TARGET"[0m
+2026-11-02T05:26:18.3249050Z [36;1m} >> "$GITHUB_OUTPUT"[0m
+2026-11-02T05:26:18.3282100Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+2026-11-02T05:26:18.3282950Z env:
+2026-11-02T05:26:18.3283560Z   MACOSX_DEPLOYMENT_TARGET: 13.3
+2026-11-02T05:26:18.3284320Z   CARGO_HTTP_MULTIPLEXING: false
+2026-11-02T05:26:18.3284970Z   CARGO_NET_RETRY: 10
+2026-11-02T05:26:18.3285570Z   NATIVE_TARGET: macos-arm64
+2026-11-02T05:26:18.3286170Z ##[endgroup]
+2026-11-02T05:26:18.3726540Z ##[end-action id=__self.ladybug;outcome=success;conclusion=success;duration_ms=52]
+2026-11-02T05:26:18.3734900Z ##[start-action display=Restore Ladybug dependency;id=__self.ladybug-cache]
+2026-11-02T05:26:18.3859400Z ##[group]Run actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae
+2026-11-02T05:26:18.3861170Z with:
+2026-11-02T05:26:18.3862120Z   path: /Users/runner/work/codebaseGraph/codebaseGraph/.cache/lbug-prebuilt/0.19.0/macos-arm64
+2026-11-02T05:26:18.3863480Z   key: lbug-0.19.0-macos-arm64-v1
+2026-11-02T05:26:18.3864140Z   enableCrossOsArchive: false
+2026-11-02T05:26:18.3864780Z   fail-on-cache-miss: false
+2026-11-02T05:26:18.3865370Z   lookup-only: false
+2026-11-02T05:26:18.3866010Z   save-always: false
+2026-11-02T05:26:18.3867630Z env:
+2026-11-02T05:26:18.3869600Z   MACOSX_DEPLOYMENT_TARGET: 13.3
+2026-11-02T05:26:18.3871250Z   CARGO_HTTP_MULTIPLEXING: false
+2026-11-02T05:26:18.3872820Z   CARGO_NET_RETRY: 10
+2026-11-02T05:26:18.3874390Z ##[endgroup]
+2026-11-02T05:26:18.9296910Z Cache hit for: lbug-0.19.0-macos-arm64-v1
+2026-11-02T05:26:20.2202570Z Received 0 of 11476135 (0.0%), 0.0 MBs/sec
+2026-11-02T05:26:20.7624750Z Received 11476135 of 11476135 (100.0%), 7.1 MBs/sec
+2026-11-02T05:26:20.7726120Z Cache Size: ~11 MB (11476135 B)
+2026-11-02T05:26:20.7828610Z [command]/opt/homebrew/bin/gtar -xf /Users/runner/work/_temp/ee5899a3-f5f2-4e81-a56c-bc89e4ac0c73/cache.tzst -P -C /Users/runner/work/codebaseGraph/codebaseGraph --delay-directory-restore --use-compress-program unzstd
+2026-11-02T05:26:21.2281620Z Cache restored successfully
+2026-11-02T05:26:21.2894210Z Cache restored from key: lbug-0.19.0-macos-arm64-v1
+2026-11-02T05:26:21.3050220Z ##[end-action id=__self.ladybug-cache;outcome=success;conclusion=success;duration_ms=2931]
+2026-11-02T05:26:21.3102170Z ##[start-action display=Download Ladybug dependency;id=__self.__run_3]
+2026-11-02T05:26:21.3113930Z ##[end-action id=__self.__run_3;outcome=skipped;conclusion=skipped;duration_ms=0]
+2026-11-02T05:26:21.3117240Z ##[start-action display=Export Ladybug dependency;id=__self.__run_4]
+2026-11-02T05:26:21.3216140Z ##[group]Run set -euo pipefail
+2026-11-02T05:26:21.3217100Z [36;1mset -euo pipefail[0m
+2026-11-02T05:26:21.3217900Z [36;1mtest -f "$LBUG_CACHE_DIR/lbug.h"[0m
+2026-11-02T05:26:21.3218680Z [36;1mif [[ "$RUNNER_OS" == 'Windows' ]]; then[0m
+2026-11-02T05:26:21.3219590Z [36;1m  test -f "$LBUG_CACHE_DIR/lbug.lib"[0m
+2026-11-02T05:26:21.3220460Z [36;1m  library_dir="$(cygpath -m "$LBUG_CACHE_DIR")"[0m
+2026-11-02T05:26:21.3221430Z [36;1melse[0m
+2026-11-02T05:26:21.3222060Z [36;1m  test -f "$LBUG_CACHE_DIR/liblbug.a"[0m
+2026-11-02T05:26:21.3222730Z [36;1m  library_dir="$LBUG_CACHE_DIR"[0m
+2026-11-02T05:26:21.3223340Z [36;1mfi[0m
+2026-11-02T05:26:21.3223980Z [36;1m{[0m
+2026-11-02T05:26:21.3224560Z [36;1m  echo "LBUG_LIBRARY_DIR=$library_dir"[0m
+2026-11-02T05:26:21.3225480Z [36;1m  echo "LBUG_INCLUDE_DIR=$library_dir"[0m
+2026-11-02T05:26:21.3226120Z [36;1m} >> "$GITHUB_ENV"[0m
+2026-11-02T05:26:21.3359270Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+2026-11-02T05:26:21.3359810Z env:
+2026-11-02T05:26:21.3360160Z   MACOSX_DEPLOYMENT_TARGET: 13.3
+2026-11-02T05:26:21.3361220Z   CARGO_HTTP_MULTIPLEXING: false
+2026-11-02T05:26:21.3361940Z   CARGO_NET_RETRY: 10
+2026-11-02T05:26:21.3362510Z   LBUG_CACHE_DIR: /Users/runner/work/codebaseGraph/codebaseGraph/.cache/lbug-prebuilt/0.19.0/macos-arm64
+2026-11-02T05:26:21.3363440Z ##[endgroup]
+2026-11-02T05:26:21.4943440Z ##[end-action id=__self.__run_4;outcome=success;conclusion=success;duration_ms=182]

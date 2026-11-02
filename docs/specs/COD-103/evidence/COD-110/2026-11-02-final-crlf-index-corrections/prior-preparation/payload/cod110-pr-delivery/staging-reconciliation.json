@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "git_add_exit": 1,
+  "warning": "ignored parent .github",
+  "authoritative_index_outcome": "All244exactintendedpaths already staged with bytecomputedGitblob/mode equality; tracked workflow edits present. No missing/unintendedstage, no retryneeded, no -f/settingschange.",
+  "staged_count": 244,
+  "source7exact": true
+}

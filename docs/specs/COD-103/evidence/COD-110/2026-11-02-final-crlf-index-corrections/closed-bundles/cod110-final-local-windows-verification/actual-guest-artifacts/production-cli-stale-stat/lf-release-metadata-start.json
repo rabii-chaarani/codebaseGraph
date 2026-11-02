@@ -1,0 +1,26 @@
+﻿{
+    "file":  "C:\\Users\\rabii\\AppData\\Local\\Temp\\c110-final-b5aa2377\\target\\native-tests\\xtask.exe",
+    "arguments":  "release-metadata --source-dir \"C:\\Users\\rabii\\AppData\\Local\\Temp\\c110-final-b5aa2377\\cli-six-metadata-fixture\" --source-sha 96d44cd9203a725f7c8fb1bec0af18b22488b567",
+    "workdir":  "C:\\Users\\rabii\\AppData\\Local\\Temp\\c110-final-b5aa2377\\cli-six-metadata-fixture",
+    "source_commit":  "862bb3b3c40c36b21cdcd388f596d52ad482530b",
+    "source_tree":  "02cd3ebed5a1861bef4506f678449d836e7e2bf8",
+    "dirty_overlay":  {
+                          "crates/xtask/src/ci.rs":  {
+                                                         "sha256":  "9cce67411b43c86a6797d35f5538bf2cc72227713c4dfa0baae5a02eb258e2fd",
+                                                         "bytes":  95794
+                                                     },
+                          "crates/xtask/src/release.rs":  {
+                                                              "sha256":  "06b674185df7f7ac4e7cf3cd2642c2d75b4eb62169ee922c3c2f9724fd760594",
+                                                              "bytes":  33789
+                                                          }
+                      },
+    "tar_sha256":  "99e5ae374235e318315d17f67d1a51c53fa60ea101da2483cc3051342449fdf3",
+    "started_utc":  "2026-11-02T11:15:47.8952546Z",
+    "environment":  {
+                        "CARGO_TARGET_DIR":  "C:\\Users\\rabii\\AppData\\Local\\Temp\\c110-final-b5aa2377\\target",
+                        "GIT_OPTIONAL_LOCKS":  "0",
+                        "RUSTUP_TOOLCHAIN":  "stable-x86_64-pc-windows-msvc",
+                        "CARGO_NET_OFFLINE":  "true"
+                    },
+    "invocation_count":  1
+}

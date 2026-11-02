@@ -1,0 +1,6 @@
+warning: in the working copy of '.release-please-manifest.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'CHANGELOG.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Cargo.lock', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Cargo.toml', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/k-wiki/Cargo.toml', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/xtask/Cargo.toml', LF will be replaced by CRLF the next time Git touches it

@@ -1,0 +1,26 @@
+﻿{
+    "file":  "C:\\Program Files\\Git\\cmd\\git.exe",
+    "arguments":  "diff --quiet HEAD --",
+    "workdir":  "C:\\Users\\rabii\\AppData\\Local\\Temp\\c110-fix-b5aa2377",
+    "source_commit":  "862bb3b3c40c36b21cdcd388f596d52ad482530b",
+    "source_tree":  "02cd3ebed5a1861bef4506f678449d836e7e2bf8",
+    "dirty_overlay":  {
+                          "crates/xtask/src/ci.rs":  {
+                                                         "sha256":  "3c52c2c8e01262cf530c1e2c286cd77c8b7c50aace8fbf532cdc605c48178570",
+                                                         "bytes":  94601
+                                                     },
+                          "crates/xtask/src/release.rs":  {
+                                                              "sha256":  "06b674185df7f7ac4e7cf3cd2642c2d75b4eb62169ee922c3c2f9724fd760594",
+                                                              "bytes":  33789
+                                                          }
+                      },
+    "tar_sha256":  "8263b676c39bd90127487e76fefe2521062a92f1bb5d4426ad594fb759e0ecbb",
+    "started_utc":  "2026-11-02T09:52:56.4432100Z",
+    "environment":  {
+                        "CARGO_TARGET_DIR":  "C:\\Users\\rabii\\AppData\\Local\\Temp\\c110-fix-b5aa2377\\target",
+                        "GIT_OPTIONAL_LOCKS":  "0",
+                        "RUSTUP_TOOLCHAIN":  "stable-x86_64-pc-windows-msvc",
+                        "CARGO_NET_OFFLINE":  "true"
+                    },
+    "invocation_count":  1
+}

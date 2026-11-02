@@ -1,0 +1,698 @@
+{
+  "status": "BLOCKED_CONFIRMED_COD110_FR_001_OPEN",
+  "review_scope": "original independent focused COD110 correction review, no broad review restart",
+  "source": {
+    "root": "/private/tmp/codebasegraph-cod110-20261101",
+    "head": "862bb3b3c40c36b21cdcd388f596d52ad482530b",
+    "tree": "02cd3ebed5a1861bef4506f678449d836e7e2bf8",
+    "overlays": {
+      "crates/xtask/src/ci.rs": {
+        "sha256": "3c52c2c8e01262cf530c1e2c286cd77c8b7c50aace8fbf532cdc605c48178570",
+        "bytes": 94601,
+        "mode": "100644"
+      },
+      "crates/xtask/src/release.rs": {
+        "sha256": "06b674185df7f7ac4e7cf3cd2642c2d75b4eb62169ee922c3c2f9724fd760594",
+        "bytes": 33789,
+        "mode": "100644"
+      }
+    },
+    "tracked_count": 2696,
+    "all_current_source_hashes_equal_diagnostic_snapshot": true
+  },
+  "finding": {
+    "id": "COD110-FR-001",
+    "priority": "P2",
+    "status": "OPEN",
+    "title": "Read-only source verification refreshes the real Git index",
+    "location": "crates/xtask/src/ci.rs:581-589,824-850",
+    "contract": "49612ec66814ad6b883a0c4c3c624911bd5a8825 \u00a72; C103-R07/A07,R08/A08; verification must not mutate or refresh real index/flags",
+    "trigger": "byte-clean tracked metadata with stale ctime/mtime cache fields",
+    "causal_boundary": {
+      "sequence": 30,
+      "argv": [
+        "--no-replace-objects",
+        "diff",
+        "--quiet",
+        "660ebad08bec4973555669ea67253dd357d70470",
+        "--"
+      ],
+      "cwd": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-c8e15d01/cod110-crlf-macos-remaining-verification/actor-isolation-one-lf/fixture",
+      "GIT_OPTIONAL_LOCKS": "0",
+      "GIT_CONFIG_COUNT": null,
+      "actual_git": "/opt/homebrew/Cellar/git/2.52.0_1/bin/git",
+      "actual_git_sha256": "ec24d6af5c519b2f708ae5464f23f85dd3a3cc96e161c0b751f879a3a516ee74"
+    },
+    "cli_exit": 0,
+    "index_before": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+    "index_after": "3d7a22e67d3a2f3af11d0ded720fa3a79d48fa247785b7084bf4dd77eb7e3e26",
+    "bytes_before_after": 669,
+    "parsed_entry_changes": {
+      ".release-please-manifest.json": {
+        "ctime_s": {
+          "before": 1793615391,
+          "after": 1793615471
+        },
+        "ctime_ns": {
+          "before": 934615320,
+          "after": 196196699
+        },
+        "mtime_s": {
+          "before": 1793615391,
+          "after": 1793615471
+        },
+        "mtime_ns": {
+          "before": 934615320,
+          "after": 196196699
+        }
+      },
+      "CHANGELOG.md": {
+        "ctime_s": {
+          "before": 1793615391,
+          "after": 1793615471
+        },
+        "ctime_ns": {
+          "before": 934975187,
+          "after": 196946404
+        },
+        "mtime_s": {
+          "before": 1793615391,
+          "after": 1793615471
+        },
+        "mtime_ns": {
+          "before": 934975187,
+          "after": 196946404
+        }
+      },
+      "Cargo.lock": {
+        "ctime_s": {
+          "before": 1793615391,
+          "after": 1793615471
+        },
+        "ctime_ns": {
+          "before": 934859190,
+          "after": 196677339
+        },
+        "mtime_s": {
+          "before": 1793615391,
+          "after": 1793615471
+        },
+        "mtime_ns": {
+          "before": 934859190,
+          "after": 196677339
+        }
+      },
+      "Cargo.toml": {
+        "ctime_s": {
+          "before": 1793615391,
+          "after": 1793615471
+        },
+        "ctime_ns": {
+          "before": 934735943,
+          "after": 196444002
+        },
+        "mtime_s": {
+          "before": 1793615391,
+          "after": 1793615471
+        },
+        "mtime_ns": {
+          "before": 934735943,
+          "after": 196444002
+        }
+      },
+      "crates/k-wiki/Cargo.toml": {
+        "ctime_s": {
+          "before": 1793615391,
+          "after": 1793615471
+        },
+        "ctime_ns": {
+          "before": 935152433,
+          "after": 197107076
+        },
+        "mtime_s": {
+          "before": 1793615391,
+          "after": 1793615471
+        },
+        "mtime_ns": {
+          "before": 935152433,
+          "after": 197107076
+        }
+      },
+      "crates/xtask/Cargo.toml": {
+        "ctime_s": {
+          "before": 1793615391,
+          "after": 1793615471
+        },
+        "ctime_ns": {
+          "before": 935274847,
+          "after": 197215260
+        },
+        "mtime_s": {
+          "before": 1793615391,
+          "after": 1793615471
+        },
+        "mtime_ns": {
+          "before": 935274847,
+          "after": 197215260
+        }
+      }
+    },
+    "entry_fields_unchanged_except_timestamps": true,
+    "metadata_bytes_modes_unchanged": true,
+    "no_content_corruption_or_false_clean_result_demonstrated": true,
+    "existing_COD110_path_not_introduced_by_CRLF": true,
+    "baseline_execution": "NOT RUN",
+    "strongest_safeguard_insufficient": "GIT_OPTIONAL_LOCKS=0 plus stripped Git routing/config variables",
+    "remedy": "Owner disables automatic index refresh command-locally while preserving clean/dirty/index flag/mode/source proof; no restore-after-write or settings mutation",
+    "recheck": "Actual CLI stale-stat LF/all-sixCRLF/mixed raw-index equality + existing dirty/cancellation/flag/mode/text checks on BOTH local macOS and local Windows VM at corrected bytes"
+  },
+  "evidence": {
+    "root": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-c8e15d01/cod110-crlf-macos-remaining-verification",
+    "cited_payloads": {
+      "19-isolation-result.json": {
+        "sha256": "1cd2ecfeb3b305e285dff1377603c9f23fa4af89ac7f2fcf936acb1d9299124f",
+        "bytes": 16043
+      },
+      "16-isolation-before.json": {
+        "sha256": "9f72fbf6abd7aa4c52f66f82b4b4c7c16f6f347dc915465ed24f32ba9a06add7",
+        "bytes": 1909
+      },
+      "17-isolation-one-lf.start.json": {
+        "sha256": "f2892f90810e2970c4fc39c6b0aa461651b77d5c6725d5784c80dc2cafa57569",
+        "bytes": 1048
+      },
+      "17-isolation-one-lf.result.json": {
+        "sha256": "bf6650457d3971c94927f1cd745d73092db2d9193b49c83b910b2beac9162a90",
+        "bytes": 1177
+      },
+      "18-isolation-after.json": {
+        "sha256": "e0bc14bb276a8bab3942676c5d2b6ea350302cd232ed5f817d1ffdd0b43b5caf",
+        "bytes": 1462
+      },
+      "actor-isolation-one-lf/bin/git": {
+        "sha256": "53048ccacf410ff56355ccfadc688baed9ec5484c1ef616818213420bf405f4b",
+        "bytes": 2103
+      },
+      "actor-isolation-one-lf/run-one-diagnostic.sh": {
+        "sha256": "5eb39cbcf98207e8a0785b9762ceabb94e32bb3c4bb8dcce73e23f87c07f28e7",
+        "bytes": 7157
+      },
+      "actor-isolation-one-lf/trace/git-030.json": {
+        "sha256": "d24a61539c12f15045aaf04132a147e2dff342111e7dc338b5294e96324d6f62",
+        "bytes": 3087
+      },
+      "actor-isolation-one-lf/trace/git-030-before.index.bin": {
+        "sha256": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "bytes": 669
+      },
+      "actor-isolation-one-lf/trace/git-030-after.index.bin": {
+        "sha256": "3d7a22e67d3a2f3af11d0ded720fa3a79d48fa247785b7084bf4dd77eb7e3e26",
+        "bytes": 669
+      }
+    },
+    "actual_git_version": "2.52.0",
+    "all30_boundaries_inspected": true,
+    "first29_index_unchanged": true,
+    "first_mutation_sequence": 30,
+    "whole_shell_outer_python_snapshots_agree": true,
+    "raw_v2_index_parser_sha1_trailers_verified": true,
+    "per_call_summary": [
+      {
+        "sequence": 1,
+        "argv": [
+          "rev-parse",
+          "HEAD"
+        ],
+        "exit_code": 0,
+        "index_before": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "index_after": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "metadata_equal": true
+      },
+      {
+        "sequence": 2,
+        "argv": [
+          "--no-replace-objects",
+          "rev-parse",
+          "--verify",
+          "--end-of-options",
+          "HEAD^{commit}"
+        ],
+        "exit_code": 0,
+        "index_before": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "index_after": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "metadata_equal": true
+      },
+      {
+        "sequence": 3,
+        "argv": [
+          "--no-replace-objects",
+          "diff",
+          "--cached",
+          "--quiet",
+          "660ebad08bec4973555669ea67253dd357d70470",
+          "--"
+        ],
+        "exit_code": 0,
+        "index_before": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "index_after": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "metadata_equal": true
+      },
+      {
+        "sequence": 4,
+        "argv": [
+          "--no-replace-objects",
+          "ls-tree",
+          "-r",
+          "-z",
+          "--full-tree",
+          "660ebad08bec4973555669ea67253dd357d70470",
+          "--"
+        ],
+        "exit_code": 0,
+        "index_before": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "index_after": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "metadata_equal": true
+      },
+      {
+        "sequence": 5,
+        "argv": [
+          "--no-replace-objects",
+          "ls-files",
+          "-v",
+          "-z"
+        ],
+        "exit_code": 0,
+        "index_before": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "index_after": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "metadata_equal": true
+      },
+      {
+        "sequence": 6,
+        "argv": [
+          "--no-replace-objects",
+          "ls-files",
+          "--stage",
+          "-z",
+          "--",
+          ":(literal).release-please-manifest.json"
+        ],
+        "exit_code": 0,
+        "index_before": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "index_after": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "metadata_equal": true
+      },
+      {
+        "sequence": 7,
+        "argv": [
+          "--no-replace-objects",
+          "ls-tree",
+          "-z",
+          "660ebad08bec4973555669ea67253dd357d70470",
+          "--",
+          ":(literal).release-please-manifest.json"
+        ],
+        "exit_code": 0,
+        "index_before": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "index_after": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "metadata_equal": true
+      },
+      {
+        "sequence": 8,
+        "argv": [
+          "--no-replace-objects",
+          "hash-object",
+          "--path=.release-please-manifest.json",
+          "--",
+          ".release-please-manifest.json"
+        ],
+        "exit_code": 0,
+        "index_before": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "index_after": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "metadata_equal": true
+      },
+      {
+        "sequence": 9,
+        "argv": [
+          "--no-replace-objects",
+          "config",
+          "--bool",
+          "--get",
+          "core.filemode"
+        ],
+        "exit_code": 0,
+        "index_before": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "index_after": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "metadata_equal": true
+      },
+      {
+        "sequence": 10,
+        "argv": [
+          "--no-replace-objects",
+          "ls-files",
+          "--stage",
+          "-z",
+          "--",
+          ":(literal)Cargo.toml"
+        ],
+        "exit_code": 0,
+        "index_before": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "index_after": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "metadata_equal": true
+      },
+      {
+        "sequence": 11,
+        "argv": [
+          "--no-replace-objects",
+          "ls-tree",
+          "-z",
+          "660ebad08bec4973555669ea67253dd357d70470",
+          "--",
+          ":(literal)Cargo.toml"
+        ],
+        "exit_code": 0,
+        "index_before": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "index_after": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "metadata_equal": true
+      },
+      {
+        "sequence": 12,
+        "argv": [
+          "--no-replace-objects",
+          "hash-object",
+          "--path=Cargo.toml",
+          "--",
+          "Cargo.toml"
+        ],
+        "exit_code": 0,
+        "index_before": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "index_after": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "metadata_equal": true
+      },
+      {
+        "sequence": 13,
+        "argv": [
+          "--no-replace-objects",
+          "config",
+          "--bool",
+          "--get",
+          "core.filemode"
+        ],
+        "exit_code": 0,
+        "index_before": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "index_after": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "metadata_equal": true
+      },
+      {
+        "sequence": 14,
+        "argv": [
+          "--no-replace-objects",
+          "ls-files",
+          "--stage",
+          "-z",
+          "--",
+          ":(literal)Cargo.lock"
+        ],
+        "exit_code": 0,
+        "index_before": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "index_after": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "metadata_equal": true
+      },
+      {
+        "sequence": 15,
+        "argv": [
+          "--no-replace-objects",
+          "ls-tree",
+          "-z",
+          "660ebad08bec4973555669ea67253dd357d70470",
+          "--",
+          ":(literal)Cargo.lock"
+        ],
+        "exit_code": 0,
+        "index_before": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "index_after": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "metadata_equal": true
+      },
+      {
+        "sequence": 16,
+        "argv": [
+          "--no-replace-objects",
+          "hash-object",
+          "--path=Cargo.lock",
+          "--",
+          "Cargo.lock"
+        ],
+        "exit_code": 0,
+        "index_before": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "index_after": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "metadata_equal": true
+      },
+      {
+        "sequence": 17,
+        "argv": [
+          "--no-replace-objects",
+          "config",
+          "--bool",
+          "--get",
+          "core.filemode"
+        ],
+        "exit_code": 0,
+        "index_before": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "index_after": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "metadata_equal": true
+      },
+      {
+        "sequence": 18,
+        "argv": [
+          "--no-replace-objects",
+          "ls-files",
+          "--stage",
+          "-z",
+          "--",
+          ":(literal)CHANGELOG.md"
+        ],
+        "exit_code": 0,
+        "index_before": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "index_after": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "metadata_equal": true
+      },
+      {
+        "sequence": 19,
+        "argv": [
+          "--no-replace-objects",
+          "ls-tree",
+          "-z",
+          "660ebad08bec4973555669ea67253dd357d70470",
+          "--",
+          ":(literal)CHANGELOG.md"
+        ],
+        "exit_code": 0,
+        "index_before": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "index_after": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "metadata_equal": true
+      },
+      {
+        "sequence": 20,
+        "argv": [
+          "--no-replace-objects",
+          "hash-object",
+          "--path=CHANGELOG.md",
+          "--",
+          "CHANGELOG.md"
+        ],
+        "exit_code": 0,
+        "index_before": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "index_after": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "metadata_equal": true
+      },
+      {
+        "sequence": 21,
+        "argv": [
+          "--no-replace-objects",
+          "config",
+          "--bool",
+          "--get",
+          "core.filemode"
+        ],
+        "exit_code": 0,
+        "index_before": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "index_after": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "metadata_equal": true
+      },
+      {
+        "sequence": 22,
+        "argv": [
+          "--no-replace-objects",
+          "ls-files",
+          "--stage",
+          "-z",
+          "--",
+          ":(literal)crates/k-wiki/Cargo.toml"
+        ],
+        "exit_code": 0,
+        "index_before": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "index_after": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "metadata_equal": true
+      },
+      {
+        "sequence": 23,
+        "argv": [
+          "--no-replace-objects",
+          "ls-tree",
+          "-z",
+          "660ebad08bec4973555669ea67253dd357d70470",
+          "--",
+          ":(literal)crates/k-wiki/Cargo.toml"
+        ],
+        "exit_code": 0,
+        "index_before": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "index_after": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "metadata_equal": true
+      },
+      {
+        "sequence": 24,
+        "argv": [
+          "--no-replace-objects",
+          "hash-object",
+          "--path=crates/k-wiki/Cargo.toml",
+          "--",
+          "crates/k-wiki/Cargo.toml"
+        ],
+        "exit_code": 0,
+        "index_before": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "index_after": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "metadata_equal": true
+      },
+      {
+        "sequence": 25,
+        "argv": [
+          "--no-replace-objects",
+          "config",
+          "--bool",
+          "--get",
+          "core.filemode"
+        ],
+        "exit_code": 0,
+        "index_before": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "index_after": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "metadata_equal": true
+      },
+      {
+        "sequence": 26,
+        "argv": [
+          "--no-replace-objects",
+          "ls-files",
+          "--stage",
+          "-z",
+          "--",
+          ":(literal)crates/xtask/Cargo.toml"
+        ],
+        "exit_code": 0,
+        "index_before": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "index_after": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "metadata_equal": true
+      },
+      {
+        "sequence": 27,
+        "argv": [
+          "--no-replace-objects",
+          "ls-tree",
+          "-z",
+          "660ebad08bec4973555669ea67253dd357d70470",
+          "--",
+          ":(literal)crates/xtask/Cargo.toml"
+        ],
+        "exit_code": 0,
+        "index_before": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "index_after": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "metadata_equal": true
+      },
+      {
+        "sequence": 28,
+        "argv": [
+          "--no-replace-objects",
+          "hash-object",
+          "--path=crates/xtask/Cargo.toml",
+          "--",
+          "crates/xtask/Cargo.toml"
+        ],
+        "exit_code": 0,
+        "index_before": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "index_after": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "metadata_equal": true
+      },
+      {
+        "sequence": 29,
+        "argv": [
+          "--no-replace-objects",
+          "config",
+          "--bool",
+          "--get",
+          "core.filemode"
+        ],
+        "exit_code": 0,
+        "index_before": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "index_after": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "metadata_equal": true
+      },
+      {
+        "sequence": 30,
+        "argv": [
+          "--no-replace-objects",
+          "diff",
+          "--quiet",
+          "660ebad08bec4973555669ea67253dd357d70470",
+          "--"
+        ],
+        "exit_code": 0,
+        "index_before": "0ed79b8adb9988f9412e62fe6a6112ccd03f8e0485cae43cb740fe41a85bf9b1",
+        "index_after": "3d7a22e67d3a2f3af11d0ded720fa3a79d48fa247785b7084bf4dd77eb7e3e26",
+        "metadata_equal": true
+      }
+    ],
+    "primary_docs": {
+      "git-diff.html": {
+        "sha256": "eec02b01676a12f580f07f7c1aba6a29cae220728c285910e3299801d9242085",
+        "bytes": 121816,
+        "path": "/opt/homebrew/Cellar/git/2.52.0_1/share/doc/git-doc/git-diff.html",
+        "excerpt": "diff.autoRefreshIndex When using git diff to compare with work tree\nfiles, do not consider stat-only changes as changed.\nInstead, silently run git update-index --refresh to\nupdate the cached stat information for paths whose\ncontents in the work tree match the contents in the\nindex.  This option defaults to true .  Note that this\naffects only git diff Porcelain, and not lower level diff commands such as git diff-files . diff.dirstat A comma separated list of --dirstat parameters specifying the\ndefault behavior of the --dirstat option to git diff and friends.\nThe defaults can be overridden on the command line\n(using --dirstat= <param> ,.. .). The fallback defaults\n(when not changed by diff.dirstat ) are changes,noncumulative,3 .\nThe following parameters are available: changes Compute the dirstat numbers by counting the lines that have been\nremoved from the source, or added to the destination. This ignores\nthe amount of pure code movements within a file.  In other words,\nrearranging lines in a file is not counted as much as other changes.\nThis is the default behavior when no parameter is given. lines Compute the dirstat numbers by doing the regular line-based diff\nanalysis, and summing the removed/added line counts. (For binary\nfiles, count 64-byte chunks instead, since binary files have no\nnatural concept of lines). This is a more expensive --dirstat behavior than the changes behavior, but it does count rearranged\nlines within a file as much as other changes. The resulting output\nis consistent with what you get from the other --*stat options. files Compute the dirstat numbers by counting the number of files changed.\nEach changed file counts equally in the dirstat analysis. This is\nthe computationally cheapest --dirstat behavior, since it does\nnot have to look at the file contents at all. cumulative Count changes in a child directory for the parent directory as well.\nNot"
+      },
+      "git-config.html": {
+        "sha256": "f5a5ce2ef8065ff8183a6e43d32025d054719d8ae5ee559c714c80332aba9cdd",
+        "bytes": 454739,
+        "path": "/opt/homebrew/Cellar/git/2.52.0_1/share/doc/git-doc/git-config.html",
+        "excerpt": "diff.autoRefreshIndex When using git diff to compare with work tree\nfiles, do not consider stat-only changes as changed.\nInstead, silently run git update-index --refresh to\nupdate the cached stat information for paths whose\ncontents in the work tree match the contents in the\nindex.  This option defaults to true .  Note that this\naffects only git diff Porcelain, and not lower level diff commands such as git diff-files . diff.dirstat A comma separated list of --dirstat parameters specifying the\ndefault behavior of the --dirstat option to git-diff(1) and friends.\nThe defaults can be overridden on the command line\n(using --dirstat= <param> ,.. .). The fallback defaults\n(when not changed by diff.dirstat ) are changes,noncumulative,3 .\nThe following parameters are available: changes Compute the dirstat numbers by counting the lines that have been\nremoved from the source, or added to the destination. This ignores\nthe amount of pure code movements within a file.  In other words,\nrearranging lines in a file is not counted as much as other changes.\nThis is the default behavior when no parameter is given. lines Compute the dirstat numbers by doing the regular line-based diff\nanalysis, and summing the removed/added line counts. (For binary\nfiles, count 64-byte chunks instead, since binary files have no\nnatural concept of lines). This is a more expensive --dirstat behavior than the changes behavior, but it does count rearranged\nlines within a file as much as other changes. The resulting output\nis consistent with what you get from the other --*stat options. files Compute the dirstat numbers by counting the number of files changed.\nEach changed file counts equally in the dirstat analysis. This is\nthe computationally cheapest --dirstat behavior, since it does\nnot have to look at the file contents at all. cumulative Count changes in a child directory for the parent directory as well.\n"
+      }
+    }
+  },
+  "source_static_checks": {
+    "unchanged_from_original_review": {
+      "verify_checkout": true,
+      "git": true
+    },
+    "pair_conversion_before_or_after_raw_guard": "after raw MAX_BLOB_SIZE, candidate filesystem only",
+    "new_conversion_has_no_disk_write": true,
+    "raw_classifier_unchanged": true,
+    "production_release_module_unchanged": true
+  },
+  "remaining": [
+    "minimal owner correction for COD110-FR-001",
+    "actual affected checks on both local hosts at final corrected source",
+    "closed final Mac evidence",
+    "original reviewer focused fix verification",
+    "faithful same-PR persistence and later own-head/base full hostedCI/main/release/aggregate gates"
+  ],
+  "settings": {
+    "host_accepted_model": "openai-codex/gpt-6.1-sol",
+    "host_accepted_effort": "max",
+    "native_original_child": "sub-9b6667ff",
+    "fresh_default_nonfork_semantics_from_original_dispatch": true,
+    "runtime_self_metadata": "unexposed",
+    "nested_dispatch": false
+  },
+  "original_closed_review_immutable": true,
+  "no_reviewer_project_or_VM_or_Git_execution": true,
+  "no_source_or_model_or_tracking_writes": true,
+  "constants_changed": [],
+  "next_owner": "Engineer -> assigned Designer/implementation owner -> Verifier both-local -> original FinalReviewer focused closure",
+  "final_PASS": false
+}

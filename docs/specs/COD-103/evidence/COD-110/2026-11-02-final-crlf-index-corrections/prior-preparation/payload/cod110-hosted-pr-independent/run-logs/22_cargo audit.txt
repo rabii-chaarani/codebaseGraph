@@ -1,0 +1,309 @@
+﻿2026-11-02T05:26:07.5392602Z Current runner version: '2.338.2'
+2026-11-02T05:26:07.5420198Z ##[group]Runner Image Provisioner
+2026-11-02T05:26:07.5421105Z Hosted Compute Agent
+2026-11-02T05:26:07.5421707Z Version: 20261021.618
+2026-11-02T05:26:07.5422897Z Commit: 21505ad2541d5be6135ed84fc33697146cf75b8e
+2026-11-02T05:26:07.5423691Z Build Date: 2026-10-21T00:45:21Z
+2026-11-02T05:26:07.5424474Z Worker ID: {279de286-b0ad-48d1-9702-2fcf0ee3c480}
+2026-11-02T05:26:07.5425270Z Region: westcentralus
+2026-11-02T05:26:07.5425852Z Cloud: Azure
+2026-11-02T05:26:07.5426507Z ##[endgroup]
+2026-11-02T05:26:07.5428209Z ##[group]Operating System
+2026-11-02T05:26:07.5428955Z Ubuntu
+2026-11-02T05:26:07.5429524Z 24.04.5
+2026-11-02T05:26:07.5430061Z LTS
+2026-11-02T05:26:07.5430727Z ##[endgroup]
+2026-11-02T05:26:07.5431378Z ##[group]Runner Image
+2026-11-02T05:26:07.5432187Z Image: ubuntu-24.04
+2026-11-02T05:26:07.5432872Z Version: 20261025.353.1
+2026-11-02T05:26:07.5434162Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261025.353/images/ubuntu/Ubuntu2404-Readme.md
+2026-11-02T05:26:07.5436104Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261025.353
+2026-11-02T05:26:07.5437176Z ##[endgroup]
+2026-11-02T05:26:07.5438357Z ##[group]GITHUB_TOKEN Permissions
+2026-11-02T05:26:07.5440631Z Contents: read
+2026-11-02T05:26:07.5441345Z Metadata: read
+2026-11-02T05:26:07.5442268Z ##[endgroup]
+2026-11-02T05:26:07.5444742Z Secret source: Actions
+2026-11-02T05:26:07.5445752Z Cache mode: write
+2026-11-02T05:26:07.5446632Z Prepare workflow directory
+2026-11-02T05:26:07.5875786Z Prepare all required actions
+2026-11-02T05:26:07.5950385Z Getting action download info
+2026-11-02T05:26:07.8952828Z Download action repository 'actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10' (SHA:df4cb1c069e1874edd31b4311f1884172cec0e10)
+2026-11-02T05:26:08.0658360Z Download action repository 'actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae' (SHA:27d5ce7f107fe9357f9df03efb73ab90386fccae)
+2026-11-02T05:26:08.3623610Z Complete job name: cargo audit
+2026-11-02T05:26:08.4564920Z ##[group]Run actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+2026-11-02T05:26:08.4566024Z with:
+2026-11-02T05:26:08.4566508Z   repository: rabii-chaarani/codebaseGraph
+2026-11-02T05:26:08.4570580Z   token: ***
+2026-11-02T05:26:08.4571027Z   ssh-strict: true
+2026-11-02T05:26:08.4571472Z   ssh-user: git
+2026-11-02T05:26:08.4572281Z   persist-credentials: true
+2026-11-02T05:26:08.4572797Z   clean: true
+2026-11-02T05:26:08.4573251Z   sparse-checkout-cone-mode: true
+2026-11-02T05:26:08.4573782Z   fetch-depth: 1
+2026-11-02T05:26:08.4574215Z   fetch-tags: false
+2026-11-02T05:26:08.4574662Z   show-progress: true
+2026-11-02T05:26:08.4575118Z   lfs: false
+2026-11-02T05:26:08.4575526Z   submodules: false
+2026-11-02T05:26:08.4575980Z   set-safe-directory: true
+2026-11-02T05:26:08.4576773Z env:
+2026-11-02T05:26:08.4577218Z   CARGO_HTTP_MULTIPLEXING: false
+2026-11-02T05:26:08.4577743Z   CARGO_NET_RETRY: 10
+2026-11-02T05:26:08.4578212Z   CARGO_AUDIT_VERSION: 0.22.2
+2026-11-02T05:26:08.4578765Z ##[endgroup]
+2026-11-02T05:26:08.9686474Z Syncing repository: rabii-chaarani/codebaseGraph
+2026-11-02T05:26:08.9689421Z ##[group]Getting Git version info
+2026-11-02T05:26:08.9690245Z Working directory is '/home/runner/work/codebaseGraph/codebaseGraph'
+2026-11-02T05:26:08.9691743Z [command]/usr/bin/git version
+2026-11-02T05:26:08.9814071Z git version 2.56.0
+2026-11-02T05:26:08.9833669Z ##[endgroup]
+2026-11-02T05:26:08.9851770Z Temporarily overriding HOME='/home/runner/work/_temp/2673caba-68f4-472b-af0e-6924a0b4668f' before making global git config changes
+2026-11-02T05:26:08.9854657Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-02T05:26:08.9858592Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/codebaseGraph/codebaseGraph
+2026-11-02T05:26:08.9964673Z Deleting the contents of '/home/runner/work/codebaseGraph/codebaseGraph'
+2026-11-02T05:26:08.9978252Z ##[group]Determining repository object format
+2026-11-02T05:26:08.9980547Z ##[endgroup]
+2026-11-02T05:26:08.9987129Z ##[group]Initializing the repository
+2026-11-02T05:26:08.9989575Z [command]/usr/bin/git init /home/runner/work/codebaseGraph/codebaseGraph
+2026-11-02T05:26:09.0134029Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-11-02T05:26:09.0135784Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-11-02T05:26:09.0137602Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-11-02T05:26:09.0139266Z hint: call:
+2026-11-02T05:26:09.0140205Z hint:
+2026-11-02T05:26:09.0141134Z hint: 	git config --global init.defaultBranch <name>
+2026-11-02T05:26:09.0142199Z hint:
+2026-11-02T05:26:09.0143246Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-11-02T05:26:09.0144227Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-11-02T05:26:09.0145016Z hint:
+2026-11-02T05:26:09.0145454Z hint: 	git branch -m <name>
+2026-11-02T05:26:09.0146012Z hint:
+2026-11-02T05:26:09.0146659Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-11-02T05:26:09.0150623Z Initialized empty Git repository in /home/runner/work/codebaseGraph/codebaseGraph/.git/
+2026-11-02T05:26:09.0165859Z [command]/usr/bin/git remote add origin https://github.com/rabii-chaarani/codebaseGraph
+2026-11-02T05:26:09.0223240Z ##[endgroup]
+2026-11-02T05:26:09.0224562Z ##[group]Disabling automatic garbage collection
+2026-11-02T05:26:09.0228449Z [command]/usr/bin/git config --local gc.auto 0
+2026-11-02T05:26:09.0281696Z ##[endgroup]
+2026-11-02T05:26:09.0283948Z ##[group]Setting up auth
+2026-11-02T05:26:09.0297163Z Removing SSH command configuration
+2026-11-02T05:26:09.0307298Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-02T05:26:09.0443617Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-02T05:26:09.0876311Z Removing HTTP extra header
+2026-11-02T05:26:09.0883607Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-02T05:26:09.0931338Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-02T05:26:09.1174388Z Removing includeIf entries pointing to credentials config files
+2026-11-02T05:26:09.1181326Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-02T05:26:09.1230716Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-02T05:26:09.1485478Z [command]/usr/bin/git config --file /home/runner/work/_temp/git-credentials-46ba6a6d-7c09-404d-945f-d53cbc008c97.config http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-11-02T05:26:09.1538132Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/codebaseGraph/codebaseGraph/.git.path /home/runner/work/_temp/git-credentials-46ba6a6d-7c09-404d-945f-d53cbc008c97.config
+2026-11-02T05:26:09.1584416Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/codebaseGraph/codebaseGraph/.git/worktrees/*.path /home/runner/work/_temp/git-credentials-46ba6a6d-7c09-404d-945f-d53cbc008c97.config
+2026-11-02T05:26:09.1627819Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-46ba6a6d-7c09-404d-945f-d53cbc008c97.config
+2026-11-02T05:26:09.1668851Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-46ba6a6d-7c09-404d-945f-d53cbc008c97.config
+2026-11-02T05:26:09.1707019Z ##[endgroup]
+2026-11-02T05:26:09.1707765Z ##[group]Fetching the repository
+2026-11-02T05:26:09.1716424Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +f3f154aeb050945d4efcc635126208d35b43b622:refs/remotes/pull/178/merge
+2026-11-02T05:26:10.9561177Z From https://github.com/rabii-chaarani/codebaseGraph
+2026-11-02T05:26:10.9563917Z  * [new ref]         f3f154aeb050945d4efcc635126208d35b43b622 -> pull/178/merge
+2026-11-02T05:26:10.9568729Z ##[endgroup]
+2026-11-02T05:26:10.9570806Z ##[group]Determining the checkout info
+2026-11-02T05:26:10.9573555Z ##[endgroup]
+2026-11-02T05:26:10.9574951Z [command]/usr/bin/git sparse-checkout disable
+2026-11-02T05:26:10.9644137Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-11-02T05:26:10.9689833Z ##[group]Checking out the ref
+2026-11-02T05:26:10.9692898Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/178/merge
+2026-11-02T05:26:11.2454028Z Note: switching to 'refs/remotes/pull/178/merge'.
+2026-11-02T05:26:11.2454847Z 
+2026-11-02T05:26:11.2455437Z You are in 'detached HEAD' state. You can look around, make experimental
+2026-11-02T05:26:11.2456657Z changes and commit them, and you can discard any commits you make in this
+2026-11-02T05:26:11.2457811Z state without impacting any branches by switching back to a branch.
+2026-11-02T05:26:11.2458488Z 
+2026-11-02T05:26:11.2458991Z If you want to create a new branch to retain commits you create, you may
+2026-11-02T05:26:11.2460049Z do so (now or later) by using -c with the switch command. Example:
+2026-11-02T05:26:11.2460659Z 
+2026-11-02T05:26:11.2460972Z   git switch -c <new-branch-name>
+2026-11-02T05:26:11.2461409Z 
+2026-11-02T05:26:11.2461739Z Or undo this operation with:
+2026-11-02T05:26:11.2462436Z 
+2026-11-02T05:26:11.2462701Z   git switch -
+2026-11-02T05:26:11.2463134Z 
+2026-11-02T05:26:11.2463669Z Turn off this advice by setting config variable advice.detachedHead to false
+2026-11-02T05:26:11.2464394Z 
+2026-11-02T05:26:11.2465207Z HEAD is now at f3f154a Merge 862bb3b3c40c36b21cdcd388f596d52ad482530b into 9ae63f3302bf4cae90ebd5a56173fff341ca815b
+2026-11-02T05:26:11.2484255Z ##[endgroup]
+2026-11-02T05:26:11.2542416Z [command]/usr/bin/git log -1 --format=%H
+2026-11-02T05:26:11.2583474Z f3f154aeb050945d4efcc635126208d35b43b622
+2026-11-02T05:26:11.3060359Z ##[group]Run actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae
+2026-11-02T05:26:11.3061486Z with:
+2026-11-02T05:26:11.3062699Z   path: ~/.cargo/bin/cargo-audit
+2026-11-02T05:26:11.3063661Z   key: cargo-audit-Linux-0.22.2
+2026-11-02T05:26:11.3064510Z   enableCrossOsArchive: false
+2026-11-02T05:26:11.3065308Z   fail-on-cache-miss: false
+2026-11-02T05:26:11.3066064Z   lookup-only: false
+2026-11-02T05:26:11.3066784Z   save-always: false
+2026-11-02T05:26:11.3067454Z env:
+2026-11-02T05:26:11.3068133Z   CARGO_HTTP_MULTIPLEXING: false
+2026-11-02T05:26:11.3068923Z   CARGO_NET_RETRY: 10
+2026-11-02T05:26:11.3069636Z   CARGO_AUDIT_VERSION: 0.22.2
+2026-11-02T05:26:11.3070424Z ##[endgroup]
+2026-11-02T05:26:11.6405280Z Cache hit for: cargo-audit-Linux-0.22.2
+2026-11-02T05:26:12.6491528Z Received 7791827 of 7791827 (100.0%), 9.7 MBs/sec
+2026-11-02T05:26:12.6492756Z Cache Size: ~7 MB (7791827 B)
+2026-11-02T05:26:12.6535915Z [command]/usr/bin/tar -xf /home/runner/work/_temp/e2b0ad31-cc29-4c78-95db-c9926cb30105/cache.tzst -P -C /home/runner/work/codebaseGraph/codebaseGraph --use-compress-program unzstd
+2026-11-02T05:26:12.7054776Z Cache restored successfully
+2026-11-02T05:26:12.7252361Z Cache restored from key: cargo-audit-Linux-0.22.2
+2026-11-02T05:26:12.7442799Z ##[group]Run time_features="$(cargo tree -e features -i time --locked)"
+2026-11-02T05:26:12.7443435Z [36;1mtime_features="$(cargo tree -e features -i time --locked)"[0m
+2026-11-02T05:26:12.7443944Z [36;1mif grep -q 'time feature "parsing"' <<<"$time_features"; then[0m
+2026-11-02T05:26:12.7444454Z [36;1m  echo "time parsing is enabled; RUSTSEC-2026-0009 must not be ignored" >&2[0m
+2026-11-02T05:26:12.7444882Z [36;1m  exit 1[0m
+2026-11-02T05:26:12.7445089Z [36;1mfi[0m
+2026-11-02T05:26:12.7445342Z [36;1mcargo audit --ignore RUSTSEC-2026-0009[0m
+2026-11-02T05:26:12.7470089Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-11-02T05:26:12.7470476Z env:
+2026-11-02T05:26:12.7470709Z   CARGO_HTTP_MULTIPLEXING: false
+2026-11-02T05:26:12.7470983Z   CARGO_NET_RETRY: 10
+2026-11-02T05:26:12.7471213Z   CARGO_AUDIT_VERSION: 0.22.2
+2026-11-02T05:26:12.7471458Z ##[endgroup]
+2026-11-02T05:26:13.0560742Z     Updating crates.io index
+2026-11-02T05:26:15.3269087Z  Downloading crates ...
+2026-11-02T05:26:15.4495236Z   Downloaded arrayvec v0.7.6
+2026-11-02T05:26:15.4757500Z   Downloaded autocfg v1.5.1
+2026-11-02T05:26:15.4889840Z   Downloaded aho-corasick v1.1.4
+2026-11-02T05:26:15.5041653Z   Downloaded byteorder v1.5.0
+2026-11-02T05:26:15.5166588Z   Downloaded cmake v0.1.58
+2026-11-02T05:26:15.5296756Z   Downloaded crc v3.4.0
+2026-11-02T05:26:15.5444287Z   Downloaded cty v0.2.2
+2026-11-02T05:26:15.5554533Z   Downloaded cxxbridge-flags v1.0.138
+2026-11-02T05:26:15.5689605Z   Downloaded digest v0.10.7
+2026-11-02T05:26:15.5829608Z   Downloaded foldhash v0.1.5
+2026-11-02T05:26:15.5954960Z   Downloaded getrandom v0.3.4
+2026-11-02T05:26:15.6097708Z   Downloaded inotify v0.11.2
+2026-11-02T05:26:15.6353132Z   Downloaded link-cplusplus v1.0.12
+2026-11-02T05:26:15.6828069Z   Downloaded memchr v2.8.2
+2026-11-02T05:26:15.7080440Z   Downloaded notify v8.2.0
+2026-11-02T05:26:15.7237611Z   Downloaded lbug v0.19.0
+2026-11-02T05:26:15.9965924Z   Downloaded num-traits v0.2.19
+2026-11-02T05:26:15.9989302Z   Downloaded quote v1.0.45
+2026-11-02T05:26:16.0014600Z   Downloaded same-file v1.0.6
+2026-11-02T05:26:16.0027208Z   Downloaded regex-syntax v0.8.11
+2026-11-02T05:26:16.0095487Z   Downloaded serde_core v1.0.228
+2026-11-02T05:26:16.0121174Z   Downloaded sha2 v0.10.9
+2026-11-02T05:26:16.0145894Z   Downloaded syn v2.0.117
+2026-11-02T05:26:16.0247760Z   Downloaded time-core v0.1.2
+2026-11-02T05:26:16.0256260Z   Downloaded tree-sitter-go v0.25.0
+2026-11-02T05:26:16.0295441Z   Downloaded tree-sitter-cpp v0.23.4
+2026-11-02T05:26:16.0540907Z   Downloaded tree-sitter-language v0.1.8
+2026-11-02T05:26:16.0558700Z   Downloaded tree-sitter-typescript v0.23.2
+2026-11-02T05:26:16.0822790Z   Downloaded unicode-width v0.1.14
+2026-11-02T05:26:16.0880503Z   Downloaded walkdir v2.5.0
+2026-11-02T05:26:16.0898988Z   Downloaded codespan-reporting v0.11.1
+2026-11-02T05:26:16.0967389Z   Downloaded block-buffer v0.10.4
+2026-11-02T05:26:16.0978989Z   Downloaded crypto-common v0.1.7
+2026-11-02T05:26:16.0987838Z   Downloaded cxxbridge-macro v1.0.138
+2026-11-02T05:26:16.1021198Z   Downloaded hashbrown v0.15.5
+2026-11-02T05:26:16.1069188Z   Downloaded find-msvc-tools v0.1.9
+2026-11-02T05:26:16.1087878Z   Downloaded itoa v1.0.18
+2026-11-02T05:26:16.1100715Z   Downloaded log v0.4.32
+2026-11-02T05:26:16.1125032Z   Downloaded mio v1.2.1
+2026-11-02T05:26:16.1182280Z   Downloaded powerfmt v0.2.0
+2026-11-02T05:26:16.1193240Z   Downloaded scratch v1.0.9
+2026-11-02T05:26:16.1204054Z   Downloaded regex-automata v0.4.14
+2026-11-02T05:26:16.1338148Z   Downloaded serde_json v1.0.150
+2026-11-02T05:26:16.1411022Z   Downloaded termcolor v1.4.1
+2026-11-02T05:26:16.1423333Z   Downloaded tree-sitter-c v0.24.2
+2026-11-02T05:26:16.1497777Z   Downloaded tree-sitter-html v0.23.2
+2026-11-02T05:26:16.1603882Z   Downloaded tree-sitter-rust v0.24.2
+2026-11-02T05:26:16.1766445Z   Downloaded uuid v1.18.1
+2026-11-02T05:26:16.1842276Z   Downloaded bitflags v2.13.0
+2026-11-02T05:26:16.1997940Z   Downloaded cpufeatures v0.2.17
+2026-11-02T05:26:16.2111963Z   Downloaded cxx-build v1.0.138
+2026-11-02T05:26:16.2243913Z   Downloaded fs2 v0.4.3
+2026-11-02T05:26:16.2368502Z   Downloaded inotify-sys v0.1.5
+2026-11-02T05:26:16.2490035Z   Downloaded lzma-rs v0.3.0
+2026-11-02T05:26:16.2641017Z   Downloaded num-conv v0.1.0
+2026-11-02T05:26:16.2740863Z   Downloaded rust_decimal v1.42.1
+2026-11-02T05:26:16.2917806Z   Downloaded serde_derive v1.0.228
+2026-11-02T05:26:16.3000133Z   Downloaded time v0.3.36
+2026-11-02T05:26:16.3257975Z   Downloaded typenum v1.20.1
+2026-11-02T05:26:16.3333827Z   Downloaded tree-sitter-fortran v0.6.0
+2026-11-02T05:26:16.3787478Z   Downloaded zmij v1.0.21
+2026-11-02T05:26:16.3804044Z   Downloaded crc-catalog v2.5.0
+2026-11-02T05:26:16.3818314Z   Downloaded equivalent v1.0.2
+2026-11-02T05:26:16.3869381Z   Downloaded libc v0.2.189
+2026-11-02T05:26:16.4282038Z   Downloaded notify-types v2.0.0
+2026-11-02T05:26:16.4313427Z   Downloaded rustversion v1.0.22
+2026-11-02T05:26:16.4339938Z   Downloaded streaming-iterator v0.1.9
+2026-11-02T05:26:16.4418608Z   Downloaded tree-sitter-javascript v0.25.0
+2026-11-02T05:26:16.4475785Z   Downloaded version_check v0.9.5
+2026-11-02T05:26:16.4675045Z   Downloaded cxx v1.0.138
+2026-11-02T05:26:16.4843416Z   Downloaded indexmap v2.7.1
+2026-11-02T05:26:16.4918133Z   Downloaded proc-macro2 v1.0.106
+2026-11-02T05:26:16.4975655Z   Downloaded shlex v2.0.1
+2026-11-02T05:26:16.5179696Z   Downloaded tree-sitter-python v0.25.0
+2026-11-02T05:26:16.5244321Z   Downloaded cfg-if v1.0.4
+2026-11-02T05:26:16.5437980Z   Downloaded libmimalloc-sys v0.1.49
+2026-11-02T05:26:16.5589583Z   Downloaded serde v1.0.228
+2026-11-02T05:26:16.5710368Z   Downloaded unicode-ident v1.0.24
+2026-11-02T05:26:16.5753764Z   Downloaded generic-array v0.14.7
+2026-11-02T05:26:16.5967309Z   Downloaded tree-sitter v0.25.10
+2026-11-02T05:26:16.6027804Z   Downloaded deranged v0.3.11
+2026-11-02T05:26:16.6224263Z   Downloaded tree-sitter-css v0.25.0
+2026-11-02T05:26:16.6298645Z   Downloaded regex v1.12.4
+2026-11-02T05:26:16.6493651Z   Downloaded cc v1.2.64
+2026-11-02T05:26:16.6542204Z   Downloaded mimalloc v0.1.52
+2026-11-02T05:26:16.7383417Z     Fetching advisory database from `https://github.com/RustSec/advisory-db.git`
+2026-11-02T05:26:20.2936240Z       Loaded 1395 security advisories (from /home/runner/.cargo/advisory-db)
+2026-11-02T05:26:20.2937157Z     Updating crates.io index
+2026-11-02T05:26:20.3090628Z     Scanning Cargo.lock for vulnerabilities (223 crate dependencies)
+2026-11-02T05:26:20.4993829Z warning: 2 allowed warnings found
+2026-11-02T05:26:20.4994348Z Crate:     cxx
+2026-11-02T05:26:20.4994692Z Version:   1.0.138
+2026-11-02T05:26:20.4997410Z Warning:   unsound
+2026-11-02T05:26:20.4998939Z Title:     `let_cxx_string!` uses uninitialized value due to exception safety violations
+2026-11-02T05:26:20.5009094Z Date:      2026-07-05
+2026-11-02T05:26:20.5009755Z ID:        RUSTSEC-2026-0202
+2026-11-02T05:26:20.5010289Z URL:       https://rustsec.org/advisories/RUSTSEC-2026-0202
+2026-11-02T05:26:20.5010711Z 
+2026-11-02T05:26:20.5010848Z Crate:     tokio
+2026-11-02T05:26:20.5011210Z Version:   1.53.1
+2026-11-02T05:26:20.5011548Z Warning:   unsound
+2026-11-02T05:26:20.5015811Z Title:     `AsyncFd::new` and related constructors violate I/O safety
+2026-11-02T05:26:20.5016215Z Date:      2026-10-13
+2026-11-02T05:26:20.5016455Z ID:        RUSTSEC-2026-0386
+2026-11-02T05:26:20.5016763Z URL:       https://rustsec.org/advisories/RUSTSEC-2026-0386
+2026-11-02T05:26:20.5017021Z 
+2026-11-02T05:26:20.5145756Z Post job cleanup.
+2026-11-02T05:26:20.6548854Z Cache hit occurred on the primary key cargo-audit-Linux-0.22.2, not saving cache.
+2026-11-02T05:26:20.6717764Z Post job cleanup.
+2026-11-02T05:26:20.7649954Z [command]/usr/bin/git version
+2026-11-02T05:26:20.7728605Z git version 2.56.0
+2026-11-02T05:26:20.7773596Z Temporarily overriding HOME='/home/runner/work/_temp/3896954e-c5c3-4f6b-b53e-4699fcabc6a3' before making global git config changes
+2026-11-02T05:26:20.7774874Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-02T05:26:20.7780377Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/codebaseGraph/codebaseGraph
+2026-11-02T05:26:20.7823021Z Removing SSH command configuration
+2026-11-02T05:26:20.7833246Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-02T05:26:20.7880323Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-02T05:26:20.8163917Z Removing HTTP extra header
+2026-11-02T05:26:20.8173719Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-02T05:26:20.8234167Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-02T05:26:20.8544333Z Removing includeIf entries pointing to credentials config files
+2026-11-02T05:26:20.8554802Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-02T05:26:20.8596928Z includeif.gitdir:/home/runner/work/codebaseGraph/codebaseGraph/.git.path
+2026-11-02T05:26:20.8597544Z includeif.gitdir:/home/runner/work/codebaseGraph/codebaseGraph/.git/worktrees/*.path
+2026-11-02T05:26:20.8598029Z includeif.gitdir:/github/workspace/.git.path
+2026-11-02T05:26:20.8598395Z includeif.gitdir:/github/workspace/.git/worktrees/*.path
+2026-11-02T05:26:20.8609164Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/codebaseGraph/codebaseGraph/.git.path
+2026-11-02T05:26:20.8649509Z /home/runner/work/_temp/git-credentials-46ba6a6d-7c09-404d-945f-d53cbc008c97.config
+2026-11-02T05:26:20.8662858Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/codebaseGraph/codebaseGraph/.git.path /home/runner/work/_temp/git-credentials-46ba6a6d-7c09-404d-945f-d53cbc008c97.config
+2026-11-02T05:26:20.8717977Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/codebaseGraph/codebaseGraph/.git/worktrees/*.path
+2026-11-02T05:26:20.8753422Z /home/runner/work/_temp/git-credentials-46ba6a6d-7c09-404d-945f-d53cbc008c97.config
+2026-11-02T05:26:20.8766165Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/codebaseGraph/codebaseGraph/.git/worktrees/*.path /home/runner/work/_temp/git-credentials-46ba6a6d-7c09-404d-945f-d53cbc008c97.config
+2026-11-02T05:26:20.8812264Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git.path
+2026-11-02T05:26:20.8845711Z /github/runner_temp/git-credentials-46ba6a6d-7c09-404d-945f-d53cbc008c97.config
+2026-11-02T05:26:20.8856636Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-46ba6a6d-7c09-404d-945f-d53cbc008c97.config
+2026-11-02T05:26:20.8903578Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git/worktrees/*.path
+2026-11-02T05:26:20.8939392Z /github/runner_temp/git-credentials-46ba6a6d-7c09-404d-945f-d53cbc008c97.config
+2026-11-02T05:26:20.8947622Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-46ba6a6d-7c09-404d-945f-d53cbc008c97.config
+2026-11-02T05:26:20.8996949Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-02T05:26:20.9285026Z Removing credentials config '/home/runner/work/_temp/git-credentials-46ba6a6d-7c09-404d-945f-d53cbc008c97.config'
+2026-11-02T05:26:20.9500426Z Cleaning up orphan processes

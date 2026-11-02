@@ -1,0 +1,5 @@
+q crates/xtask/src/main.rs layer=semantic
+file path crates/xtask/src/main.rs
+- Module crates.xtask.src.main L1-L6309 rank_score=0.88 id=Module:fbca438046209f9a389e layer=semantic
+- Function main L105-L110 rank_score=0.82 id=Function:c26a92ab9d2329cde725 layer=semantic
+- File main.rs  rank_score=0.76 id=File:b09440cb26c6d85e8485 layer=semantic

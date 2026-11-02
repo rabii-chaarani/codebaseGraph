@@ -1,0 +1,23 @@
+Installed Git 2.52.0 primary documentation (read locally):
+/opt/homebrew/opt/git/share/doc/git-doc/git-config.html — diff.autoRefreshIndex
+diff.autoRefreshIndex When using git diff to compare with work tree
+files, do not consider stat-only changes as changed.
+Instead, silently run git update-index --refresh to
+update the cached stat information for paths whose
+contents in the work tree match the contents in the
+index.  This option defaults to true .  Note that this
+affects only git diff Porcelain, and not lower level diff commands such as git diff-files . 
+
+/opt/homebrew/opt/git/share/doc/git-doc/git.html — -c <name>=<value>
+us -c <name>=<value> Pass a configuration parameter to the command. The value
+given will override values from configuration files.
+The <name> is expected in the same format as listed by git config (subkeys separated by dots). Note that omitting the = in git -c foo.bar ... is all
+
+/opt/homebrew/opt/git/share/doc/git-doc/git-diff.html — --quiet
+--exit-code Make the program exit with codes similar to diff (1).
+That is, it exits with 1 if there were differences and
+0 means no differences. --quiet Disable all output of the program. Implies --exit-code .
+Disables execution of external diff helpers whose exit code
+is not trusted, i.e. their respective configuration option diff.trustExitCode or diff. <driver> . trustExitCode or
+environment variable GIT_EXTERNAL_DIFF_TRUST_EXIT_CODE is
+false. 

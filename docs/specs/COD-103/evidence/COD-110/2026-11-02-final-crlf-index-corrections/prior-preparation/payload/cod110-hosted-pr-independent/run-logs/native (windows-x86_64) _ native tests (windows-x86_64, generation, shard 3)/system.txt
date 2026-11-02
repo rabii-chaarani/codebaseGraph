@@ -1,0 +1,16 @@
+2026-11-02T05:26:10.3520000Z Job is about to start running on the hosted runner: GitHub Actions 1000009445
+2026-11-02T05:26:10.3150000Z Evaluating native.if
+2026-11-02T05:26:10.3150000Z Evaluating: (success() && ((needs.classify.outputs.mode == 'full')))
+2026-11-02T05:26:10.3150000Z Expanded: (true && ('full' == 'full'))
+2026-11-02T05:26:10.3150000Z Result: true
+2026-11-02T05:26:10.3150000Z Evaluating native.windows-x86_64_true.tests.if
+2026-11-02T05:26:10.3150000Z Evaluating: (success() && (inputs.run-tests))
+2026-11-02T05:26:10.3150000Z Expanded: (true && true)
+2026-11-02T05:26:10.3150000Z Result: true
+2026-11-02T05:26:10.3520000Z Job is waiting for a hosted runner to come online.
+2026-11-02T05:26:10.3400000Z Requested labels: windows-2022
+2026-11-02T05:26:10.3400000Z Job defined at: rabii-chaarani/codebaseGraph/.github/workflows/native.yml@refs/pull/178/merge
+2026-11-02T05:26:10.3400000Z Reusable workflow chain:
+2026-11-02T05:26:10.3400000Z rabii-chaarani/codebaseGraph/.github/workflows/ci.yml@refs/pull/178/merge (f3f154aeb050945d4efcc635126208d35b43b622)
+2026-11-02T05:26:10.3400000Z -> rabii-chaarani/codebaseGraph/.github/workflows/native.yml@refs/pull/178/merge (f3f154aeb050945d4efcc635126208d35b43b622)
+2026-11-02T05:26:10.3400000Z Waiting for a runner to pick up this job...

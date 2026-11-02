@@ -1,0 +1,42 @@
+{
+  "/Users/rabii/Projects/Repositories/codebaseGraph/.git/HEAD": {
+    "bytes": 41,
+    "mode": "0o644",
+    "sha256": "b29acbd21a6a3672aa472642c177754044e29497ac748c983cfda24ab5d453da"
+  },
+  "/Users/rabii/Projects/Repositories/codebaseGraph/.git/config": {
+    "bytes": 11073,
+    "mode": "0o644",
+    "sha256": "e6623cb1d34b6d18d835d490c3b07360a180ce87085cacb151d79e96ba2e4df5"
+  },
+  "/Users/rabii/Projects/Repositories/codebaseGraph/.git/worktrees/codebasegraph-cod110-20261101/HEAD": {
+    "bytes": 37,
+    "mode": "0o644",
+    "sha256": "ff47d794a7f412e446a3458c6bac5e7668da8a4b34006da440077f736ceeaad6"
+  },
+  "/Users/rabii/Projects/Repositories/codebaseGraph/.git/worktrees/codebasegraph-cod110-20261101/commondir": {
+    "bytes": 6,
+    "mode": "0o644",
+    "sha256": "340ddcb67a6204f742cd1e28e5b462622dde7daaa8ee36001897196aacdc6d47"
+  },
+  "/Users/rabii/Projects/Repositories/codebaseGraph/.git/worktrees/codebasegraph-cod110-20261101/index": {
+    "bytes": 477264,
+    "mode": "0o644",
+    "sha256": "aa8259a541c03d3c623568981ab0f4836b6c0abc467284fc5429db3707d5e7d6"
+  },
+  "/private/tmp/codebasegraph-cod110-20261101/.cargo/config.toml": {
+    "bytes": 99,
+    "mode": "0o644",
+    "sha256": "388ad5407d7e78cae8dacd1c3c556f8c97f43d998c4e09273dcf8fca00eb0f82"
+  },
+  "/private/tmp/codebasegraph-cod110-20261101/Cargo.lock": {
+    "bytes": 52538,
+    "mode": "0o644",
+    "sha256": "63d868f91aa52acbddf0eb7e9385a101c3a59c02f7e527ced82d1993299f5afb"
+  },
+  "/private/tmp/codebasegraph-cod110-20261101/Cargo.toml": {
+    "bytes": 2320,
+    "mode": "0o644",
+    "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4"
+  }
+}

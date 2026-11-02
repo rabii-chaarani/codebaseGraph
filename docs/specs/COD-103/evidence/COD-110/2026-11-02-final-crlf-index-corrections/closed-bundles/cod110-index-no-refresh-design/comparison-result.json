@@ -1,0 +1,42 @@
+{
+  "git_version": "2.52.0",
+  "fixture": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7e18af87/cod110-index-no-refresh-design/private-git-comparison",
+  "file_bytes_unchanged": true,
+  "mtime_ns_before": 1793615623354388919,
+  "mtime_ns_after": 1793615613354388919,
+  "comparison_false": {
+    "command": "env GIT_OPTIONAL_LOCKS=0 git -C \"/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7e18af87/cod110-index-no-refresh-design/private-git-comparison\" --no-replace-objects -c diff.autoRefreshIndex=false diff --quiet HEAD --",
+    "exit_code": 0,
+    "output": "",
+    "index_unchanged": true
+  },
+  "comparison_true_control": {
+    "command": "env GIT_OPTIONAL_LOCKS=0 git -C \"/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7e18af87/cod110-index-no-refresh-design/private-git-comparison\" --no-replace-objects -c diff.autoRefreshIndex=true diff --quiet HEAD --",
+    "exit_code": 0,
+    "output": "",
+    "index_changed": true
+  },
+  "index_sha256": {
+    "before": "d5313aa87dbe05d7961681a4a9e63a10298f83593d0544c000ac70539972e2cb",
+    "after_false": "d5313aa87dbe05d7961681a4a9e63a10298f83593d0544c000ac70539972e2cb",
+    "after_true": "0f90a9b7877cd0981187668c4f9137538d56dee92d3acfc45b158d418eb8c7b8"
+  },
+  "setup": [
+    {
+      "command": "git -C \"/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7e18af87/cod110-index-no-refresh-design/private-git-comparison\" init --quiet -b main",
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "command": "git -C \"/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7e18af87/cod110-index-no-refresh-design/private-git-comparison\" add --all",
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "command": "git -C \"/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7e18af87/cod110-index-no-refresh-design/private-git-comparison\" -c user.name=COD110-Private-Design -c user.email=cod110-design@example.invalid commit --quiet -m fixture",
+      "exit_code": 0,
+      "output": ""
+    }
+  ],
+  "scope": "One new disposable fixture comparison; no product source/index/settings mutation; no restore"
+}

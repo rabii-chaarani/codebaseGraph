@@ -1,0 +1,18 @@
+{
+    "observed_utc":  "2026-11-02T08:55:28.6351457Z",
+    "source_commit":  "862bb3b3c40c36b21cdcd388f596d52ad482530b",
+    "source_tree":  "02cd3ebed5a1861bef4506f678449d836e7e2bf8",
+    "verified_tracked_files":  2696,
+    "unchanged_files":  2690,
+    "authorized_crlf_only_files":  6,
+    "unexpected_changes":  [
+
+                           ],
+    "binary_sha256":  "0772b115b581c048707c1868d217f82a60a0ddabbdbe6d72ea68b8455f215823",
+    "private_git_index_sha256":  "cfda9baffcdebad0d0cb1aaeff475dd0cfa4ed191b0c5e72510d00122842a6a3",
+    "remaining_cargo_test_git_original_wrapper":  [
+
+                                                  ],
+    "quiescent":  true,
+    "scope":  "Final read/hash/export only. No further guest actions authorized after return. Isolated source and target preserved; staging lease released."
+}

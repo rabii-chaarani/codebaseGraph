@@ -1,0 +1,41 @@
+﻿2026-11-02T05:26:18.0390734Z Current runner version: '2.338.2'
+2026-11-02T05:26:18.0424431Z ##[group]Runner Image Provisioner
+2026-11-02T05:26:18.0424958Z Hosted Compute Agent
+2026-11-02T05:26:18.0425287Z Version: 20261021.618
+2026-11-02T05:26:18.0425640Z Commit: 21505ad2541d5be6135ed84fc33697146cf75b8e
+2026-11-02T05:26:18.0426079Z Build Date: 2026-10-21T00:45:21Z
+2026-11-02T05:26:18.0426460Z Worker ID: {f29c79f6-09a2-4d71-904c-ea5a020d9255}
+2026-11-02T05:26:18.0426880Z Region: westus2
+2026-11-02T05:26:18.0427220Z Cloud: Azure
+2026-11-02T05:26:18.0427488Z ##[endgroup]
+2026-11-02T05:26:18.0428223Z ##[group]Operating System
+2026-11-02T05:26:18.0428567Z Microsoft Windows Server 2022
+2026-11-02T05:26:18.0428897Z 10.0.20348
+2026-11-02T05:26:18.0429192Z Datacenter
+2026-11-02T05:26:18.0429478Z ##[endgroup]
+2026-11-02T05:26:18.0429821Z ##[group]Runner Image
+2026-11-02T05:26:18.0430172Z Image: windows-2022
+2026-11-02T05:26:18.0430462Z Version: 20261025.346.1
+2026-11-02T05:26:18.0431045Z Included Software: https://github.com/actions/runner-images/blob/win22/20261025.346/images/windows/Windows2022-Readme.md
+2026-11-02T05:26:18.0432392Z Image Release: https://github.com/actions/runner-images/releases/tag/win22%2F20261025.346
+2026-11-02T05:26:18.0432912Z ##[endgroup]
+2026-11-02T05:26:18.0433533Z ##[group]GITHUB_TOKEN Permissions
+2026-11-02T05:26:18.0434635Z Contents: read
+2026-11-02T05:26:18.0434930Z Metadata: read
+2026-11-02T05:26:18.0435265Z ##[endgroup]
+2026-11-02T05:26:18.0436516Z Secret source: Actions
+2026-11-02T05:26:18.0436982Z Cache mode: write
+2026-11-02T05:26:18.0437360Z Prepare workflow directory
+2026-11-02T05:26:18.0663146Z Prepare all required actions
+2026-11-02T05:26:18.0693328Z Getting action download info
+2026-11-02T05:26:18.4341253Z Download action repository 'actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10' (SHA:df4cb1c069e1874edd31b4311f1884172cec0e10)
+2026-11-02T05:26:18.5079704Z Download action repository 'actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a' (SHA:043fb46d1a93c77aae656e7c1c64a875d1fc6a0a)
+2026-11-02T05:26:18.6700050Z Uses: rabii-chaarani/codebaseGraph/.github/workflows/native.yml@refs/pull/178/merge (f3f154aeb050945d4efcc635126208d35b43b622)
+2026-11-02T05:26:18.6703170Z ##[group] Inputs
+2026-11-02T05:26:18.6703453Z   target: windows-x86_64
+2026-11-02T05:26:18.6703763Z   source-sha: f3f154aeb050945d4efcc635126208d35b43b622
+2026-11-02T05:26:18.6704255Z   run-tests: true
+2026-11-02T05:26:18.6704501Z   upload-artifact: false
+2026-11-02T05:26:18.6705016Z   artifact-retention-days: 90
+2026-11-02T05:26:18.6705302Z ##[endgroup]
+2026-11-02T05:26:18.6705674Z Complete job name: native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)

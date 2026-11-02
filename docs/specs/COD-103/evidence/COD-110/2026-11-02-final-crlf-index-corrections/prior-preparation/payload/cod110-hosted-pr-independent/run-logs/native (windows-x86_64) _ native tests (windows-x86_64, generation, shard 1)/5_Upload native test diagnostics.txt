@@ -1,0 +1,30 @@
+﻿2026-11-02T05:55:08.2793608Z ##[group]Run actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+2026-11-02T05:55:08.2794423Z with:
+2026-11-02T05:55:08.2794796Z   name: test-diagnostics-windows-x86_64-generation-shard1-1
+2026-11-02T05:55:08.2795246Z   path: diagnostics/
+2026-11-02T05:55:08.2795541Z   if-no-files-found: warn
+2026-11-02T05:55:08.2795842Z   retention-days: 3
+2026-11-02T05:55:08.2796151Z   compression-level: 6
+2026-11-02T05:55:08.2796445Z   overwrite: false
+2026-11-02T05:55:08.2796738Z   include-hidden-files: false
+2026-11-02T05:55:08.2797072Z   archive: true
+2026-11-02T05:55:08.2797358Z env:
+2026-11-02T05:55:08.2797623Z   MACOSX_DEPLOYMENT_TARGET: 13.3
+2026-11-02T05:55:08.2797989Z   CARGO_HTTP_MULTIPLEXING: false
+2026-11-02T05:55:08.2798323Z   CARGO_NET_RETRY: 10
+2026-11-02T05:55:08.2798643Z   LIB: D:\a\_temp\lbug-openssl;
+2026-11-02T05:55:08.2799196Z   LBUG_LIBRARY_DIR: D:/a/codebaseGraph/codebaseGraph/.cache/lbug-prebuilt/0.19.0/windows-x86_64
+2026-11-02T05:55:08.2800012Z   LBUG_INCLUDE_DIR: D:/a/codebaseGraph/codebaseGraph/.cache/lbug-prebuilt/0.19.0/windows-x86_64
+2026-11-02T05:55:08.2800703Z ##[endgroup]
+2026-11-02T05:55:08.7779274Z With the provided path, there will be 8 files uploaded
+2026-11-02T05:55:08.7784955Z Artifact name is valid!
+2026-11-02T05:55:08.7786671Z Root directory input is valid!
+2026-11-02T05:55:09.0390344Z Uploading artifact: test-diagnostics-windows-x86_64-generation-shard1-1.zip
+2026-11-02T05:55:09.0433588Z Beginning upload of artifact content to blob storage
+2026-11-02T05:55:09.2442940Z Uploaded bytes 6945
+2026-11-02T05:55:09.2834637Z Finished uploading artifact content to blob storage!
+2026-11-02T05:55:09.2837039Z SHA256 digest of uploaded artifact is 227e69f2408360bdeb46cdab6851031a75acd4a62490275f2e08c127585758d5
+2026-11-02T05:55:09.2838174Z Finalizing artifact upload
+2026-11-02T05:55:09.7583046Z Artifact test-diagnostics-windows-x86_64-generation-shard1-1 successfully finalized. Artifact ID 13119702457
+2026-11-02T05:55:09.7584419Z Artifact test-diagnostics-windows-x86_64-generation-shard1-1 has been successfully uploaded! Final size is 6945 bytes. Artifact ID is 13119702457
+2026-11-02T05:55:09.7589560Z Artifact download URL: https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41393999523/artifacts/13119702457

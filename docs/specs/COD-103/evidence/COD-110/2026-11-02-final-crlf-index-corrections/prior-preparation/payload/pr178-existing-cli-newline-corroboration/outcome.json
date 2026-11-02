@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "source_head": "862bb3b3c40c36b21cdcd388f596d52ad482530b",
+  "binary": "/private/tmp/codebasegraph-cod110-20261101/target/native-tests/xtask",
+  "binary_sha256": "63df67451f452d32fc670d9e4572ef25c8ac51bc2ea91ee1caaf1a710e5bd69b",
+  "cases": [
+    {
+      "case": "lf",
+      "command": "env GIT_OPTIONAL_LOCKS=0 \"/private/tmp/codebasegraph-cod110-20261101/target/native-tests/xtask\" release-metadata --source-dir \"/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/pr178-existing-cli-newline-corroboration/lf\" --source-sha d09b9b2a3261735cbac244a78d7356bd2fa7aeb3",
+      "exit_code": 0,
+      "output": "{\"source_sha\":\"d09b9b2a3261735cbac244a78d7356bd2fa7aeb3\",\"version\":\"4.0.5\",\"tag_name\":\"v4.0.5\",\"notes\":\"## [4.0.5](https://github.com/rabii-chaarani/codebaseGraph/compare/v4.0.4...v4.0.5) (2026-10-31)\\n\\n\\n### Bug Fixes\\n\\n* **release:** bundle relocatable macOS OpenSSL runtimes (COD-54) ([#163](https://github.com/rabii-chaarani/codebaseGraph/issues/163)) ([c60a00c](https://github.com/rabii-chaarani/codebaseGraph/commit/c60a00c1d747b73789cd6edc7ee20601182a35ca))\"}\n",
+      "duration": 0.26431208406575024
+    },
+    {
+      "case": "crlf",
+      "command": "env GIT_OPTIONAL_LOCKS=0 \"/private/tmp/codebasegraph-cod110-20261101/target/native-tests/xtask\" release-metadata --source-dir \"/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/pr178-existing-cli-newline-corroboration/crlf\" --source-sha 74d3e6b98076d9c9e18b3ff522cbd41d1eeeabfd",
+      "exit_code": 1,
+      "output": "root Cargo.toml has unsupported or ambiguous generated metadata\n",
+      "duration": 0.22097404184751213
+    }
+  ],
+  "product_metadata_unchanged": true,
+  "scope": "Control on actual production release-metadata interface, local macOS only; not actual hosted Windows checkout byte proof. Existing source/code/binary not changed or rebuilt.",
+  "cause_evidence": "Only controlled metadata line endings differ; LF succeeds and CRLF reproduces exact root Cargo.toml unsupported/ambiguous error. Actual Windows default-checkout representation requires separate VM verification.",
+  "author": "Parent independent corroboration after cancelling stalled read-only workers; no source implementation authorship"
+}

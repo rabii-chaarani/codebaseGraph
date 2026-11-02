@@ -1,0 +1,1671 @@
+{
+  "native_invocation_counts": {
+    "test-diagnostics-macos-arm64-integration-shard0-1": {
+      "raw_summary_invocations": [
+        {
+          "status": "ok",
+          "passed": "7",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "4",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "2",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "5",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "1",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "3",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "2",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "23",
+          "failed": "0",
+          "ignored": "1",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "269",
+          "failed": "0",
+          "ignored": "1",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "11",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "27",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "14",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "10",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "5",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "4",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "8",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "12",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "8",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "4",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "8",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "6",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "5",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "11",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "3",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        }
+      ],
+      "sum_invocation_passed": 452,
+      "sum_invocation_failed": 0,
+      "note": "invocation totals can repeat explicitly selected regression cases; not unique per-platform test count"
+    },
+    "test-diagnostics-windows-x86_64-generation-shard4-1": {
+      "raw_summary_invocations": [
+        {
+          "status": "ok",
+          "passed": "1",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "4"
+        }
+      ],
+      "sum_invocation_passed": 1,
+      "sum_invocation_failed": 0,
+      "note": "invocation totals can repeat explicitly selected regression cases; not unique per-platform test count"
+    },
+    "test-diagnostics-windows-x86_64-unit-shard1-1": {
+      "raw_summary_invocations": [
+        {
+          "status": "ok",
+          "passed": "47",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "783"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "10"
+        },
+        {
+          "status": "ok",
+          "passed": "82",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "748"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "2",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "8"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "7",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "84"
+        },
+        {
+          "status": "ok",
+          "passed": "78",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "752"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "1",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "9"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "FAILED",
+          "passed": "5",
+          "failed": "1",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "85"
+        },
+        {
+          "status": "ok",
+          "passed": "1",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "829"
+        },
+        {
+          "status": "ok",
+          "passed": "45",
+          "failed": "0",
+          "ignored": "1",
+          "measured": "0",
+          "filtered": "784"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "10"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "11",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "80"
+        }
+      ],
+      "sum_invocation_passed": 279,
+      "sum_invocation_failed": 1,
+      "note": "invocation totals can repeat explicitly selected regression cases; not unique per-platform test count"
+    },
+    "test-diagnostics-windows-x86_64-integration-shard2-1": {
+      "raw_summary_invocations": [
+        {
+          "status": "ok",
+          "passed": "1",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "6"
+        },
+        {
+          "status": "ok",
+          "passed": "1",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "3"
+        },
+        {
+          "status": "ok",
+          "passed": "1",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "1"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "5"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "1"
+        },
+        {
+          "status": "ok",
+          "passed": "2",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "1"
+        },
+        {
+          "status": "ok",
+          "passed": "2",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "6",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "17"
+        },
+        {
+          "status": "ok",
+          "passed": "62",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "196"
+        },
+        {
+          "status": "ok",
+          "passed": "4",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "8"
+        },
+        {
+          "status": "ok",
+          "passed": "5",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "22"
+        },
+        {
+          "status": "ok",
+          "passed": "5",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "8"
+        },
+        {
+          "status": "ok",
+          "passed": "1",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "8"
+        },
+        {
+          "status": "ok",
+          "passed": "1",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "4"
+        },
+        {
+          "status": "ok",
+          "passed": "1",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "3"
+        },
+        {
+          "status": "ok",
+          "passed": "3",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "5"
+        },
+        {
+          "status": "ok",
+          "passed": "3",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "8"
+        },
+        {
+          "status": "ok",
+          "passed": "1",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "7"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "4"
+        },
+        {
+          "status": "ok",
+          "passed": "2",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "6"
+        },
+        {
+          "status": "ok",
+          "passed": "2",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "4"
+        },
+        {
+          "status": "ok",
+          "passed": "2",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "3"
+        },
+        {
+          "status": "ok",
+          "passed": "4",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "7"
+        }
+      ],
+      "sum_invocation_passed": 109,
+      "sum_invocation_failed": 0,
+      "note": "invocation totals can repeat explicitly selected regression cases; not unique per-platform test count"
+    },
+    "test-diagnostics-windows-x86_64-generation-shard3-1": {
+      "raw_summary_invocations": [
+        {
+          "status": "ok",
+          "passed": "1",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "4"
+        }
+      ],
+      "sum_invocation_passed": 1,
+      "sum_invocation_failed": 0,
+      "note": "invocation totals can repeat explicitly selected regression cases; not unique per-platform test count"
+    },
+    "test-diagnostics-windows-x86_64-integration-shard1-1": {
+      "raw_summary_invocations": [
+        {
+          "status": "ok",
+          "passed": "4",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "3"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "4"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "2"
+        },
+        {
+          "status": "ok",
+          "passed": "3",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "2"
+        },
+        {
+          "status": "ok",
+          "passed": "1",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "3"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "2"
+        },
+        {
+          "status": "ok",
+          "passed": "5",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "18"
+        },
+        {
+          "status": "ok",
+          "passed": "65",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "193"
+        },
+        {
+          "status": "ok",
+          "passed": "2",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "10"
+        },
+        {
+          "status": "ok",
+          "passed": "8",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "19"
+        },
+        {
+          "status": "ok",
+          "passed": "2",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "11"
+        },
+        {
+          "status": "ok",
+          "passed": "1",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "8"
+        },
+        {
+          "status": "ok",
+          "passed": "2",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "3"
+        },
+        {
+          "status": "ok",
+          "passed": "1",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "3"
+        },
+        {
+          "status": "ok",
+          "passed": "1",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "7"
+        },
+        {
+          "status": "ok",
+          "passed": "3",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "8"
+        },
+        {
+          "status": "ok",
+          "passed": "2",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "6"
+        },
+        {
+          "status": "ok",
+          "passed": "2",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "2"
+        },
+        {
+          "status": "ok",
+          "passed": "2",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "6"
+        },
+        {
+          "status": "ok",
+          "passed": "3",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "3"
+        },
+        {
+          "status": "ok",
+          "passed": "1",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "4"
+        },
+        {
+          "status": "ok",
+          "passed": "2",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "9"
+        },
+        {
+          "status": "ok",
+          "passed": "3",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        }
+      ],
+      "sum_invocation_passed": 113,
+      "sum_invocation_failed": 0,
+      "note": "invocation totals can repeat explicitly selected regression cases; not unique per-platform test count"
+    },
+    "test-diagnostics-windows-x86_64-generation-shard1-1": {
+      "raw_summary_invocations": [
+        {
+          "status": "ok",
+          "passed": "2",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "3"
+        }
+      ],
+      "sum_invocation_passed": 2,
+      "sum_invocation_failed": 0,
+      "note": "invocation totals can repeat explicitly selected regression cases; not unique per-platform test count"
+    },
+    "test-diagnostics-macos-arm64-generation-shard0-1": {
+      "raw_summary_invocations": [
+        {
+          "status": "ok",
+          "passed": "5",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        }
+      ],
+      "sum_invocation_passed": 5,
+      "sum_invocation_failed": 0,
+      "note": "invocation totals can repeat explicitly selected regression cases; not unique per-platform test count"
+    },
+    "test-diagnostics-macos-arm64-unit-shard0-1": {
+      "raw_summary_invocations": [
+        {
+          "status": "ok",
+          "passed": "1",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "847"
+        },
+        {
+          "status": "ok",
+          "passed": "846",
+          "failed": "0",
+          "ignored": "2",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "10",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "154",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        }
+      ],
+      "sum_invocation_passed": 1011,
+      "sum_invocation_failed": 0,
+      "note": "invocation totals can repeat explicitly selected regression cases; not unique per-platform test count"
+    },
+    "test-diagnostics-windows-x86_64-integration-shard4-1": {
+      "raw_summary_invocations": [
+        {
+          "status": "ok",
+          "passed": "1",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "6"
+        },
+        {
+          "status": "ok",
+          "passed": "1",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "3"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "2"
+        },
+        {
+          "status": "ok",
+          "passed": "1",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "4"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "1"
+        },
+        {
+          "status": "ok",
+          "passed": "1",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "2"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "2"
+        },
+        {
+          "status": "ok",
+          "passed": "5",
+          "failed": "0",
+          "ignored": "1",
+          "measured": "0",
+          "filtered": "17"
+        },
+        {
+          "status": "ok",
+          "passed": "65",
+          "failed": "0",
+          "ignored": "1",
+          "measured": "0",
+          "filtered": "192"
+        },
+        {
+          "status": "ok",
+          "passed": "3",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "9"
+        },
+        {
+          "status": "ok",
+          "passed": "7",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "20"
+        },
+        {
+          "status": "ok",
+          "passed": "2",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "11"
+        },
+        {
+          "status": "ok",
+          "passed": "4",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "5"
+        },
+        {
+          "status": "ok",
+          "passed": "1",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "4"
+        },
+        {
+          "status": "ok",
+          "passed": "1",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "3"
+        },
+        {
+          "status": "ok",
+          "passed": "1",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "7"
+        },
+        {
+          "status": "ok",
+          "passed": "3",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "8"
+        },
+        {
+          "status": "ok",
+          "passed": "3",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "5"
+        },
+        {
+          "status": "ok",
+          "passed": "1",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "3"
+        },
+        {
+          "status": "ok",
+          "passed": "3",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "5"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "6"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "5"
+        },
+        {
+          "status": "ok",
+          "passed": "3",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "8"
+        }
+      ],
+      "sum_invocation_passed": 106,
+      "sum_invocation_failed": 0,
+      "note": "invocation totals can repeat explicitly selected regression cases; not unique per-platform test count"
+    },
+    "test-diagnostics-windows-x86_64-integration-shard3-1": {
+      "raw_summary_invocations": [
+        {
+          "status": "ok",
+          "passed": "1",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "6"
+        },
+        {
+          "status": "ok",
+          "passed": "2",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "2"
+        },
+        {
+          "status": "ok",
+          "passed": "1",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "1"
+        },
+        {
+          "status": "ok",
+          "passed": "1",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "4"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "1"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "3"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "2"
+        },
+        {
+          "status": "ok",
+          "passed": "6",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "17"
+        },
+        {
+          "status": "ok",
+          "passed": "65",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "193"
+        },
+        {
+          "status": "ok",
+          "passed": "3",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "9"
+        },
+        {
+          "status": "ok",
+          "passed": "7",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "20"
+        },
+        {
+          "status": "ok",
+          "passed": "4",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "9"
+        },
+        {
+          "status": "ok",
+          "passed": "3",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "6"
+        },
+        {
+          "status": "ok",
+          "passed": "1",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "4"
+        },
+        {
+          "status": "ok",
+          "passed": "1",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "3"
+        },
+        {
+          "status": "ok",
+          "passed": "3",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "5"
+        },
+        {
+          "status": "ok",
+          "passed": "2",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "9"
+        },
+        {
+          "status": "ok",
+          "passed": "2",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "6"
+        },
+        {
+          "status": "ok",
+          "passed": "1",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "3"
+        },
+        {
+          "status": "ok",
+          "passed": "1",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "7"
+        },
+        {
+          "status": "ok",
+          "passed": "1",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "5"
+        },
+        {
+          "status": "ok",
+          "passed": "2",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "3"
+        },
+        {
+          "status": "ok",
+          "passed": "2",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "9"
+        }
+      ],
+      "sum_invocation_passed": 109,
+      "sum_invocation_failed": 0,
+      "note": "invocation totals can repeat explicitly selected regression cases; not unique per-platform test count"
+    },
+    "test-diagnostics-windows-x86_64-unit-shard3-1": {
+      "raw_summary_invocations": [
+        {
+          "status": "ok",
+          "passed": "84",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "746"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "1",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "9"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "6",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "85"
+        },
+        {
+          "status": "ok",
+          "passed": "77",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "753"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "2",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "8"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "5",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "86"
+        },
+        {
+          "status": "ok",
+          "passed": "46",
+          "failed": "0",
+          "ignored": "1",
+          "measured": "0",
+          "filtered": "783"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "10"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "11",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "80"
+        }
+      ],
+      "sum_invocation_passed": 232,
+      "sum_invocation_failed": 0,
+      "note": "invocation totals can repeat explicitly selected regression cases; not unique per-platform test count"
+    },
+    "test-diagnostics-windows-x86_64-unit-shard2-1": {
+      "raw_summary_invocations": [
+        {
+          "status": "ok",
+          "passed": "85",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "745"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "1",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "9"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "6",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "85"
+        },
+        {
+          "status": "ok",
+          "passed": "76",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "754"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "2",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "8"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "6",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "85"
+        },
+        {
+          "status": "ok",
+          "passed": "46",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "784"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "10"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "11",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "80"
+        }
+      ],
+      "sum_invocation_passed": 233,
+      "sum_invocation_failed": 0,
+      "note": "invocation totals can repeat explicitly selected regression cases; not unique per-platform test count"
+    },
+    "test-diagnostics-windows-x86_64-unit-shard4-1": {
+      "raw_summary_invocations": [
+        {
+          "status": "ok",
+          "passed": "83",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "747"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "1",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "9"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "7",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "84"
+        },
+        {
+          "status": "ok",
+          "passed": "80",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "750"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "10"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "5",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "86"
+        },
+        {
+          "status": "ok",
+          "passed": "46",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "784"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "10"
+        },
+        {
+          "status": "ok",
+          "passed": "0",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "0"
+        },
+        {
+          "status": "ok",
+          "passed": "10",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "81"
+        }
+      ],
+      "sum_invocation_passed": 232,
+      "sum_invocation_failed": 0,
+      "note": "invocation totals can repeat explicitly selected regression cases; not unique per-platform test count"
+    },
+    "test-diagnostics-windows-x86_64-generation-shard2-1": {
+      "raw_summary_invocations": [
+        {
+          "status": "ok",
+          "passed": "1",
+          "failed": "0",
+          "ignored": "0",
+          "measured": "0",
+          "filtered": "4"
+        }
+      ],
+      "sum_invocation_passed": 1,
+      "sum_invocation_failed": 0,
+      "note": "invocation totals can repeat explicitly selected regression cases; not unique per-platform test count"
+    }
+  },
+  "compiler_warning_lines": {
+    "test-diagnostics-macos-arm64-integration-shard0-1": [],
+    "test-diagnostics-windows-x86_64-generation-shard4-1": [],
+    "test-diagnostics-windows-x86_64-unit-shard1-1": [],
+    "test-diagnostics-windows-x86_64-integration-shard2-1": [],
+    "test-diagnostics-windows-x86_64-generation-shard3-1": [],
+    "test-diagnostics-windows-x86_64-integration-shard1-1": [],
+    "test-diagnostics-windows-x86_64-generation-shard1-1": [],
+    "test-diagnostics-macos-arm64-generation-shard0-1": [],
+    "test-diagnostics-macos-arm64-unit-shard0-1": [],
+    "test-diagnostics-windows-x86_64-integration-shard4-1": [],
+    "test-diagnostics-windows-x86_64-integration-shard3-1": [],
+    "test-diagnostics-windows-x86_64-unit-shard3-1": [],
+    "test-diagnostics-windows-x86_64-unit-shard2-1": [],
+    "test-diagnostics-windows-x86_64-unit-shard4-1": [],
+    "test-diagnostics-windows-x86_64-generation-shard2-1": []
+  },
+  "genuine_hosted_junit": "NONE: all15 actual diagnostics inspected;0 XML members. Native runner reports JSON/inventory/logs only; no synthetic conversion created."
+}

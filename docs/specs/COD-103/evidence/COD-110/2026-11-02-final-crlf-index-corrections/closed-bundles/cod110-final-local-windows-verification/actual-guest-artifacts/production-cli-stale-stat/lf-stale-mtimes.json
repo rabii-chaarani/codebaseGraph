@@ -1,0 +1,44 @@
+﻿[
+    {
+        "path":  "Cargo.toml",
+        "before_utc":  "2026-11-02T11:15:47.4979537Z",
+        "stale_utc":  "2026-11-02T11:15:37.4979537Z",
+        "delta_seconds":  -10,
+        "content_sha256":  "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4"
+    },
+    {
+        "path":  "Cargo.lock",
+        "before_utc":  "2026-11-02T11:15:47.5722279Z",
+        "stale_utc":  "2026-11-02T11:15:37.5722279Z",
+        "delta_seconds":  -10,
+        "content_sha256":  "63d868f91aa52acbddf0eb7e9385a101c3a59c02f7e527ced82d1993299f5afb"
+    },
+    {
+        "path":  "crates/k-wiki/Cargo.toml",
+        "before_utc":  "2026-11-02T11:15:47.6515960Z",
+        "stale_utc":  "2026-11-02T11:15:37.6515960Z",
+        "delta_seconds":  -10,
+        "content_sha256":  "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572"
+    },
+    {
+        "path":  "crates/xtask/Cargo.toml",
+        "before_utc":  "2026-11-02T11:15:47.6536073Z",
+        "stale_utc":  "2026-11-02T11:15:37.6536073Z",
+        "delta_seconds":  -10,
+        "content_sha256":  "206d3a9af5953963659c0cc292e1356c8905f44288c417568bb7f146c4716198"
+    },
+    {
+        "path":  ".release-please-manifest.json",
+        "before_utc":  "2026-11-02T11:15:47.6536073Z",
+        "stale_utc":  "2026-11-02T11:15:37.6536073Z",
+        "delta_seconds":  -10,
+        "content_sha256":  "e9d8f4b19676132773870bcf7887f2ae48745890e9c84078336d1fcc3824abae"
+    },
+    {
+        "path":  "CHANGELOG.md",
+        "before_utc":  "2026-11-02T11:15:47.6727030Z",
+        "stale_utc":  "2026-11-02T11:15:37.6727030Z",
+        "delta_seconds":  -10,
+        "content_sha256":  "0d4f537befa5aea98e7ff6bb9cc4860219515803a7f0a58530f520c698e04f35"
+    }
+]

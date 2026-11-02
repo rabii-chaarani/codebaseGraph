@@ -1,0 +1,6 @@
+H .release-please-manifest.json
+H CHANGELOG.md
+H Cargo.lock
+H Cargo.toml
+H crates/k-wiki/Cargo.toml
+H crates/xtask/Cargo.toml

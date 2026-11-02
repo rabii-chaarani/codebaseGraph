@@ -1,0 +1,18 @@
+﻿{
+    "path":  "C:\\Users\\rabii\\AppData\\Local\\Temp\\c110-final-b5aa2377\\target\\native-tests\\xtask.exe",
+    "sha256":  "56b0a7499d80ad3437aca4e64e5c39e72ebcc9f9d4b5377b1c6cbe7742003b22",
+    "bytes":  1940992,
+    "machine":  "0x8664 AMD64",
+    "source_commit":  "862bb3b3c40c36b21cdcd388f596d52ad482530b",
+    "dirty_overlay":  {
+                          "crates/xtask/src/ci.rs":  {
+                                                         "sha256":  "9cce67411b43c86a6797d35f5538bf2cc72227713c4dfa0baae5a02eb258e2fd",
+                                                         "bytes":  95794
+                                                     },
+                          "crates/xtask/src/release.rs":  {
+                                                              "sha256":  "06b674185df7f7ac4e7cf3cd2642c2d75b4eb62169ee922c3c2f9724fd760594",
+                                                              "bytes":  33789
+                                                          }
+                      },
+    "provenance":  "One current offline Cargo build from exact final no-refresh source"
+}

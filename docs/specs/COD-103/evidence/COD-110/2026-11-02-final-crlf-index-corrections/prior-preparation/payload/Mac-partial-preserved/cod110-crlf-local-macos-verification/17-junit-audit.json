@@ -1,0 +1,17 @@
+{
+  "inventory_count": 157,
+  "junit_count": 157,
+  "failures": 0,
+  "skips": 0,
+  "names_match_inventory": true,
+  "junit_identity": {
+    "sha256": "91981d6262fdec1c3bf05b01022fc0bac82d34e55baeddd32905a5a1a5247883",
+    "bytes": 76760,
+    "mode": "0o644"
+  },
+  "test_binary_identity": {
+    "sha256": "af891efde2009d79552b9d5f742cb31ec8cb1d5a6adf259103e08c5e97b58064",
+    "bytes": 3572944,
+    "mode": "0o755"
+  }
+}

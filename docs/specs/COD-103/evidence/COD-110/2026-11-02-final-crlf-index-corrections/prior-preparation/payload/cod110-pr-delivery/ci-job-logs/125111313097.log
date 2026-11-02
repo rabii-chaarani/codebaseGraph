@@ -1,0 +1,901 @@
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	﻿2026-11-02T05:26:12.3429568Z Current runner version: '2.338.2'
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:12.3463672Z ##[group]Runner Image Provisioner
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:12.3464903Z Hosted Compute Agent
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:12.3465736Z Version: 20261021.618
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:12.3466812Z Commit: 21505ad2541d5be6135ed84fc33697146cf75b8e
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:12.3468033Z Build Date: 2026-10-21T00:45:21Z
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:12.3469149Z Worker ID: {ce8f9b77-9a29-4378-a17d-457007751e25}
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:12.3470291Z Region: northcentralus
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:12.3471193Z Cloud: Azure
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:12.3472167Z ##[endgroup]
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:12.3474244Z ##[group]Operating System
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:12.3475301Z Microsoft Windows Server 2022
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:12.3476283Z 10.0.20348
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:12.3477051Z Datacenter
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:12.3477835Z ##[endgroup]
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:12.3478673Z ##[group]Runner Image
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:12.3479556Z Image: windows-2022
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:12.3480523Z Version: 20261025.346.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:12.3482880Z Included Software: https://github.com/actions/runner-images/blob/win22/20261025.346/images/windows/Windows2022-Readme.md
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:12.3485620Z Image Release: https://github.com/actions/runner-images/releases/tag/win22%2F20261025.346
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:12.3487241Z ##[endgroup]
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:12.3489113Z ##[group]GITHUB_TOKEN Permissions
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:12.3491533Z Contents: read
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:12.3492942Z Metadata: read
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:12.3493758Z ##[endgroup]
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:12.3496612Z Secret source: Actions
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:12.3498163Z Cache mode: write
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:12.3499296Z Prepare workflow directory
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:12.3914608Z Prepare all required actions
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:12.3967714Z Getting action download info
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:12.6468995Z Download action repository 'actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10' (SHA:df4cb1c069e1874edd31b4311f1884172cec0e10)
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:12.7735406Z Download action repository 'actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a' (SHA:043fb46d1a93c77aae656e7c1c64a875d1fc6a0a)
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.0147176Z Uses: rabii-chaarani/codebaseGraph/.github/workflows/native.yml@refs/pull/178/merge (f3f154aeb050945d4efcc635126208d35b43b622)
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.0151870Z ##[group] Inputs
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.0152393Z   target: windows-x86_64
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.0152951Z   source-sha: f3f154aeb050945d4efcc635126208d35b43b622
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.0153909Z   run-tests: true
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.0154361Z   upload-artifact: false
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.0155321Z   artifact-retention-days: 90
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.0155856Z ##[endgroup]
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.0156552Z Complete job name: native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.1794225Z ##[group]Run actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.1795777Z with:
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.1796341Z   ref: f3f154aeb050945d4efcc635126208d35b43b622
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.1797091Z   repository: rabii-chaarani/codebaseGraph
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.1801849Z   token: ***
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.1802352Z   ssh-strict: true
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.1802855Z   ssh-user: git
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.1803353Z   persist-credentials: true
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.1804742Z   clean: true
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.1805372Z   sparse-checkout-cone-mode: true
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.1806180Z   fetch-depth: 1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.1806746Z   fetch-tags: false
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.1807159Z   show-progress: true
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.1807562Z   lfs: false
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.1807936Z   submodules: false
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.1808355Z   set-safe-directory: true
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.1809126Z env:
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.1809524Z   MACOSX_DEPLOYMENT_TARGET: 13.3
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.1810061Z   CARGO_HTTP_MULTIPLEXING: false
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.1810527Z   CARGO_NET_RETRY: 10
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.1810929Z ##[endgroup]
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.3433205Z Syncing repository: rabii-chaarani/codebaseGraph
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.3436811Z ##[group]Getting Git version info
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.3438808Z Working directory is 'D:\a\codebaseGraph\codebaseGraph'
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.4709351Z [command]"C:\Program Files\Git\bin\git.exe" version
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.8150378Z git version 2.56.0.windows.3
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.8204598Z ##[endgroup]
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.8227037Z Temporarily overriding HOME='D:\a\_temp\bc7c735a-6481-42c8-97f8-98b185278005' before making global git config changes
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.8228538Z Adding repository directory to the temporary git global config as a safe directory
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.8241831Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\codebaseGraph\codebaseGraph
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.8906307Z Deleting the contents of 'D:\a\codebaseGraph\codebaseGraph'
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.8911346Z ##[group]Determining repository object format
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.8914253Z ##[endgroup]
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.8915857Z ##[group]Initializing the repository
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.8924285Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\codebaseGraph\codebaseGraph
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.9716636Z Initialized empty Git repository in D:/a/codebaseGraph/codebaseGraph/.git/
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:13.9757570Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/rabii-chaarani/codebaseGraph
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:14.0348676Z ##[endgroup]
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:14.0349640Z ##[group]Disabling automatic garbage collection
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:14.0357499Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:14.0668652Z ##[endgroup]
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:14.0670512Z ##[group]Setting up auth
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:14.0671433Z Removing SSH command configuration
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:14.0686551Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:14.0991591Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:15.5228490Z Removing HTTP extra header
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:15.5238217Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:15.5531850Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:16.0444811Z Removing includeIf entries pointing to credentials config files
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:16.0456625Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:16.0799873Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:16.6252426Z [command]"C:\Program Files\Git\bin\git.exe" config --file D:\a\_temp\git-credentials-e9b9a67d-d7d7-487d-b06c-16f67ee55b1e.config http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:16.6619662Z [command]"C:\Program Files\Git\bin\git.exe" config --local includeIf.gitdir:D:/a/codebaseGraph/codebaseGraph/.git.path D:\a\_temp\git-credentials-e9b9a67d-d7d7-487d-b06c-16f67ee55b1e.config
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:16.7080269Z [command]"C:\Program Files\Git\bin\git.exe" config --local includeIf.gitdir:D:/a/codebaseGraph/codebaseGraph/.git/worktrees/*.path D:\a\_temp\git-credentials-e9b9a67d-d7d7-487d-b06c-16f67ee55b1e.config
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:16.7443383Z [command]"C:\Program Files\Git\bin\git.exe" config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-e9b9a67d-d7d7-487d-b06c-16f67ee55b1e.config
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:16.7812666Z [command]"C:\Program Files\Git\bin\git.exe" config --local includeIf.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-e9b9a67d-d7d7-487d-b06c-16f67ee55b1e.config
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:16.8175923Z ##[endgroup]
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:16.8178539Z ##[group]Fetching the repository
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:16.8195512Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin f3f154aeb050945d4efcc635126208d35b43b622
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:19.7316301Z From https://github.com/rabii-chaarani/codebaseGraph
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:19.7317240Z  * branch            f3f154aeb050945d4efcc635126208d35b43b622 -> FETCH_HEAD
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:19.7365747Z [command]"C:\Program Files\Git\bin\git.exe" rev-parse --verify --quiet f3f154aeb050945d4efcc635126208d35b43b622^{object}
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:19.7698166Z f3f154aeb050945d4efcc635126208d35b43b622
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:19.7729543Z ##[endgroup]
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:19.7729982Z ##[group]Determining the checkout info
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:19.7730554Z ##[endgroup]
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:19.7740312Z [command]"C:\Program Files\Git\bin\git.exe" sparse-checkout disable
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:19.8082378Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all extensions.worktreeConfig
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:19.8374983Z ##[group]Checking out the ref
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:19.8384898Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force f3f154aeb050945d4efcc635126208d35b43b622
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:20.6745432Z Note: switching to 'f3f154aeb050945d4efcc635126208d35b43b622'.
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:20.6746031Z 
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:20.6747870Z You are in 'detached HEAD' state. You can look around, make experimental
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:20.6748724Z changes and commit them, and you can discard any commits you make in this
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:20.6749207Z state without impacting any branches by switching back to a branch.
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:20.6749510Z 
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:20.6749763Z If you want to create a new branch to retain commits you create, you may
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:20.6750204Z do so (now or later) by using -c with the switch command. Example:
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:20.6750456Z 
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:20.6750614Z   git switch -c <new-branch-name>
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:20.6750793Z 
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:20.6750903Z Or undo this operation with:
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:20.6751063Z 
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:20.6751141Z   git switch -
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:20.6751266Z 
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:20.6751498Z Turn off this advice by setting config variable advice.detachedHead to false
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:20.6751814Z 
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:20.6752168Z HEAD is now at f3f154a Merge 862bb3b3c40c36b21cdcd388f596d52ad482530b into 9ae63f3302bf4cae90ebd5a56173fff341ca815b
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:20.6959808Z ##[endgroup]
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:20.7465940Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format=%H
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:20.7744439Z f3f154aeb050945d4efcc635126208d35b43b622
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:20.8244614Z Prepare all required actions
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:20.8245283Z Getting action download info
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:20.9136147Z Download action repository 'actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae' (SHA:27d5ce7f107fe9357f9df03efb73ab90386fccae)
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.0587674Z ##[group]Run ./.github/actions/setup-native
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.0587947Z with:
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.0588139Z   target: windows-x86_64
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.0588338Z env:
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.0588503Z   MACOSX_DEPLOYMENT_TARGET: 13.3
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.0588732Z   CARGO_HTTP_MULTIPLEXING: false
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.0588944Z   CARGO_NET_RETRY: 10
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.0589121Z ##[endgroup]
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.0647681Z ##[start-action display=Validate target host;id=__self.__run]
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.0784775Z ##[group]Run set -euo pipefail
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.0785100Z ^[[36;1mset -euo pipefail^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.0785412Z ^[[36;1mcase "${NATIVE_TARGET}:${RUNNER_OS}:${RUNNER_ARCH}" in^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.0785859Z ^[[36;1m  macos-arm64:macOS:ARM64|windows-x86_64:Windows:X64) ;;^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.0786168Z ^[[36;1m  *)^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.0786484Z ^[[36;1m    echo "Target ${NATIVE_TARGET} does not match ${RUNNER_OS}/${RUNNER_ARCH}." >&2^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.0786869Z ^[[36;1m    exit 1^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.0787040Z ^[[36;1m    ;;^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.0787200Z ^[[36;1mesac^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.0805121Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.0805508Z env:
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.0805688Z   MACOSX_DEPLOYMENT_TARGET: 13.3
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.0805925Z   CARGO_HTTP_MULTIPLEXING: false
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.0806145Z   CARGO_NET_RETRY: 10
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.0806339Z   NATIVE_TARGET: windows-x86_64
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.0806552Z ##[endgroup]
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.2506170Z ##[end-action id=__self.__run;outcome=success;conclusion=success;duration_ms=185]
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.2509017Z ##[start-action display=Prepare Windows OpenSSL static libraries;id=__self.__run_2]
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.2694095Z ##[group]Run $ErrorActionPreference = 'Stop'
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.2694519Z ^[[36;1m$ErrorActionPreference = 'Stop'^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.2694870Z ^[[36;1m$triplet = 'x64-windows-static'^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.2695215Z ^[[36;1mvcpkg install "openssl:$triplet"^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.2695903Z ^[[36;1m$vcpkgRoot = if ($env:VCPKG_INSTALLATION_ROOT) { $env:VCPKG_INSTALLATION_ROOT } else { 'C:\vcpkg' }^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.2696516Z ^[[36;1m$libDir = Join-Path $vcpkgRoot "installed\$triplet\lib"^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.2696902Z ^[[36;1m$linkDir = Join-Path $env:RUNNER_TEMP 'lbug-openssl'^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.2697318Z ^[[36;1mNew-Item -ItemType Directory -Force -Path $linkDir | Out-Null^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.2697905Z ^[[36;1mCopy-Item -LiteralPath (Join-Path $libDir 'libssl.lib') -Destination (Join-Path $linkDir 'ssl.lib')^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.2698667Z ^[[36;1mCopy-Item -LiteralPath (Join-Path $libDir 'libcrypto.lib') -Destination (Join-Path $linkDir 'crypto.lib')^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.2699353Z ^[[36;1m"LIB=$linkDir;$env:LIB" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.2795383Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.2795884Z env:
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.2796106Z   MACOSX_DEPLOYMENT_TARGET: 13.3
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.2796412Z   CARGO_HTTP_MULTIPLEXING: false
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.2796717Z   CARGO_NET_RETRY: 10
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.2796964Z ##[endgroup]
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:21.9631437Z Computing installation plan...
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:22.9480669Z A suitable version of cmake was not found (required v4.4.3).
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:22.9481424Z Downloading https://github.com/Kitware/CMake/releases/download/v4.4.3/cmake-4.4.3-windows-x86_64.zip -> cmake-4.4.3-windows-x86_64.zip
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:23.4466909Z Successfully downloaded cmake-4.4.3-windows-x86_64.zip
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:23.4467276Z Extracting cmake...
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:37.1479192Z The following packages will be built and installed:
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:37.1479662Z     openssl:x64-windows-static@3.6.5#2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:37.1479947Z   * vcpkg-cmake:x64-windows@2025-08-07
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:37.1480751Z   * vcpkg-cmake-config:x64-windows@2026-07-21
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:37.1481208Z   * vcpkg-cmake-get-vars:x64-windows@2025-05-29
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:37.1481835Z Additional packages (*) will be modified to complete this operation.
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:37.5264560Z Detecting compiler hash for triplet x64-windows...
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:47.9478468Z Compiler found: C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:47.9842322Z Detecting compiler hash for triplet x64-windows-static...
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:48.6023974Z Compiler found: C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:48.6339820Z Restored 0 package(s) from C:\Users\runneradmin\AppData\Local\vcpkg\archives in 346 us. Use --debug to see more details.
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:48.6340801Z Installing 1/4 vcpkg-cmake:x64-windows@2025-08-07...
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:48.6341632Z vcpkg-cmake:x64-windows@2025-08-07 package ABI: 96e12192782de41946d81095f8f0dc3dc286f5009619287c531a4244edf2b870
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:48.6342324Z Building vcpkg-cmake:x64-windows@2025-08-07...
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:48.6681535Z -- Installing: C:/vcpkg/packages/vcpkg-cmake_x64-windows/share/vcpkg-cmake/vcpkg_cmake_configure.cmake
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:48.6744656Z -- Installing: C:/vcpkg/packages/vcpkg-cmake_x64-windows/share/vcpkg-cmake/vcpkg_cmake_build.cmake
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:48.6753762Z -- Installing: C:/vcpkg/packages/vcpkg-cmake_x64-windows/share/vcpkg-cmake/vcpkg_cmake_install.cmake
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:48.6787516Z -- Installing: C:/vcpkg/packages/vcpkg-cmake_x64-windows/share/vcpkg-cmake/vcpkg-port-config.cmake
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:48.6799905Z -- Installing: C:/vcpkg/packages/vcpkg-cmake_x64-windows/share/vcpkg-cmake/copyright
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:48.6923035Z -- Performing post-build validation
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:48.7047691Z Starting submission of vcpkg-cmake:x64-windows@2025-08-07 to 1 binary cache(s) in the background
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:48.7048567Z Elapsed time to handle vcpkg-cmake:x64-windows: 70.8 ms
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:48.7049215Z Installing 2/4 vcpkg-cmake-config:x64-windows@2026-07-21...
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:48.7050209Z vcpkg-cmake-config:x64-windows@2026-07-21 package ABI: 00439fc42220b085e4826c48422682a1c437698d0723893c6bf84b66a22638a7
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:48.7051242Z Building vcpkg-cmake-config:x64-windows@2026-07-21...
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:48.7433233Z -- Installing: C:/vcpkg/packages/vcpkg-cmake-config_x64-windows/share/vcpkg-cmake-config/vcpkg_cmake_config_fixup.cmake
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:48.7445198Z -- Installing: C:/vcpkg/packages/vcpkg-cmake-config_x64-windows/share/vcpkg-cmake-config/vcpkg-port-config.cmake
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:48.7454129Z -- Installing: C:/vcpkg/packages/vcpkg-cmake-config_x64-windows/share/vcpkg-cmake-config/copyright
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:48.7586328Z -- Skipping post-build validation due to VCPKG_POLICY_EMPTY_PACKAGE
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:48.7751070Z Starting submission of vcpkg-cmake-config:x64-windows@2026-07-21 to 1 binary cache(s) in the background
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:48.7752150Z Elapsed time to handle vcpkg-cmake-config:x64-windows: 70.3 ms
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:48.7752898Z Installing 3/4 vcpkg-cmake-get-vars:x64-windows@2025-05-29...
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:48.7754035Z vcpkg-cmake-get-vars:x64-windows@2025-05-29 package ABI: 552e45a21931757813ef25f0b6ba88fff746670acf7cb2fc702473be14699109
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:48.7755131Z Building vcpkg-cmake-get-vars:x64-windows@2025-05-29...
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:48.8169938Z -- Installing: C:/vcpkg/packages/vcpkg-cmake-get-vars_x64-windows/share/vcpkg-cmake-get-vars/vcpkg_cmake_get_vars.cmake
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:48.8179562Z -- Installing: C:/vcpkg/packages/vcpkg-cmake-get-vars_x64-windows/share/vcpkg-cmake-get-vars/cmake_get_vars
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:48.8191826Z -- Installing: C:/vcpkg/packages/vcpkg-cmake-get-vars_x64-windows/share/vcpkg-cmake-get-vars/cmake_get_vars/CMakeLists.txt
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:48.8202093Z -- Installing: C:/vcpkg/packages/vcpkg-cmake-get-vars_x64-windows/share/vcpkg-cmake-get-vars/cmake-get-vars.cmake.in
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:48.8238087Z -- Installing: C:/vcpkg/packages/vcpkg-cmake-get-vars_x64-windows/share/vcpkg-cmake-get-vars/vcpkg-port-config.cmake
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:48.8262025Z -- Installing: C:/vcpkg/packages/vcpkg-cmake-get-vars_x64-windows/share/vcpkg-cmake-get-vars/copyright
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:48.8341695Z -- Performing post-build validation
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:48.8503513Z Starting submission of vcpkg-cmake-get-vars:x64-windows@2025-05-29 to 1 binary cache(s) in the background
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:48.8504746Z Elapsed time to handle vcpkg-cmake-get-vars:x64-windows: 75.3 ms
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:48.8505835Z Completed submission of vcpkg-cmake:x64-windows@2025-08-07 to 1 binary cache(s) in 70.9 ms
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:48.8507019Z Completed submission of vcpkg-cmake-config:x64-windows@2026-07-21 to 1 binary cache(s) in 59.3 ms
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:48.8508041Z Installing 4/4 openssl:x64-windows-static@3.6.5#2...
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:48.8509491Z openssl:x64-windows-static@3.6.5#2 package ABI: c1906a984f630b626b52edcb311eea6ae319d555f574ce5683a3be8215792375
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:48.8510181Z Building openssl:x64-windows-static@3.6.5#2...
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:48.8991650Z Downloading https://github.com/openssl/openssl/archive/openssl-3.6.5.tar.gz -> openssl-openssl-openssl-3.6.5.tar.gz
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:49.8220312Z Successfully downloaded openssl-openssl-openssl-3.6.5.tar.gz
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:50.0215523Z -- Extracting source C:/vcpkg/downloads/openssl-openssl-openssl-3.6.5.tar.gz
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:55.9724692Z -- Applying patch cmake-config.patch
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:56.3697396Z -- Applying patch command-line-length.patch
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:56.4000671Z -- Applying patch script-prefix.patch
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:56.4291510Z -- Applying patch windows/install-layout.patch
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:56.4627339Z -- Applying patch windows/install-pdbs.patch
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:56.4912760Z -- Applying patch windows/install-programs.diff
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:56.5225421Z -- Applying patch unix/android-cc.patch
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:56.5506246Z -- Applying patch unix/move-openssldir.patch
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:56.5790156Z -- Applying patch unix/no-empty-dirs.patch
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:56.6077750Z -- Applying patch unix/no-static-libs-for-shared.patch
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:56.6412775Z -- Using source at C:/vcpkg/buildtrees/openssl/src/nssl-3.6.5-c2a478abe6.clean
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:26:56.6637806Z -- Getting CMake variables for x64-windows-static
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:27:02.2051458Z -- Loading CMake variables from C:/vcpkg/buildtrees/openssl/cmake-get-vars_C_CXX-x64-windows-static.cmake.log
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:27:02.2199224Z Downloading https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54221_64bit/strawberry-perl-5.42.2.1-64bit-portable.zip -> strawberry-perl-5.42.2.1-64bit-portable.zip
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:27:03.7270524Z Successfully downloaded strawberry-perl-5.42.2.1-64bit-portable.zip
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:27:30.6175068Z Downloading nasm-3.01-win64.zip, trying https://www.nasm.us/pub/nasm/releasebuilds/3.01/win64/nasm-3.01-win64.zip
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:27:31.2146054Z Successfully downloaded nasm-3.01-win64.zip
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:27:31.3814825Z -- Getting CMake variables for x64-windows-static
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:27:33.6660715Z Downloading jom_1_1_7.zip, trying https://download.qt.io/official_releases/jom/jom_1_1_7.zip
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:27:34.5851017Z Successfully downloaded jom_1_1_7.zip
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:27:54.7738259Z -- Prerunning x64-windows-static-dbg
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:28:14.2977958Z -- Building x64-windows-static-dbg
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:30:10.5135636Z -- Prerunning x64-windows-static-rel
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:30:30.3238066Z -- Building x64-windows-static-rel
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:40.9245605Z -- Fixing pkgconfig file: C:/vcpkg/packages/openssl_x64-windows-static/lib/pkgconfig/libcrypto.pc
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:40.9254150Z -- Fixing pkgconfig file: C:/vcpkg/packages/openssl_x64-windows-static/lib/pkgconfig/libssl.pc
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:40.9261791Z -- Fixing pkgconfig file: C:/vcpkg/packages/openssl_x64-windows-static/lib/pkgconfig/openssl.pc
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:40.9469178Z Downloading msys2-mingw-w64-x86_64-pkgconf-1~3.0.7-1-any.pkg.tar.zst, trying https://mirror.msys2.org/mingw/mingw64/mingw-w64-x86_64-pkgconf-1~3.0.7-1-any.pkg.tar.zst
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:43.9234545Z Successfully downloaded msys2-mingw-w64-x86_64-pkgconf-1~3.0.7-1-any.pkg.tar.zst
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:43.9345998Z Downloading msys2-msys2-runtime-3.6.10-4-x86_64.pkg.tar.zst, trying https://mirror.msys2.org/msys/x86_64/msys2-runtime-3.6.10-4-x86_64.pkg.tar.zst
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:44.4521279Z Successfully downloaded msys2-msys2-runtime-3.6.10-4-x86_64.pkg.tar.zst
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:44.6663274Z -- Using msys root at C:/vcpkg/downloads/tools/msys2/d5586eb050429df1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:44.7069409Z -- Fixing pkgconfig file: C:/vcpkg/packages/openssl_x64-windows-static/debug/lib/pkgconfig/libcrypto.pc
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:44.7079397Z -- Fixing pkgconfig file: C:/vcpkg/packages/openssl_x64-windows-static/debug/lib/pkgconfig/libssl.pc
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:44.7087330Z -- Fixing pkgconfig file: C:/vcpkg/packages/openssl_x64-windows-static/debug/lib/pkgconfig/openssl.pc
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:44.7304553Z -- Installing: C:/vcpkg/packages/openssl_x64-windows-static/share/openssl/usage
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:44.7354551Z -- Installing: C:/vcpkg/packages/openssl_x64-windows-static/share/openssl/copyright
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:44.7431811Z -- Performing post-build validation
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:44.9862502Z Starting submission of openssl:x64-windows-static@3.6.5#2 to 1 binary cache(s) in the background
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:44.9863626Z Elapsed time to handle openssl:x64-windows-static: 5.9 min
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:44.9913485Z Total install time: 5.9 min
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:44.9914655Z Installed contents are licensed to you by owners. Microsoft is not responsible for, nor does it grant any licenses to, third-party packages.
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:44.9916005Z Packages installed in this vcpkg installation declare the following licenses:
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:44.9916764Z Apache-2.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:44.9917069Z MIT
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:44.9917487Z openssl is compatible with built-in CMake targets:
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:44.9917723Z 
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:44.9917862Z   find_package(OpenSSL REQUIRED)
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:44.9923240Z   target_link_libraries(main PRIVATE OpenSSL::SSL)
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:44.9923699Z   target_link_libraries(main PRIVATE OpenSSL::Crypto)
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:44.9923967Z 
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:44.9924267Z Completed submission of vcpkg-cmake-get-vars:x64-windows@2025-05-29 to 1 binary cache(s) in 56.9 ms
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:44.9924854Z Waiting for 1 remaining binary cache submissions...
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:50.8005368Z Completed submission of openssl:x64-windows-static@3.6.5#2 to 1 binary cache(s) in 5.8 s (1/1)
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:50.8006456Z All requested installations completed successfully in: 5.9 min
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:51.3197380Z ##[end-action id=__self.__run_2;outcome=success;conclusion=success;duration_ms=390063]
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:51.3207110Z ##[start-action display=Resolve Ladybug dependency;id=__self.ladybug]
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:51.3337279Z ##[group]Run set -euo pipefail
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:51.3337696Z ^[[36;1mset -euo pipefail^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:51.3374394Z ^[[36;1mversion="$(awk '/^name = "lbug"/ { found=1 } found && /^version = / { gsub(/"/, "", $3); print $3; exit }' Cargo.lock)"^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:51.3374990Z ^[[36;1mcase "$NATIVE_TARGET" in^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:51.3376450Z ^[[36;1m  macos-arm64) archive='liblbug-static-osx-arm64.tar.gz' ;;^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:51.3377379Z ^[[36;1m  windows-x86_64) archive='liblbug-static-windows-x86_64.zip' ;;^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:51.3377915Z ^[[36;1m  *) echo "Unsupported native target: $NATIVE_TARGET" >&2; exit 1 ;;^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:51.3378324Z ^[[36;1mesac^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:51.3378559Z ^[[36;1m{^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:51.3378800Z ^[[36;1m  echo "version=$version"^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:51.3379114Z ^[[36;1m  echo "archive=$archive"^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:51.3379567Z ^[[36;1m  echo "cache-dir=$GITHUB_WORKSPACE/.cache/lbug-prebuilt/$version/$NATIVE_TARGET"^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:51.3380262Z ^[[36;1m} >> "$GITHUB_OUTPUT"^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:51.3394722Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:51.3395170Z env:
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:51.3395407Z   MACOSX_DEPLOYMENT_TARGET: 13.3
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:51.3395707Z   CARGO_HTTP_MULTIPLEXING: false
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:51.3396009Z   CARGO_NET_RETRY: 10
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:51.3396266Z   LIB: D:\a\_temp\lbug-openssl;
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:51.3396557Z   NATIVE_TARGET: windows-x86_64
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:51.3396847Z ##[endgroup]
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:51.7262325Z ##[end-action id=__self.ladybug;outcome=success;conclusion=success;duration_ms=405]
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:51.7267701Z ##[start-action display=Restore Ladybug dependency;id=__self.ladybug-cache]
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:51.7430192Z ##[group]Run actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:51.7430580Z with:
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:51.7430980Z   path: D:\a\codebaseGraph\codebaseGraph/.cache/lbug-prebuilt/0.19.0/windows-x86_64
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:51.7431447Z   key: lbug-0.19.0-windows-x86_64-v1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:51.7431748Z   enableCrossOsArchive: false
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:51.7432035Z   fail-on-cache-miss: false
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:51.7432300Z   lookup-only: false
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:51.7432520Z   save-always: false
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:51.7432755Z env:
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:51.7432976Z   MACOSX_DEPLOYMENT_TARGET: 13.3
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:51.7433258Z   CARGO_HTTP_MULTIPLEXING: false
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:51.7433707Z   CARGO_NET_RETRY: 10
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:51.7433963Z   LIB: D:\a\_temp\lbug-openssl;
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:51.7434217Z ##[endgroup]
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:52.1650590Z Cache hit for: lbug-0.19.0-windows-x86_64-v1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:53.3021941Z Received 134217728 of 196298597 (68.4%), 126.2 MBs/sec
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:53.5849161Z Received 196298597 of 196298597 (100.0%), 144.3 MBs/sec
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:53.5851897Z Cache Size: ~187 MB (196298597 B)
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:53.5949614Z [command]"C:\Program Files\Git\usr\bin\tar.exe" -xf D:/a/_temp/625ceeae-0219-4d24-81d7-27611a963350/cache.tzst -P -C D:/a/codebaseGraph/codebaseGraph --force-local --use-compress-program "zstd -d"
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.4919847Z Cache restored successfully
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.5121982Z Cache restored from key: lbug-0.19.0-windows-x86_64-v1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.5275797Z ##[end-action id=__self.ladybug-cache;outcome=success;conclusion=success;duration_ms=3800]
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.5281479Z ##[start-action display=Download Ladybug dependency;id=__self.__run_3]
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.5291693Z ##[end-action id=__self.__run_3;outcome=skipped;conclusion=skipped;duration_ms=0]
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.5294818Z ##[start-action display=Export Ladybug dependency;id=__self.__run_4]
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.7432572Z ##[group]Run set -euo pipefail
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.7433016Z ^[[36;1mset -euo pipefail^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.7433384Z ^[[36;1mtest -f "$LBUG_CACHE_DIR/lbug.h"^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.7433807Z ^[[36;1mif [[ "$RUNNER_OS" == 'Windows' ]]; then^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.7434269Z ^[[36;1m  test -f "$LBUG_CACHE_DIR/lbug.lib"^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.7434745Z ^[[36;1m  library_dir="$(cygpath -m "$LBUG_CACHE_DIR")"^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.7435118Z ^[[36;1melse^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.7435375Z ^[[36;1m  test -f "$LBUG_CACHE_DIR/liblbug.a"^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.7435805Z ^[[36;1m  library_dir="$LBUG_CACHE_DIR"^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.7436167Z ^[[36;1mfi^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.7436403Z ^[[36;1m{^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.7436670Z ^[[36;1m  echo "LBUG_LIBRARY_DIR=$library_dir"^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.7437074Z ^[[36;1m  echo "LBUG_INCLUDE_DIR=$library_dir"^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.7437421Z ^[[36;1m} >> "$GITHUB_ENV"^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.7451301Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.7451744Z env:
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.7452036Z   MACOSX_DEPLOYMENT_TARGET: 13.3
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.7452316Z   CARGO_HTTP_MULTIPLEXING: false
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.7452545Z   CARGO_NET_RETRY: 10
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.7452762Z   LIB: D:\a\_temp\lbug-openssl;
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.7453993Z   LBUG_CACHE_DIR: D:\a\codebaseGraph\codebaseGraph/.cache/lbug-prebuilt/0.19.0/windows-x86_64
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.7454478Z ##[endgroup]
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.8134090Z ##[end-action id=__self.__run_4;outcome=success;conclusion=success;duration_ms=283]
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.8284335Z ##[group]Run set -o pipefail
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.8284703Z ^[[36;1mset -o pipefail^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.8284960Z ^[[36;1mmkdir -p diagnostics^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.8285304Z ^[[36;1mprintf '%s\n' "$SOURCE_SHA" > diagnostics/source-sha.txt^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.8285656Z ^[[36;1mshard_args=()^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.8285929Z ^[[36;1mif [[ 'windows-x86_64' == 'windows-x86_64' ]]; then^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.8286271Z ^[[36;1m  export CGRAPH_CLEANUP_TRACE=1^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.8286540Z ^[[36;1m  shard_args=(--shard '1/4')^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.8286780Z ^[[36;1mfi^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.8287338Z ^[[36;1mcargo run -p xtask -- native-test --target "windows-x86_64" --cohort "generation" "${shard_args[@]}" 2>&1 | tee diagnostics/platform-test.log^[[0m
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.8300314Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.8300804Z env:
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.8301019Z   MACOSX_DEPLOYMENT_TARGET: 13.3
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.8301315Z   CARGO_HTTP_MULTIPLEXING: false
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.8301542Z   CARGO_NET_RETRY: 10
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.8301751Z   LIB: D:\a\_temp\lbug-openssl;
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.8302326Z   LBUG_LIBRARY_DIR: D:/a/codebaseGraph/codebaseGraph/.cache/lbug-prebuilt/0.19.0/windows-x86_64
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.8303000Z   LBUG_INCLUDE_DIR: D:/a/codebaseGraph/codebaseGraph/.cache/lbug-prebuilt/0.19.0/windows-x86_64
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.8303432Z   RUST_TEST_NOCAPTURE: 1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.8303642Z   RUST_TEST_THREADS: 1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.8303887Z   SOURCE_SHA: f3f154aeb050945d4efcc635126208d35b43b622
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.8304178Z   TMP: D:\a\_temp
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.8304356Z   TEMP: D:\a\_temp
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:32:55.8304533Z ##[endgroup]
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:02.0585639Z     Updating crates.io index
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:03.1222673Z  Downloading crates ...
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:03.1847291Z   Downloaded adler2 v2.0.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:03.2155473Z   Downloaded block-buffer v0.10.4
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:03.2468366Z   Downloaded cfg-if v1.0.4
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:03.2624094Z   Downloaded crypto-common v0.1.7
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:03.2781000Z   Downloaded filetime v0.2.29
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:03.2936947Z   Downloaded hashbrown v0.15.5
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:03.3406082Z   Downloaded libyaml-rs v0.3.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:03.3722318Z   Downloaded proc-macro2 v1.0.106
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:03.4041030Z   Downloaded serde v1.0.228
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:03.4509044Z   Downloaded serde_json v1.0.150
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:03.5290743Z   Downloaded syn v2.0.117
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:03.6383870Z   Downloaded unicode-ident v1.0.24
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:03.6696785Z   Downloaded zlib-rs v0.6.8
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:03.7166076Z   Downloaded crc32fast v1.5.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:03.7478819Z   Downloaded flate2 v1.1.10
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:03.7946348Z   Downloaded itoa v1.0.18
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:03.8259359Z   Downloaded quote v1.0.45
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:03.8572463Z   Downloaded serde_derive v1.0.228
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:03.8884652Z   Downloaded tar v0.4.46
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:03.9197175Z   Downloaded yaml_serde v0.10.7
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:04.9831715Z   Downloaded digest v0.10.7
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:05.0143785Z   Downloaded indexmap v2.7.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:05.0613269Z   Downloaded ryu v1.0.23
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:05.0925332Z   Downloaded simd-adler32 v0.3.10
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:05.1238142Z   Downloaded zmij v1.0.21
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:05.1394761Z   Downloaded generic-array v0.14.7
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:05.1550835Z   Downloaded serde_core v1.0.228
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:05.1864238Z   Downloaded version_check v0.9.5
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:05.2018903Z   Downloaded memchr v2.8.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:05.2646590Z   Downloaded cpufeatures v0.2.17
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:05.2802016Z   Downloaded miniz_oxide v0.9.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:05.2958685Z   Downloaded equivalent v1.0.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:05.3115190Z   Downloaded sha2 v0.10.9
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:05.3427993Z   Downloaded typenum v1.20.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:05.6409149Z    Compiling version_check v0.9.5
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:05.6409947Z    Compiling proc-macro2 v1.0.106
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:05.6454113Z    Compiling unicode-ident v1.0.24
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:05.6454821Z    Compiling quote v1.0.45
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:15.4824298Z    Compiling serde_core v1.0.228
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:15.7642211Z    Compiling generic-array v0.14.7
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:16.3739277Z    Compiling typenum v1.20.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:16.4067984Z    Compiling cfg-if v1.0.4
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:16.5931841Z    Compiling crc32fast v1.5.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:16.8124337Z    Compiling serde v1.0.228
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:17.0470472Z    Compiling zmij v1.0.21
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:17.3913501Z    Compiling itoa v1.0.18
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:18.4080251Z    Compiling adler2 v2.0.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:18.5562657Z    Compiling hashbrown v0.15.5
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:19.1764940Z    Compiling crypto-common v0.1.7
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:19.2901154Z    Compiling block-buffer v0.10.4
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:19.4177422Z    Compiling syn v2.0.117
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:19.5315412Z    Compiling simd-adler32 v0.3.10
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:19.8033963Z    Compiling serde_json v1.0.150
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:19.9143438Z    Compiling equivalent v1.0.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:19.9745831Z    Compiling indexmap v2.7.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:20.0119002Z    Compiling miniz_oxide v0.9.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:20.8242508Z    Compiling digest v0.10.7
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:21.3043968Z    Compiling filetime v0.2.29
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:21.3200963Z    Compiling libyaml-rs v0.3.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:21.4722870Z    Compiling ryu v1.0.23
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:21.6795469Z    Compiling cpufeatures v0.2.17
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:21.7509942Z    Compiling memchr v2.8.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:21.8164216Z    Compiling sha2 v0.10.9
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:22.7298443Z    Compiling tar v0.4.46
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:22.9739331Z    Compiling flate2 v1.1.10
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:23.2908756Z    Compiling serde_derive v1.0.228
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:26.7002084Z    Compiling yaml_serde v0.10.7
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:28.2792551Z    Compiling xtask v4.0.5 (D:\a\codebaseGraph\codebaseGraph\crates\xtask)
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:32.0500520Z     Finished `dev` profile [unoptimized + debuginfo] target(s) in 35.17s
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:32.0969921Z      Running `target\debug\xtask.exe native-test --target windows-x86_64 --cohort generation --shard 1/4`
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:32.3000083Z  Downloading crates ...
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:32.3473428Z   Downloaded aho-corasick v1.1.4
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:32.3943358Z   Downloaded ammonia v4.1.8
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:32.4255475Z   Downloaded arrayvec v0.7.6
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:32.4416328Z   Downloaded axum v0.8.9
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:32.5535192Z   Downloaded byteorder v1.5.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:32.5667927Z   Downloaded cmake v0.1.58
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:32.5824104Z   Downloaded crc-catalog v2.5.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:32.5979341Z   Downloaded cxx v1.0.138
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:32.8480780Z   Downloaded cxxbridge-macro v1.0.138
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:32.8792914Z   Downloaded dtoa v1.0.11
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:32.8949014Z   Downloaded find-msvc-tools v0.1.9
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:32.9104953Z   Downloaded fs2 v0.4.3
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:32.9261453Z   Downloaded futures-task v0.3.32
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:32.9417535Z   Downloaded html5ever v0.39.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:32.9882634Z   Downloaded http-body-util v0.1.4
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:33.0039345Z   Downloaded hyper v1.11.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:33.0820563Z   Downloaded icu_locale_core v2.2.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:33.1758186Z   Downloaded icu_properties v2.2.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:33.1914089Z   Downloaded idna v1.1.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:33.2216694Z   Downloaded litemap v0.8.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:33.2380426Z   Downloaded libc v0.2.189
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:33.6444239Z   Downloaded lzma-rs v0.3.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:33.6912257Z   Downloaded matchit v0.8.4
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:33.7067949Z   Downloaded mio v1.2.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:33.7693442Z   Downloaded notify-types v2.0.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:33.8161853Z   Downloaded parking_lot v0.12.5
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:33.8474940Z   Downloaded phf v0.13.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:33.8631206Z   Downloaded phf_shared v0.13.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:33.8787699Z   Downloaded pulldown-cmark-escape v0.11.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:33.8788232Z   Downloaded powerfmt v0.2.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:33.8943423Z   Downloaded regex-syntax v0.8.11
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:33.9419724Z   Downloaded same-file v1.0.6
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:33.9567692Z   Downloaded slab v0.4.12
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:33.9724818Z   Downloaded serde_path_to_error v0.1.20
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:33.9881050Z   Downloaded stable_deref_trait v1.2.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:34.0037783Z   Downloaded string_cache_codegen v0.6.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:34.0038315Z   Downloaded synstructure v0.13.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:34.0195227Z   Downloaded tendril v0.5.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:34.0351373Z   Downloaded tower-layer v0.3.3
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:34.0507620Z   Downloaded tokio v1.53.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:34.5665498Z   Downloaded tree-sitter-c v0.24.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:34.5977400Z   Downloaded tree-sitter-javascript v0.25.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:34.6289987Z   Downloaded tree-sitter-fortran v0.6.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:34.6919766Z   Downloaded tree-sitter-rust v0.24.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:34.7228430Z   Downloaded unicode-width v0.1.14
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:34.7384638Z   Downloaded uuid v1.18.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:34.7852485Z   Downloaded winapi v0.3.9
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:35.1139280Z   Downloaded windows-sys v0.60.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:35.4897877Z   Downloaded windows_x86_64_msvc v0.53.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:35.5054916Z   Downloaded yoke-derive v0.8.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:35.5210094Z   Downloaded zerotrie v0.2.4
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:35.5679405Z   Downloaded atomic-waker v1.1.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:35.5835072Z   Downloaded bitflags v2.13.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:35.6304062Z   Downloaded codespan-reporting v0.11.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:35.7449469Z   Downloaded cty v0.2.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:35.7559621Z   Downloaded cxxbridge-flags v1.0.138
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:35.7716613Z   Downloaded fastrand v2.5.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:35.7717008Z   Downloaded futures-channel v0.3.32
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:35.8029007Z   Downloaded httparse v1.10.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:35.8184736Z   Downloaded getrandom v0.3.4
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:35.8653659Z   Downloaded icu_properties_data v2.2.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:35.9905793Z   Downloaded icu_collections v2.2.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:36.0688379Z   Downloaded lock_api v0.4.14
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:36.0844059Z   Downloaded markup5ever v0.39.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:36.1000264Z   Downloaded new_debug_unreachable v1.0.6
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:36.1156623Z   Downloaded num-traits v0.2.19
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:36.1312350Z   Downloaded lbug v0.19.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:39.1345184Z   Downloaded phf_codegen v0.13.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:39.1500794Z   Downloaded potential_utf v0.1.5
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:39.1501256Z   Downloaded regex v1.12.4
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:39.2127981Z   Downloaded rustversion v1.0.22
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:39.2598928Z   Downloaded shlex v2.0.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:39.2599310Z   Downloaded socket2 v0.6.5
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:39.2755480Z   Downloaded syn v3.0.3
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:39.3849301Z   Downloaded time v0.3.36
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:39.4632306Z   Downloaded tokio-macros v2.7.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:39.4795419Z   Downloaded tree-sitter v0.25.10
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:39.8855809Z   Downloaded tree-sitter-go v0.25.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:39.9163471Z   Downloaded tree-sitter-python v0.25.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:39.9794561Z   Downloaded url v2.5.8
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:40.0112652Z   Downloaded web_atoms v0.2.6
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:40.0269641Z   Downloaded yoke v0.8.3
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:40.0580386Z   Downloaded windows-sys v0.61.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:42.4581809Z   Downloaded zerovec v0.11.6
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:42.6167045Z   Downloaded axum-core v0.5.6
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:42.6793662Z   Downloaded crc v3.4.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:42.7266872Z   Downloaded deranged v0.3.11
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:42.7419702Z   Downloaded foldhash v0.1.5
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:42.7520222Z   Downloaded futures-util v0.3.32
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:42.9553765Z   Downloaded icu_normalizer_data v2.2.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:42.9757095Z   Downloaded httpdate v1.0.3
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:42.9859297Z   Downloaded maplit v1.0.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:43.0104284Z   Downloaded notify v8.2.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:43.0260988Z   Downloaded libmimalloc-sys v0.1.49
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:43.1833819Z   Downloaded pin-project-lite v0.2.17
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:43.2634521Z   Downloaded percent-encoding v2.3.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:43.2795547Z   Downloaded siphasher v1.0.3
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:43.2955054Z   Downloaded rust_decimal v1.42.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:43.3737951Z   Downloaded string_cache v0.9.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:43.3828386Z   Downloaded time-core v0.1.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:43.4054599Z   Downloaded tower-service v0.3.3
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:43.4055179Z   Downloaded tree-sitter-html v0.23.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:43.4369231Z   Downloaded unicase v2.9.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:43.4526431Z   Downloaded winapi-util v0.1.11
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:43.4684395Z   Downloaded writeable v0.6.3
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:43.4841014Z   Downloaded zerovec-derive v0.11.3
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:43.4997654Z   Downloaded cc v1.2.64
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:43.5309835Z   Downloaded displaydoc v0.2.7
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:43.5623976Z   Downloaded hyper-util v0.1.20
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:43.6092220Z   Downloaded futures-core v0.3.32
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:43.6872313Z   Downloaded idna_adapter v1.2.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:43.6873791Z   Downloaded mimalloc v0.1.52
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:43.7029021Z   Downloaded parking_lot_core v0.9.12
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:43.7341587Z   Downloaded scratch v1.0.9
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:43.7497241Z   Downloaded pulldown-cmark v0.13.5
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:43.7966056Z   Downloaded sync_wrapper v1.0.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:43.7966697Z   Downloaded tinystr v0.8.3
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:43.8279211Z   Downloaded tree-sitter-language v0.1.8
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:43.8434475Z   Downloaded walkdir v2.5.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:43.8747577Z   Downloaded zerofrom v0.1.8
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:43.8747937Z   Downloaded bytes v1.12.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:43.9060230Z   Downloaded dtoa-short v0.3.5
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:43.9216095Z   Downloaded http-body v1.1.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:43.9373077Z   Downloaded link-cplusplus v1.0.12
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:43.9529161Z   Downloaded num-conv v0.1.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:43.9529837Z   Downloaded regex-automata v0.4.14
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:44.0468063Z   Downloaded streaming-iterator v0.1.9
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:44.0624032Z   Downloaded utf8_iter v1.0.4
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:44.0781853Z   Downloaded tree-sitter-cpp v0.23.4
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:44.1250037Z   Downloaded zerofrom-derive v0.1.7
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:44.1250503Z   Downloaded cxx-build v1.0.138
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:44.1874421Z   Downloaded icu_normalizer v2.2.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:44.2187080Z   Downloaded mime v0.3.17
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:44.2343219Z   Downloaded scopeguard v1.2.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:44.2499343Z   Downloaded tower v0.5.3
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:44.3593724Z   Downloaded windows-link v0.2.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:44.3748817Z   Downloaded cssparser v0.37.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:44.3906241Z   Downloaded icu_provider v2.2.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:44.4218281Z   Downloaded precomputed-hash v0.1.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:44.4218810Z   Downloaded tree-sitter-css v0.25.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:44.4373607Z   Downloaded autocfg v1.5.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:44.4698255Z   Downloaded log v0.4.32
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:44.4853835Z   Downloaded termcolor v1.4.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:44.5009937Z   Downloaded form_urlencoded v1.2.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:44.5166377Z   Downloaded smallvec v1.15.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:44.5166728Z   Downloaded http v1.5.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:44.5635137Z   Downloaded windows-targets v0.53.5
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:44.5635576Z   Downloaded phf_generator v0.13.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:44.5793829Z   Downloaded tree-sitter-typescript v0.23.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:44.8963313Z    Compiling find-msvc-tools v0.1.9
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:44.8972293Z    Compiling shlex v2.0.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:44.8972799Z    Compiling proc-macro2 v1.0.106
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:44.8973937Z    Compiling quote v1.0.45
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:45.0964389Z    Compiling unicode-ident v1.0.24
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:45.1917457Z    Compiling tree-sitter-language v0.1.8
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:45.2543532Z    Compiling windows-link v0.2.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:45.3767620Z    Compiling itoa v1.0.18
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:45.3956813Z    Compiling cfg-if v1.0.4
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:45.4427028Z    Compiling zmij v1.0.21
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:45.6740992Z    Compiling cc v1.2.64
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:46.3334227Z    Compiling windows-sys v0.61.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:46.5347597Z    Compiling syn v2.0.117
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:46.8798577Z    Compiling memchr v2.8.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:48.0833730Z    Compiling serde_core v1.0.228
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:48.5772704Z    Compiling version_check v0.9.5
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:50.2484203Z    Compiling generic-array v0.14.7
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:51.3136058Z    Compiling rustversion v1.0.22
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:51.7903818Z    Compiling winapi-util v0.1.11
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:52.1246323Z    Compiling link-cplusplus v1.0.12
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:52.4629444Z    Compiling serde_json v1.0.150
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:52.6719027Z    Compiling scratch v1.0.9
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:52.8974522Z    Compiling typenum v1.20.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:53.1418177Z    Compiling hashbrown v0.15.5
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:53.9872681Z    Compiling equivalent v1.0.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:54.0492072Z    Compiling indexmap v2.7.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:55.0821943Z    Compiling termcolor v1.4.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:55.3099964Z    Compiling unicode-width v0.1.14
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:55.5823543Z    Compiling windows_x86_64_msvc v0.53.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:56.0057946Z    Compiling cxxbridge-flags v1.0.138
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:56.0679088Z    Compiling autocfg v1.5.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:56.1384383Z    Compiling cxx v1.0.138
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:56.4377850Z    Compiling codespan-reporting v0.11.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:56.6487636Z    Compiling num-traits v0.2.19
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:56.9309303Z    Compiling libmimalloc-sys v0.1.49
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:57.1114648Z    Compiling log v0.4.32
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:57.2348586Z    Compiling serde v1.0.228
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:33:57.5871296Z    Compiling cxx-build v1.0.138
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:01.2012346Z    Compiling tree-sitter v0.25.10
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:01.4820311Z    Compiling crypto-common v0.1.7
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:01.5913558Z    Compiling block-buffer v0.10.4
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:01.7307057Z    Compiling serde_derive v1.0.228
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:03.6408482Z    Compiling aho-corasick v1.1.4
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:03.8648840Z    Compiling cmake v0.1.58
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:04.4101890Z    Compiling powerfmt v0.2.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:04.4713052Z    Compiling libc v0.2.189
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:04.7829444Z    Compiling winapi v0.3.9
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:04.9326744Z    Compiling regex-syntax v0.8.11
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:05.3140518Z    Compiling rust_decimal v1.42.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:05.7395724Z    Compiling deranged v0.3.11
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:07.0220967Z    Compiling lbug v0.19.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:07.7099177Z    Compiling same-file v1.0.6
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:07.9503587Z    Compiling digest v0.10.7
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:08.1646855Z    Compiling regex-automata v0.4.14
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:12.6339303Z    Compiling windows-targets v0.53.5
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:14.1690943Z    Compiling cxxbridge-macro v1.0.138
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:18.0634882Z    Compiling tree-sitter-cpp v0.23.4
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:18.3515099Z    Compiling tree-sitter-html v0.23.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:18.9204278Z    Compiling tree-sitter-fortran v0.6.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:19.4857947Z    Compiling tree-sitter-python v0.25.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:19.7644206Z    Compiling tree-sitter-go v0.25.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:19.9948699Z    Compiling tree-sitter-javascript v0.25.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:20.0131219Z    Compiling tree-sitter-css v0.25.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:20.2764491Z    Compiling tree-sitter-typescript v0.23.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:20.2913114Z    Compiling tree-sitter-c v0.24.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:20.5406077Z    Compiling tree-sitter-rust v0.24.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:20.5584230Z    Compiling syn v3.0.3
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:20.7982678Z    Compiling num-conv v0.1.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:20.9599514Z    Compiling getrandom v0.3.4
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:21.2824144Z    Compiling foldhash v0.1.5
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:21.6632873Z    Compiling cty v0.2.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:21.6999256Z    Compiling arrayvec v0.7.6
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:22.0420942Z    Compiling time-core v0.1.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:22.1264830Z    Compiling crc-catalog v2.5.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:22.2341606Z    Compiling cpufeatures v0.2.17
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:22.3024278Z    Compiling sha2 v0.10.9
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:24.3997733Z    Compiling crc v3.4.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:24.6599487Z    Compiling time v0.3.36
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:36.7994649Z    Compiling regex v1.12.4
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:36.8843014Z    Compiling windows-sys v0.60.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:38.1070879Z    Compiling walkdir v2.5.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:40.0187039Z    Compiling synstructure v0.13.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:40.4665498Z    Compiling codebase-graph v4.0.5 (D:\a\codebaseGraph\codebaseGraph)
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:40.7281803Z    Compiling byteorder v1.5.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:40.9624898Z    Compiling uuid v1.18.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:41.0711580Z    Compiling notify-types v2.0.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:41.6631143Z    Compiling streaming-iterator v0.1.9
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:41.8711033Z    Compiling notify v8.2.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:42.1374600Z    Compiling fs2 v0.4.3
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:42.4778551Z    Compiling lzma-rs v0.3.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:45.4961551Z    Compiling mimalloc v0.1.52
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:45.5917773Z    Compiling zerofrom-derive v0.1.7
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:45.7857626Z    Compiling smallvec v1.15.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:47.3504576Z    Compiling yoke-derive v0.8.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:48.5786692Z    Compiling zerofrom v0.1.8
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:48.7210043Z    Compiling stable_deref_trait v1.2.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:48.7947606Z    Compiling zerovec-derive v0.11.3
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:49.1592452Z    Compiling yoke v0.8.3
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:49.4691002Z    Compiling displaydoc v0.2.7
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:50.4933022Z    Compiling siphasher v1.0.3
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:50.5092542Z    Compiling zerovec v0.11.6
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:50.7188604Z    Compiling phf_shared v0.13.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:51.1014186Z    Compiling fastrand v2.5.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:51.2491090Z    Compiling bytes v1.12.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:51.6265153Z    Compiling tinystr v0.8.3
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:51.8870808Z    Compiling phf_generator v0.13.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:52.1210508Z    Compiling litemap v0.8.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:52.4009297Z    Compiling futures-core v0.3.32
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:52.5488963Z    Compiling parking_lot_core v0.9.12
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:52.8267092Z    Compiling writeable v0.6.3
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:53.1570859Z    Compiling pin-project-lite v0.2.17
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:53.1849866Z    Compiling icu_locale_core v2.2.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:53.2473255Z    Compiling potential_utf v0.1.5
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:53.2723241Z    Compiling zerotrie v0.2.4
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:54.2945315Z    Compiling utf8_iter v1.0.4
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:54.8323980Z    Compiling icu_normalizer_data v2.2.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:54.8884634Z    Compiling scopeguard v1.2.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:55.0221055Z    Compiling icu_properties_data v2.2.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:55.2839879Z    Compiling icu_provider v2.2.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:56.3058277Z    Compiling lock_api v0.4.14
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:56.6150146Z    Compiling icu_collections v2.2.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:58.3973455Z    Compiling http v1.5.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:59.5691407Z    Compiling phf_codegen v0.13.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:34:59.6937971Z    Compiling string_cache_codegen v0.6.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:00.3063465Z    Compiling new_debug_unreachable v1.0.6
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:00.3526155Z    Compiling web_atoms v0.2.6
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:01.0537648Z    Compiling http-body v1.1.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:01.1833317Z    Compiling parking_lot v0.12.5
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:02.6645101Z    Compiling tokio-macros v2.7.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:03.0236934Z    Compiling mio v1.2.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:03.4775060Z    Compiling socket2 v0.6.5
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:04.9626844Z    Compiling precomputed-hash v0.1.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:05.0096829Z    Compiling httparse v1.10.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:05.4010503Z    Compiling string_cache v0.9.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:05.7763621Z    Compiling tokio v1.53.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:06.0604556Z    Compiling icu_properties v2.2.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:08.8446155Z    Compiling icu_normalizer v2.2.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:09.5108080Z    Compiling phf v0.13.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:09.6879838Z    Compiling tower-service v0.3.3
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:09.7683940Z    Compiling percent-encoding v2.3.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:11.4500435Z    Compiling idna_adapter v1.2.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:11.5985621Z    Compiling tendril v0.5.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:12.0674357Z    Compiling futures-channel v0.3.32
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:12.3717532Z    Compiling slab v0.4.12
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:12.4055532Z    Compiling httpdate v1.0.3
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:12.5876773Z    Compiling sync_wrapper v1.0.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:13.1108627Z    Compiling atomic-waker v1.1.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:13.2115491Z    Compiling tower-layer v0.3.3
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:13.5478068Z    Compiling dtoa v1.0.11
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:13.6852411Z    Compiling futures-task v0.3.32
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:13.7164129Z    Compiling dtoa-short v0.3.5
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:13.8791603Z    Compiling futures-util v0.3.32
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:15.1401110Z    Compiling hyper v1.11.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:16.8317580Z    Compiling markup5ever v0.39.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:17.4376524Z    Compiling idna v1.1.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:22.5433069Z    Compiling form_urlencoded v1.2.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:22.8987000Z    Compiling http-body-util v0.1.4
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:23.1361926Z    Compiling libyaml-rs v0.3.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:23.2899791Z    Compiling pulldown-cmark v0.13.5
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:23.4794279Z    Compiling mime v0.3.17
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:24.2211442Z    Compiling ryu v1.0.23
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:24.4036351Z    Compiling yaml_serde v0.10.7
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:24.9305646Z    Compiling axum-core v0.5.6
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:28.1541995Z    Compiling url v2.5.8
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:28.9236370Z    Compiling html5ever v0.39.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:31.8458295Z    Compiling tower v0.5.3
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:32.4985262Z    Compiling hyper-util v0.1.20
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:33.0369982Z    Compiling cssparser v0.37.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:33.3050137Z    Compiling serde_path_to_error v0.1.20
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:33.3225195Z    Compiling unicase v2.9.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:33.7209156Z    Compiling pulldown-cmark-escape v0.11.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:33.8204354Z    Compiling bitflags v2.13.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:34.0308809Z    Compiling maplit v1.0.2
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:34.1143490Z    Compiling matchit v0.8.4
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:34.4092445Z    Compiling ammonia v4.1.8
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:35.3599304Z    Compiling axum v0.8.9
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:47.2381519Z    Compiling k-wiki v4.0.5 (D:\a\codebaseGraph\codebaseGraph\crates\k-wiki)
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:47.5165330Z    Compiling crc32fast v1.5.0
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:48.2570465Z    Compiling simd-adler32 v0.3.10
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:49.7172505Z    Compiling adler2 v2.0.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:50.0783752Z    Compiling miniz_oxide v0.9.1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:54.6854858Z    Compiling filetime v0.2.29
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:55.5682636Z    Compiling tar v0.4.46
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:35:57.2750527Z    Compiling flate2 v1.1.10
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:36:03.1563759Z    Compiling xtask v4.0.5 (D:\a\codebaseGraph\codebaseGraph\crates\xtask)
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:43:19.1622576Z     Finished `native-tests` profile [optimized] target(s) in 9m 46s
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:43:23.7287736Z native-test CLI compiler artifact: D:\a\_temp\native-test-cli-7768-1793598199205190000\codebase-graph.exe sha256=db2228affe43ceda1642e6da7a9055196ae440fce3d6c97372f6a8956c9ea298
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:45:42.3666637Z native test command 1: cargo test --locked --profile native-tests --features codebase-graph/bundled-windows-extensions --package codebase-graph --test generation_storage --no-fail-fast -- --exact direct_materialization_uses_custom_paths_and_cleans_shadow_files managed_reads_survive_deferred_retired_generation_deletion
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:45:42.5237799Z     Finished `native-tests` profile [optimized] target(s) in 0.14s
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:45:42.5394353Z      Running tests\generation_storage.rs (target\native-tests\deps\generation_storage-d931eb6a60aee4b6.exe)
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:45:42.5549972Z 
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:45:42.5550332Z running 2 tests
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:45:45.7252543Z test direct_materialization_uses_custom_paths_and_cleans_shadow_files ... ok
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:45:56.3144648Z test managed_reads_survive_deferred_retired_generation_deletion ... generation cleanup attempt 0/3248: {"attempted_entries":85,"continuation_phase":null,"deleted_entries":0,"finished_at_unix_ms":1793598356304,"reclaimed_allocated_bytes":null,"started_at_unix_ms":1793598356237,"status":"partial"}
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:46:17.4559934Z generation cleanup attempt 64/3248: {"attempted_entries":19,"continuation_phase":null,"deleted_entries":0,"finished_at_unix_ms":1793598377444,"reclaimed_allocated_bytes":null,"started_at_unix_ms":1793598377317,"status":"deferred"}
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:46:39.2055249Z generation cleanup attempt 128/3248: {"attempted_entries":19,"continuation_phase":null,"deleted_entries":0,"finished_at_unix_ms":1793598399196,"reclaimed_allocated_bytes":null,"started_at_unix_ms":1793598399066,"status":"deferred"}
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:47:00.6717520Z generation cleanup attempt 192/3248: {"attempted_entries":19,"continuation_phase":null,"deleted_entries":0,"finished_at_unix_ms":1793598420653,"reclaimed_allocated_bytes":null,"started_at_unix_ms":1793598420530,"status":"deferred"}
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:47:22.1164706Z generation cleanup attempt 256/3248: {"attempted_entries":19,"continuation_phase":null,"deleted_entries":0,"finished_at_unix_ms":1793598442106,"reclaimed_allocated_bytes":null,"started_at_unix_ms":1793598441981,"status":"deferred"}
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:47:43.4340101Z generation cleanup attempt 320/3248: {"attempted_entries":19,"continuation_phase":null,"deleted_entries":0,"finished_at_unix_ms":1793598463426,"reclaimed_allocated_bytes":null,"started_at_unix_ms":1793598463302,"status":"deferred"}
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:48:04.8498949Z generation cleanup attempt 384/3248: {"attempted_entries":19,"continuation_phase":null,"deleted_entries":0,"finished_at_unix_ms":1793598484841,"reclaimed_allocated_bytes":null,"started_at_unix_ms":1793598484713,"status":"deferred"}
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:48:26.3397145Z generation cleanup attempt 448/3248: {"attempted_entries":19,"continuation_phase":null,"deleted_entries":0,"finished_at_unix_ms":1793598506325,"reclaimed_allocated_bytes":null,"started_at_unix_ms":1793598506200,"status":"deferred"}
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:48:47.9064363Z generation cleanup attempt 512/3248: {"attempted_entries":19,"continuation_phase":null,"deleted_entries":0,"finished_at_unix_ms":1793598527898,"reclaimed_allocated_bytes":null,"started_at_unix_ms":1793598527773,"status":"deferred"}
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:49:09.2560281Z generation cleanup attempt 576/3248: {"attempted_entries":19,"continuation_phase":null,"deleted_entries":0,"finished_at_unix_ms":1793598549241,"reclaimed_allocated_bytes":null,"started_at_unix_ms":1793598549114,"status":"deferred"}
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:49:30.5585028Z generation cleanup attempt 640/3248: {"attempted_entries":19,"continuation_phase":null,"deleted_entries":0,"finished_at_unix_ms":1793598570551,"reclaimed_allocated_bytes":null,"started_at_unix_ms":1793598570429,"status":"deferred"}
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:49:51.9248853Z generation cleanup attempt 704/3248: {"attempted_entries":19,"continuation_phase":null,"deleted_entries":0,"finished_at_unix_ms":1793598591911,"reclaimed_allocated_bytes":null,"started_at_unix_ms":1793598591785,"status":"deferred"}
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:50:13.4149271Z generation cleanup attempt 768/3248: {"attempted_entries":19,"continuation_phase":null,"deleted_entries":0,"finished_at_unix_ms":1793598613403,"reclaimed_allocated_bytes":null,"started_at_unix_ms":1793598613277,"status":"deferred"}
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:50:34.8902019Z generation cleanup attempt 832/3248: {"attempted_entries":19,"continuation_phase":null,"deleted_entries":0,"finished_at_unix_ms":1793598634876,"reclaimed_allocated_bytes":null,"started_at_unix_ms":1793598634754,"status":"deferred"}
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:50:56.2871941Z generation cleanup attempt 896/3248: {"attempted_entries":19,"continuation_phase":null,"deleted_entries":0,"finished_at_unix_ms":1793598656272,"reclaimed_allocated_bytes":null,"started_at_unix_ms":1793598656147,"status":"deferred"}
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:51:17.7450584Z generation cleanup attempt 960/3248: {"attempted_entries":19,"continuation_phase":null,"deleted_entries":0,"finished_at_unix_ms":1793598677733,"reclaimed_allocated_bytes":null,"started_at_unix_ms":1793598677610,"status":"deferred"}
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:51:39.1127860Z generation cleanup attempt 1024/3248: {"attempted_entries":19,"continuation_phase":null,"deleted_entries":0,"finished_at_unix_ms":1793598699100,"reclaimed_allocated_bytes":null,"started_at_unix_ms":1793598698976,"status":"deferred"}
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:52:00.3072484Z generation cleanup attempt 1088/3248: {"attempted_entries":19,"continuation_phase":null,"deleted_entries":0,"finished_at_unix_ms":1793598720300,"reclaimed_allocated_bytes":null,"started_at_unix_ms":1793598720175,"status":"deferred"}
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:52:21.5174536Z generation cleanup attempt 1152/3248: {"attempted_entries":19,"continuation_phase":null,"deleted_entries":0,"finished_at_unix_ms":1793598741512,"reclaimed_allocated_bytes":null,"started_at_unix_ms":1793598741391,"status":"deferred"}
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:52:42.4120889Z generation cleanup attempt 1216/3248: {"attempted_entries":19,"continuation_phase":null,"deleted_entries":0,"finished_at_unix_ms":1793598762406,"reclaimed_allocated_bytes":null,"started_at_unix_ms":1793598762285,"status":"deferred"}
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:53:03.2466596Z generation cleanup attempt 1280/3248: {"attempted_entries":19,"continuation_phase":null,"deleted_entries":0,"finished_at_unix_ms":1793598783235,"reclaimed_allocated_bytes":null,"started_at_unix_ms":1793598783113,"status":"deferred"}
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:53:24.0819993Z generation cleanup attempt 1344/3248: {"attempted_entries":19,"continuation_phase":null,"deleted_entries":0,"finished_at_unix_ms":1793598804067,"reclaimed_allocated_bytes":null,"started_at_unix_ms":1793598803947,"status":"deferred"}
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:53:44.9102426Z generation cleanup attempt 1408/3248: {"attempted_entries":19,"continuation_phase":null,"deleted_entries":0,"finished_at_unix_ms":1793598824901,"reclaimed_allocated_bytes":null,"started_at_unix_ms":1793598824781,"status":"deferred"}
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:54:05.7760860Z generation cleanup attempt 1472/3248: {"attempted_entries":19,"continuation_phase":null,"deleted_entries":0,"finished_at_unix_ms":1793598845761,"reclaimed_allocated_bytes":null,"started_at_unix_ms":1793598845641,"status":"deferred"}
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:54:26.7350923Z generation cleanup attempt 1536/3248: {"attempted_entries":19,"continuation_phase":null,"deleted_entries":0,"finished_at_unix_ms":1793598866720,"reclaimed_allocated_bytes":null,"started_at_unix_ms":1793598866599,"status":"deferred"}
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:54:47.8007032Z generation cleanup attempt 1600/3248: {"attempted_entries":19,"continuation_phase":null,"deleted_entries":0,"finished_at_unix_ms":1793598887784,"reclaimed_allocated_bytes":null,"started_at_unix_ms":1793598887651,"status":"deferred"}
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:06.6335984Z ok
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:06.6336306Z 
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:06.6336792Z test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 564.07s
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:06.6337400Z 
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:06.6337636Z native test command 1 finished in 564.272s: Ok(())
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:08.2793638Z ##[group]Run actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:08.2794426Z with:
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:08.2794799Z   name: test-diagnostics-windows-x86_64-generation-shard1-1
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:08.2795249Z   path: diagnostics/
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:08.2795543Z   if-no-files-found: warn
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:08.2795868Z   retention-days: 3
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:08.2796153Z   compression-level: 6
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:08.2796447Z   overwrite: false
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:08.2796741Z   include-hidden-files: false
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:08.2797073Z   archive: true
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:08.2797360Z env:
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:08.2797626Z   MACOSX_DEPLOYMENT_TARGET: 13.3
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:08.2797992Z   CARGO_HTTP_MULTIPLEXING: false
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:08.2798326Z   CARGO_NET_RETRY: 10
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:08.2798646Z   LIB: D:\a\_temp\lbug-openssl;
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:08.2799200Z   LBUG_LIBRARY_DIR: D:/a/codebaseGraph/codebaseGraph/.cache/lbug-prebuilt/0.19.0/windows-x86_64
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:08.2800130Z   LBUG_INCLUDE_DIR: D:/a/codebaseGraph/codebaseGraph/.cache/lbug-prebuilt/0.19.0/windows-x86_64
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:08.2800706Z ##[endgroup]
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:08.7779368Z With the provided path, there will be 8 files uploaded
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:08.7784965Z Artifact name is valid!
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:08.7786680Z Root directory input is valid!
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:09.0390372Z Uploading artifact: test-diagnostics-windows-x86_64-generation-shard1-1.zip
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:09.0433606Z Beginning upload of artifact content to blob storage
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:09.2442976Z Uploaded bytes 6945
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:09.2834681Z Finished uploading artifact content to blob storage!
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:09.2837058Z SHA256 digest of uploaded artifact is 227e69f2408360bdeb46cdab6851031a75acd4a62490275f2e08c127585758d5
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:09.2838185Z Finalizing artifact upload
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:09.7583082Z Artifact test-diagnostics-windows-x86_64-generation-shard1-1 successfully finalized. Artifact ID 13119702457
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:09.7584455Z Artifact test-diagnostics-windows-x86_64-generation-shard1-1 has been successfully uploaded! Final size is 6945 bytes. Artifact ID is 13119702457
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:09.7589569Z Artifact download URL: https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41393999523/artifacts/13119702457
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:09.7965624Z Post job cleanup.
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:09.7972928Z ##[start-action display=Restore Ladybug dependency;id=__7da2a195-1471-448c-96c5-7dc8a871a2c4.ladybug-cache]
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:09.8103245Z Post job cleanup.
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:09.9947301Z Cache hit occurred on the primary key lbug-0.19.0-windows-x86_64-v1, not saving cache.
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:10.0060783Z ##[end-action id=__7da2a195-1471-448c-96c5-7dc8a871a2c4.ladybug-cache;outcome=success;conclusion=success;duration_ms=208]
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:10.0300718Z Post job cleanup.
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:10.2418548Z [command]"C:\Program Files\Git\bin\git.exe" version
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:10.3089863Z git version 2.56.0.windows.3
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:10.3154269Z Temporarily overriding HOME='D:\a\_temp\6549205b-5fe4-4bc5-af35-1830d2afaf42' before making global git config changes
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:10.3155538Z Adding repository directory to the temporary git global config as a safe directory
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:10.3165770Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\codebaseGraph\codebaseGraph
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:10.3495044Z Removing SSH command configuration
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:10.3507633Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:10.3816327Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:10.8862374Z Removing HTTP extra header
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:10.8872893Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:10.9181833Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:11.3683776Z Removing includeIf entries pointing to credentials config files
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:11.3695684Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:11.3961882Z includeif.gitdir:D:/a/codebaseGraph/codebaseGraph/.git.path
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:11.3962713Z includeif.gitdir:D:/a/codebaseGraph/codebaseGraph/.git/worktrees/*.path
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:11.3963503Z includeif.gitdir:/github/workspace/.git.path
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:11.3963964Z includeif.gitdir:/github/workspace/.git/worktrees/*.path
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:11.3996753Z [command]"C:\Program Files\Git\bin\git.exe" config --local --get-all includeif.gitdir:D:/a/codebaseGraph/codebaseGraph/.git.path
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:11.4261229Z D:\a\_temp\git-credentials-e9b9a67d-d7d7-487d-b06c-16f67ee55b1e.config
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:11.4299039Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset includeif.gitdir:D:/a/codebaseGraph/codebaseGraph/.git.path D:\a\_temp\git-credentials-e9b9a67d-d7d7-487d-b06c-16f67ee55b1e.config
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:11.4601753Z [command]"C:\Program Files\Git\bin\git.exe" config --local --get-all includeif.gitdir:D:/a/codebaseGraph/codebaseGraph/.git/worktrees/*.path
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:11.4869100Z D:\a\_temp\git-credentials-e9b9a67d-d7d7-487d-b06c-16f67ee55b1e.config
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:11.4909372Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset includeif.gitdir:D:/a/codebaseGraph/codebaseGraph/.git/worktrees/*.path D:\a\_temp\git-credentials-e9b9a67d-d7d7-487d-b06c-16f67ee55b1e.config
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:11.5218520Z [command]"C:\Program Files\Git\bin\git.exe" config --local --get-all includeif.gitdir:/github/workspace/.git.path
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:11.5481689Z /github/runner_temp/git-credentials-e9b9a67d-d7d7-487d-b06c-16f67ee55b1e.config
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:11.5515371Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset includeif.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-e9b9a67d-d7d7-487d-b06c-16f67ee55b1e.config
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:11.5811945Z [command]"C:\Program Files\Git\bin\git.exe" config --local --get-all includeif.gitdir:/github/workspace/.git/worktrees/*.path
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:11.6072752Z /github/runner_temp/git-credentials-e9b9a67d-d7d7-487d-b06c-16f67ee55b1e.config
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:11.6107763Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset includeif.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-e9b9a67d-d7d7-487d-b06c-16f67ee55b1e.config
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:11.6414812Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:12.0911110Z Removing credentials config 'D:\a\_temp\git-credentials-e9b9a67d-d7d7-487d-b06c-16f67ee55b1e.config'
+native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)	UNKNOWN STEP	2026-11-02T05:55:12.1111622Z Cleaning up orphan processes

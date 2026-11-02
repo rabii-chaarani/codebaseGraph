@@ -1,0 +1,88 @@
+﻿2026-11-02T05:26:14.3266260Z ##[group]Run actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+2026-11-02T05:26:14.3267370Z with:
+2026-11-02T05:26:14.3267730Z   ref: f3f154aeb050945d4efcc635126208d35b43b622
+2026-11-02T05:26:14.3268190Z   repository: rabii-chaarani/codebaseGraph
+2026-11-02T05:26:14.3271290Z   token: ***
+2026-11-02T05:26:14.3271650Z   ssh-strict: true
+2026-11-02T05:26:14.3272280Z   ssh-user: git
+2026-11-02T05:26:14.3272670Z   persist-credentials: true
+2026-11-02T05:26:14.3273120Z   clean: true
+2026-11-02T05:26:14.3273510Z   sparse-checkout-cone-mode: true
+2026-11-02T05:26:14.3274050Z   fetch-depth: 1
+2026-11-02T05:26:14.3274460Z   fetch-tags: false
+2026-11-02T05:26:14.3274870Z   show-progress: true
+2026-11-02T05:26:14.3275280Z   lfs: false
+2026-11-02T05:26:14.3275720Z   submodules: false
+2026-11-02T05:26:14.3276110Z   set-safe-directory: true
+2026-11-02T05:26:14.3276900Z env:
+2026-11-02T05:26:14.3277320Z   MACOSX_DEPLOYMENT_TARGET: 13.3
+2026-11-02T05:26:14.3277820Z   CARGO_HTTP_MULTIPLEXING: false
+2026-11-02T05:26:14.3278350Z   CARGO_NET_RETRY: 10
+2026-11-02T05:26:14.3278730Z ##[endgroup]
+2026-11-02T05:26:14.9074940Z Syncing repository: rabii-chaarani/codebaseGraph
+2026-11-02T05:26:14.9077360Z ##[group]Getting Git version info
+2026-11-02T05:26:14.9078050Z Working directory is '/Users/runner/work/codebaseGraph/codebaseGraph'
+2026-11-02T05:26:14.9079060Z [command]/opt/homebrew/bin/git version
+2026-11-02T05:26:14.9389770Z git version 2.56.0
+2026-11-02T05:26:14.9409680Z ##[endgroup]
+2026-11-02T05:26:14.9426280Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/24df96bf-bb88-4192-b58b-4d514760dfb1/.gitconfig'
+2026-11-02T05:26:14.9439330Z Temporarily overriding HOME='/Users/runner/work/_temp/24df96bf-bb88-4192-b58b-4d514760dfb1' before making global git config changes
+2026-11-02T05:26:14.9442920Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-02T05:26:14.9445450Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/codebaseGraph/codebaseGraph
+2026-11-02T05:26:14.9598500Z Deleting the contents of '/Users/runner/work/codebaseGraph/codebaseGraph'
+2026-11-02T05:26:14.9601020Z ##[group]Determining repository object format
+2026-11-02T05:26:14.9602250Z ##[endgroup]
+2026-11-02T05:26:14.9602980Z ##[group]Initializing the repository
+2026-11-02T05:26:14.9606530Z [command]/opt/homebrew/bin/git init /Users/runner/work/codebaseGraph/codebaseGraph
+2026-11-02T05:26:14.9831520Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-11-02T05:26:14.9832490Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-11-02T05:26:14.9833390Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-11-02T05:26:14.9834020Z hint: call:
+2026-11-02T05:26:14.9834340Z hint:
+2026-11-02T05:26:14.9834740Z hint: 	git config --global init.defaultBranch <name>
+2026-11-02T05:26:14.9835210Z hint:
+2026-11-02T05:26:14.9835810Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-11-02T05:26:14.9836610Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-11-02T05:26:14.9837170Z hint:
+2026-11-02T05:26:14.9837620Z hint: 	git branch -m <name>
+2026-11-02T05:26:14.9838030Z hint:
+2026-11-02T05:26:14.9838500Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-11-02T05:26:14.9840680Z Initialized empty Git repository in /Users/runner/work/codebaseGraph/codebaseGraph/.git/
+2026-11-02T05:26:14.9852270Z [command]/opt/homebrew/bin/git remote add origin https://github.com/rabii-chaarani/codebaseGraph
+2026-11-02T05:26:15.0008700Z ##[endgroup]
+2026-11-02T05:26:15.0009440Z ##[group]Disabling automatic garbage collection
+2026-11-02T05:26:15.0011650Z [command]/opt/homebrew/bin/git config --local gc.auto 0
+2026-11-02T05:26:15.0099590Z ##[endgroup]
+2026-11-02T05:26:15.0100730Z ##[group]Setting up auth
+2026-11-02T05:26:15.0101180Z Removing SSH command configuration
+2026-11-02T05:26:15.0105550Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-02T05:26:15.0196350Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-02T05:26:15.2395740Z Removing HTTP extra header
+2026-11-02T05:26:15.2400250Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-02T05:26:15.2476160Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-02T05:26:15.3985650Z Removing includeIf entries pointing to credentials config files
+2026-11-02T05:26:15.5174600Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-02T05:26:15.5431520Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-02T05:26:15.5923360Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/_temp/git-credentials-d4c7d84b-a3e7-4133-a8d6-c2413bd4dd7c.config http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-11-02T05:26:15.6016150Z [command]/opt/homebrew/bin/git config --local includeIf.gitdir:/Users/runner/work/codebaseGraph/codebaseGraph/.git.path /Users/runner/work/_temp/git-credentials-d4c7d84b-a3e7-4133-a8d6-c2413bd4dd7c.config
+2026-11-02T05:26:15.6097690Z [command]/opt/homebrew/bin/git config --local includeIf.gitdir:/Users/runner/work/codebaseGraph/codebaseGraph/.git/worktrees/*.path /Users/runner/work/_temp/git-credentials-d4c7d84b-a3e7-4133-a8d6-c2413bd4dd7c.config
+2026-11-02T05:26:15.6183500Z [command]/opt/homebrew/bin/git config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-d4c7d84b-a3e7-4133-a8d6-c2413bd4dd7c.config
+2026-11-02T05:26:15.6260920Z [command]/opt/homebrew/bin/git config --local includeIf.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-d4c7d84b-a3e7-4133-a8d6-c2413bd4dd7c.config
+2026-11-02T05:26:15.6334100Z ##[endgroup]
+2026-11-02T05:26:15.6335590Z ##[group]Fetching the repository
+2026-11-02T05:26:15.6345390Z [command]/opt/homebrew/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin f3f154aeb050945d4efcc635126208d35b43b622
+2026-11-02T05:26:17.2112560Z From https://github.com/rabii-chaarani/codebaseGraph
+2026-11-02T05:26:17.2113830Z  * branch            f3f154aeb050945d4efcc635126208d35b43b622 -> FETCH_HEAD
+2026-11-02T05:26:17.2121650Z [command]/opt/homebrew/bin/git rev-parse --verify --quiet f3f154aeb050945d4efcc635126208d35b43b622^{object}
+2026-11-02T05:26:17.2259670Z f3f154aeb050945d4efcc635126208d35b43b622
+2026-11-02T05:26:17.2265000Z ##[endgroup]
+2026-11-02T05:26:17.2266070Z ##[group]Determining the checkout info
+2026-11-02T05:26:17.2267780Z ##[endgroup]
+2026-11-02T05:26:17.2270140Z [command]/opt/homebrew/bin/git sparse-checkout disable
+2026-11-02T05:26:17.2382530Z [command]/opt/homebrew/bin/git config --local --unset-all extensions.worktreeConfig
+2026-11-02T05:26:17.2489470Z ##[group]Checking out the ref
+2026-11-02T05:26:17.2491850Z [command]/opt/homebrew/bin/git checkout --progress --force f3f154aeb050945d4efcc635126208d35b43b622
+2026-11-02T05:26:17.8037140Z HEAD is now at f3f154a Merge 862bb3b3c40c36b21cdcd388f596d52ad482530b into 9ae63f3302bf4cae90ebd5a56173fff341ca815b
+2026-11-02T05:26:17.8055750Z ##[endgroup]
+2026-11-02T05:26:17.8329890Z [command]/opt/homebrew/bin/git log -1 --format=%H
+2026-11-02T05:26:17.8514960Z f3f154aeb050945d4efcc635126208d35b43b622

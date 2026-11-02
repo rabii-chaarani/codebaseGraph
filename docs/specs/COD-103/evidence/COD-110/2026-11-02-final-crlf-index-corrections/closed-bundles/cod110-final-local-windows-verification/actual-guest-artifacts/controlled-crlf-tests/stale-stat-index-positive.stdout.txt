@@ -1,0 +1,6 @@
+
+running 1 test
+test ci::tests::verify_checkout_accepts_stale_stat_without_mutating_index ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 94 filtered out; finished in 2.02s
+

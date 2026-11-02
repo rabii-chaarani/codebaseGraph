@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "Engineer_acceptance": "https://linear.app/codebasegraph/issue/COD-110#comment-0b42f9a5-9fe3-4bbe-ac56-81156cb67fbd",
+  "scope": "BothFINALlocalplatformchecks and originalSolMAXfocusedPASS/FR001RESOLVED accepted; exact2source+faithfulevidencecommitnormalpushPR178update/fullCI only",
+  "approved_contracts": "316be4c4bb81d4f6e025016b12374836b4dcc1a8",
+  "approval": "0e6008a1f46679a86aba85ac513beb05af94b0c0",
+  "Design": "9/R07A07/R08A08/Scryernode1/wzt",
+  "compatibility": "49612ec66814ad6b883a0c4c3c624911bd5a8825/separate754c82f4dc22c203c22a433f5bbae5f2f6e80231/user2917ddb7",
+  "no_merge_release_or_newbehavior": true
+}

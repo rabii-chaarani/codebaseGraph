@@ -1,0 +1,8 @@
+﻿{
+    "index_before":  "dcdbb28c03a463c6b7de3c77ff4a95be274b9329b1bbe807080ccb72bac901ce",
+    "index_after":  "dcdbb28c03a463c6b7de3c77ff4a95be274b9329b1bbe807080ccb72bac901ce",
+    "unchanged":  true,
+    "ended_utc":  "2026-11-02T11:14:29.0720468Z",
+    "test_invocations":  5,
+    "no_cargo_or_build":  true
+}

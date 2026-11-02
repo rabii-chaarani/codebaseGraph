@@ -1,0 +1,231 @@
+﻿2026-11-02T05:26:21.3823344Z Prepare all required actions
+2026-11-02T05:26:21.3823877Z Getting action download info
+2026-11-02T05:26:21.4984125Z Download action repository 'actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae' (SHA:27d5ce7f107fe9357f9df03efb73ab90386fccae)
+2026-11-02T05:26:21.7220763Z ##[group]Run ./.github/actions/setup-native
+2026-11-02T05:26:21.7220995Z with:
+2026-11-02T05:26:21.7221163Z   target: windows-x86_64
+2026-11-02T05:26:21.7221337Z env:
+2026-11-02T05:26:21.7221480Z   MACOSX_DEPLOYMENT_TARGET: 13.3
+2026-11-02T05:26:21.7221665Z   CARGO_HTTP_MULTIPLEXING: false
+2026-11-02T05:26:21.7221832Z   CARGO_NET_RETRY: 10
+2026-11-02T05:26:21.7221981Z ##[endgroup]
+2026-11-02T05:26:21.7269555Z ##[start-action display=Validate target host;id=__self.__run]
+2026-11-02T05:26:21.7377090Z ##[group]Run set -euo pipefail
+2026-11-02T05:26:21.7377410Z [36;1mset -euo pipefail[0m
+2026-11-02T05:26:21.7377666Z [36;1mcase "${NATIVE_TARGET}:${RUNNER_OS}:${RUNNER_ARCH}" in[0m
+2026-11-02T05:26:21.7377978Z [36;1m  macos-arm64:macOS:ARM64|windows-x86_64:Windows:X64) ;;[0m
+2026-11-02T05:26:21.7378265Z [36;1m  *)[0m
+2026-11-02T05:26:21.7378518Z [36;1m    echo "Target ${NATIVE_TARGET} does not match ${RUNNER_OS}/${RUNNER_ARCH}." >&2[0m
+2026-11-02T05:26:21.7378807Z [36;1m    exit 1[0m
+2026-11-02T05:26:21.7378949Z [36;1m    ;;[0m
+2026-11-02T05:26:21.7379085Z [36;1mesac[0m
+2026-11-02T05:26:21.7391991Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
+2026-11-02T05:26:21.7392296Z env:
+2026-11-02T05:26:21.7392455Z   MACOSX_DEPLOYMENT_TARGET: 13.3
+2026-11-02T05:26:21.7392652Z   CARGO_HTTP_MULTIPLEXING: false
+2026-11-02T05:26:21.7392830Z   CARGO_NET_RETRY: 10
+2026-11-02T05:26:21.7392993Z   NATIVE_TARGET: windows-x86_64
+2026-11-02T05:26:21.7393168Z ##[endgroup]
+2026-11-02T05:26:21.9784790Z ##[end-action id=__self.__run;outcome=success;conclusion=success;duration_ms=251]
+2026-11-02T05:26:21.9787403Z ##[start-action display=Prepare Windows OpenSSL static libraries;id=__self.__run_2]
+2026-11-02T05:26:21.9939840Z ##[group]Run $ErrorActionPreference = 'Stop'
+2026-11-02T05:26:21.9940139Z [36;1m$ErrorActionPreference = 'Stop'[0m
+2026-11-02T05:26:21.9940358Z [36;1m$triplet = 'x64-windows-static'[0m
+2026-11-02T05:26:21.9940560Z [36;1mvcpkg install "openssl:$triplet"[0m
+2026-11-02T05:26:21.9940948Z [36;1m$vcpkgRoot = if ($env:VCPKG_INSTALLATION_ROOT) { $env:VCPKG_INSTALLATION_ROOT } else { 'C:\vcpkg' }[0m
+2026-11-02T05:26:21.9941385Z [36;1m$libDir = Join-Path $vcpkgRoot "installed\$triplet\lib"[0m
+2026-11-02T05:26:21.9941686Z [36;1m$linkDir = Join-Path $env:RUNNER_TEMP 'lbug-openssl'[0m
+2026-11-02T05:26:21.9942014Z [36;1mNew-Item -ItemType Directory -Force -Path $linkDir | Out-Null[0m
+2026-11-02T05:26:21.9942450Z [36;1mCopy-Item -LiteralPath (Join-Path $libDir 'libssl.lib') -Destination (Join-Path $linkDir 'ssl.lib')[0m
+2026-11-02T05:26:21.9942987Z [36;1mCopy-Item -LiteralPath (Join-Path $libDir 'libcrypto.lib') -Destination (Join-Path $linkDir 'crypto.lib')[0m
+2026-11-02T05:26:21.9943480Z [36;1m"LIB=$linkDir;$env:LIB" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append[0m
+2026-11-02T05:26:22.0078578Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-11-02T05:26:22.0078891Z env:
+2026-11-02T05:26:22.0079053Z   MACOSX_DEPLOYMENT_TARGET: 13.3
+2026-11-02T05:26:22.0079252Z   CARGO_HTTP_MULTIPLEXING: false
+2026-11-02T05:26:22.0079454Z   CARGO_NET_RETRY: 10
+2026-11-02T05:26:22.0079628Z ##[endgroup]
+2026-11-02T05:26:22.9558214Z Computing installation plan...
+2026-11-02T05:26:24.4979504Z A suitable version of cmake was not found (required v4.4.3).
+2026-11-02T05:26:24.4980144Z Downloading https://github.com/Kitware/CMake/releases/download/v4.4.3/cmake-4.4.3-windows-x86_64.zip -> cmake-4.4.3-windows-x86_64.zip
+2026-11-02T05:26:25.5454660Z Successfully downloaded cmake-4.4.3-windows-x86_64.zip
+2026-11-02T05:26:25.5454996Z Extracting cmake...
+2026-11-02T05:26:48.0052580Z The following packages will be built and installed:
+2026-11-02T05:26:48.0054752Z     openssl:x64-windows-static@3.6.5#2
+2026-11-02T05:26:48.0054983Z   * vcpkg-cmake:x64-windows@2025-08-07
+2026-11-02T05:26:48.0055362Z   * vcpkg-cmake-config:x64-windows@2026-07-21
+2026-11-02T05:26:48.0055690Z   * vcpkg-cmake-get-vars:x64-windows@2025-05-29
+2026-11-02T05:26:48.0056088Z Additional packages (*) will be modified to complete this operation.
+2026-11-02T05:26:48.4848459Z Detecting compiler hash for triplet x64-windows...
+2026-11-02T05:27:02.7685815Z Compiler found: C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe
+2026-11-02T05:27:02.8275692Z Detecting compiler hash for triplet x64-windows-static...
+2026-11-02T05:27:03.5077422Z Compiler found: C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe
+2026-11-02T05:27:03.5542329Z Restored 0 package(s) from C:\Users\runneradmin\AppData\Local\vcpkg\archives in 282 us. Use --debug to see more details.
+2026-11-02T05:27:03.5543138Z Installing 1/4 vcpkg-cmake:x64-windows@2025-08-07...
+2026-11-02T05:27:03.5543859Z vcpkg-cmake:x64-windows@2025-08-07 package ABI: 96e12192782de41946d81095f8f0dc3dc286f5009619287c531a4244edf2b870
+2026-11-02T05:27:03.5544767Z Building vcpkg-cmake:x64-windows@2025-08-07...
+2026-11-02T05:27:03.5788446Z -- Installing: C:/vcpkg/packages/vcpkg-cmake_x64-windows/share/vcpkg-cmake/vcpkg_cmake_configure.cmake
+2026-11-02T05:27:03.5795690Z -- Installing: C:/vcpkg/packages/vcpkg-cmake_x64-windows/share/vcpkg-cmake/vcpkg_cmake_build.cmake
+2026-11-02T05:27:03.5802008Z -- Installing: C:/vcpkg/packages/vcpkg-cmake_x64-windows/share/vcpkg-cmake/vcpkg_cmake_install.cmake
+2026-11-02T05:27:03.5832995Z -- Installing: C:/vcpkg/packages/vcpkg-cmake_x64-windows/share/vcpkg-cmake/vcpkg-port-config.cmake
+2026-11-02T05:27:03.5915352Z -- Installing: C:/vcpkg/packages/vcpkg-cmake_x64-windows/share/vcpkg-cmake/copyright
+2026-11-02T05:27:03.6094027Z -- Performing post-build validation
+2026-11-02T05:27:03.6203017Z Starting submission of vcpkg-cmake:x64-windows@2025-08-07 to 1 binary cache(s) in the background
+2026-11-02T05:27:03.6203689Z Elapsed time to handle vcpkg-cmake:x64-windows: 66.1 ms
+2026-11-02T05:27:03.6203998Z Installing 2/4 vcpkg-cmake-config:x64-windows@2026-07-21...
+2026-11-02T05:27:03.6204478Z vcpkg-cmake-config:x64-windows@2026-07-21 package ABI: 00439fc42220b085e4826c48422682a1c437698d0723893c6bf84b66a22638a7
+2026-11-02T05:27:03.6204928Z Building vcpkg-cmake-config:x64-windows@2026-07-21...
+2026-11-02T05:27:03.6477361Z -- Installing: C:/vcpkg/packages/vcpkg-cmake-config_x64-windows/share/vcpkg-cmake-config/vcpkg_cmake_config_fixup.cmake
+2026-11-02T05:27:03.6488255Z -- Installing: C:/vcpkg/packages/vcpkg-cmake-config_x64-windows/share/vcpkg-cmake-config/vcpkg-port-config.cmake
+2026-11-02T05:27:03.6494907Z -- Installing: C:/vcpkg/packages/vcpkg-cmake-config_x64-windows/share/vcpkg-cmake-config/copyright
+2026-11-02T05:27:03.6617641Z -- Skipping post-build validation due to VCPKG_POLICY_EMPTY_PACKAGE
+2026-11-02T05:27:03.6779417Z Starting submission of vcpkg-cmake-config:x64-windows@2026-07-21 to 1 binary cache(s) in the background
+2026-11-02T05:27:03.6780033Z Elapsed time to handle vcpkg-cmake-config:x64-windows: 57.6 ms
+2026-11-02T05:27:03.6780496Z Installing 3/4 vcpkg-cmake-get-vars:x64-windows@2025-05-29...
+2026-11-02T05:27:03.6780991Z vcpkg-cmake-get-vars:x64-windows@2025-05-29 package ABI: 552e45a21931757813ef25f0b6ba88fff746670acf7cb2fc702473be14699109
+2026-11-02T05:27:03.6781490Z Building vcpkg-cmake-get-vars:x64-windows@2025-05-29...
+2026-11-02T05:27:03.7066057Z -- Installing: C:/vcpkg/packages/vcpkg-cmake-get-vars_x64-windows/share/vcpkg-cmake-get-vars/vcpkg_cmake_get_vars.cmake
+2026-11-02T05:27:03.7075956Z -- Installing: C:/vcpkg/packages/vcpkg-cmake-get-vars_x64-windows/share/vcpkg-cmake-get-vars/cmake_get_vars
+2026-11-02T05:27:03.7082782Z -- Installing: C:/vcpkg/packages/vcpkg-cmake-get-vars_x64-windows/share/vcpkg-cmake-get-vars/cmake_get_vars/CMakeLists.txt
+2026-11-02T05:27:03.7090214Z -- Installing: C:/vcpkg/packages/vcpkg-cmake-get-vars_x64-windows/share/vcpkg-cmake-get-vars/cmake-get-vars.cmake.in
+2026-11-02T05:27:03.7131761Z -- Installing: C:/vcpkg/packages/vcpkg-cmake-get-vars_x64-windows/share/vcpkg-cmake-get-vars/vcpkg-port-config.cmake
+2026-11-02T05:27:03.7167780Z -- Installing: C:/vcpkg/packages/vcpkg-cmake-get-vars_x64-windows/share/vcpkg-cmake-get-vars/copyright
+2026-11-02T05:27:03.7217346Z -- Performing post-build validation
+2026-11-02T05:27:03.7377924Z Starting submission of vcpkg-cmake-get-vars:x64-windows@2025-05-29 to 1 binary cache(s) in the background
+2026-11-02T05:27:03.7378628Z Elapsed time to handle vcpkg-cmake-get-vars:x64-windows: 59.8 ms
+2026-11-02T05:27:03.7379260Z Completed submission of vcpkg-cmake:x64-windows@2025-08-07 to 1 binary cache(s) in 58.3 ms
+2026-11-02T05:27:03.7380089Z Completed submission of vcpkg-cmake-config:x64-windows@2026-07-21 to 1 binary cache(s) in 40.8 ms
+2026-11-02T05:27:03.7380747Z Installing 4/4 openssl:x64-windows-static@3.6.5#2...
+2026-11-02T05:27:03.7381683Z openssl:x64-windows-static@3.6.5#2 package ABI: c1906a984f630b626b52edcb311eea6ae319d555f574ce5683a3be8215792375
+2026-11-02T05:27:03.7382352Z Building openssl:x64-windows-static@3.6.5#2...
+2026-11-02T05:27:03.7796523Z Downloading https://github.com/openssl/openssl/archive/openssl-3.6.5.tar.gz -> openssl-openssl-openssl-3.6.5.tar.gz
+2026-11-02T05:27:05.2529741Z Successfully downloaded openssl-openssl-openssl-3.6.5.tar.gz
+2026-11-02T05:27:05.4264551Z -- Extracting source C:/vcpkg/downloads/openssl-openssl-openssl-3.6.5.tar.gz
+2026-11-02T05:27:13.0307707Z -- Applying patch cmake-config.patch
+2026-11-02T05:27:13.0613248Z -- Applying patch command-line-length.patch
+2026-11-02T05:27:13.0832546Z -- Applying patch script-prefix.patch
+2026-11-02T05:27:13.1049436Z -- Applying patch windows/install-layout.patch
+2026-11-02T05:27:13.1266198Z -- Applying patch windows/install-pdbs.patch
+2026-11-02T05:27:13.1530005Z -- Applying patch windows/install-programs.diff
+2026-11-02T05:27:13.1800276Z -- Applying patch unix/android-cc.patch
+2026-11-02T05:27:13.2034586Z -- Applying patch unix/move-openssldir.patch
+2026-11-02T05:27:13.2258858Z -- Applying patch unix/no-empty-dirs.patch
+2026-11-02T05:27:13.7064193Z -- Applying patch unix/no-static-libs-for-shared.patch
+2026-11-02T05:27:13.7352684Z -- Using source at C:/vcpkg/buildtrees/openssl/src/nssl-3.6.5-c2a478abe6.clean
+2026-11-02T05:27:13.7536730Z -- Getting CMake variables for x64-windows-static
+2026-11-02T05:27:21.0204755Z -- Loading CMake variables from C:/vcpkg/buildtrees/openssl/cmake-get-vars_C_CXX-x64-windows-static.cmake.log
+2026-11-02T05:27:21.0319948Z Downloading https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54221_64bit/strawberry-perl-5.42.2.1-64bit-portable.zip -> strawberry-perl-5.42.2.1-64bit-portable.zip
+2026-11-02T05:27:23.1577715Z Successfully downloaded strawberry-perl-5.42.2.1-64bit-portable.zip
+2026-11-02T05:27:54.5109813Z Downloading nasm-3.01-win64.zip, trying https://www.nasm.us/pub/nasm/releasebuilds/3.01/win64/nasm-3.01-win64.zip
+2026-11-02T05:27:54.8005752Z Successfully downloaded nasm-3.01-win64.zip
+2026-11-02T05:27:54.9595972Z -- Getting CMake variables for x64-windows-static
+2026-11-02T05:27:57.6868014Z Downloading jom_1_1_7.zip, trying https://download.qt.io/official_releases/jom/jom_1_1_7.zip
+2026-11-02T05:28:00.3782030Z Successfully downloaded jom_1_1_7.zip
+2026-11-02T05:28:09.1407132Z -- Prerunning x64-windows-static-dbg
+2026-11-02T05:28:22.5602527Z -- Building x64-windows-static-dbg
+2026-11-02T05:29:55.0419344Z -- Prerunning x64-windows-static-rel
+2026-11-02T05:30:11.3160181Z -- Building x64-windows-static-rel
+2026-11-02T05:31:49.0163552Z -- Fixing pkgconfig file: C:/vcpkg/packages/openssl_x64-windows-static/lib/pkgconfig/libcrypto.pc
+2026-11-02T05:31:49.0169991Z -- Fixing pkgconfig file: C:/vcpkg/packages/openssl_x64-windows-static/lib/pkgconfig/libssl.pc
+2026-11-02T05:31:49.0175830Z -- Fixing pkgconfig file: C:/vcpkg/packages/openssl_x64-windows-static/lib/pkgconfig/openssl.pc
+2026-11-02T05:31:49.0336403Z Downloading msys2-mingw-w64-x86_64-pkgconf-1~3.0.7-1-any.pkg.tar.zst, trying https://mirror.msys2.org/mingw/mingw64/mingw-w64-x86_64-pkgconf-1~3.0.7-1-any.pkg.tar.zst
+2026-11-02T05:31:49.7719879Z Successfully downloaded msys2-mingw-w64-x86_64-pkgconf-1~3.0.7-1-any.pkg.tar.zst
+2026-11-02T05:31:49.7809100Z Downloading msys2-msys2-runtime-3.6.10-4-x86_64.pkg.tar.zst, trying https://mirror.msys2.org/msys/x86_64/msys2-runtime-3.6.10-4-x86_64.pkg.tar.zst
+2026-11-02T05:31:50.5393689Z Successfully downloaded msys2-msys2-runtime-3.6.10-4-x86_64.pkg.tar.zst
+2026-11-02T05:31:51.3532961Z -- Using msys root at C:/vcpkg/downloads/tools/msys2/d5586eb050429df1
+2026-11-02T05:31:51.3824867Z -- Fixing pkgconfig file: C:/vcpkg/packages/openssl_x64-windows-static/debug/lib/pkgconfig/libcrypto.pc
+2026-11-02T05:31:51.3831987Z -- Fixing pkgconfig file: C:/vcpkg/packages/openssl_x64-windows-static/debug/lib/pkgconfig/libssl.pc
+2026-11-02T05:31:51.3837846Z -- Fixing pkgconfig file: C:/vcpkg/packages/openssl_x64-windows-static/debug/lib/pkgconfig/openssl.pc
+2026-11-02T05:31:51.3993331Z -- Installing: C:/vcpkg/packages/openssl_x64-windows-static/share/openssl/usage
+2026-11-02T05:31:51.4041820Z -- Installing: C:/vcpkg/packages/openssl_x64-windows-static/share/openssl/copyright
+2026-11-02T05:31:51.4106946Z -- Performing post-build validation
+2026-11-02T05:31:51.8282663Z Starting submission of openssl:x64-windows-static@3.6.5#2 to 1 binary cache(s) in the background
+2026-11-02T05:31:51.8283249Z Elapsed time to handle openssl:x64-windows-static: 4.8 min
+2026-11-02T05:31:51.8323625Z Total install time: 4.8 min
+2026-11-02T05:31:51.8324526Z Installed contents are licensed to you by owners. Microsoft is not responsible for, nor does it grant any licenses to, third-party packages.
+2026-11-02T05:31:51.8325446Z Packages installed in this vcpkg installation declare the following licenses:
+2026-11-02T05:31:51.8325998Z Apache-2.0
+2026-11-02T05:31:51.8326281Z MIT
+2026-11-02T05:31:51.8326594Z openssl is compatible with built-in CMake targets:
+2026-11-02T05:31:51.8326940Z 
+2026-11-02T05:31:51.8327077Z   find_package(OpenSSL REQUIRED)
+2026-11-02T05:31:51.8332929Z   target_link_libraries(main PRIVATE OpenSSL::SSL)
+2026-11-02T05:31:51.8333468Z   target_link_libraries(main PRIVATE OpenSSL::Crypto)
+2026-11-02T05:31:51.8333777Z 
+2026-11-02T05:31:51.8334188Z Completed submission of vcpkg-cmake-get-vars:x64-windows@2025-05-29 to 1 binary cache(s) in 46 ms
+2026-11-02T05:31:51.8334923Z Waiting for 1 remaining binary cache submissions...
+2026-11-02T05:31:56.7748062Z Completed submission of openssl:x64-windows-static@3.6.5#2 to 1 binary cache(s) in 4.9 s (1/1)
+2026-11-02T05:31:56.7748628Z All requested installations completed successfully in: 4.8 min
+2026-11-02T05:31:57.2695425Z ##[end-action id=__self.__run_2;outcome=success;conclusion=success;duration_ms=335284]
+2026-11-02T05:31:57.2703455Z ##[start-action display=Resolve Ladybug dependency;id=__self.ladybug]
+2026-11-02T05:31:57.2795651Z ##[group]Run set -euo pipefail
+2026-11-02T05:31:57.2795957Z [36;1mset -euo pipefail[0m
+2026-11-02T05:31:57.2796383Z [36;1mversion="$(awk '/^name = "lbug"/ { found=1 } found && /^version = / { gsub(/"/, "", $3); print $3; exit }' Cargo.lock)"[0m
+2026-11-02T05:31:57.2796802Z [36;1mcase "$NATIVE_TARGET" in[0m
+2026-11-02T05:31:57.2797114Z [36;1m  macos-arm64) archive='liblbug-static-osx-arm64.tar.gz' ;;[0m
+2026-11-02T05:31:57.2797517Z [36;1m  windows-x86_64) archive='liblbug-static-windows-x86_64.zip' ;;[0m
+2026-11-02T05:31:57.2797913Z [36;1m  *) echo "Unsupported native target: $NATIVE_TARGET" >&2; exit 1 ;;[0m
+2026-11-02T05:31:57.2798226Z [36;1mesac[0m
+2026-11-02T05:31:57.2798411Z [36;1m{[0m
+2026-11-02T05:31:57.2798605Z [36;1m  echo "version=$version"[0m
+2026-11-02T05:31:57.2798876Z [36;1m  echo "archive=$archive"[0m
+2026-11-02T05:31:57.2799221Z [36;1m  echo "cache-dir=$GITHUB_WORKSPACE/.cache/lbug-prebuilt/$version/$NATIVE_TARGET"[0m
+2026-11-02T05:31:57.2799581Z [36;1m} >> "$GITHUB_OUTPUT"[0m
+2026-11-02T05:31:57.2841365Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
+2026-11-02T05:31:57.2841713Z env:
+2026-11-02T05:31:57.2841887Z   MACOSX_DEPLOYMENT_TARGET: 13.3
+2026-11-02T05:31:57.2842096Z   CARGO_HTTP_MULTIPLEXING: false
+2026-11-02T05:31:57.2842305Z   CARGO_NET_RETRY: 10
+2026-11-02T05:31:57.2842497Z   LIB: D:\a\_temp\lbug-openssl;
+2026-11-02T05:31:57.2842722Z   NATIVE_TARGET: windows-x86_64
+2026-11-02T05:31:57.2842936Z ##[endgroup]
+2026-11-02T05:31:57.7982121Z ##[end-action id=__self.ladybug;outcome=success;conclusion=success;duration_ms=527]
+2026-11-02T05:31:57.7986362Z ##[start-action display=Restore Ladybug dependency;id=__self.ladybug-cache]
+2026-11-02T05:31:57.8107763Z ##[group]Run actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae
+2026-11-02T05:31:57.8108094Z with:
+2026-11-02T05:31:57.8108418Z   path: D:\a\codebaseGraph\codebaseGraph/.cache/lbug-prebuilt/0.19.0/windows-x86_64
+2026-11-02T05:31:57.8108778Z   key: lbug-0.19.0-windows-x86_64-v1
+2026-11-02T05:31:57.8109030Z   enableCrossOsArchive: false
+2026-11-02T05:31:57.8109243Z   fail-on-cache-miss: false
+2026-11-02T05:31:57.8109453Z   lookup-only: false
+2026-11-02T05:31:57.8109651Z   save-always: false
+2026-11-02T05:31:57.8109833Z env:
+2026-11-02T05:31:57.8110024Z   MACOSX_DEPLOYMENT_TARGET: 13.3
+2026-11-02T05:31:57.8110262Z   CARGO_HTTP_MULTIPLEXING: false
+2026-11-02T05:31:57.8110652Z   CARGO_NET_RETRY: 10
+2026-11-02T05:31:57.8110869Z   LIB: D:\a\_temp\lbug-openssl;
+2026-11-02T05:31:57.8111114Z ##[endgroup]
+2026-11-02T05:31:58.2757250Z Cache hit for: lbug-0.19.0-windows-x86_64-v1
+2026-11-02T05:31:59.4937974Z Received 104857600 of 196298597 (53.4%), 99.2 MBs/sec
+2026-11-02T05:32:00.4533618Z Received 196298597 of 196298597 (100.0%), 95.2 MBs/sec
+2026-11-02T05:32:00.4538188Z Cache Size: ~187 MB (196298597 B)
+2026-11-02T05:32:00.5303000Z [command]"C:\Program Files\Git\usr\bin\tar.exe" -xf D:/a/_temp/cd1a1958-ce7e-4293-8ecf-fa826b086914/cache.tzst -P -C D:/a/codebaseGraph/codebaseGraph --force-local --use-compress-program "zstd -d"
+2026-11-02T05:32:02.1074226Z Cache restored successfully
+2026-11-02T05:32:02.1236654Z Cache restored from key: lbug-0.19.0-windows-x86_64-v1
+2026-11-02T05:32:02.1340700Z ##[end-action id=__self.ladybug-cache;outcome=success;conclusion=success;duration_ms=4335]
+2026-11-02T05:32:02.1345322Z ##[start-action display=Download Ladybug dependency;id=__self.__run_3]
+2026-11-02T05:32:02.1353554Z ##[end-action id=__self.__run_3;outcome=skipped;conclusion=skipped;duration_ms=0]
+2026-11-02T05:32:02.1355989Z ##[start-action display=Export Ladybug dependency;id=__self.__run_4]
+2026-11-02T05:32:02.1443196Z ##[group]Run set -euo pipefail
+2026-11-02T05:32:02.1443510Z [36;1mset -euo pipefail[0m
+2026-11-02T05:32:02.1443754Z [36;1mtest -f "$LBUG_CACHE_DIR/lbug.h"[0m
+2026-11-02T05:32:02.1444040Z [36;1mif [[ "$RUNNER_OS" == 'Windows' ]]; then[0m
+2026-11-02T05:32:02.1444360Z [36;1m  test -f "$LBUG_CACHE_DIR/lbug.lib"[0m
+2026-11-02T05:32:02.1444658Z [36;1m  library_dir="$(cygpath -m "$LBUG_CACHE_DIR")"[0m
+2026-11-02T05:32:02.1444960Z [36;1melse[0m
+2026-11-02T05:32:02.1445179Z [36;1m  test -f "$LBUG_CACHE_DIR/liblbug.a"[0m
+2026-11-02T05:32:02.1445478Z [36;1m  library_dir="$LBUG_CACHE_DIR"[0m
+2026-11-02T05:32:02.1445688Z [36;1mfi[0m
+2026-11-02T05:32:02.1445821Z [36;1m{[0m
+2026-11-02T05:32:02.1446013Z [36;1m  echo "LBUG_LIBRARY_DIR=$library_dir"[0m
+2026-11-02T05:32:02.1446308Z [36;1m  echo "LBUG_INCLUDE_DIR=$library_dir"[0m
+2026-11-02T05:32:02.1446597Z [36;1m} >> "$GITHUB_ENV"[0m
+2026-11-02T05:32:02.1455553Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
+2026-11-02T05:32:02.1455905Z env:
+2026-11-02T05:32:02.1456117Z   MACOSX_DEPLOYMENT_TARGET: 13.3
+2026-11-02T05:32:02.1456352Z   CARGO_HTTP_MULTIPLEXING: false
+2026-11-02T05:32:02.1456536Z   CARGO_NET_RETRY: 10
+2026-11-02T05:32:02.1456734Z   LIB: D:\a\_temp\lbug-openssl;
+2026-11-02T05:32:02.1457108Z   LBUG_CACHE_DIR: D:\a\codebaseGraph\codebaseGraph/.cache/lbug-prebuilt/0.19.0/windows-x86_64
+2026-11-02T05:32:02.1458100Z ##[endgroup]
+2026-11-02T05:32:02.2075868Z ##[end-action id=__self.__run_4;outcome=success;conclusion=success;duration_ms=71]

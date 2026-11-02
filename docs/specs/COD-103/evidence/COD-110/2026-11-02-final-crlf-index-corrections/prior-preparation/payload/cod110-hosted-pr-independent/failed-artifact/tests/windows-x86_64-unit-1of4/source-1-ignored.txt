@@ -1,0 +1,8 @@
+storage::maintenance_native_projection::selected_oracle_tests::dc_native_actual_producer187_selected_strings_and_support_rows: test
+storage::maintenance_native_projection::tests::dc_native_actual_producer187_catalog_metadata_checkpoint: test
+
+2 tests, 0 benchmarks
+0 tests, 0 benchmarks
+0 tests, 0 benchmarks
+0 tests, 0 benchmarks
+0 tests, 0 benchmarks

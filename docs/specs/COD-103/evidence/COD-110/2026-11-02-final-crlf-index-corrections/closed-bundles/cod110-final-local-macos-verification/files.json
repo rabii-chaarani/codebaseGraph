@@ -1,0 +1,1711 @@
+{
+  "file_count": 284,
+  "total_payload_bytes": 2951368,
+  "self_excluded": "files.json",
+  "files": [
+    {
+      "path": "00-source-before.json",
+      "type": "file",
+      "bytes": 640995,
+      "sha256": "1ff191a91b86b6be00ee61ee54bb9cd128771bae2c3bfd430d0d73935fdaff35"
+    },
+    {
+      "path": "01-protected-before.json",
+      "type": "file",
+      "bytes": 1655,
+      "sha256": "8b35f8a1fcf2eb66f3e3b371e3b64d011fda890721f562a2aa45afabc584d272"
+    },
+    {
+      "path": "02-environment.json",
+      "type": "file",
+      "bytes": 348,
+      "sha256": "165c5c0ef1c976304af6a9be33771403dcb49f81e9fe574d7f454e83240d2d76"
+    },
+    {
+      "path": "03-fmt.raw.txt",
+      "type": "file",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "03-fmt.result.json",
+      "type": "file",
+      "bytes": 999,
+      "sha256": "4f33e5790caea9300ee5989c9b435dfdb3153a25251b5495f77f265547cb473f"
+    },
+    {
+      "path": "03-fmt.start.json",
+      "type": "file",
+      "bytes": 869,
+      "sha256": "b1804e64a04ec6bb58048b60aa287cf6938ab9e91fcb63b5cca9e9a073ef9c41"
+    },
+    {
+      "path": "04-xtask-inventory.json",
+      "type": "file",
+      "bytes": 37261,
+      "sha256": "b8aeb63d6a2edbec4abe47a1d992ab63b554071e1887f18d30321484a18d669c"
+    },
+    {
+      "path": "04-xtask-inventory.raw.txt",
+      "type": "file",
+      "bytes": 24345,
+      "sha256": "612eae90bf84cb19c8fdafbd210a4d4c342d905935c5879d0d81a9fb53f12034"
+    },
+    {
+      "path": "04-xtask-inventory.result.json",
+      "type": "file",
+      "bytes": 1256,
+      "sha256": "8d610f4bc943b30d7f4a3c2a8ccf9e185f5c031617f31855c9cb1d716c17101e"
+    },
+    {
+      "path": "04-xtask-inventory.start.json",
+      "type": "file",
+      "bytes": 1126,
+      "sha256": "61bd80f21e3d78ab6b105ae3f3992e0869c83ca0c1d797de44aeffc4ef6b6dd8"
+    },
+    {
+      "path": "05-xtask-full.raw.txt",
+      "type": "file",
+      "bytes": 20649,
+      "sha256": "d64073e19ed4fcee889a4507b9a351b728f6989f9ed2665860a8175258f3d959"
+    },
+    {
+      "path": "05-xtask-full.result.json",
+      "type": "file",
+      "bytes": 1291,
+      "sha256": "7656deea734fc8ce00a4d39c07a833991d4d43b2fc37b6c7bcd607711b6448be"
+    },
+    {
+      "path": "05-xtask-full.start.json",
+      "type": "file",
+      "bytes": 1142,
+      "sha256": "ce48ffb8a745a6a3186fb61d4644bca306cff519d37f59c4a43f14d767f562c5"
+    },
+    {
+      "path": "06-junit-audit.json",
+      "type": "file",
+      "bytes": 559,
+      "sha256": "f2d5da6c9831fbbc7763aaa37790c4ce50ed86f55077932ed406ec8b8a836556"
+    },
+    {
+      "path": "07-clippy.raw.txt",
+      "type": "file",
+      "bytes": 156,
+      "sha256": "1dbfc349f2cad80d8c1814a387f49283548f6e15975130bdd492f29697895f66"
+    },
+    {
+      "path": "07-clippy.result.json",
+      "type": "file",
+      "bytes": 1065,
+      "sha256": "cb16fc02363c45611fb831d499c8a3f3c3e28845d691b59a0f87a8d3a488f0cb"
+    },
+    {
+      "path": "07-clippy.start.json",
+      "type": "file",
+      "bytes": 936,
+      "sha256": "43b9bd0faa4787426f9406e4da3481070f319ee344636af30990e77df78661ee"
+    },
+    {
+      "path": "08-check-workflows.raw.txt",
+      "type": "file",
+      "bytes": 231,
+      "sha256": "f48506f2af0bb1feb7e2f01bb666b64159716335ea8343fb6f648a1733e60503"
+    },
+    {
+      "path": "08-check-workflows.result.json",
+      "type": "file",
+      "bytes": 1077,
+      "sha256": "c9a214c7f81e67eac22a748a5fdfedc0a1185e9d023208ec23f1f0e17a9e283a"
+    },
+    {
+      "path": "08-check-workflows.start.json",
+      "type": "file",
+      "bytes": 949,
+      "sha256": "5608ba6290edabc3fed2f9c9c847ede0c6a1523657e447ffb60ec89e5c514a11"
+    },
+    {
+      "path": "09-release-gate.raw.txt",
+      "type": "file",
+      "bytes": 141,
+      "sha256": "2e34bab3594c5d089d91cd70f19fe4c061897584ac00fb65edae1522ccf4136b"
+    },
+    {
+      "path": "09-release-gate.result.json",
+      "type": "file",
+      "bytes": 1073,
+      "sha256": "9c66713c959b873260c7fd22e613f37a4f3e79014f218f54a5036da53b94d94d"
+    },
+    {
+      "path": "09-release-gate.start.json",
+      "type": "file",
+      "bytes": 943,
+      "sha256": "dce28b3a4e9be13b7f25b528ca3e83cf1d67b8f062befc3161962204000be539"
+    },
+    {
+      "path": "10-binary-binding.json",
+      "type": "file",
+      "bytes": 1316,
+      "sha256": "fe835923007853847866805f7ecba634f995169fc3663e8e0fb126b4587c3438"
+    },
+    {
+      "path": "10-compiled-xtask.d",
+      "type": "file",
+      "bytes": 503,
+      "sha256": "897533823bcc23b54214eae220b262e4464d1b9d8524cd247e8b2bbb214ddeca"
+    },
+    {
+      "path": "11-setup-all-six-crlf.raw.txt",
+      "type": "file",
+      "bytes": 707,
+      "sha256": "8a9c20825c217f878cc932d2e218d2734648fdf2740c9dd17f68da41fb5145f2"
+    },
+    {
+      "path": "11-setup-all-six-crlf.result.json",
+      "type": "file",
+      "bytes": 2306,
+      "sha256": "a4c38923011526c0f4165e56e7cf0aa5f91e38c1bcb75b4f03f77598932cdf5f"
+    },
+    {
+      "path": "11-setup-all-six-crlf.start.json",
+      "type": "file",
+      "bytes": 2177,
+      "sha256": "07a1dea966239e86bf9608cdfbe5706e7a001e53dce762c5ca66f1574c93d622"
+    },
+    {
+      "path": "11-setup-dirty-tracked.raw.txt",
+      "type": "file",
+      "bytes": 707,
+      "sha256": "e72da2c21fc13ddb203f072aad62de1d175b738c5cc4651306b72dc3233bd9ab"
+    },
+    {
+      "path": "11-setup-dirty-tracked.result.json",
+      "type": "file",
+      "bytes": 2312,
+      "sha256": "c070447700d557c324f9353a3b366a1236815fd80900272c6d0efeb8c1ec4d03"
+    },
+    {
+      "path": "11-setup-dirty-tracked.start.json",
+      "type": "file",
+      "bytes": 2183,
+      "sha256": "5dfd57f42cdf3ea372d83ed8f94830198de86cf247f09f783ecca48edf856adc"
+    },
+    {
+      "path": "11-setup-lf.raw.txt",
+      "type": "file",
+      "bytes": 707,
+      "sha256": "8a9c20825c217f878cc932d2e218d2734648fdf2740c9dd17f68da41fb5145f2"
+    },
+    {
+      "path": "11-setup-lf.result.json",
+      "type": "file",
+      "bytes": 2247,
+      "sha256": "218647aa6727b12082a7be99e8922b39939de0b937ca637452e36b5abd71940b"
+    },
+    {
+      "path": "11-setup-lf.start.json",
+      "type": "file",
+      "bytes": 2117,
+      "sha256": "d5b6e34704628ce3bea9b4ae99dcdbbb459508aa94682d7c135763b944da93be"
+    },
+    {
+      "path": "11-setup-mixed.raw.txt",
+      "type": "file",
+      "bytes": 707,
+      "sha256": "8a9c20825c217f878cc932d2e218d2734648fdf2740c9dd17f68da41fb5145f2"
+    },
+    {
+      "path": "11-setup-mixed.result.json",
+      "type": "file",
+      "bytes": 2263,
+      "sha256": "6c490e8f180d61640f6a7c193ef275d51573da3bccf5d53f036443e1e6359b6a"
+    },
+    {
+      "path": "11-setup-mixed.start.json",
+      "type": "file",
+      "bytes": 2135,
+      "sha256": "121df6a70ae89ab390f6c254713a9174c3e6d931e93051897b80f32ad0ee3f13"
+    },
+    {
+      "path": "12-case-all-six-crlf/after.json",
+      "type": "file",
+      "bytes": 10061,
+      "sha256": "ea4c640a66d70f03175cab27c2f316f37034598bc87ddfe6b2725ab1afa2e62a"
+    },
+    {
+      "path": "12-case-all-six-crlf/before.json",
+      "type": "file",
+      "bytes": 13554,
+      "sha256": "646d44a35a3097f5007e7cc96ec79d24c296708d5200c1bb3a2abfeb6eae678e"
+    },
+    {
+      "path": "12-case-all-six-crlf/index-after.bin",
+      "type": "file",
+      "bytes": 669,
+      "sha256": "b61653bea94c904c1807114b777268cd33b6c28d06db4d500215c83273768ae7"
+    },
+    {
+      "path": "12-case-all-six-crlf/index-before.bin",
+      "type": "file",
+      "bytes": 669,
+      "sha256": "b61653bea94c904c1807114b777268cd33b6c28d06db4d500215c83273768ae7"
+    },
+    {
+      "path": "12-case-all-six-crlf/metadata-after/.release-please-manifest.json",
+      "type": "file",
+      "bytes": 22,
+      "sha256": "2b94daad549b020ab7c0bb7c5f758e536cdb563c37e8b220aa11f1a259b75555"
+    },
+    {
+      "path": "12-case-all-six-crlf/metadata-after/CHANGELOG.md",
+      "type": "file",
+      "bytes": 23832,
+      "sha256": "af665454fce64cbe69ee9db8304a1dc4065f501d6207497f4e3c4c53907c8fee"
+    },
+    {
+      "path": "12-case-all-six-crlf/metadata-after/Cargo.lock",
+      "type": "file",
+      "bytes": 54607,
+      "sha256": "fde04462f2d8f8c4c67be719508d03ef7ee30e1a59a038e4c5caca2d2421299a"
+    },
+    {
+      "path": "12-case-all-six-crlf/metadata-after/Cargo.toml",
+      "type": "file",
+      "bytes": 2400,
+      "sha256": "534fffbfce05cb0e096495fea2d0fa7ecc7b4b1f3a30e16fbc18cdd43892d3bb"
+    },
+    {
+      "path": "12-case-all-six-crlf/metadata-after/crates/k-wiki/Cargo.toml",
+      "type": "file",
+      "bytes": 1045,
+      "sha256": "8d16383c793da3b950b189f499863586990add1ac8b6f375895b43b47530e731"
+    },
+    {
+      "path": "12-case-all-six-crlf/metadata-after/crates/xtask/Cargo.toml",
+      "type": "file",
+      "bytes": 232,
+      "sha256": "c9b351f945bf8f9659fe66d86c6cf80a33cedd5a4b7bb8dbbd07b3e9ad2ac850"
+    },
+    {
+      "path": "12-case-all-six-crlf/metadata-before/.release-please-manifest.json",
+      "type": "file",
+      "bytes": 22,
+      "sha256": "2b94daad549b020ab7c0bb7c5f758e536cdb563c37e8b220aa11f1a259b75555"
+    },
+    {
+      "path": "12-case-all-six-crlf/metadata-before/CHANGELOG.md",
+      "type": "file",
+      "bytes": 23832,
+      "sha256": "af665454fce64cbe69ee9db8304a1dc4065f501d6207497f4e3c4c53907c8fee"
+    },
+    {
+      "path": "12-case-all-six-crlf/metadata-before/Cargo.lock",
+      "type": "file",
+      "bytes": 54607,
+      "sha256": "fde04462f2d8f8c4c67be719508d03ef7ee30e1a59a038e4c5caca2d2421299a"
+    },
+    {
+      "path": "12-case-all-six-crlf/metadata-before/Cargo.toml",
+      "type": "file",
+      "bytes": 2400,
+      "sha256": "534fffbfce05cb0e096495fea2d0fa7ecc7b4b1f3a30e16fbc18cdd43892d3bb"
+    },
+    {
+      "path": "12-case-all-six-crlf/metadata-before/crates/k-wiki/Cargo.toml",
+      "type": "file",
+      "bytes": 1045,
+      "sha256": "8d16383c793da3b950b189f499863586990add1ac8b6f375895b43b47530e731"
+    },
+    {
+      "path": "12-case-all-six-crlf/metadata-before/crates/xtask/Cargo.toml",
+      "type": "file",
+      "bytes": 232,
+      "sha256": "c9b351f945bf8f9659fe66d86c6cf80a33cedd5a4b7bb8dbbd07b3e9ad2ac850"
+    },
+    {
+      "path": "12-case-dirty-tracked/after.json",
+      "type": "file",
+      "bytes": 9632,
+      "sha256": "ce3b474cd7e485b55762eb4551508a2e595b0adad0835432dd931da0ee2a9c37"
+    },
+    {
+      "path": "12-case-dirty-tracked/before.json",
+      "type": "file",
+      "bytes": 13558,
+      "sha256": "6cdedc7ecf618b9aa97599ac03b225f0d4233a02442c7efd04baa02adb399343"
+    },
+    {
+      "path": "12-case-dirty-tracked/index-after.bin",
+      "type": "file",
+      "bytes": 669,
+      "sha256": "b6f71672f7be915f32129d7a9c207191fbef8da3316115292dead1c9cd28d717"
+    },
+    {
+      "path": "12-case-dirty-tracked/index-before.bin",
+      "type": "file",
+      "bytes": 669,
+      "sha256": "b6f71672f7be915f32129d7a9c207191fbef8da3316115292dead1c9cd28d717"
+    },
+    {
+      "path": "12-case-dirty-tracked/metadata-after/.release-please-manifest.json",
+      "type": "file",
+      "bytes": 19,
+      "sha256": "e9d8f4b19676132773870bcf7887f2ae48745890e9c84078336d1fcc3824abae"
+    },
+    {
+      "path": "12-case-dirty-tracked/metadata-after/CHANGELOG.md",
+      "type": "file",
+      "bytes": 23408,
+      "sha256": "0d4f537befa5aea98e7ff6bb9cc4860219515803a7f0a58530f520c698e04f35"
+    },
+    {
+      "path": "12-case-dirty-tracked/metadata-after/Cargo.lock",
+      "type": "file",
+      "bytes": 52538,
+      "sha256": "63d868f91aa52acbddf0eb7e9385a101c3a59c02f7e527ced82d1993299f5afb"
+    },
+    {
+      "path": "12-case-dirty-tracked/metadata-after/Cargo.toml",
+      "type": "file",
+      "bytes": 2365,
+      "sha256": "ad7b2807cc18886486015004ae40bf637b343636b107417aeed914224f69d6d2"
+    },
+    {
+      "path": "12-case-dirty-tracked/metadata-after/crates/k-wiki/Cargo.toml",
+      "type": "file",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572"
+    },
+    {
+      "path": "12-case-dirty-tracked/metadata-after/crates/xtask/Cargo.toml",
+      "type": "file",
+      "bytes": 219,
+      "sha256": "206d3a9af5953963659c0cc292e1356c8905f44288c417568bb7f146c4716198"
+    },
+    {
+      "path": "12-case-dirty-tracked/metadata-before/.release-please-manifest.json",
+      "type": "file",
+      "bytes": 19,
+      "sha256": "e9d8f4b19676132773870bcf7887f2ae48745890e9c84078336d1fcc3824abae"
+    },
+    {
+      "path": "12-case-dirty-tracked/metadata-before/CHANGELOG.md",
+      "type": "file",
+      "bytes": 23408,
+      "sha256": "0d4f537befa5aea98e7ff6bb9cc4860219515803a7f0a58530f520c698e04f35"
+    },
+    {
+      "path": "12-case-dirty-tracked/metadata-before/Cargo.lock",
+      "type": "file",
+      "bytes": 52538,
+      "sha256": "63d868f91aa52acbddf0eb7e9385a101c3a59c02f7e527ced82d1993299f5afb"
+    },
+    {
+      "path": "12-case-dirty-tracked/metadata-before/Cargo.toml",
+      "type": "file",
+      "bytes": 2365,
+      "sha256": "ad7b2807cc18886486015004ae40bf637b343636b107417aeed914224f69d6d2"
+    },
+    {
+      "path": "12-case-dirty-tracked/metadata-before/crates/k-wiki/Cargo.toml",
+      "type": "file",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572"
+    },
+    {
+      "path": "12-case-dirty-tracked/metadata-before/crates/xtask/Cargo.toml",
+      "type": "file",
+      "bytes": 219,
+      "sha256": "206d3a9af5953963659c0cc292e1356c8905f44288c417568bb7f146c4716198"
+    },
+    {
+      "path": "12-case-lf/after.json",
+      "type": "file",
+      "bytes": 10051,
+      "sha256": "83f6a0e634831db57c36efbb5aff2d399d82b58e9ed059c2639a1e24e8af13fb"
+    },
+    {
+      "path": "12-case-lf/before.json",
+      "type": "file",
+      "bytes": 13523,
+      "sha256": "1a1fd8887269ffb8f71221be8dcd780c8140b4228b8437c10ff3af650f441b2a"
+    },
+    {
+      "path": "12-case-lf/index-after.bin",
+      "type": "file",
+      "bytes": 669,
+      "sha256": "86839e099cd78a9d304da634a5a3caa2214409fe2f377125de02815b8d3eb45c"
+    },
+    {
+      "path": "12-case-lf/index-before.bin",
+      "type": "file",
+      "bytes": 669,
+      "sha256": "86839e099cd78a9d304da634a5a3caa2214409fe2f377125de02815b8d3eb45c"
+    },
+    {
+      "path": "12-case-lf/metadata-after/.release-please-manifest.json",
+      "type": "file",
+      "bytes": 19,
+      "sha256": "e9d8f4b19676132773870bcf7887f2ae48745890e9c84078336d1fcc3824abae"
+    },
+    {
+      "path": "12-case-lf/metadata-after/CHANGELOG.md",
+      "type": "file",
+      "bytes": 23408,
+      "sha256": "0d4f537befa5aea98e7ff6bb9cc4860219515803a7f0a58530f520c698e04f35"
+    },
+    {
+      "path": "12-case-lf/metadata-after/Cargo.lock",
+      "type": "file",
+      "bytes": 52538,
+      "sha256": "63d868f91aa52acbddf0eb7e9385a101c3a59c02f7e527ced82d1993299f5afb"
+    },
+    {
+      "path": "12-case-lf/metadata-after/Cargo.toml",
+      "type": "file",
+      "bytes": 2320,
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4"
+    },
+    {
+      "path": "12-case-lf/metadata-after/crates/k-wiki/Cargo.toml",
+      "type": "file",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572"
+    },
+    {
+      "path": "12-case-lf/metadata-after/crates/xtask/Cargo.toml",
+      "type": "file",
+      "bytes": 219,
+      "sha256": "206d3a9af5953963659c0cc292e1356c8905f44288c417568bb7f146c4716198"
+    },
+    {
+      "path": "12-case-lf/metadata-before/.release-please-manifest.json",
+      "type": "file",
+      "bytes": 19,
+      "sha256": "e9d8f4b19676132773870bcf7887f2ae48745890e9c84078336d1fcc3824abae"
+    },
+    {
+      "path": "12-case-lf/metadata-before/CHANGELOG.md",
+      "type": "file",
+      "bytes": 23408,
+      "sha256": "0d4f537befa5aea98e7ff6bb9cc4860219515803a7f0a58530f520c698e04f35"
+    },
+    {
+      "path": "12-case-lf/metadata-before/Cargo.lock",
+      "type": "file",
+      "bytes": 52538,
+      "sha256": "63d868f91aa52acbddf0eb7e9385a101c3a59c02f7e527ced82d1993299f5afb"
+    },
+    {
+      "path": "12-case-lf/metadata-before/Cargo.toml",
+      "type": "file",
+      "bytes": 2320,
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4"
+    },
+    {
+      "path": "12-case-lf/metadata-before/crates/k-wiki/Cargo.toml",
+      "type": "file",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572"
+    },
+    {
+      "path": "12-case-lf/metadata-before/crates/xtask/Cargo.toml",
+      "type": "file",
+      "bytes": 219,
+      "sha256": "206d3a9af5953963659c0cc292e1356c8905f44288c417568bb7f146c4716198"
+    },
+    {
+      "path": "12-case-mixed/after.json",
+      "type": "file",
+      "bytes": 10054,
+      "sha256": "208c84861bbad1380ddb1f88a93e1c98aa570ab9be0b11e662e97aec6ad94733"
+    },
+    {
+      "path": "12-case-mixed/before.json",
+      "type": "file",
+      "bytes": 13539,
+      "sha256": "6e2680613e5f2142a6d90828eb72e25485baa5424a9a78e70edbb796bc693536"
+    },
+    {
+      "path": "12-case-mixed/index-after.bin",
+      "type": "file",
+      "bytes": 669,
+      "sha256": "44765b31930575c803663dbadb324626e76a34210d71abf4ba106d34527b93f3"
+    },
+    {
+      "path": "12-case-mixed/index-before.bin",
+      "type": "file",
+      "bytes": 669,
+      "sha256": "44765b31930575c803663dbadb324626e76a34210d71abf4ba106d34527b93f3"
+    },
+    {
+      "path": "12-case-mixed/metadata-after/.release-please-manifest.json",
+      "type": "file",
+      "bytes": 21,
+      "sha256": "b799bab9346a1fcaf0ceb3e599b70cc1477057b53147cb8d30416c1a7b2fad62"
+    },
+    {
+      "path": "12-case-mixed/metadata-after/CHANGELOG.md",
+      "type": "file",
+      "bytes": 23620,
+      "sha256": "f436bbd5cf27d191b1bbfb86350419809f0c2bce51f8a672e39bf86139869163"
+    },
+    {
+      "path": "12-case-mixed/metadata-after/Cargo.lock",
+      "type": "file",
+      "bytes": 53573,
+      "sha256": "03d36763ea4220c637b3a048572bd5b0507560dd9b6d55b4a8afe28e2c602367"
+    },
+    {
+      "path": "12-case-mixed/metadata-after/Cargo.toml",
+      "type": "file",
+      "bytes": 2360,
+      "sha256": "05122b2befd2040c65d3d59469f47d87dd339db552afb7257be1aa8bca94c595"
+    },
+    {
+      "path": "12-case-mixed/metadata-after/crates/k-wiki/Cargo.toml",
+      "type": "file",
+      "bytes": 1028,
+      "sha256": "db7feab68a7607eb33f24dae89c54596ae38e63def4bae879913adbded46776d"
+    },
+    {
+      "path": "12-case-mixed/metadata-after/crates/xtask/Cargo.toml",
+      "type": "file",
+      "bytes": 226,
+      "sha256": "319fd77ed1f203d155fc088c38398c160259012058e1639edde521a020ef1fbc"
+    },
+    {
+      "path": "12-case-mixed/metadata-before/.release-please-manifest.json",
+      "type": "file",
+      "bytes": 21,
+      "sha256": "b799bab9346a1fcaf0ceb3e599b70cc1477057b53147cb8d30416c1a7b2fad62"
+    },
+    {
+      "path": "12-case-mixed/metadata-before/CHANGELOG.md",
+      "type": "file",
+      "bytes": 23620,
+      "sha256": "f436bbd5cf27d191b1bbfb86350419809f0c2bce51f8a672e39bf86139869163"
+    },
+    {
+      "path": "12-case-mixed/metadata-before/Cargo.lock",
+      "type": "file",
+      "bytes": 53573,
+      "sha256": "03d36763ea4220c637b3a048572bd5b0507560dd9b6d55b4a8afe28e2c602367"
+    },
+    {
+      "path": "12-case-mixed/metadata-before/Cargo.toml",
+      "type": "file",
+      "bytes": 2360,
+      "sha256": "05122b2befd2040c65d3d59469f47d87dd339db552afb7257be1aa8bca94c595"
+    },
+    {
+      "path": "12-case-mixed/metadata-before/crates/k-wiki/Cargo.toml",
+      "type": "file",
+      "bytes": 1028,
+      "sha256": "db7feab68a7607eb33f24dae89c54596ae38e63def4bae879913adbded46776d"
+    },
+    {
+      "path": "12-case-mixed/metadata-before/crates/xtask/Cargo.toml",
+      "type": "file",
+      "bytes": 226,
+      "sha256": "319fd77ed1f203d155fc088c38398c160259012058e1639edde521a020ef1fbc"
+    },
+    {
+      "path": "13-metadata-all-six-crlf.raw.txt",
+      "type": "file",
+      "bytes": 469,
+      "sha256": "9a6bac98e18ce4bc84d2a515c176bb558dd8b72674a78059b3cb28a66a520fcc"
+    },
+    {
+      "path": "13-metadata-all-six-crlf.result.json",
+      "type": "file",
+      "bytes": 1300,
+      "sha256": "dceb6c81db368c2299532b52b5e37882087613158f175bee6185788c2185648c"
+    },
+    {
+      "path": "13-metadata-all-six-crlf.start.json",
+      "type": "file",
+      "bytes": 1170,
+      "sha256": "24b8f73f147fac36f9a489c6c98e3700306352074f627ab4bff9d0649cd5d251"
+    },
+    {
+      "path": "13-metadata-dirty-tracked.raw.txt",
+      "type": "file",
+      "bytes": 60,
+      "sha256": "7f6b547607c50d3ec3225f677ffb41f6d78f32e758670d392e8f0e3291451ac8"
+    },
+    {
+      "path": "13-metadata-dirty-tracked.result.json",
+      "type": "file",
+      "bytes": 1302,
+      "sha256": "f6e35a2a6dbc95ce313517ddf78d66828687e6f887649c1e5ebf31d4597e62f2"
+    },
+    {
+      "path": "13-metadata-dirty-tracked.start.json",
+      "type": "file",
+      "bytes": 1172,
+      "sha256": "cb9b836e559f6c42700022594870473d219512966c281f8434fc29133ddf2a6d"
+    },
+    {
+      "path": "13-metadata-lf.raw.txt",
+      "type": "file",
+      "bytes": 469,
+      "sha256": "9a6bac98e18ce4bc84d2a515c176bb558dd8b72674a78059b3cb28a66a520fcc"
+    },
+    {
+      "path": "13-metadata-lf.result.json",
+      "type": "file",
+      "bytes": 1280,
+      "sha256": "50d9748d0949825ef0e6ca8c75aff85f8d24727bc6d8ed7e7b105f320821be9f"
+    },
+    {
+      "path": "13-metadata-lf.start.json",
+      "type": "file",
+      "bytes": 1150,
+      "sha256": "b1aea694e266de03c43f7cbdf20cc3a6934cdcf47d3912b83fd757d2f1f1f544"
+    },
+    {
+      "path": "13-metadata-mixed.raw.txt",
+      "type": "file",
+      "bytes": 469,
+      "sha256": "9a6bac98e18ce4bc84d2a515c176bb558dd8b72674a78059b3cb28a66a520fcc"
+    },
+    {
+      "path": "13-metadata-mixed.result.json",
+      "type": "file",
+      "bytes": 1286,
+      "sha256": "9d85f8b95fdac5865a831fc6446cfd275a00fefa40d1022169397b5ecbec13c6"
+    },
+    {
+      "path": "13-metadata-mixed.start.json",
+      "type": "file",
+      "bytes": 1156,
+      "sha256": "a74b41b7ed42379909c55e9634bb4e9a238f790ffa682cb45ce0b72d9cf9d460"
+    },
+    {
+      "path": "14-final-native-and-source.raw.txt",
+      "type": "file",
+      "bytes": 146256,
+      "sha256": "ec9fd2886c4057240833fdf51d6e2b3ebe23a6678d4273bda8f503197ba4d73a"
+    },
+    {
+      "path": "14-final-native-and-source.result.json",
+      "type": "file",
+      "bytes": 1268,
+      "sha256": "753ef40c346aef327045a2ead472db3d6f58af587a8a5fb23e0a11aa6069c5f4"
+    },
+    {
+      "path": "14-final-native-and-source.start.json",
+      "type": "file",
+      "bytes": 1139,
+      "sha256": "796d242d785ec8b48548286cd11e2b6dd30be4bcbb116224b663a6fa7bae6deb"
+    },
+    {
+      "path": "15-source-after.json",
+      "type": "file",
+      "bytes": 640995,
+      "sha256": "1ff191a91b86b6be00ee61ee54bb9cd128771bae2c3bfd430d0d73935fdaff35"
+    },
+    {
+      "path": "16-protected-after.json",
+      "type": "file",
+      "bytes": 1655,
+      "sha256": "8b35f8a1fcf2eb66f3e3b371e3b64d011fda890721f562a2aa45afabc584d272"
+    },
+    {
+      "path": "17-dirty-source.patch",
+      "type": "file",
+      "bytes": 8097,
+      "sha256": "3438843aea02a1de52173b61203a498f34da993c2738233463e9e008cc5cb1e5"
+    },
+    {
+      "path": "18-acceptance-anchors.json",
+      "type": "file",
+      "bytes": 4631,
+      "sha256": "3d536c0b05819f6862571e780ca70606f4e0a49f2a4d1c26f1eb2c6efb193679"
+    },
+    {
+      "path": "fixtures/all-six-crlf/.git/COMMIT_EDITMSG",
+      "type": "file",
+      "bytes": 44,
+      "sha256": "e773dd1c63fb7ddde37a98e50c81caf661e64a0373c9adb64cf9788da2c6931e"
+    },
+    {
+      "path": "fixtures/all-six-crlf/.git/HEAD",
+      "type": "file",
+      "bytes": 23,
+      "sha256": "f6f2b945f6c411b02ba3da9c7ace88dcf71b6af65ba2e0d89aa82900042b5a10"
+    },
+    {
+      "path": "fixtures/all-six-crlf/.git/config",
+      "type": "file",
+      "bytes": 154,
+      "sha256": "8e4e3dce068fdcf9b075e6160ddb50b9424f8858730226af87d525d5132aa5c7"
+    },
+    {
+      "path": "fixtures/all-six-crlf/.git/description",
+      "type": "file",
+      "bytes": 73,
+      "sha256": "85ab6c163d43a17ea9cf7788308bca1466f1b0a8d1cc92e26e9bf63da4062aee"
+    },
+    {
+      "path": "fixtures/all-six-crlf/.git/hooks/applypatch-msg.sample",
+      "type": "file",
+      "bytes": 478,
+      "sha256": "0223497a0b8b033aa58a3a521b8629869386cf7ab0e2f101963d328aa62193f7"
+    },
+    {
+      "path": "fixtures/all-six-crlf/.git/hooks/commit-msg.sample",
+      "type": "file",
+      "bytes": 896,
+      "sha256": "1f74d5e9292979b573ebd59741d46cb93ff391acdd083d340b94370753d92437"
+    },
+    {
+      "path": "fixtures/all-six-crlf/.git/hooks/fsmonitor-watchman.sample",
+      "type": "file",
+      "bytes": 4726,
+      "sha256": "e0549964e93897b519bd8e333c037e51fff0f88ba13e086a331592bf801fa1d0"
+    },
+    {
+      "path": "fixtures/all-six-crlf/.git/hooks/post-update.sample",
+      "type": "file",
+      "bytes": 189,
+      "sha256": "81765af2daef323061dcbc5e61fc16481cb74b3bac9ad8a174b186523586f6c5"
+    },
+    {
+      "path": "fixtures/all-six-crlf/.git/hooks/pre-applypatch.sample",
+      "type": "file",
+      "bytes": 424,
+      "sha256": "e15c5b469ea3e0a695bea6f2c82bcf8e62821074939ddd85b77e0007ff165475"
+    },
+    {
+      "path": "fixtures/all-six-crlf/.git/hooks/pre-commit.sample",
+      "type": "file",
+      "bytes": 1649,
+      "sha256": "57185b7b9f05239d7ab52db045f5b89eb31348d7b2177eab214f5eb872e1971b"
+    },
+    {
+      "path": "fixtures/all-six-crlf/.git/hooks/pre-merge-commit.sample",
+      "type": "file",
+      "bytes": 416,
+      "sha256": "d3825a70337940ebbd0a5c072984e13245920cdf8898bd225c8d27a6dfc9cb53"
+    },
+    {
+      "path": "fixtures/all-six-crlf/.git/hooks/pre-push.sample",
+      "type": "file",
+      "bytes": 1374,
+      "sha256": "ecce9c7e04d3f5dd9d8ada81753dd1d549a9634b26770042b58dda00217d086a"
+    },
+    {
+      "path": "fixtures/all-six-crlf/.git/hooks/pre-rebase.sample",
+      "type": "file",
+      "bytes": 4898,
+      "sha256": "4febce867790052338076f4e66cc47efb14879d18097d1d61c8261859eaaa7b3"
+    },
+    {
+      "path": "fixtures/all-six-crlf/.git/hooks/pre-receive.sample",
+      "type": "file",
+      "bytes": 544,
+      "sha256": "a4c3d2b9c7bb3fd8d1441c31bd4ee71a595d66b44fcf49ddb310252320169989"
+    },
+    {
+      "path": "fixtures/all-six-crlf/.git/hooks/prepare-commit-msg.sample",
+      "type": "file",
+      "bytes": 1492,
+      "sha256": "e9ddcaa4189fddd25ed97fc8c789eca7b6ca16390b2392ae3276f0c8e1aa4619"
+    },
+    {
+      "path": "fixtures/all-six-crlf/.git/hooks/push-to-checkout.sample",
+      "type": "file",
+      "bytes": 2783,
+      "sha256": "a53d0741798b287c6dd7afa64aee473f305e65d3f49463bb9d7408ec3b12bf5f"
+    },
+    {
+      "path": "fixtures/all-six-crlf/.git/hooks/sendemail-validate.sample",
+      "type": "file",
+      "bytes": 2308,
+      "sha256": "44ebfc923dc5466bc009602f0ecf067b9c65459abfe8868ddc49b78e6ced7a92"
+    },
+    {
+      "path": "fixtures/all-six-crlf/.git/hooks/update.sample",
+      "type": "file",
+      "bytes": 3650,
+      "sha256": "8d5f2fa83e103cf08b57eaa67521df9194f45cbdbcb37da52ad586097a14d106"
+    },
+    {
+      "path": "fixtures/all-six-crlf/.git/index",
+      "type": "file",
+      "bytes": 669,
+      "sha256": "b61653bea94c904c1807114b777268cd33b6c28d06db4d500215c83273768ae7"
+    },
+    {
+      "path": "fixtures/all-six-crlf/.git/info/exclude",
+      "type": "file",
+      "bytes": 240,
+      "sha256": "6671fe83b7a07c8932ee89164d1f2793b2318058eb8b98dc5c06ee0a5a3b0ec1"
+    },
+    {
+      "path": "fixtures/all-six-crlf/.git/logs/HEAD",
+      "type": "file",
+      "bytes": 229,
+      "sha256": "ec0cfcc6cc319aa86373f921f122fcb71070240f709326ed3eccbbd054423323"
+    },
+    {
+      "path": "fixtures/all-six-crlf/.git/logs/refs/heads/master",
+      "type": "file",
+      "bytes": 229,
+      "sha256": "ec0cfcc6cc319aa86373f921f122fcb71070240f709326ed3eccbbd054423323"
+    },
+    {
+      "path": "fixtures/all-six-crlf/.git/objects/26/a3c2b212c40fd20d8994379b52a062c6b36151",
+      "type": "file",
+      "bytes": 15111,
+      "sha256": "b8ef05908ec6f8fe6c8ad5ec3196390927fcd41d7ca43266fc94ce48a82a1d9a"
+    },
+    {
+      "path": "fixtures/all-six-crlf/.git/objects/33/dd4a867b9d66e4aa9c815ac212eda7787e5d06",
+      "type": "file",
+      "bytes": 170,
+      "sha256": "3bfe4e89c86c6d82de3234b2c82566bc7c1764e1de18161cf100b92bad3d4ba0"
+    },
+    {
+      "path": "fixtures/all-six-crlf/.git/objects/42/71339240d464da9f42f7e623dd932e8f2a2125",
+      "type": "file",
+      "bytes": 78,
+      "sha256": "229111b5d6f4fa3d5e0149410e3d82d1aeb976d0f7c30f2fd672f8c2ae6fb86d"
+    },
+    {
+      "path": "fixtures/all-six-crlf/.git/objects/4f/c1470aef5f00e44b1152e1539fd4ac68a27ee7",
+      "type": "file",
+      "bytes": 167,
+      "sha256": "3e6bbfb2d3303444d4f2d6a9e91ac27275d32a5c2cd0b9d5f1d60dda6b926fe8"
+    },
+    {
+      "path": "fixtures/all-six-crlf/.git/objects/82/4fecd7d6fcc70bd0d4a99fd41227a3a852112a",
+      "type": "file",
+      "bytes": 35,
+      "sha256": "1f7ef11435be946cdce072f213e0d06e5c288b23984839819e358933bedeaf12"
+    },
+    {
+      "path": "fixtures/all-six-crlf/.git/objects/86/8a6490f9b77d19d6539c57e6bdb151900d0391",
+      "type": "file",
+      "bytes": 202,
+      "sha256": "807b484619c00ac719884b7373f0bcd72956853a7ed64056e9d5dd557da22962"
+    },
+    {
+      "path": "fixtures/all-six-crlf/.git/objects/ac/441b32456697a40cc19423edb7f8cd9ccf972a",
+      "type": "file",
+      "bytes": 6557,
+      "sha256": "e0a10fbdc7e80500128dc31355ed54f1beafce313ad3cc41efdb2c35a0577f0d"
+    },
+    {
+      "path": "fixtures/all-six-crlf/.git/objects/b6/a25792aad430f939bc9b9309890864580cbd9e",
+      "type": "file",
+      "bytes": 55,
+      "sha256": "26ec6f752d30431b8eb1f801da8643e553525fc7233d76a0c284c6debfc3fa20"
+    },
+    {
+      "path": "fixtures/all-six-crlf/.git/objects/be/02ae67cb90d3f816db3940f8c9f6a917d60c1e",
+      "type": "file",
+      "bytes": 55,
+      "sha256": "119818c555b0fa3ddc19f8690ebcfb6bd4716fa16abb03f2d518f50e7719a256"
+    },
+    {
+      "path": "fixtures/all-six-crlf/.git/objects/da/efc138a978ae8d04bb88d4df3492302e610e73",
+      "type": "file",
+      "bytes": 550,
+      "sha256": "d08563dff5ca74616323df537d83d66c34f7b798aec282922158b72ccf27a060"
+    },
+    {
+      "path": "fixtures/all-six-crlf/.git/objects/ed/c36c806feeac102c6a7023710fc6af78aafa5f",
+      "type": "file",
+      "bytes": 1055,
+      "sha256": "c841780cb5011ed78c8646b0cca2a5d792a3cdddb0bfab622def349badab8376"
+    },
+    {
+      "path": "fixtures/all-six-crlf/.git/refs/heads/master",
+      "type": "file",
+      "bytes": 41,
+      "sha256": "490047b803670183313f39093a1f2d263eedd69c34d681621dbc6e27e4867eb1"
+    },
+    {
+      "path": "fixtures/all-six-crlf/.release-please-manifest.json",
+      "type": "file",
+      "bytes": 22,
+      "sha256": "2b94daad549b020ab7c0bb7c5f758e536cdb563c37e8b220aa11f1a259b75555"
+    },
+    {
+      "path": "fixtures/all-six-crlf/CHANGELOG.md",
+      "type": "file",
+      "bytes": 23832,
+      "sha256": "af665454fce64cbe69ee9db8304a1dc4065f501d6207497f4e3c4c53907c8fee"
+    },
+    {
+      "path": "fixtures/all-six-crlf/Cargo.lock",
+      "type": "file",
+      "bytes": 54607,
+      "sha256": "fde04462f2d8f8c4c67be719508d03ef7ee30e1a59a038e4c5caca2d2421299a"
+    },
+    {
+      "path": "fixtures/all-six-crlf/Cargo.toml",
+      "type": "file",
+      "bytes": 2400,
+      "sha256": "534fffbfce05cb0e096495fea2d0fa7ecc7b4b1f3a30e16fbc18cdd43892d3bb"
+    },
+    {
+      "path": "fixtures/all-six-crlf/crates/k-wiki/Cargo.toml",
+      "type": "file",
+      "bytes": 1045,
+      "sha256": "8d16383c793da3b950b189f499863586990add1ac8b6f375895b43b47530e731"
+    },
+    {
+      "path": "fixtures/all-six-crlf/crates/xtask/Cargo.toml",
+      "type": "file",
+      "bytes": 232,
+      "sha256": "c9b351f945bf8f9659fe66d86c6cf80a33cedd5a4b7bb8dbbd07b3e9ad2ac850"
+    },
+    {
+      "path": "fixtures/dirty-tracked/.git/COMMIT_EDITMSG",
+      "type": "file",
+      "bytes": 44,
+      "sha256": "e773dd1c63fb7ddde37a98e50c81caf661e64a0373c9adb64cf9788da2c6931e"
+    },
+    {
+      "path": "fixtures/dirty-tracked/.git/HEAD",
+      "type": "file",
+      "bytes": 23,
+      "sha256": "f6f2b945f6c411b02ba3da9c7ace88dcf71b6af65ba2e0d89aa82900042b5a10"
+    },
+    {
+      "path": "fixtures/dirty-tracked/.git/config",
+      "type": "file",
+      "bytes": 154,
+      "sha256": "8e4e3dce068fdcf9b075e6160ddb50b9424f8858730226af87d525d5132aa5c7"
+    },
+    {
+      "path": "fixtures/dirty-tracked/.git/description",
+      "type": "file",
+      "bytes": 73,
+      "sha256": "85ab6c163d43a17ea9cf7788308bca1466f1b0a8d1cc92e26e9bf63da4062aee"
+    },
+    {
+      "path": "fixtures/dirty-tracked/.git/hooks/applypatch-msg.sample",
+      "type": "file",
+      "bytes": 478,
+      "sha256": "0223497a0b8b033aa58a3a521b8629869386cf7ab0e2f101963d328aa62193f7"
+    },
+    {
+      "path": "fixtures/dirty-tracked/.git/hooks/commit-msg.sample",
+      "type": "file",
+      "bytes": 896,
+      "sha256": "1f74d5e9292979b573ebd59741d46cb93ff391acdd083d340b94370753d92437"
+    },
+    {
+      "path": "fixtures/dirty-tracked/.git/hooks/fsmonitor-watchman.sample",
+      "type": "file",
+      "bytes": 4726,
+      "sha256": "e0549964e93897b519bd8e333c037e51fff0f88ba13e086a331592bf801fa1d0"
+    },
+    {
+      "path": "fixtures/dirty-tracked/.git/hooks/post-update.sample",
+      "type": "file",
+      "bytes": 189,
+      "sha256": "81765af2daef323061dcbc5e61fc16481cb74b3bac9ad8a174b186523586f6c5"
+    },
+    {
+      "path": "fixtures/dirty-tracked/.git/hooks/pre-applypatch.sample",
+      "type": "file",
+      "bytes": 424,
+      "sha256": "e15c5b469ea3e0a695bea6f2c82bcf8e62821074939ddd85b77e0007ff165475"
+    },
+    {
+      "path": "fixtures/dirty-tracked/.git/hooks/pre-commit.sample",
+      "type": "file",
+      "bytes": 1649,
+      "sha256": "57185b7b9f05239d7ab52db045f5b89eb31348d7b2177eab214f5eb872e1971b"
+    },
+    {
+      "path": "fixtures/dirty-tracked/.git/hooks/pre-merge-commit.sample",
+      "type": "file",
+      "bytes": 416,
+      "sha256": "d3825a70337940ebbd0a5c072984e13245920cdf8898bd225c8d27a6dfc9cb53"
+    },
+    {
+      "path": "fixtures/dirty-tracked/.git/hooks/pre-push.sample",
+      "type": "file",
+      "bytes": 1374,
+      "sha256": "ecce9c7e04d3f5dd9d8ada81753dd1d549a9634b26770042b58dda00217d086a"
+    },
+    {
+      "path": "fixtures/dirty-tracked/.git/hooks/pre-rebase.sample",
+      "type": "file",
+      "bytes": 4898,
+      "sha256": "4febce867790052338076f4e66cc47efb14879d18097d1d61c8261859eaaa7b3"
+    },
+    {
+      "path": "fixtures/dirty-tracked/.git/hooks/pre-receive.sample",
+      "type": "file",
+      "bytes": 544,
+      "sha256": "a4c3d2b9c7bb3fd8d1441c31bd4ee71a595d66b44fcf49ddb310252320169989"
+    },
+    {
+      "path": "fixtures/dirty-tracked/.git/hooks/prepare-commit-msg.sample",
+      "type": "file",
+      "bytes": 1492,
+      "sha256": "e9ddcaa4189fddd25ed97fc8c789eca7b6ca16390b2392ae3276f0c8e1aa4619"
+    },
+    {
+      "path": "fixtures/dirty-tracked/.git/hooks/push-to-checkout.sample",
+      "type": "file",
+      "bytes": 2783,
+      "sha256": "a53d0741798b287c6dd7afa64aee473f305e65d3f49463bb9d7408ec3b12bf5f"
+    },
+    {
+      "path": "fixtures/dirty-tracked/.git/hooks/sendemail-validate.sample",
+      "type": "file",
+      "bytes": 2308,
+      "sha256": "44ebfc923dc5466bc009602f0ecf067b9c65459abfe8868ddc49b78e6ced7a92"
+    },
+    {
+      "path": "fixtures/dirty-tracked/.git/hooks/update.sample",
+      "type": "file",
+      "bytes": 3650,
+      "sha256": "8d5f2fa83e103cf08b57eaa67521df9194f45cbdbcb37da52ad586097a14d106"
+    },
+    {
+      "path": "fixtures/dirty-tracked/.git/index",
+      "type": "file",
+      "bytes": 669,
+      "sha256": "b6f71672f7be915f32129d7a9c207191fbef8da3316115292dead1c9cd28d717"
+    },
+    {
+      "path": "fixtures/dirty-tracked/.git/info/exclude",
+      "type": "file",
+      "bytes": 240,
+      "sha256": "6671fe83b7a07c8932ee89164d1f2793b2318058eb8b98dc5c06ee0a5a3b0ec1"
+    },
+    {
+      "path": "fixtures/dirty-tracked/.git/logs/HEAD",
+      "type": "file",
+      "bytes": 229,
+      "sha256": "60bd219e5cf69ccb289f2cfaa2084184d133cbc32eed08ec480eaf7af58ca9ee"
+    },
+    {
+      "path": "fixtures/dirty-tracked/.git/logs/refs/heads/master",
+      "type": "file",
+      "bytes": 229,
+      "sha256": "60bd219e5cf69ccb289f2cfaa2084184d133cbc32eed08ec480eaf7af58ca9ee"
+    },
+    {
+      "path": "fixtures/dirty-tracked/.git/objects/26/a3c2b212c40fd20d8994379b52a062c6b36151",
+      "type": "file",
+      "bytes": 15111,
+      "sha256": "b8ef05908ec6f8fe6c8ad5ec3196390927fcd41d7ca43266fc94ce48a82a1d9a"
+    },
+    {
+      "path": "fixtures/dirty-tracked/.git/objects/33/dd4a867b9d66e4aa9c815ac212eda7787e5d06",
+      "type": "file",
+      "bytes": 170,
+      "sha256": "3bfe4e89c86c6d82de3234b2c82566bc7c1764e1de18161cf100b92bad3d4ba0"
+    },
+    {
+      "path": "fixtures/dirty-tracked/.git/objects/37/be054aa932d53513be3f79e4b1170a7b3c0c20",
+      "type": "file",
+      "bytes": 167,
+      "sha256": "a859dc8eb6d7fc0f2ba60d0a82023570b249f87faef4ef4b446550d2d981e0ed"
+    },
+    {
+      "path": "fixtures/dirty-tracked/.git/objects/42/71339240d464da9f42f7e623dd932e8f2a2125",
+      "type": "file",
+      "bytes": 78,
+      "sha256": "229111b5d6f4fa3d5e0149410e3d82d1aeb976d0f7c30f2fd672f8c2ae6fb86d"
+    },
+    {
+      "path": "fixtures/dirty-tracked/.git/objects/82/4fecd7d6fcc70bd0d4a99fd41227a3a852112a",
+      "type": "file",
+      "bytes": 35,
+      "sha256": "1f7ef11435be946cdce072f213e0d06e5c288b23984839819e358933bedeaf12"
+    },
+    {
+      "path": "fixtures/dirty-tracked/.git/objects/86/8a6490f9b77d19d6539c57e6bdb151900d0391",
+      "type": "file",
+      "bytes": 202,
+      "sha256": "807b484619c00ac719884b7373f0bcd72956853a7ed64056e9d5dd557da22962"
+    },
+    {
+      "path": "fixtures/dirty-tracked/.git/objects/ac/441b32456697a40cc19423edb7f8cd9ccf972a",
+      "type": "file",
+      "bytes": 6557,
+      "sha256": "e0a10fbdc7e80500128dc31355ed54f1beafce313ad3cc41efdb2c35a0577f0d"
+    },
+    {
+      "path": "fixtures/dirty-tracked/.git/objects/b6/a25792aad430f939bc9b9309890864580cbd9e",
+      "type": "file",
+      "bytes": 55,
+      "sha256": "26ec6f752d30431b8eb1f801da8643e553525fc7233d76a0c284c6debfc3fa20"
+    },
+    {
+      "path": "fixtures/dirty-tracked/.git/objects/be/02ae67cb90d3f816db3940f8c9f6a917d60c1e",
+      "type": "file",
+      "bytes": 55,
+      "sha256": "119818c555b0fa3ddc19f8690ebcfb6bd4716fa16abb03f2d518f50e7719a256"
+    },
+    {
+      "path": "fixtures/dirty-tracked/.git/objects/da/efc138a978ae8d04bb88d4df3492302e610e73",
+      "type": "file",
+      "bytes": 550,
+      "sha256": "d08563dff5ca74616323df537d83d66c34f7b798aec282922158b72ccf27a060"
+    },
+    {
+      "path": "fixtures/dirty-tracked/.git/objects/ed/c36c806feeac102c6a7023710fc6af78aafa5f",
+      "type": "file",
+      "bytes": 1055,
+      "sha256": "c841780cb5011ed78c8646b0cca2a5d792a3cdddb0bfab622def349badab8376"
+    },
+    {
+      "path": "fixtures/dirty-tracked/.git/refs/heads/master",
+      "type": "file",
+      "bytes": 41,
+      "sha256": "0eeb59d0ebdb23346e8a0d438d481479146a250a956bcc425006c226b1fe3de8"
+    },
+    {
+      "path": "fixtures/dirty-tracked/.release-please-manifest.json",
+      "type": "file",
+      "bytes": 19,
+      "sha256": "e9d8f4b19676132773870bcf7887f2ae48745890e9c84078336d1fcc3824abae"
+    },
+    {
+      "path": "fixtures/dirty-tracked/CHANGELOG.md",
+      "type": "file",
+      "bytes": 23408,
+      "sha256": "0d4f537befa5aea98e7ff6bb9cc4860219515803a7f0a58530f520c698e04f35"
+    },
+    {
+      "path": "fixtures/dirty-tracked/Cargo.lock",
+      "type": "file",
+      "bytes": 52538,
+      "sha256": "63d868f91aa52acbddf0eb7e9385a101c3a59c02f7e527ced82d1993299f5afb"
+    },
+    {
+      "path": "fixtures/dirty-tracked/Cargo.toml",
+      "type": "file",
+      "bytes": 2365,
+      "sha256": "ad7b2807cc18886486015004ae40bf637b343636b107417aeed914224f69d6d2"
+    },
+    {
+      "path": "fixtures/dirty-tracked/crates/k-wiki/Cargo.toml",
+      "type": "file",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572"
+    },
+    {
+      "path": "fixtures/dirty-tracked/crates/xtask/Cargo.toml",
+      "type": "file",
+      "bytes": 219,
+      "sha256": "206d3a9af5953963659c0cc292e1356c8905f44288c417568bb7f146c4716198"
+    },
+    {
+      "path": "fixtures/lf/.git/COMMIT_EDITMSG",
+      "type": "file",
+      "bytes": 44,
+      "sha256": "e773dd1c63fb7ddde37a98e50c81caf661e64a0373c9adb64cf9788da2c6931e"
+    },
+    {
+      "path": "fixtures/lf/.git/HEAD",
+      "type": "file",
+      "bytes": 23,
+      "sha256": "f6f2b945f6c411b02ba3da9c7ace88dcf71b6af65ba2e0d89aa82900042b5a10"
+    },
+    {
+      "path": "fixtures/lf/.git/config",
+      "type": "file",
+      "bytes": 154,
+      "sha256": "8e4e3dce068fdcf9b075e6160ddb50b9424f8858730226af87d525d5132aa5c7"
+    },
+    {
+      "path": "fixtures/lf/.git/description",
+      "type": "file",
+      "bytes": 73,
+      "sha256": "85ab6c163d43a17ea9cf7788308bca1466f1b0a8d1cc92e26e9bf63da4062aee"
+    },
+    {
+      "path": "fixtures/lf/.git/hooks/applypatch-msg.sample",
+      "type": "file",
+      "bytes": 478,
+      "sha256": "0223497a0b8b033aa58a3a521b8629869386cf7ab0e2f101963d328aa62193f7"
+    },
+    {
+      "path": "fixtures/lf/.git/hooks/commit-msg.sample",
+      "type": "file",
+      "bytes": 896,
+      "sha256": "1f74d5e9292979b573ebd59741d46cb93ff391acdd083d340b94370753d92437"
+    },
+    {
+      "path": "fixtures/lf/.git/hooks/fsmonitor-watchman.sample",
+      "type": "file",
+      "bytes": 4726,
+      "sha256": "e0549964e93897b519bd8e333c037e51fff0f88ba13e086a331592bf801fa1d0"
+    },
+    {
+      "path": "fixtures/lf/.git/hooks/post-update.sample",
+      "type": "file",
+      "bytes": 189,
+      "sha256": "81765af2daef323061dcbc5e61fc16481cb74b3bac9ad8a174b186523586f6c5"
+    },
+    {
+      "path": "fixtures/lf/.git/hooks/pre-applypatch.sample",
+      "type": "file",
+      "bytes": 424,
+      "sha256": "e15c5b469ea3e0a695bea6f2c82bcf8e62821074939ddd85b77e0007ff165475"
+    },
+    {
+      "path": "fixtures/lf/.git/hooks/pre-commit.sample",
+      "type": "file",
+      "bytes": 1649,
+      "sha256": "57185b7b9f05239d7ab52db045f5b89eb31348d7b2177eab214f5eb872e1971b"
+    },
+    {
+      "path": "fixtures/lf/.git/hooks/pre-merge-commit.sample",
+      "type": "file",
+      "bytes": 416,
+      "sha256": "d3825a70337940ebbd0a5c072984e13245920cdf8898bd225c8d27a6dfc9cb53"
+    },
+    {
+      "path": "fixtures/lf/.git/hooks/pre-push.sample",
+      "type": "file",
+      "bytes": 1374,
+      "sha256": "ecce9c7e04d3f5dd9d8ada81753dd1d549a9634b26770042b58dda00217d086a"
+    },
+    {
+      "path": "fixtures/lf/.git/hooks/pre-rebase.sample",
+      "type": "file",
+      "bytes": 4898,
+      "sha256": "4febce867790052338076f4e66cc47efb14879d18097d1d61c8261859eaaa7b3"
+    },
+    {
+      "path": "fixtures/lf/.git/hooks/pre-receive.sample",
+      "type": "file",
+      "bytes": 544,
+      "sha256": "a4c3d2b9c7bb3fd8d1441c31bd4ee71a595d66b44fcf49ddb310252320169989"
+    },
+    {
+      "path": "fixtures/lf/.git/hooks/prepare-commit-msg.sample",
+      "type": "file",
+      "bytes": 1492,
+      "sha256": "e9ddcaa4189fddd25ed97fc8c789eca7b6ca16390b2392ae3276f0c8e1aa4619"
+    },
+    {
+      "path": "fixtures/lf/.git/hooks/push-to-checkout.sample",
+      "type": "file",
+      "bytes": 2783,
+      "sha256": "a53d0741798b287c6dd7afa64aee473f305e65d3f49463bb9d7408ec3b12bf5f"
+    },
+    {
+      "path": "fixtures/lf/.git/hooks/sendemail-validate.sample",
+      "type": "file",
+      "bytes": 2308,
+      "sha256": "44ebfc923dc5466bc009602f0ecf067b9c65459abfe8868ddc49b78e6ced7a92"
+    },
+    {
+      "path": "fixtures/lf/.git/hooks/update.sample",
+      "type": "file",
+      "bytes": 3650,
+      "sha256": "8d5f2fa83e103cf08b57eaa67521df9194f45cbdbcb37da52ad586097a14d106"
+    },
+    {
+      "path": "fixtures/lf/.git/index",
+      "type": "file",
+      "bytes": 669,
+      "sha256": "86839e099cd78a9d304da634a5a3caa2214409fe2f377125de02815b8d3eb45c"
+    },
+    {
+      "path": "fixtures/lf/.git/info/exclude",
+      "type": "file",
+      "bytes": 240,
+      "sha256": "6671fe83b7a07c8932ee89164d1f2793b2318058eb8b98dc5c06ee0a5a3b0ec1"
+    },
+    {
+      "path": "fixtures/lf/.git/logs/HEAD",
+      "type": "file",
+      "bytes": 229,
+      "sha256": "ec0cfcc6cc319aa86373f921f122fcb71070240f709326ed3eccbbd054423323"
+    },
+    {
+      "path": "fixtures/lf/.git/logs/refs/heads/master",
+      "type": "file",
+      "bytes": 229,
+      "sha256": "ec0cfcc6cc319aa86373f921f122fcb71070240f709326ed3eccbbd054423323"
+    },
+    {
+      "path": "fixtures/lf/.git/objects/26/a3c2b212c40fd20d8994379b52a062c6b36151",
+      "type": "file",
+      "bytes": 15111,
+      "sha256": "b8ef05908ec6f8fe6c8ad5ec3196390927fcd41d7ca43266fc94ce48a82a1d9a"
+    },
+    {
+      "path": "fixtures/lf/.git/objects/33/dd4a867b9d66e4aa9c815ac212eda7787e5d06",
+      "type": "file",
+      "bytes": 170,
+      "sha256": "3bfe4e89c86c6d82de3234b2c82566bc7c1764e1de18161cf100b92bad3d4ba0"
+    },
+    {
+      "path": "fixtures/lf/.git/objects/42/71339240d464da9f42f7e623dd932e8f2a2125",
+      "type": "file",
+      "bytes": 78,
+      "sha256": "229111b5d6f4fa3d5e0149410e3d82d1aeb976d0f7c30f2fd672f8c2ae6fb86d"
+    },
+    {
+      "path": "fixtures/lf/.git/objects/4f/c1470aef5f00e44b1152e1539fd4ac68a27ee7",
+      "type": "file",
+      "bytes": 167,
+      "sha256": "3e6bbfb2d3303444d4f2d6a9e91ac27275d32a5c2cd0b9d5f1d60dda6b926fe8"
+    },
+    {
+      "path": "fixtures/lf/.git/objects/82/4fecd7d6fcc70bd0d4a99fd41227a3a852112a",
+      "type": "file",
+      "bytes": 35,
+      "sha256": "1f7ef11435be946cdce072f213e0d06e5c288b23984839819e358933bedeaf12"
+    },
+    {
+      "path": "fixtures/lf/.git/objects/86/8a6490f9b77d19d6539c57e6bdb151900d0391",
+      "type": "file",
+      "bytes": 202,
+      "sha256": "807b484619c00ac719884b7373f0bcd72956853a7ed64056e9d5dd557da22962"
+    },
+    {
+      "path": "fixtures/lf/.git/objects/ac/441b32456697a40cc19423edb7f8cd9ccf972a",
+      "type": "file",
+      "bytes": 6557,
+      "sha256": "e0a10fbdc7e80500128dc31355ed54f1beafce313ad3cc41efdb2c35a0577f0d"
+    },
+    {
+      "path": "fixtures/lf/.git/objects/b6/a25792aad430f939bc9b9309890864580cbd9e",
+      "type": "file",
+      "bytes": 55,
+      "sha256": "26ec6f752d30431b8eb1f801da8643e553525fc7233d76a0c284c6debfc3fa20"
+    },
+    {
+      "path": "fixtures/lf/.git/objects/be/02ae67cb90d3f816db3940f8c9f6a917d60c1e",
+      "type": "file",
+      "bytes": 55,
+      "sha256": "119818c555b0fa3ddc19f8690ebcfb6bd4716fa16abb03f2d518f50e7719a256"
+    },
+    {
+      "path": "fixtures/lf/.git/objects/da/efc138a978ae8d04bb88d4df3492302e610e73",
+      "type": "file",
+      "bytes": 550,
+      "sha256": "d08563dff5ca74616323df537d83d66c34f7b798aec282922158b72ccf27a060"
+    },
+    {
+      "path": "fixtures/lf/.git/objects/ed/c36c806feeac102c6a7023710fc6af78aafa5f",
+      "type": "file",
+      "bytes": 1055,
+      "sha256": "c841780cb5011ed78c8646b0cca2a5d792a3cdddb0bfab622def349badab8376"
+    },
+    {
+      "path": "fixtures/lf/.git/refs/heads/master",
+      "type": "file",
+      "bytes": 41,
+      "sha256": "490047b803670183313f39093a1f2d263eedd69c34d681621dbc6e27e4867eb1"
+    },
+    {
+      "path": "fixtures/lf/.release-please-manifest.json",
+      "type": "file",
+      "bytes": 19,
+      "sha256": "e9d8f4b19676132773870bcf7887f2ae48745890e9c84078336d1fcc3824abae"
+    },
+    {
+      "path": "fixtures/lf/CHANGELOG.md",
+      "type": "file",
+      "bytes": 23408,
+      "sha256": "0d4f537befa5aea98e7ff6bb9cc4860219515803a7f0a58530f520c698e04f35"
+    },
+    {
+      "path": "fixtures/lf/Cargo.lock",
+      "type": "file",
+      "bytes": 52538,
+      "sha256": "63d868f91aa52acbddf0eb7e9385a101c3a59c02f7e527ced82d1993299f5afb"
+    },
+    {
+      "path": "fixtures/lf/Cargo.toml",
+      "type": "file",
+      "bytes": 2320,
+      "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4"
+    },
+    {
+      "path": "fixtures/lf/crates/k-wiki/Cargo.toml",
+      "type": "file",
+      "bytes": 1011,
+      "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572"
+    },
+    {
+      "path": "fixtures/lf/crates/xtask/Cargo.toml",
+      "type": "file",
+      "bytes": 219,
+      "sha256": "206d3a9af5953963659c0cc292e1356c8905f44288c417568bb7f146c4716198"
+    },
+    {
+      "path": "fixtures/mixed/.git/COMMIT_EDITMSG",
+      "type": "file",
+      "bytes": 44,
+      "sha256": "e773dd1c63fb7ddde37a98e50c81caf661e64a0373c9adb64cf9788da2c6931e"
+    },
+    {
+      "path": "fixtures/mixed/.git/HEAD",
+      "type": "file",
+      "bytes": 23,
+      "sha256": "f6f2b945f6c411b02ba3da9c7ace88dcf71b6af65ba2e0d89aa82900042b5a10"
+    },
+    {
+      "path": "fixtures/mixed/.git/config",
+      "type": "file",
+      "bytes": 154,
+      "sha256": "8e4e3dce068fdcf9b075e6160ddb50b9424f8858730226af87d525d5132aa5c7"
+    },
+    {
+      "path": "fixtures/mixed/.git/description",
+      "type": "file",
+      "bytes": 73,
+      "sha256": "85ab6c163d43a17ea9cf7788308bca1466f1b0a8d1cc92e26e9bf63da4062aee"
+    },
+    {
+      "path": "fixtures/mixed/.git/hooks/applypatch-msg.sample",
+      "type": "file",
+      "bytes": 478,
+      "sha256": "0223497a0b8b033aa58a3a521b8629869386cf7ab0e2f101963d328aa62193f7"
+    },
+    {
+      "path": "fixtures/mixed/.git/hooks/commit-msg.sample",
+      "type": "file",
+      "bytes": 896,
+      "sha256": "1f74d5e9292979b573ebd59741d46cb93ff391acdd083d340b94370753d92437"
+    },
+    {
+      "path": "fixtures/mixed/.git/hooks/fsmonitor-watchman.sample",
+      "type": "file",
+      "bytes": 4726,
+      "sha256": "e0549964e93897b519bd8e333c037e51fff0f88ba13e086a331592bf801fa1d0"
+    },
+    {
+      "path": "fixtures/mixed/.git/hooks/post-update.sample",
+      "type": "file",
+      "bytes": 189,
+      "sha256": "81765af2daef323061dcbc5e61fc16481cb74b3bac9ad8a174b186523586f6c5"
+    },
+    {
+      "path": "fixtures/mixed/.git/hooks/pre-applypatch.sample",
+      "type": "file",
+      "bytes": 424,
+      "sha256": "e15c5b469ea3e0a695bea6f2c82bcf8e62821074939ddd85b77e0007ff165475"
+    },
+    {
+      "path": "fixtures/mixed/.git/hooks/pre-commit.sample",
+      "type": "file",
+      "bytes": 1649,
+      "sha256": "57185b7b9f05239d7ab52db045f5b89eb31348d7b2177eab214f5eb872e1971b"
+    },
+    {
+      "path": "fixtures/mixed/.git/hooks/pre-merge-commit.sample",
+      "type": "file",
+      "bytes": 416,
+      "sha256": "d3825a70337940ebbd0a5c072984e13245920cdf8898bd225c8d27a6dfc9cb53"
+    },
+    {
+      "path": "fixtures/mixed/.git/hooks/pre-push.sample",
+      "type": "file",
+      "bytes": 1374,
+      "sha256": "ecce9c7e04d3f5dd9d8ada81753dd1d549a9634b26770042b58dda00217d086a"
+    },
+    {
+      "path": "fixtures/mixed/.git/hooks/pre-rebase.sample",
+      "type": "file",
+      "bytes": 4898,
+      "sha256": "4febce867790052338076f4e66cc47efb14879d18097d1d61c8261859eaaa7b3"
+    },
+    {
+      "path": "fixtures/mixed/.git/hooks/pre-receive.sample",
+      "type": "file",
+      "bytes": 544,
+      "sha256": "a4c3d2b9c7bb3fd8d1441c31bd4ee71a595d66b44fcf49ddb310252320169989"
+    },
+    {
+      "path": "fixtures/mixed/.git/hooks/prepare-commit-msg.sample",
+      "type": "file",
+      "bytes": 1492,
+      "sha256": "e9ddcaa4189fddd25ed97fc8c789eca7b6ca16390b2392ae3276f0c8e1aa4619"
+    },
+    {
+      "path": "fixtures/mixed/.git/hooks/push-to-checkout.sample",
+      "type": "file",
+      "bytes": 2783,
+      "sha256": "a53d0741798b287c6dd7afa64aee473f305e65d3f49463bb9d7408ec3b12bf5f"
+    },
+    {
+      "path": "fixtures/mixed/.git/hooks/sendemail-validate.sample",
+      "type": "file",
+      "bytes": 2308,
+      "sha256": "44ebfc923dc5466bc009602f0ecf067b9c65459abfe8868ddc49b78e6ced7a92"
+    },
+    {
+      "path": "fixtures/mixed/.git/hooks/update.sample",
+      "type": "file",
+      "bytes": 3650,
+      "sha256": "8d5f2fa83e103cf08b57eaa67521df9194f45cbdbcb37da52ad586097a14d106"
+    },
+    {
+      "path": "fixtures/mixed/.git/index",
+      "type": "file",
+      "bytes": 669,
+      "sha256": "44765b31930575c803663dbadb324626e76a34210d71abf4ba106d34527b93f3"
+    },
+    {
+      "path": "fixtures/mixed/.git/info/exclude",
+      "type": "file",
+      "bytes": 240,
+      "sha256": "6671fe83b7a07c8932ee89164d1f2793b2318058eb8b98dc5c06ee0a5a3b0ec1"
+    },
+    {
+      "path": "fixtures/mixed/.git/logs/HEAD",
+      "type": "file",
+      "bytes": 229,
+      "sha256": "ec0cfcc6cc319aa86373f921f122fcb71070240f709326ed3eccbbd054423323"
+    },
+    {
+      "path": "fixtures/mixed/.git/logs/refs/heads/master",
+      "type": "file",
+      "bytes": 229,
+      "sha256": "ec0cfcc6cc319aa86373f921f122fcb71070240f709326ed3eccbbd054423323"
+    },
+    {
+      "path": "fixtures/mixed/.git/objects/26/a3c2b212c40fd20d8994379b52a062c6b36151",
+      "type": "file",
+      "bytes": 15111,
+      "sha256": "b8ef05908ec6f8fe6c8ad5ec3196390927fcd41d7ca43266fc94ce48a82a1d9a"
+    },
+    {
+      "path": "fixtures/mixed/.git/objects/33/dd4a867b9d66e4aa9c815ac212eda7787e5d06",
+      "type": "file",
+      "bytes": 170,
+      "sha256": "3bfe4e89c86c6d82de3234b2c82566bc7c1764e1de18161cf100b92bad3d4ba0"
+    },
+    {
+      "path": "fixtures/mixed/.git/objects/42/71339240d464da9f42f7e623dd932e8f2a2125",
+      "type": "file",
+      "bytes": 78,
+      "sha256": "229111b5d6f4fa3d5e0149410e3d82d1aeb976d0f7c30f2fd672f8c2ae6fb86d"
+    },
+    {
+      "path": "fixtures/mixed/.git/objects/4f/c1470aef5f00e44b1152e1539fd4ac68a27ee7",
+      "type": "file",
+      "bytes": 167,
+      "sha256": "3e6bbfb2d3303444d4f2d6a9e91ac27275d32a5c2cd0b9d5f1d60dda6b926fe8"
+    },
+    {
+      "path": "fixtures/mixed/.git/objects/82/4fecd7d6fcc70bd0d4a99fd41227a3a852112a",
+      "type": "file",
+      "bytes": 35,
+      "sha256": "1f7ef11435be946cdce072f213e0d06e5c288b23984839819e358933bedeaf12"
+    },
+    {
+      "path": "fixtures/mixed/.git/objects/86/8a6490f9b77d19d6539c57e6bdb151900d0391",
+      "type": "file",
+      "bytes": 202,
+      "sha256": "807b484619c00ac719884b7373f0bcd72956853a7ed64056e9d5dd557da22962"
+    },
+    {
+      "path": "fixtures/mixed/.git/objects/ac/441b32456697a40cc19423edb7f8cd9ccf972a",
+      "type": "file",
+      "bytes": 6557,
+      "sha256": "e0a10fbdc7e80500128dc31355ed54f1beafce313ad3cc41efdb2c35a0577f0d"
+    },
+    {
+      "path": "fixtures/mixed/.git/objects/b6/a25792aad430f939bc9b9309890864580cbd9e",
+      "type": "file",
+      "bytes": 55,
+      "sha256": "26ec6f752d30431b8eb1f801da8643e553525fc7233d76a0c284c6debfc3fa20"
+    },
+    {
+      "path": "fixtures/mixed/.git/objects/be/02ae67cb90d3f816db3940f8c9f6a917d60c1e",
+      "type": "file",
+      "bytes": 55,
+      "sha256": "119818c555b0fa3ddc19f8690ebcfb6bd4716fa16abb03f2d518f50e7719a256"
+    },
+    {
+      "path": "fixtures/mixed/.git/objects/da/efc138a978ae8d04bb88d4df3492302e610e73",
+      "type": "file",
+      "bytes": 550,
+      "sha256": "d08563dff5ca74616323df537d83d66c34f7b798aec282922158b72ccf27a060"
+    },
+    {
+      "path": "fixtures/mixed/.git/objects/ed/c36c806feeac102c6a7023710fc6af78aafa5f",
+      "type": "file",
+      "bytes": 1055,
+      "sha256": "c841780cb5011ed78c8646b0cca2a5d792a3cdddb0bfab622def349badab8376"
+    },
+    {
+      "path": "fixtures/mixed/.git/refs/heads/master",
+      "type": "file",
+      "bytes": 41,
+      "sha256": "490047b803670183313f39093a1f2d263eedd69c34d681621dbc6e27e4867eb1"
+    },
+    {
+      "path": "fixtures/mixed/.release-please-manifest.json",
+      "type": "file",
+      "bytes": 21,
+      "sha256": "b799bab9346a1fcaf0ceb3e599b70cc1477057b53147cb8d30416c1a7b2fad62"
+    },
+    {
+      "path": "fixtures/mixed/CHANGELOG.md",
+      "type": "file",
+      "bytes": 23620,
+      "sha256": "f436bbd5cf27d191b1bbfb86350419809f0c2bce51f8a672e39bf86139869163"
+    },
+    {
+      "path": "fixtures/mixed/Cargo.lock",
+      "type": "file",
+      "bytes": 53573,
+      "sha256": "03d36763ea4220c637b3a048572bd5b0507560dd9b6d55b4a8afe28e2c602367"
+    },
+    {
+      "path": "fixtures/mixed/Cargo.toml",
+      "type": "file",
+      "bytes": 2360,
+      "sha256": "05122b2befd2040c65d3d59469f47d87dd339db552afb7257be1aa8bca94c595"
+    },
+    {
+      "path": "fixtures/mixed/crates/k-wiki/Cargo.toml",
+      "type": "file",
+      "bytes": 1028,
+      "sha256": "db7feab68a7607eb33f24dae89c54596ae38e63def4bae879913adbded46776d"
+    },
+    {
+      "path": "fixtures/mixed/crates/xtask/Cargo.toml",
+      "type": "file",
+      "bytes": 226,
+      "sha256": "319fd77ed1f203d155fc088c38398c160259012058e1639edde521a020ef1fbc"
+    },
+    {
+      "path": "nextest.toml",
+      "type": "file",
+      "bytes": 373,
+      "sha256": "ace857e8e82f1252936a9eba0167c49b6e04afa64b1155df4cab1af7f837884f"
+    },
+    {
+      "path": "report.md",
+      "type": "file",
+      "bytes": 6675,
+      "sha256": "5e93f14a28f5299e63d2f92c5d45de8870b0ec7240fe46ccd18173025b587cf7"
+    },
+    {
+      "path": "result.json",
+      "type": "file",
+      "bytes": 18598,
+      "sha256": "28f53b56fc935c3706c1b53dbb4e378ef6c5cd82db349b522981af5ea9a2f1b9"
+    },
+    {
+      "path": "xtask-junit.xml",
+      "type": "file",
+      "bytes": 77242,
+      "sha256": "714ac93274e22e22b39c164b697688f72e0fffd5581e51bcfbed9a87aaa19f34"
+    }
+  ]
+}

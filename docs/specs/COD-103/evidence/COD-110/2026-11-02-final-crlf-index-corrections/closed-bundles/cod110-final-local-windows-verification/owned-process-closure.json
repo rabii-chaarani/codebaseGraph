@@ -1,0 +1,75 @@
+{
+  "host_handles": [
+    {
+      "name": "controlled-crlf-direct",
+      "pid": 5693,
+      "running": false,
+      "exit_code": 0
+    },
+    {
+      "name": "production-cli-stale-stat",
+      "pid": 5819,
+      "running": false,
+      "exit_code": 0
+    },
+    {
+      "name": "final-close",
+      "pid": 6823,
+      "running": false,
+      "exit_code": 0
+    },
+    {
+      "name": "full-suite",
+      "pid": 85786,
+      "running": false,
+      "exit_code": 0,
+      "evidence": "bash-done85786exit0 + actual full-suite-result.json0"
+    },
+    {
+      "name": "host-stage",
+      "running": false,
+      "exit_code": 0,
+      "evidence": "stage returned source identities/diff/archive and script ran after successful stage"
+    }
+  ],
+  "active_owned_bash": 0,
+  "guest": {
+    "observed_utc": "2026-11-02T11:16:12.4172573Z",
+    "source_commit": "862bb3b3c40c36b21cdcd388f596d52ad482530b",
+    "source_tree": "02cd3ebed5a1861bef4506f678449d836e7e2bf8",
+    "dirty_overlay": {
+      "crates/xtask/src/ci.rs": {
+        "sha256": "9cce67411b43c86a6797d35f5538bf2cc72227713c4dfa0baae5a02eb258e2fd",
+        "bytes": 95794
+      },
+      "crates/xtask/src/release.rs": {
+        "sha256": "06b674185df7f7ac4e7cf3cd2642c2d75b4eb62169ee922c3c2f9724fd760594",
+        "bytes": 33789
+      }
+    },
+    "verified_tracked_files": 2696,
+    "corrected_snapshot_exact_files": 2690,
+    "authorized_crlf_files": 6,
+    "unexpected_changes": [],
+    "binary_provenance": [
+      {
+        "path": "C:\\Users\\rabii\\AppData\\Local\\Temp\\c110-final-b5aa2377\\target\\native-tests\\deps\\xtask-5e2fcd04c8daf5d1.exe",
+        "sha256": "550b95fb5cfdb6eddfd20c02c772225b5d35d4bfdb32880a913b66d42c10f183",
+        "bytes": 2716160
+      },
+      {
+        "path": "C:\\Users\\rabii\\AppData\\Local\\Temp\\c110-final-b5aa2377\\target\\native-tests\\xtask.exe",
+        "sha256": "56b0a7499d80ad3437aca4e64e5c39e72ebcc9f9d4b5377b1c6cbe7742003b22",
+        "bytes": 1940992
+      }
+    ],
+    "private_index_sha256": "dcdbb28c03a463c6b7de3c77ff4a95be274b9329b1bbe807080ccb72bac901ce",
+    "remaining_build_test_git": [],
+    "remaining_previous_wrappers": [],
+    "quiescent": true,
+    "staging_lease": "Released after this final read/hash/export returns; source/target/CRLF preserved unchanged",
+    "no_further_guest_actions": true
+  },
+  "lease": "RELEASED",
+  "further_guest_read_private_cargo_actions": "STOPPED"
+}

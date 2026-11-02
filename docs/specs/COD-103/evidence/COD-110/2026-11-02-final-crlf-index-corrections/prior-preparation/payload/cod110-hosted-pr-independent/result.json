@@ -1,0 +1,78 @@
+{
+  "status": "FAIL_HOSTED_PR_CI",
+  "pr": 178,
+  "run_id": 41393999523,
+  "attempt": 1,
+  "event": "pull_request",
+  "head": "862bb3b3c40c36b21cdcd388f596d52ad482530b",
+  "base": "9ae63f3302bf4cae90ebd5a56173fff341ca815b",
+  "tested_merge": "f3f154aeb050945d4efcc635126208d35b43b622",
+  "tree": "02cd3ebed5a1861bef4506f678449d836e7e2bf8",
+  "jobs": {
+    "total": 25,
+    "success": 22,
+    "failure": 2,
+    "skipped": 1
+  },
+  "primary_failure": {
+    "job": 125111313174,
+    "test": "release::tests::candidate_metadata_accepts_current_real_generated_six_file_layout",
+    "location": "crates/xtask/src/release.rs:551:83",
+    "error": "root Cargo.toml has unsupported or ambiguous generated metadata",
+    "xtask_invocation": {
+      "passed": 5,
+      "failed": 1,
+      "filtered": 85,
+      "cargo_exit": 101
+    },
+    "native_wrapper_exit": 1,
+    "root_cause": "not established; no platform/parser change authorized"
+  },
+  "downstream_required_failure": 125130647156,
+  "windows_archive": "skipped after native failure",
+  "full_decision": {
+    "mode": "full",
+    "reason": "untrusted-or-stale-pr",
+    "positive_metadata": false,
+    "retention": false
+  },
+  "common_repository_test_result": {
+    "passed": 153,
+    "failed": 0,
+    "ignored": 0,
+    "filtered": 0
+  },
+  "artifacts": {
+    "same_run_diagnostics": 15,
+    "all_zip_digest_safe_members_verified": true,
+    "genuine_hosted_junit_files": 0,
+    "native_reports": "JSON/inventories/logs; no XML exists, no conversion created"
+  },
+  "compiler_warnings_in15diagnostic_platform_logs": 0,
+  "source7unchanged": true,
+  "versioned_evidence": {
+    "outer_files": 237,
+    "TAR_regular_members": 115,
+    "no_extraction_execution": true
+  },
+  "model_delta": {
+    "planned.scry": {
+      "before": {
+        "sha256": "d6e9a11d7d22d2d0718e9a51525f135f5a60b52f257730c0fe1cab09128e95d2",
+        "bytes": 359309
+      },
+      "after": {
+        "sha256": "aff4a35c1101b2b15ac748004203b8838e5eba2793a868f3851943eb56eebb19",
+        "bytes": 408494
+      }
+    }
+  },
+  "limitations": [
+    "Canonical planned.scry changed externally during scope; no attribution/restoration",
+    "No full immediate protected Git metadata pre/post for hosted scope; Production owns writes",
+    "No passing hosted/platform qualification; Windows archive and smokes unexecuted",
+    "No fresh Windows root cause reproduction or code inspection",
+    "No all-current-head workflow audit beyond own CI jobs after failure/model delta stop"
+  ],
+  "next_owner": "Engineer adjudicates model delta and routes Windows parser/checkout diagnosis; Production preserves failed run, no rerun/merge/release waiver"
+}

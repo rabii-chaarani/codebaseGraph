@@ -561,6 +561,102 @@ printf '{"version":{"crate":"codebase-graph","num":"4.0.4"}}\n200'"###,
     }
 
     #[test]
+    fn candidate_metadata_accepts_crlf_and_mixed_six_file_layouts_without_writing() {
+        fn with_endings(bytes: &[u8], mixed: bool) -> Vec<u8> {
+            let mut output = Vec::with_capacity(bytes.len() * 2);
+            let mut line = 0;
+            for byte in bytes {
+                if *byte == b'\n' {
+                    if !mixed || line % 2 == 0 {
+                        output.push(b'\r');
+                    }
+                    output.push(*byte);
+                    line += 1;
+                } else {
+                    output.push(*byte);
+                }
+            }
+            output
+        }
+
+        let fixture = CandidateFixture::new("4.0.5");
+        let paths = [
+            ".release-please-manifest.json",
+            "Cargo.toml",
+            "Cargo.lock",
+            "CHANGELOG.md",
+            "crates/k-wiki/Cargo.toml",
+            "crates/xtask/Cargo.toml",
+        ];
+        let originals: Vec<(&str, Vec<u8>)> = paths
+            .into_iter()
+            .map(|path| (path, fs::read(fixture.root.join(path)).unwrap()))
+            .collect();
+        let expected = super::super::ci::validate_release_candidate(&fixture.root, None).unwrap();
+
+        for mixed in [false, true] {
+            for (path, bytes) in &originals {
+                fs::write(fixture.root.join(*path), with_endings(bytes, mixed)).unwrap();
+            }
+            let before: Vec<Vec<u8>> = originals
+                .iter()
+                .map(|(path, _)| fs::read(fixture.root.join(*path)).unwrap())
+                .collect();
+            let candidate =
+                super::super::ci::validate_release_candidate(&fixture.root, Some("4.0.5")).unwrap();
+            assert_eq!(candidate, expected);
+            let after: Vec<Vec<u8>> = originals
+                .iter()
+                .map(|(path, _)| fs::read(fixture.root.join(*path)).unwrap())
+                .collect();
+            assert_eq!(after, before);
+        }
+    }
+
+    #[test]
+    fn candidate_metadata_keeps_rejecting_bare_cr_ambiguous_and_mismatched_inputs() {
+        let fixture = CandidateFixture::new("4.0.5");
+        let cargo = fixture.root.join("Cargo.toml");
+        let contents = fs::read_to_string(&cargo).unwrap();
+        fs::write(
+            &cargo,
+            contents.replacen("edition = \"2021\"", "edition = \"2021\"\r # bare CR", 1),
+        )
+        .unwrap();
+        assert!(super::super::ci::validate_release_candidate(&fixture.root, None).is_err());
+
+        let fixture = CandidateFixture::new("4.0.5");
+        let cargo = fixture.root.join("Cargo.toml");
+        let contents = fs::read_to_string(&cargo).unwrap();
+        fs::write(
+            &cargo,
+            contents.replacen(
+                "version = \"4.0.5\"\n",
+                "version = \"4.0.5\"\nversion = \"4.0.5\"\n",
+                1,
+            ),
+        )
+        .unwrap();
+        assert!(super::super::ci::validate_release_candidate(&fixture.root, None).is_err());
+
+        let fixture = CandidateFixture::new("4.0.5");
+        fs::write(
+            fixture.root.join(".release-please-manifest.json"),
+            b"{\n  \".\": \"4.0.5\",\n  \".\": \"4.0.5\"\n}\n",
+        )
+        .unwrap();
+        assert!(super::super::ci::validate_release_candidate(&fixture.root, None).is_err());
+
+        let fixture = CandidateFixture::new("4.0.5");
+        fs::write(
+            fixture.root.join(".release-please-manifest.json"),
+            b"{\n  \".\": \"4.0.6\"\n}\n",
+        )
+        .unwrap();
+        assert!(super::super::ci::validate_release_candidate(&fixture.root, None).is_err());
+    }
+
+    #[test]
     fn candidate_metadata_requires_complete_consistent_generated_contract() {
         let fixture = CandidateFixture::new("4.0.5");
         let candidate = super::super::ci::validate_release_candidate(&fixture.root, None).unwrap();

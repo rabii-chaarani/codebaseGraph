@@ -1,0 +1,16 @@
+{
+  "files": {
+    "report.md": {
+      "sha256": "2b9e941bba1d979417178427f32e3cacd06c6f948a7077c6d63322a7091a7db8",
+      "bytes": 12714
+    },
+    "result.json": {
+      "sha256": "e86a6def73e6e545e978b8f51936773869daf0c69b277818a0571798564b41e1",
+      "bytes": 26754
+    },
+    "reviewed-fix.patch": {
+      "sha256": "1ef031e9df426d7a2847c1e1bdda46f6e76fbe95350100725c2f6e6b9dbe789d",
+      "bytes": 6085
+    }
+  }
+}

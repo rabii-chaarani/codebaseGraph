@@ -1,0 +1,10 @@
+{
+  "crates/xtask/src/ci.rs": {
+    "sha256": "9cce67411b43c86a6797d35f5538bf2cc72227713c4dfa0baae5a02eb258e2fd",
+    "bytes": 95794
+  },
+  "crates/xtask/src/release.rs": {
+    "sha256": "06b674185df7f7ac4e7cf3cd2642c2d75b4eb62169ee922c3c2f9724fd760594",
+    "bytes": 33789
+  }
+}

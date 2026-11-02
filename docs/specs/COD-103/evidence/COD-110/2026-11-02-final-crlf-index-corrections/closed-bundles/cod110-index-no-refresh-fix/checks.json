@@ -1,0 +1,15 @@
+{
+  "rustfmt_exit": 0,
+  "cargo_fmt_exit": 0,
+  "focused_test_exit": 0,
+  "focused_test_passed": 1,
+  "focused_test_failed": 0,
+  "focused_test_ignored": 0,
+  "focused_tests_filtered": 157,
+  "source": "/private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/ci.rs",
+  "before_sha256": "3c52c2c8e01262cf530c1e2c286cd77c8b7c50aace8fbf532cdc605c48178570",
+  "before_bytes": 94601,
+  "after_sha256": "9cce67411b43c86a6797d35f5538bf2cc72227713c4dfa0baae5a02eb258e2fd",
+  "after_bytes": 95794,
+  "release_sha256_preserved": "06b674185df7f7ac4e7cf3cd2642c2d75b4eb62169ee922c3c2f9724fd760594"
+}

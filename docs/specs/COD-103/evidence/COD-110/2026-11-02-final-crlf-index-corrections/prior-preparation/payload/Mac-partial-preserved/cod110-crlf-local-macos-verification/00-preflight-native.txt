@@ -1,0 +1,13 @@
+/private/tmp/codebasegraph-cod110-20261101
+862bb3b3c40c36b21cdcd388f596d52ad482530b
+02cd3ebed5a1861bef4506f678449d836e7e2bf8
+/private/tmp/codebasegraph-cod110-20261101
+ M crates/xtask/src/ci.rs
+ M crates/xtask/src/release.rs
+/Users/rabii/.cargo/bin/codebase-graph
+/Users/rabii/.cargo/bin/cargo
+/opt/homebrew/bin/pkg-config
+Darwin Rabiis-MacBook-Pro.local 25.6.0 Darwin Kernel Version 25.6.0: Fri Jul 31 19:16:20 PDT 2026; root:xnu-12377.161.14~5/RELEASE_ARM64_T8142 arm64
+ProductName:		macOS
+ProductVersion:		26.6.2
+BuildVersion:		25G83

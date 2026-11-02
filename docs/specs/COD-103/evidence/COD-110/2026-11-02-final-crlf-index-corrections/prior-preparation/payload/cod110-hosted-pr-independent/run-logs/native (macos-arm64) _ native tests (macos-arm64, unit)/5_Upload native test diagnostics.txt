@@ -1,0 +1,29 @@
+﻿2026-11-02T05:58:58.4423140Z ##[group]Run actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+2026-11-02T05:58:58.4423700Z with:
+2026-11-02T05:58:58.4424080Z   name: test-diagnostics-macos-arm64-unit-shard0-1
+2026-11-02T05:58:58.4424390Z   path: diagnostics/
+2026-11-02T05:58:58.4424680Z   if-no-files-found: warn
+2026-11-02T05:58:58.4425060Z   retention-days: 3
+2026-11-02T05:58:58.4425260Z   compression-level: 6
+2026-11-02T05:58:58.4425540Z   overwrite: false
+2026-11-02T05:58:58.4425760Z   include-hidden-files: false
+2026-11-02T05:58:58.4426010Z   archive: true
+2026-11-02T05:58:58.4429310Z env:
+2026-11-02T05:58:58.4429510Z   MACOSX_DEPLOYMENT_TARGET: 13.3
+2026-11-02T05:58:58.4429820Z   CARGO_HTTP_MULTIPLEXING: false
+2026-11-02T05:58:58.4430170Z   CARGO_NET_RETRY: 10
+2026-11-02T05:58:58.4430580Z   LBUG_LIBRARY_DIR: /Users/runner/work/codebaseGraph/codebaseGraph/.cache/lbug-prebuilt/0.19.0/macos-arm64
+2026-11-02T05:58:58.4431310Z   LBUG_INCLUDE_DIR: /Users/runner/work/codebaseGraph/codebaseGraph/.cache/lbug-prebuilt/0.19.0/macos-arm64
+2026-11-02T05:58:58.4431880Z ##[endgroup]
+2026-11-02T05:58:59.1711030Z With the provided path, there will be 5 files uploaded
+2026-11-02T05:58:59.1717080Z Artifact name is valid!
+2026-11-02T05:58:59.1718210Z Root directory input is valid!
+2026-11-02T05:58:59.6182940Z Uploading artifact: test-diagnostics-macos-arm64-unit-shard0-1.zip
+2026-11-02T05:58:59.6373130Z Beginning upload of artifact content to blob storage
+2026-11-02T05:58:59.8206220Z Uploaded bytes 51085
+2026-11-02T05:58:59.8587220Z Finished uploading artifact content to blob storage!
+2026-11-02T05:58:59.8589190Z SHA256 digest of uploaded artifact is 3fa992a5e31c8c4f9e844402c34472840b5e42fd0bd7462f995d9c686096335b
+2026-11-02T05:58:59.8591070Z Finalizing artifact upload
+2026-11-02T05:59:00.3699020Z Artifact test-diagnostics-macos-arm64-unit-shard0-1 successfully finalized. Artifact ID 13119409189
+2026-11-02T05:59:00.3701950Z Artifact test-diagnostics-macos-arm64-unit-shard0-1 has been successfully uploaded! Final size is 51085 bytes. Artifact ID is 13119409189
+2026-11-02T05:59:00.3711530Z Artifact download URL: https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41393999523/artifacts/13119409189

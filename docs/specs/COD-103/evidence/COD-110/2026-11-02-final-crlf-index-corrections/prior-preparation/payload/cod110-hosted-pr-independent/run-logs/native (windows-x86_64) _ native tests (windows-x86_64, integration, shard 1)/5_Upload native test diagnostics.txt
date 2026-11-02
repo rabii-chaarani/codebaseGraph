@@ -1,0 +1,30 @@
+﻿2026-11-02T05:50:29.4032758Z ##[group]Run actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+2026-11-02T05:50:29.4033266Z with:
+2026-11-02T05:50:29.4033542Z   name: test-diagnostics-windows-x86_64-integration-shard1-1
+2026-11-02T05:50:29.4033915Z   path: diagnostics/
+2026-11-02T05:50:29.4034136Z   if-no-files-found: warn
+2026-11-02T05:50:29.4034368Z   retention-days: 3
+2026-11-02T05:50:29.4034549Z   compression-level: 6
+2026-11-02T05:50:29.4034773Z   overwrite: false
+2026-11-02T05:50:29.4035165Z   include-hidden-files: false
+2026-11-02T05:50:29.4035397Z   archive: true
+2026-11-02T05:50:29.4035593Z env:
+2026-11-02T05:50:29.4035785Z   MACOSX_DEPLOYMENT_TARGET: 13.3
+2026-11-02T05:50:29.4036043Z   CARGO_HTTP_MULTIPLEXING: false
+2026-11-02T05:50:29.4036262Z   CARGO_NET_RETRY: 10
+2026-11-02T05:50:29.4036476Z   LIB: D:\a\_temp\lbug-openssl;
+2026-11-02T05:50:29.4036846Z   LBUG_LIBRARY_DIR: D:/a/codebaseGraph/codebaseGraph/.cache/lbug-prebuilt/0.19.0/windows-x86_64
+2026-11-02T05:50:29.4037382Z   LBUG_INCLUDE_DIR: D:/a/codebaseGraph/codebaseGraph/.cache/lbug-prebuilt/0.19.0/windows-x86_64
+2026-11-02T05:50:29.4037840Z ##[endgroup]
+2026-11-02T05:50:29.9587635Z With the provided path, there will be 15 files uploaded
+2026-11-02T05:50:29.9591743Z Artifact name is valid!
+2026-11-02T05:50:29.9593557Z Root directory input is valid!
+2026-11-02T05:50:30.2879348Z Uploading artifact: test-diagnostics-windows-x86_64-integration-shard1-1.zip
+2026-11-02T05:50:30.2914491Z Beginning upload of artifact content to blob storage
+2026-11-02T05:50:30.6331112Z Uploaded bytes 34307
+2026-11-02T05:50:30.6897642Z Finished uploading artifact content to blob storage!
+2026-11-02T05:50:30.6898354Z SHA256 digest of uploaded artifact is 9ed7777cd28b6b83c594b9740620dd049e6cbb1050affee6dfe1b8c0b564bf04
+2026-11-02T05:50:30.6898937Z Finalizing artifact upload
+2026-11-02T05:50:31.2351286Z Artifact test-diagnostics-windows-x86_64-integration-shard1-1 successfully finalized. Artifact ID 13119766308
+2026-11-02T05:50:31.2352346Z Artifact test-diagnostics-windows-x86_64-integration-shard1-1 has been successfully uploaded! Final size is 34307 bytes. Artifact ID is 13119766308
+2026-11-02T05:50:31.2357624Z Artifact download URL: https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41393999523/artifacts/13119766308

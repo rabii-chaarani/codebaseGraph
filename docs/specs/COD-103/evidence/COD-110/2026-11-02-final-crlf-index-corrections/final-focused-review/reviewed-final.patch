@@ -1,0 +1,215 @@
+diff --git a/crates/xtask/src/ci.rs b/crates/xtask/src/ci.rs
+index c503af2..e108469 100644
+--- a/crates/xtask/src/ci.rs
++++ b/crates/xtask/src/ci.rs
+@@ -92,7 +92,7 @@ pub(super) fn validate_release_candidate(
+                 "release metadata {path} exceeds the supported size"
+             ));
+         }
+-        blobs.insert(path, bytes);
++        blobs.insert(path, normalize_crlf_pairs(&bytes));
+     }
+ 
+     let root_versions = recognize_toml(&blobs["Cargo.toml"], TomlTarget::Package, "codebase-graph")
+@@ -155,6 +155,21 @@ pub(super) fn validate_release_candidate(
+     Ok(ReleaseCandidate { version, notes })
+ }
+ 
++fn normalize_crlf_pairs(bytes: &[u8]) -> Vec<u8> {
++    let mut normalized = Vec::with_capacity(bytes.len());
++    let mut index = 0;
++    while index < bytes.len() {
++        if bytes[index] == b'\r' && bytes.get(index + 1) == Some(&b'\n') {
++            normalized.push(b'\n');
++            index += 2;
++        } else {
++            normalized.push(bytes[index]);
++            index += 1;
++        }
++    }
++    normalized
++}
++
+ pub(super) fn release_notes(changelog: &str, version: &str) -> Result<String, String> {
+     let linked = format!("## [{version}](");
+     let plain = format!("## {version}");
+@@ -563,8 +578,19 @@ pub(super) fn verify_checkout(root: &Path, expected_sha: &str) -> Result<(), Str
+         }
+     }
+ 
+-    let worktree = git(&root, ["diff", "--quiet", expected_sha, "--"], 0)
+-        .map_err(|_| "could not verify source checkout tracked state".to_string())?;
++    let worktree = git(
++        &root,
++        [
++            "-c",
++            "diff.autoRefreshIndex=false",
++            "diff",
++            "--quiet",
++            expected_sha,
++            "--",
++        ],
++        0,
++    )
++    .map_err(|_| "could not verify source checkout tracked state".to_string())?;
+     match worktree.status.code() {
+         Some(0) => {}
+         Some(1) => {
+@@ -1549,6 +1575,29 @@ mod tests {
+         assert_eq!(super::verify_checkout(&fixture.root, &sha), Ok(()));
+     }
+ 
++    #[test]
++    fn verify_checkout_accepts_stale_stat_without_mutating_index() {
++        let (fixture, sha) = checkout_fixture();
++        let cargo = fixture.root.join("Cargo.toml");
++        let contents = fs::read(&cargo).unwrap();
++        let modified = fs::metadata(&cargo).unwrap().modified().unwrap();
++        let stale_modified = modified - std::time::Duration::from_secs(10);
++        fs::OpenOptions::new()
++            .write(true)
++            .open(&cargo)
++            .unwrap()
++            .set_times(std::fs::FileTimes::new().set_modified(stale_modified))
++            .unwrap();
++        assert!(fs::metadata(&cargo).unwrap().modified().unwrap() < modified);
++        assert_eq!(fs::read(&cargo).unwrap(), contents);
++
++        let index_path = fixture.root.join(".git/index");
++        let index_before = fs::read(&index_path).unwrap();
++        assert_eq!(super::verify_checkout(&fixture.root, &sha), Ok(()));
++        assert_eq!(fs::read(&cargo).unwrap(), contents);
++        assert_eq!(fs::read(&index_path).unwrap(), index_before);
++    }
++
+     #[test]
+     fn verify_checkout_rejects_invalid_or_mismatched_sha_and_changed_head() {
+         let (fixture, sha) = checkout_fixture();
+@@ -2178,6 +2227,20 @@ mod tests {
+             }
+         );
+     }
++    #[test]
++    fn classifier_keeps_raw_crlf_metadata_ineligible() {
++        let base = base_files();
++        let mut head = bumped(&base, "4.0.5", "4.0.6");
++        for path in METADATA_PATHS {
++            let text = String::from_utf8(head[path].clone()).unwrap();
++            head.insert(path.to_string(), text.replace('\n', "\r\n").into_bytes());
++        }
++        assert!(matches!(
++            classify_metadata_diff(&base, &head),
++            MetadataDecision::Full { .. }
++        ));
++    }
++
+     #[test]
+     fn pr167_shaped_complete_metadata_transition_is_lightweight() {
+         let base = base_files();
+diff --git a/crates/xtask/src/release.rs b/crates/xtask/src/release.rs
+index 95bfe45..86c7c19 100644
+--- a/crates/xtask/src/release.rs
++++ b/crates/xtask/src/release.rs
+@@ -560,6 +560,102 @@ printf '{"version":{"crate":"codebase-graph","num":"4.0.4"}}\n200'"###,
+         );
+     }
+ 
++    #[test]
++    fn candidate_metadata_accepts_crlf_and_mixed_six_file_layouts_without_writing() {
++        fn with_endings(bytes: &[u8], mixed: bool) -> Vec<u8> {
++            let mut output = Vec::with_capacity(bytes.len() * 2);
++            let mut line = 0;
++            for byte in bytes {
++                if *byte == b'\n' {
++                    if !mixed || line % 2 == 0 {
++                        output.push(b'\r');
++                    }
++                    output.push(*byte);
++                    line += 1;
++                } else {
++                    output.push(*byte);
++                }
++            }
++            output
++        }
++
++        let fixture = CandidateFixture::new("4.0.5");
++        let paths = [
++            ".release-please-manifest.json",
++            "Cargo.toml",
++            "Cargo.lock",
++            "CHANGELOG.md",
++            "crates/k-wiki/Cargo.toml",
++            "crates/xtask/Cargo.toml",
++        ];
++        let originals: Vec<(&str, Vec<u8>)> = paths
++            .into_iter()
++            .map(|path| (path, fs::read(fixture.root.join(path)).unwrap()))
++            .collect();
++        let expected = super::super::ci::validate_release_candidate(&fixture.root, None).unwrap();
++
++        for mixed in [false, true] {
++            for (path, bytes) in &originals {
++                fs::write(fixture.root.join(*path), with_endings(bytes, mixed)).unwrap();
++            }
++            let before: Vec<Vec<u8>> = originals
++                .iter()
++                .map(|(path, _)| fs::read(fixture.root.join(*path)).unwrap())
++                .collect();
++            let candidate =
++                super::super::ci::validate_release_candidate(&fixture.root, Some("4.0.5")).unwrap();
++            assert_eq!(candidate, expected);
++            let after: Vec<Vec<u8>> = originals
++                .iter()
++                .map(|(path, _)| fs::read(fixture.root.join(*path)).unwrap())
++                .collect();
++            assert_eq!(after, before);
++        }
++    }
++
++    #[test]
++    fn candidate_metadata_keeps_rejecting_bare_cr_ambiguous_and_mismatched_inputs() {
++        let fixture = CandidateFixture::new("4.0.5");
++        let cargo = fixture.root.join("Cargo.toml");
++        let contents = fs::read_to_string(&cargo).unwrap();
++        fs::write(
++            &cargo,
++            contents.replacen("edition = \"2021\"", "edition = \"2021\"\r # bare CR", 1),
++        )
++        .unwrap();
++        assert!(super::super::ci::validate_release_candidate(&fixture.root, None).is_err());
++
++        let fixture = CandidateFixture::new("4.0.5");
++        let cargo = fixture.root.join("Cargo.toml");
++        let contents = fs::read_to_string(&cargo).unwrap();
++        fs::write(
++            &cargo,
++            contents.replacen(
++                "version = \"4.0.5\"\n",
++                "version = \"4.0.5\"\nversion = \"4.0.5\"\n",
++                1,
++            ),
++        )
++        .unwrap();
++        assert!(super::super::ci::validate_release_candidate(&fixture.root, None).is_err());
++
++        let fixture = CandidateFixture::new("4.0.5");
++        fs::write(
++            fixture.root.join(".release-please-manifest.json"),
++            b"{\n  \".\": \"4.0.5\",\n  \".\": \"4.0.5\"\n}\n",
++        )
++        .unwrap();
++        assert!(super::super::ci::validate_release_candidate(&fixture.root, None).is_err());
++
++        let fixture = CandidateFixture::new("4.0.5");
++        fs::write(
++            fixture.root.join(".release-please-manifest.json"),
++            b"{\n  \".\": \"4.0.6\"\n}\n",
++        )
++        .unwrap();
++        assert!(super::super::ci::validate_release_candidate(&fixture.root, None).is_err());
++    }
++
+     #[test]
+     fn candidate_metadata_requires_complete_consistent_generated_contract() {
+         let fixture = CandidateFixture::new("4.0.5");

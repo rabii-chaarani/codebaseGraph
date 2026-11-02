@@ -1,0 +1,65 @@
+[
+  {
+    "name": "host-stage",
+    "pid": 55866,
+    "running": false,
+    "exit_code": 0,
+    "duration": 0.6373307090252638
+  },
+  {
+    "name": "shared-stage",
+    "pid": 55960,
+    "running": false,
+    "exit_code": 125,
+    "duration": 1.8386722079012543
+  },
+  {
+    "name": "local-stage",
+    "pid": 56005,
+    "running": false,
+    "exit_code": 125,
+    "duration": 7.046833874890581
+  },
+  {
+    "name": "lf-cargo-wrapper",
+    "pid": 56057,
+    "running": false,
+    "exit_code": 255,
+    "duration": 265.7456345418468
+  },
+  {
+    "name": "one-process-inspection",
+    "pid": 56185,
+    "running": false,
+    "exit_code": 0,
+    "duration": 1.210686125094071
+  },
+  {
+    "name": "owned-cleanup",
+    "pid": 56239,
+    "running": false,
+    "exit_code": 125,
+    "duration": 0.9839227080810815
+  },
+  {
+    "name": "quiescence-check",
+    "pid": 56283,
+    "running": false,
+    "exit_code": 0,
+    "duration": 1.1017358750104904
+  },
+  {
+    "name": "crlf-direct-test",
+    "pid": 56339,
+    "running": false,
+    "exit_code": 101,
+    "duration": 2.1622545830905437
+  },
+  {
+    "name": "final-read-hash-export",
+    "pid": 56417,
+    "running": false,
+    "exit_code": 0,
+    "duration": 2.4489055001176894
+  }
+]

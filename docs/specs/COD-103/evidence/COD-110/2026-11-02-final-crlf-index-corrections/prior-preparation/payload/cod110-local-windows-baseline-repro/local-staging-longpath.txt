@@ -1,0 +1,7 @@
+{
+    "error":  "Exception calling \"OpenRead\" with \"1\" argument(s): \"Could not find a part of the path \u0027C:\\Users\\rabii\\AppData\\Local\\Temp\\codebasegraph-cod110-win-repro-b5aa2377\\docs\\specs\\COD-103\\evidence\\COD-107\\local-qualification-2026-11-01\\independent-cli-supplement\\reject_actual_workflow_python_dependency__confirmed-production\\fixture\\.github\\workflows\\ci.yml\u0027.\"",
+    "detail":  "Exception calling \"OpenRead\" with \"1\" argument(s): \"Could not find a part of the path \u0027C:\\Users\\rabii\\AppData\\Local\\Temp\\codebasegraph-cod110-win-repro-b5aa2377\\docs\\specs\\COD-103\\evidence\\COD-107\\local-qualification-2026-11-01\\independent-cli-supplement\\reject_actual_workflow_python_dependency__confirmed-production\\fixture\\.github\\workflows\\ci.yml\u0027.\"",
+    "ended_utc":  "2026-11-02T08:48:19.7060790Z",
+    "actual_test_started":  false,
+    "retry_performed":  false
+}

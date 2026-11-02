@@ -1,0 +1,29 @@
+{
+  "status": "bounded read-only design complete; implementation not performed",
+  "source_commit": "862bb3b3c40c36b21cdcd388f596d52ad482530b",
+  "source_tree": "02cd3ebed5a1861bef4506f678449d836e7e2bf8",
+  "source_sha256": {
+    "crates/xtask/src/main.rs": "6709677c3e48887731a1768c9ea3c5b5448c9ff0765391fb9a91a300c3386a71",
+    "crates/xtask/src/ci.rs": "7db803caf383175b0842c9b01e2725588a96794fc8e9b021db550fd4e129139a",
+    "crates/xtask/src/release.rs": "34090159b154bb5a9676f50b441313ba11e70d43211ea5d24748322b0afe9b62",
+    "crates/xtask/src/release/workflow_tests.rs": "e09f974a6c5e43c6dc61adf28d55920caf35116d40064bb2c1547825abbaf0bb",
+    ".github/workflows/release.yml": "64d219b8ae84dabc03eb5b7202ffd40b7046171f061b0aab9330b35f19c6c955",
+    ".github/workflows/ci.yml": "8827a9a41ab87f509be0fe9719f84c7d144da485dea7d3932e4fe6d59d4ff9fb",
+    "docs/release.md": "4fafaeec5fc9c975a68c75367fd114c9a32c4bd90093f20e1267a9299380d34d"
+  },
+  "payloads": [
+    {
+      "path": "report.md",
+      "bytes": 11266,
+      "sha256": "4e1b42334f078eb25a3913155d080fd30276fcce26d171dcb1fa2825fdbe32e0"
+    }
+  ],
+  "active_owned_bash": 0,
+  "lease": "released; no further actions",
+  "limitations": [
+    "proposal only; no implementation/build/test/VM/Git-write/model-write/API-write/tracker-write",
+    "source HEAD/tree parent-bound; current read SHA256s independently calculated",
+    "graph CLI old same-project baseline discovery only",
+    "hosted Windows raw checkout EOL unknown"
+  ]
+}

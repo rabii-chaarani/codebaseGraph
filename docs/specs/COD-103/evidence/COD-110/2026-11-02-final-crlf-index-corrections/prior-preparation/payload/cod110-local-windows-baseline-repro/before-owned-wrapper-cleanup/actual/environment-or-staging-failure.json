@@ -1,0 +1,7 @@
+﻿{
+    "error":  ".cargo/: Cannot extract through symlink \\\\\\\\?\\\\C:\\\\Mac\\\\Home: too many symbolic link levels",
+    "detail":  ".cargo/: Cannot extract through symlink \\\\\\\\?\\\\C:\\\\Mac\\\\Home: too many symbolic link levels",
+    "ended_utc":  "2026-11-02T08:47:40.6102984Z",
+    "actual_test_started":  false,
+    "retry_performed":  false
+}

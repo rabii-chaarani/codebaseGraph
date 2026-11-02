@@ -1,0 +1,106 @@
+{
+  "status": "PARTIAL_FAIL_INDEX_NONMUTATION",
+  "closed_utc": "2026-11-02T10:35:21.902636+00:00",
+  "scope": "COD110 CRLF fix \u2014 remaining LOCAL macOS verification only; no source fix; no further acceptance cases after failure.",
+  "repository": "/private/tmp/codebasegraph-cod110-20261101",
+  "source": {
+    "HEAD": "862bb3b3c40c36b21cdcd388f596d52ad482530b",
+    "tree": "02cd3ebed5a1861bef4506f678449d836e7e2bf8",
+    "dirty_files": {
+      "crates/xtask/src/ci.rs": {
+        "bytes": 94601,
+        "mode": "0o644",
+        "sha256": "3c52c2c8e01262cf530c1e2c286cd77c8b7c50aace8fbf532cdc605c48178570"
+      },
+      "crates/xtask/src/release.rs": {
+        "bytes": 33789,
+        "mode": "0o644",
+        "sha256": "06b674185df7f7ac4e7cf3cd2642c2d75b4eb62169ee922c3c2f9724fd760594"
+      }
+    },
+    "all_2696_inventory_entries_unchanged": true,
+    "other_2694_unchanged": true,
+    "dirty_patch": "24-final-dirty-source.patch",
+    "dirty_patch_identity": {
+      "bytes": 6085,
+      "mode": "0o644",
+      "sha256": "1ef031e9df426d7a2847c1e1bdda46f6e76fbe95350100725c2f6e6b9dbe789d"
+    },
+    "source_inventory_before": "00-source-before.json",
+    "source_inventory_after": "20-source-after.json"
+  },
+  "results": {
+    "reused_fmt": "PASS \u2014 not rerun",
+    "reused_full_native_xtask": "PASS 157/157; genuine nextest JUnit preserved, not rerun",
+    "reused_strict_workspace_clippy": "PASS, no warnings \u2014 not rerun",
+    "new_check_workflows": "PASS exit0",
+    "new_ordinary_release_gate": "PASS exit0, no --source-sha on dirty product tree",
+    "new_lf_cli_metadata_output": "PASS exit0, expected version/tag/notes/source SHA",
+    "new_lf_cli_index_nonmutation": "FAIL: actual private index bytes changed",
+    "new_all_six_crlf_cli": "NOT RUN \u2014 stopped after LF index failure",
+    "new_mixed_cli": "NOT RUN \u2014 stopped after LF index failure",
+    "new_dirty_tracked_cli_negative": "NOT RUN \u2014 stopped after LF index failure",
+    "single_authorized_lf_actor_diagnostic": "CONFIRMED index stat-cache mutation in final Git diff --quiet despite GIT_OPTIONAL_LOCKS=0"
+  },
+  "diagnostic_result": "19-isolation-result.json",
+  "diagnostic_first_mutating_command": {
+    "sequence": 30,
+    "argv": [
+      "--no-replace-objects",
+      "diff",
+      "--quiet",
+      "660ebad08bec4973555669ea67253dd357d70470",
+      "--"
+    ],
+    "cwd": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-c8e15d01/cod110-crlf-macos-remaining-verification/actor-isolation-one-lf/fixture",
+    "GIT_OPTIONAL_LOCKS": "0",
+    "GIT_CONFIG_COUNT": null,
+    "actual_git": "/opt/homebrew/Cellar/git/2.52.0_1/bin/git",
+    "actual_git_sha256": "ec24d6af5c519b2f708ae5464f23f85dd3a3cc96e161c0b751f879a3a516ee74"
+  },
+  "diagnostic_index_blobs_modes_flags_unchanged": true,
+  "diagnostic_changes": "All six entries ctime/mtime seconds/nanoseconds and index trailer checksum; blob OIDs, modes, flags and sizes unchanged.",
+  "all_metadata_disk_bytes_modes_unchanged": true,
+  "product_protected_unchanged": true,
+  "original_lf_fixture_preserved_without_restore": true,
+  "raw_before_index_initial_lf": "NOT CAPTURED: only initial hash/size/mode exists. No reconstruction or inferred before bytes.",
+  "raw_before_index_diagnostic": "Captured before/after every Git subprocess and outer shell; see actor-isolation-one-lf/",
+  "old_evidence_original_root": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-58dfaa85/cod110-crlf-local-macos-verification",
+  "old_evidence_reuse_provenance": "23-reused-proof-provenance.json",
+  "old_genuine_junit": {
+    "sha256": "91981d6262fdec1c3bf05b01022fc0bac82d34e55baeddd32905a5a1a5247883",
+    "bytes": 76760,
+    "uuid": "6635c9dd-ecad-42d0-870f-4a0330af7175",
+    "tests": 157,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0
+  },
+  "new_primary_command_record_count": 9,
+  "new_ancillary_top_level_commands": [
+    "02 preflight: git revision/status/diff + process scan",
+    "11 read-only product git config diagnostic, exit1/no relevant config match",
+    "22 final git revision/status/diff + process scan"
+  ],
+  "old_primary_start_records_preserved_not_executed": 5,
+  "owned_Bash_running": 0,
+  "read_private_Cargo_leases": "STOPPED; no more commands or private/source writes after closure",
+  "not_claimed": [
+    "Not labeled introduced by CRLF; verify_checkout/git body not changed by CRLF patch.",
+    "No baseline binary comparison performed.",
+    "Windows qualification remains parent-owned separately; not rerun.",
+    "No full root-application/native-engine test suite or registry/publish operation.",
+    "No Scryer/model/Linear/CI/GitHub mutations; model delta unknown/unassessed.",
+    "No JUnit regeneration, synthesis, or rewriting original completed proof."
+  ],
+  "next_owner": "Engineer / Software Designer for narrow restorative fix; affected evidence rerun only after authorized final source snapshot.",
+  "settings": {
+    "role": "evidence_verifier",
+    "parent_accepted": "explicit openai-codex/gpt-6.1-sol / XHIGH / default / fresh non-fork",
+    "mapped_model": "gpt-6.1-sol",
+    "mapped_reasoning_effort": "xhigh",
+    "runtime_model_self_inspection": "unexposed; no known mismatch",
+    "nested_dispatch": "none"
+  },
+  "knowledge_assessment": "Reusable Git diff index-side-effect finding identified; no memory/wiki writes within read-only verification assignment."
+}

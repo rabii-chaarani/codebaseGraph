@@ -1,0 +1,91 @@
+﻿2026-11-02T05:26:13.3745801Z ##[group]Run actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+2026-11-02T05:26:13.3746892Z with:
+2026-11-02T05:26:13.3747232Z   ref: f3f154aeb050945d4efcc635126208d35b43b622
+2026-11-02T05:26:13.3747697Z   repository: rabii-chaarani/codebaseGraph
+2026-11-02T05:26:13.3750901Z   token: ***
+2026-11-02T05:26:13.3751233Z   ssh-strict: true
+2026-11-02T05:26:13.3751550Z   ssh-user: git
+2026-11-02T05:26:13.3751863Z   persist-credentials: true
+2026-11-02T05:26:13.3752231Z   clean: true
+2026-11-02T05:26:13.3752549Z   sparse-checkout-cone-mode: true
+2026-11-02T05:26:13.3752922Z   fetch-depth: 1
+2026-11-02T05:26:13.3753224Z   fetch-tags: false
+2026-11-02T05:26:13.3753538Z   show-progress: true
+2026-11-02T05:26:13.3753856Z   lfs: false
+2026-11-02T05:26:13.3754142Z   submodules: false
+2026-11-02T05:26:13.3754455Z   set-safe-directory: true
+2026-11-02T05:26:13.3754936Z env:
+2026-11-02T05:26:13.3755240Z   MACOSX_DEPLOYMENT_TARGET: 13.3
+2026-11-02T05:26:13.3755619Z   CARGO_HTTP_MULTIPLEXING: false
+2026-11-02T05:26:13.3756017Z   CARGO_NET_RETRY: 10
+2026-11-02T05:26:13.3756328Z ##[endgroup]
+2026-11-02T05:26:13.4962545Z Syncing repository: rabii-chaarani/codebaseGraph
+2026-11-02T05:26:13.4963914Z ##[group]Getting Git version info
+2026-11-02T05:26:13.4964406Z Working directory is 'D:\a\codebaseGraph\codebaseGraph'
+2026-11-02T05:26:13.5660925Z [command]"C:\Program Files\Git\bin\git.exe" version
+2026-11-02T05:26:13.9321858Z git version 2.56.0.windows.3
+2026-11-02T05:26:13.9357555Z ##[endgroup]
+2026-11-02T05:26:13.9372091Z Temporarily overriding HOME='D:\a\_temp\a19f0edb-ced4-4851-9061-de614cf4f6aa' before making global git config changes
+2026-11-02T05:26:13.9373134Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-02T05:26:13.9380837Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\codebaseGraph\codebaseGraph
+2026-11-02T05:26:13.9968709Z Deleting the contents of 'D:\a\codebaseGraph\codebaseGraph'
+2026-11-02T05:26:13.9972694Z ##[group]Determining repository object format
+2026-11-02T05:26:13.9974884Z ##[endgroup]
+2026-11-02T05:26:13.9975651Z ##[group]Initializing the repository
+2026-11-02T05:26:13.9983117Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\codebaseGraph\codebaseGraph
+2026-11-02T05:26:14.0802714Z Initialized empty Git repository in D:/a/codebaseGraph/codebaseGraph/.git/
+2026-11-02T05:26:14.0834563Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/rabii-chaarani/codebaseGraph
+2026-11-02T05:26:14.1436943Z ##[endgroup]
+2026-11-02T05:26:14.1437624Z ##[group]Disabling automatic garbage collection
+2026-11-02T05:26:14.1444465Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
+2026-11-02T05:26:14.1674485Z ##[endgroup]
+2026-11-02T05:26:14.1675057Z ##[group]Setting up auth
+2026-11-02T05:26:14.1675593Z Removing SSH command configuration
+2026-11-02T05:26:14.1684563Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-11-02T05:26:14.1918410Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-11-02T05:26:15.6718380Z Removing HTTP extra header
+2026-11-02T05:26:15.6728264Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-02T05:26:15.6982111Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-11-02T05:26:16.0967661Z Removing includeIf entries pointing to credentials config files
+2026-11-02T05:26:16.0986492Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-02T05:26:16.1221865Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-11-02T05:26:16.5198376Z [command]"C:\Program Files\Git\bin\git.exe" config --file D:\a\_temp\git-credentials-b1dbacbb-281e-4e71-be1c-438b192ac0e4.config http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+2026-11-02T05:26:16.5443795Z [command]"C:\Program Files\Git\bin\git.exe" config --local includeIf.gitdir:D:/a/codebaseGraph/codebaseGraph/.git.path D:\a\_temp\git-credentials-b1dbacbb-281e-4e71-be1c-438b192ac0e4.config
+2026-11-02T05:26:16.5674350Z [command]"C:\Program Files\Git\bin\git.exe" config --local includeIf.gitdir:D:/a/codebaseGraph/codebaseGraph/.git/worktrees/*.path D:\a\_temp\git-credentials-b1dbacbb-281e-4e71-be1c-438b192ac0e4.config
+2026-11-02T05:26:16.5956674Z [command]"C:\Program Files\Git\bin\git.exe" config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-b1dbacbb-281e-4e71-be1c-438b192ac0e4.config
+2026-11-02T05:26:16.6186328Z [command]"C:\Program Files\Git\bin\git.exe" config --local includeIf.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-b1dbacbb-281e-4e71-be1c-438b192ac0e4.config
+2026-11-02T05:26:16.6412868Z ##[endgroup]
+2026-11-02T05:26:16.6414653Z ##[group]Fetching the repository
+2026-11-02T05:26:16.6423759Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin f3f154aeb050945d4efcc635126208d35b43b622
+2026-11-02T05:26:19.2806693Z From https://github.com/rabii-chaarani/codebaseGraph
+2026-11-02T05:26:19.2807424Z  * branch            f3f154aeb050945d4efcc635126208d35b43b622 -> FETCH_HEAD
+2026-11-02T05:26:19.2841297Z [command]"C:\Program Files\Git\bin\git.exe" rev-parse --verify --quiet f3f154aeb050945d4efcc635126208d35b43b622^{object}
+2026-11-02T05:26:19.3135405Z f3f154aeb050945d4efcc635126208d35b43b622
+2026-11-02T05:26:19.3159145Z ##[endgroup]
+2026-11-02T05:26:19.3159730Z ##[group]Determining the checkout info
+2026-11-02T05:26:19.3160249Z ##[endgroup]
+2026-11-02T05:26:19.3168363Z [command]"C:\Program Files\Git\bin\git.exe" sparse-checkout disable
+2026-11-02T05:26:19.3453250Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all extensions.worktreeConfig
+2026-11-02T05:26:19.3689125Z ##[group]Checking out the ref
+2026-11-02T05:26:19.3696241Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force f3f154aeb050945d4efcc635126208d35b43b622
+2026-11-02T05:26:19.9659171Z Note: switching to 'f3f154aeb050945d4efcc635126208d35b43b622'.
+2026-11-02T05:26:19.9660837Z 
+2026-11-02T05:26:19.9661088Z You are in 'detached HEAD' state. You can look around, make experimental
+2026-11-02T05:26:19.9661730Z changes and commit them, and you can discard any commits you make in this
+2026-11-02T05:26:19.9662339Z state without impacting any branches by switching back to a branch.
+2026-11-02T05:26:19.9662714Z 
+2026-11-02T05:26:19.9662923Z If you want to create a new branch to retain commits you create, you may
+2026-11-02T05:26:19.9663553Z do so (now or later) by using -c with the switch command. Example:
+2026-11-02T05:26:19.9663896Z 
+2026-11-02T05:26:19.9664130Z   git switch -c <new-branch-name>
+2026-11-02T05:26:19.9664394Z 
+2026-11-02T05:26:19.9664739Z Or undo this operation with:
+2026-11-02T05:26:19.9664923Z 
+2026-11-02T05:26:19.9665017Z   git switch -
+2026-11-02T05:26:19.9665164Z 
+2026-11-02T05:26:19.9665398Z Turn off this advice by setting config variable advice.detachedHead to false
+2026-11-02T05:26:19.9665782Z 
+2026-11-02T05:26:19.9666184Z HEAD is now at f3f154a Merge 862bb3b3c40c36b21cdcd388f596d52ad482530b into 9ae63f3302bf4cae90ebd5a56173fff341ca815b
+2026-11-02T05:26:19.9905814Z ##[endgroup]
+2026-11-02T05:26:20.0308112Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format=%H
+2026-11-02T05:26:20.0521061Z f3f154aeb050945d4efcc635126208d35b43b622
