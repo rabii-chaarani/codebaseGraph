@@ -1,0 +1,13 @@
+# COD-110 diagnostic-corrected integrated verification — CLOSED / FAIL lint
+
+Formatting PASS. Full relevant xtask nextest154/154PASS0failure/error/skip/notrun, exit0. Required STRICT workspace/alltargets/allfeatures Clippy exit101: main.rs4416 run_repository_policy_body has10arguments/7, clippy::too_many_arguments under-Dwarnings. Full raw compiler output retained. Native environment did not fail; build reached xtask/k-wiki. No source edit/suppression/retry; actual check-workflows/ordinary release-gate NOTSTARTED after lint failure.
+
+Snapshot docsHEAD754c82f4dc22c203c22a433f5bbae5f2f6e80231/treefdf2f21db4c05965a7c4020075a9e66fddfa2db5 in /private/tmp/codebasegraph-cod110-20261101;main3139adb944854f00baee145faf1872dc194afbce65c097e9a9f3846dc500de33/271417B. Full2459 serializedpre/post bytehashmodes identical,2452baseline7dirty;model19/currentcaptured Git/index/ref/config/userwork protection exact. All source anchors/diff/bin/depfile/profile/inventory/environment in retained JSON/logs.
+
+ONE inventory and ONEfull native-tests nextest --no-fail-fast/retries0/thread1/privateoutside config/--no-tests fail/offlinelocked/default target. Genuine JUnit UUID33917d13-3b96-42d1-8b34-716b64b2167f, SHA2569113dfbd16fe5121a283b7bfaae508f77387711f6a3191dbf7cbd8024d6aef7a;154testcase nodes0failure0error. Earlier153/154failures remain immutable historical evidence, not replaced. Unchanged shared-core CLI closed matrix/source binding and current35 workflowbody cases reused; no redundant replay.
+
+Explicit native019LBUG/OpenSSL3.6.2/deployment13.3/jobs2/GIT_OPTIONAL_LOCKS0 child receipt/per-command including restored-kernelClippy. No RUSTFLAGS/target/profile/features/deps/install changes; no rootapplication/nativewholeworkspacetests/realregistry/package/publish/GitAPI/modelCI actions. No wrong-source JUnitingestion/maps/fold/reconcile. Canonical9ae63model doesnotbinddirtysource.
+
+Authority unchanged316be/0e6008/Design9 R07A07R08A08 retainedcontracts/compat49612approval754c82user2917/node1wzt/lane. Currentlocal behavior suite PASS; requiredwarningsgate FAIL/actualgatespending. No integratedacceptance/FinalReview/Windows/hosted/PRDone/main/release qualification. Engineer routes exactlintowner and grants correctedfrozenverification. EvidenceVerifier inherit/inherit/no fallback; actualmodel/effortselfmetadata unexposed. Assumptions suppliedexclusivequiescentlease/acceptednativeorigin; directhasheschecked. Constants changed:none; no wiki/memory writes warranted for this unresolvedlint.
+
+STOP0Bash/Cargo/watch/sourcelease; allread/private/Cargo writes stop aftermanifest. No implementation/delivery authority transferred.

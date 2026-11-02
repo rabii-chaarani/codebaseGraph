@@ -1,0 +1,77 @@
+{
+  "commands": [
+    {
+      "name": "environment",
+      "command": "env LBUG_LIBRARY_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_INCLUDE_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_VERSION=0.19.0 OPENSSL_LIB_DIR=/opt/homebrew/Cellar/openssl@3/3.6.2/lib MACOSX_DEPLOYMENT_TARGET=13.3 CARGO_BUILD_JOBS=2 GIT_OPTIONAL_LOCKS=0 /usr/bin/python3 -c 'import os,json;print(json.dumps({k:v for k,v in os.environ.items() if k.startswith((\"LBUG\",\"OPENSSL\",\"MACOSX\",\"CARGO\",\"RUST\",\"GIT_OPTIONAL\"))},sort_keys=True))'",
+      "cwd": "/private/tmp/codebasegraph-cod110-20261101",
+      "exit_code": 0,
+      "duration": 0.04560137493535876
+    },
+    {
+      "name": "tree",
+      "command": "env LBUG_LIBRARY_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_INCLUDE_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_VERSION=0.19.0 OPENSSL_LIB_DIR=/opt/homebrew/Cellar/openssl@3/3.6.2/lib MACOSX_DEPLOYMENT_TARGET=13.3 CARGO_BUILD_JOBS=2 GIT_OPTIONAL_LOCKS=0 git ls-tree -rz HEAD",
+      "cwd": "/private/tmp/codebasegraph-cod110-20261101",
+      "exit_code": 0,
+      "duration": 0.04030195903033018
+    },
+    {
+      "name": "identity-pre",
+      "command": "env LBUG_LIBRARY_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_INCLUDE_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_VERSION=0.19.0 OPENSSL_LIB_DIR=/opt/homebrew/Cellar/openssl@3/3.6.2/lib MACOSX_DEPLOYMENT_TARGET=13.3 CARGO_BUILD_JOBS=2 GIT_OPTIONAL_LOCKS=0 git rev-parse --show-toplevel HEAD HEAD^{tree}",
+      "cwd": "/private/tmp/codebasegraph-cod110-20261101",
+      "exit_code": 0,
+      "duration": 0.010995250195264816
+    },
+    {
+      "name": "diff-pre",
+      "command": "env LBUG_LIBRARY_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_INCLUDE_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_VERSION=0.19.0 OPENSSL_LIB_DIR=/opt/homebrew/Cellar/openssl@3/3.6.2/lib MACOSX_DEPLOYMENT_TARGET=13.3 CARGO_BUILD_JOBS=2 GIT_OPTIONAL_LOCKS=0 git diff --binary HEAD",
+      "cwd": "/private/tmp/codebasegraph-cod110-20261101",
+      "exit_code": 0,
+      "duration": 0.02052854187786579
+    },
+    {
+      "name": "status-pre",
+      "command": "env LBUG_LIBRARY_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_INCLUDE_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_VERSION=0.19.0 OPENSSL_LIB_DIR=/opt/homebrew/Cellar/openssl@3/3.6.2/lib MACOSX_DEPLOYMENT_TARGET=13.3 CARGO_BUILD_JOBS=2 GIT_OPTIONAL_LOCKS=0 git status --porcelain=v1 --untracked-files=all",
+      "cwd": "/private/tmp/codebasegraph-cod110-20261101",
+      "exit_code": 0,
+      "duration": 0.038506707875058055
+    },
+    {
+      "name": "fmt",
+      "command": "env LBUG_LIBRARY_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_INCLUDE_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_VERSION=0.19.0 OPENSSL_LIB_DIR=/opt/homebrew/Cellar/openssl@3/3.6.2/lib MACOSX_DEPLOYMENT_TARGET=13.3 CARGO_BUILD_JOBS=2 GIT_OPTIONAL_LOCKS=0 cargo fmt --all --check",
+      "cwd": "/private/tmp/codebasegraph-cod110-20261101",
+      "exit_code": 1,
+      "duration": 1.107787000015378
+    },
+    {
+      "name": "focused-size-policy",
+      "command": "env LBUG_LIBRARY_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_INCLUDE_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_VERSION=0.19.0 OPENSSL_LIB_DIR=/opt/homebrew/Cellar/openssl@3/3.6.2/lib MACOSX_DEPLOYMENT_TARGET=13.3 CARGO_BUILD_JOBS=2 GIT_OPTIONAL_LOCKS=0 cargo test --offline --locked -p xtask --bin xtask --profile native-tests tests::workflow_policy_rejects_missing_crate_size_gates -- --exact --nocapture",
+      "cwd": "/private/tmp/codebasegraph-cod110-20261101",
+      "exit_code": 0,
+      "duration": 7.391888875048608
+    }
+  ],
+  "environment": {
+    "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+    "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+    "LBUG_VERSION": "0.19.0",
+    "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+    "MACOSX_DEPLOYMENT_TARGET": "13.3",
+    "CARGO_BUILD_JOBS": "2",
+    "GIT_OPTIONAL_LOCKS": "0"
+  },
+  "native019": {
+    "lbug.h": {
+      "sha256": "7da5b7e36d6610e43a1512e4997ac123ba0886cf5598ae44aca5449aa02a8aa3",
+      "bytes": 77406
+    },
+    "lbug.hpp": {
+      "sha256": "0b463bef0fa7a9ba1bb14cee12b23bf5bc7c2d6cfc4b3779d6f7cbe92bf4831d",
+      "bytes": 333665
+    },
+    "liblbug.a": {
+      "sha256": "d2e9a5c37617b0affb01f18f6ef48bb1531f5744f5ba06c849226842617ad142",
+      "bytes": 81722416
+    }
+  },
+  "no_outstanding_processes": true
+}

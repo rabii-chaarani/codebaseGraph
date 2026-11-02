@@ -1,0 +1,954 @@
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:1498:
+     let steps = yaml_path(job, &["steps"]).and_then(YamlValue::as_sequence);
+     let purpose = yaml_step_by_id(job, "purpose").unwrap_or(&YamlValue::Null);
+     let checkout = yaml_step_by_name(job, "Check out tested source").unwrap_or(&YamlValue::Null);
+-    let policy = yaml_step_by_name(job, "Check repository release policy")
+-        .unwrap_or(&YamlValue::Null);
++    let policy =
++        yaml_step_by_name(job, "Check repository release policy").unwrap_or(&YamlValue::Null);
+     let regression = yaml_step_by_name(job, "Check classifier and workflow regressions")
+         .unwrap_or(&YamlValue::Null);
+     let permissions = BTreeSet::from(["contents".to_string(), "pull-requests".to_string()]);
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:1527:
+         && purpose_run.contains("gh api \"repos/$GITHUB_REPOSITORY/pulls/$number\"")
+         && purpose_run.contains("($event[0].pull_request | identity)")
+         && purpose_run.contains(".state == \"open\"")
+-        && purpose_run.contains(".head.ref == \"release-please--branches--main--components--codebase-graph\"")
++        && purpose_run.contains(
++            ".head.ref == \"release-please--branches--main--components--codebase-graph\"",
++        )
+         && purpose_run.contains(".head.repo.full_name == $repository")
+         && purpose_run.contains(".head.repo.id == $event[0].pull_request.head.repo.id")
+         && purpose_run.contains(".base.sha == $event[0].pull_request.base.sha")
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:1566:
+     yaml_path(job, &["name"]).and_then(YamlValue::as_str) == Some("repository policy")
+         && yaml_path(job, &["runs-on"]).and_then(YamlValue::as_str) == Some("ubuntu-latest")
+         && yaml_mapping_key_set(yaml_path(job, &["permissions"])) == Some(permissions)
+-        && yaml_path(job, &["permissions", "contents"]).and_then(YamlValue::as_str)
+-            == Some("read")
++        && yaml_path(job, &["permissions", "contents"]).and_then(YamlValue::as_str) == Some("read")
+         && yaml_path(job, &["permissions", "pull-requests"]).and_then(YamlValue::as_str)
+             == Some("read")
+         && job.get("if").is_none()
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:1589:
+         "run-id".to_string(),
+         "run-attempt".to_string(),
+     ]);
+-    let helper_checkout = yaml_step_by_name(job, "Check out immutable workflow helper")
+-        .unwrap_or(&YamlValue::Null);
+-    let source_checkout = yaml_step_by_name(job, "Check out selected package source")
+-        .unwrap_or(&YamlValue::Null);
++    let helper_checkout =
++        yaml_step_by_name(job, "Check out immutable workflow helper").unwrap_or(&YamlValue::Null);
++    let source_checkout =
++        yaml_step_by_name(job, "Check out selected package source").unwrap_or(&YamlValue::Null);
+     let preflight = yaml_step_by_id(job, "preflight").unwrap_or(&YamlValue::Null);
+     let retention = yaml_step_by_name(job, "Retain successful crate preflight report")
+         .unwrap_or(&YamlValue::Null);
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:1600:
+     let run = yaml_path(preflight, &["run"])
+         .and_then(YamlValue::as_str)
+         .unwrap_or_default();
+-    let report_artifact = yaml_path(retention, &["with", "name"])
+-        .and_then(YamlValue::as_str);
+-    let artifact_path = yaml_path(retention, &["with", "path"])
+-        .and_then(YamlValue::as_str);
++    let report_artifact = yaml_path(retention, &["with", "name"]).and_then(YamlValue::as_str);
++    let artifact_path = yaml_path(retention, &["with", "path"]).and_then(YamlValue::as_str);
+     let preflight_outputs = yaml_path(job, &["outputs"]).unwrap_or(&YamlValue::Null);
+-    let publish_assets = yaml_path(release, &["jobs", "publish-release-assets"])
+-        .unwrap_or(&YamlValue::Null);
++    let publish_assets =
++        yaml_path(release, &["jobs", "publish-release-assets"]).unwrap_or(&YamlValue::Null);
+     let publish_assets_run = yaml_step_by_name(publish_assets, "Create only the verified release")
+         .and_then(|step| yaml_path(step, &["run"]))
+         .and_then(YamlValue::as_str)
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:1613:
+         .unwrap_or_default();
+     let publish_crate = yaml_path(release, &["jobs", "publish-crate"]).unwrap_or(&YamlValue::Null);
+-    let publish_crate_step = yaml_step_by_name(publish_crate, "Publish crates.io package")
+-        .unwrap_or(&YamlValue::Null);
++    let publish_crate_step =
++        yaml_step_by_name(publish_crate, "Publish crates.io package").unwrap_or(&YamlValue::Null);
+     let publish_crate_run = yaml_path(publish_crate_step, &["run"])
+         .and_then(YamlValue::as_str)
+         .unwrap_or_default();
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:1620:
+     let finalize = yaml_path(release, &["jobs", "finalize-release"]).unwrap_or(&YamlValue::Null);
+     let job_condition = yaml_path(job, &["if"]).and_then(YamlValue::as_str);
+-    let publisher_condition = yaml_path(publish_assets, &["if"]).and_then(YamlValue::as_str).unwrap_or_default();
+-    let crate_condition = yaml_path(publish_crate, &["if"]).and_then(YamlValue::as_str).unwrap_or_default();
++    let publisher_condition = yaml_path(publish_assets, &["if"])
++        .and_then(YamlValue::as_str)
++        .unwrap_or_default();
++    let crate_condition = yaml_path(publish_crate, &["if"])
++        .and_then(YamlValue::as_str)
++        .unwrap_or_default();
+     let job_bound = job_condition
+         == Some("needs.release-target.outputs.should-publish == 'true' && needs.release-target.outputs.automatic == 'true'")
+         && yaml_path(job, &["needs"]).and_then(yaml_string_set) == Some(expected_needs)
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:1645:
+             == Some("${{ github.workflow_sha }}")
+         && yaml_path(helper_checkout, &["with", "path"]).and_then(YamlValue::as_str)
+             == Some("workflow-helper")
+-        && yaml_path(helper_checkout, &["with", "persist-credentials"]).and_then(YamlValue::as_bool)
++        && yaml_path(helper_checkout, &["with", "persist-credentials"])
++            .and_then(YamlValue::as_bool)
+             == Some(false)
+         && yaml_path(source_checkout, &["uses"]).and_then(YamlValue::as_str)
+             == Some("actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10")
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:1653:
+             == Some("${{ needs.release-target.outputs.source-sha }}")
+         && yaml_path(source_checkout, &["with", "path"]).and_then(YamlValue::as_str)
+             == Some("selected-source")
+-        && yaml_path(source_checkout, &["with", "persist-credentials"]).and_then(YamlValue::as_bool)
++        && yaml_path(source_checkout, &["with", "persist-credentials"])
++            .and_then(YamlValue::as_bool)
+             == Some(false);
+     let preflight_valid = yaml_path(preflight, &["name"]).and_then(YamlValue::as_str)
+         == Some("Verify exact-source package and size")
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:1689:
+         && publisher_condition.contains("needs.release-target.outputs.automatic == 'false'")
+         && yaml_path(publish_assets, &["steps"])
+             .and_then(YamlValue::as_sequence)
+-            .is_some_and(|steps| steps.iter().any(|step| {
+-                yaml_path(step, &["name"]).and_then(YamlValue::as_str)
+-                    == Some("Download exact crate preflight report")
+-                    && yaml_path(step, &["with", "name"]).and_then(YamlValue::as_str)
+-                        == Some("${{ needs.crate-preflight.outputs.artifact-name }}")
+-                    && yaml_path(step, &["if"]).and_then(YamlValue::as_str)
+-                        == Some("needs.release-target.outputs.automatic == 'true'")
+-            }))
+-        && yaml_path(yaml_step_by_name(publish_assets, "Create only the verified release").unwrap_or(&YamlValue::Null), &["env", "PREFLIGHT_RESULT"]).and_then(YamlValue::as_str)
++            .is_some_and(|steps| {
++                steps.iter().any(|step| {
++                    yaml_path(step, &["name"]).and_then(YamlValue::as_str)
++                        == Some("Download exact crate preflight report")
++                        && yaml_path(step, &["with", "name"]).and_then(YamlValue::as_str)
++                            == Some("${{ needs.crate-preflight.outputs.artifact-name }}")
++                        && yaml_path(step, &["if"]).and_then(YamlValue::as_str)
++                            == Some("needs.release-target.outputs.automatic == 'true'")
++                })
++            })
++        && yaml_path(
++            yaml_step_by_name(publish_assets, "Create only the verified release")
++                .unwrap_or(&YamlValue::Null),
++            &["env", "PREFLIGHT_RESULT"],
++        )
++        .and_then(YamlValue::as_str)
+             == Some("${{ needs.crate-preflight.result }}")
+         && publish_assets_run.contains("\"$PREFLIGHT_RUN_ID\" == \"$GITHUB_RUN_ID\"")
+         && publish_assets_run.contains("crate-preflight-$GITHUB_RUN_ID-$PREFLIGHT_ATTEMPT")
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:1704:
+-        && publish_assets_run.contains(".source_sha == $sha and .version == $version and .tag_name == $tag");
++        && publish_assets_run
++            .contains(".source_sha == $sha and .version == $version and .tag_name == $tag");
+     let crate_consumer = yaml_path(publish_crate, &["needs"])
+         .and_then(yaml_string_set)
+-        .is_some_and(|needs| needs.contains("crate-preflight") && needs.contains("publish-release-assets"))
++        .is_some_and(|needs| {
++            needs.contains("crate-preflight") && needs.contains("publish-release-assets")
++        })
+         && crate_condition.contains("needs.crate-preflight.result == 'success'")
+         && crate_condition.contains("needs.publish-release-assets.result == 'success'")
+         && crate_condition.contains("needs.release-target.outputs.automatic == 'true'")
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:1711:
+-        && yaml_path(yaml_step_by_name(publish_crate, "Download exact crate preflight report").unwrap_or(&YamlValue::Null), &["with", "name"]).and_then(YamlValue::as_str)
++        && yaml_path(
++            yaml_step_by_name(publish_crate, "Download exact crate preflight report")
++                .unwrap_or(&YamlValue::Null),
++            &["with", "name"],
++        )
++        .and_then(YamlValue::as_str)
+             == Some("${{ needs.crate-preflight.outputs.artifact-name }}")
+         && yaml_path(publish_crate_step, &["env", "PREFLIGHT_RESULT"]).and_then(YamlValue::as_str)
+             == Some("${{ needs.crate-preflight.result }}")
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:1717:
+         && publish_crate_run.contains("cargo publish --locked");
+     let finalization_ordered = yaml_path(finalize, &["needs"])
+         .and_then(yaml_string_set)
+-        .is_some_and(|needs| needs.contains("publish-crate") && needs.contains("publish-release-assets"))
++        .is_some_and(|needs| {
++            needs.contains("publish-crate") && needs.contains("publish-release-assets")
++        })
+         && yaml_path(finalize, &["if"])
+             .and_then(YamlValue::as_str)
+-            .is_some_and(|condition| condition.contains("needs.publish-crate.result == 'success'")
+-                && condition.contains("needs.publish-release-assets.result == 'success'"));
+-    job_bound && checkouts_valid && preflight_valid && report_retained
+-        && publisher_consumer && crate_consumer && finalization_ordered
++            .is_some_and(|condition| {
++                condition.contains("needs.publish-crate.result == 'success'")
++                    && condition.contains("needs.publish-release-assets.result == 'success'")
++            });
++    job_bound
++        && checkouts_valid
++        && preflight_valid
++        && report_retained
++        && publisher_consumer
++        && crate_consumer
++        && finalization_ordered
+ }
+ 
+ fn ci_mode_policy_valid(ci: &YamlValue, issues: &mut Vec<String>) {
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:3463:
+ #[cfg(test)]
+ mod tests {
+     use super::{
+-        cargo_version, check_workflow_policy, crate_preflight_policy_valid, create_native_archive, dependency_version,
+-        extract_and_validate_native_archive, native_retention_policy_valid, native_test_command,
+-        release_version_from_tag, sha256_file, unique_temp_dir, validate_commit_sha,
+-        validate_crate_size, validate_native_artifact_set, workflow_yaml_error, NativeProvenance,
+-        NativeTarget, YamlValue, CRATES_IO_PACKAGE_LIMIT_BYTES, NATIVE_TARGETS,
++        cargo_version, check_workflow_policy, crate_preflight_policy_valid, create_native_archive,
++        dependency_version, extract_and_validate_native_archive, native_retention_policy_valid,
++        native_test_command, release_version_from_tag, sha256_file, unique_temp_dir,
++        validate_commit_sha, validate_crate_size, validate_native_artifact_set,
++        workflow_yaml_error, NativeProvenance, NativeTarget, YamlValue,
++        CRATES_IO_PACKAGE_LIMIT_BYTES, NATIVE_TARGETS,
+     };
+     #[cfg(unix)]
+     use super::{yaml_path, yaml_step_by_id, yaml_step_by_name};
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:4402:
+         fs::write(root.join("output"), "").unwrap();
+         fs::write(root.join("event.json"), serde_json::to_vec(event).unwrap()).unwrap();
+         if let Some(live_pr) = live_pr {
+-            fs::write(root.join("live-pr.json"), serde_json::to_vec(live_pr).unwrap()).unwrap();
++            fs::write(
++                root.join("live-pr.json"),
++                serde_json::to_vec(live_pr).unwrap(),
++            )
++            .unwrap();
+         }
+         let gh = "#!/bin/bash\nset -euo pipefail\nprintf 'gh %s\\n' \"$*\" >> \"$RUNNER_TEMP/calls\"\ncase \"$*\" in\n  \"api repos/$GITHUB_REPOSITORY/pulls/124\")\n    [[ \"$MOCK_GH_EXIT\" == 0 ]] || { echo 'mock API failure' >&2; exit \"$MOCK_GH_EXIT\"; }\n    cat \"$RUNNER_TEMP/live-pr.json\" ;;\n  *) echo \"Unexpected GitHub request: $*\" >&2; exit 97 ;;\nesac\n";
+         let cargo = "#!/bin/bash\nset -euo pipefail\nprintf 'cargo cwd=%s argv=%s\\n' \"$PWD\" \"$*\" >> \"$RUNNER_TEMP/calls\"\n[[ \"$*\" == \"run -p xtask --locked -- release-gate --source-sha $TESTED_SHA\" || \"$*\" == \"run -p xtask --locked -- release-gate --source-sha $TESTED_SHA --release-candidate\" ]] || { echo \"Unexpected Cargo invocation: $*\" >&2; exit 97; }\nexit \"$MOCK_CARGO_EXIT\"\n";
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:4423:
+             "Check repository release policy",
+         )
+         .unwrap();
+-        let policy = yaml_path(policy_step, &["run"]).and_then(YamlValue::as_str).unwrap();
+-        let base_path = std::env::split_paths(&std::env::var_os("PATH").unwrap()).collect::<Vec<_>>();
++        let policy = yaml_path(policy_step, &["run"])
++            .and_then(YamlValue::as_str)
++            .unwrap();
++        let base_path =
++            std::env::split_paths(&std::env::var_os("PATH").unwrap()).collect::<Vec<_>>();
+         let path = std::env::join_paths(std::iter::once(bin).chain(base_path)).unwrap();
+         let run_step = |script: &str, candidate: &str| {
+             Command::new("bash")
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:4459:
+                 .find_map(|line| line.strip_prefix("release-candidate=").map(str::to_string))
+         });
+         let policy_output = if purpose_output.status.success() {
+-            candidate.as_deref().map(|candidate| run_step(policy, candidate))
++            candidate
++                .as_deref()
++                .map(|candidate| run_step(policy, candidate))
+         } else {
+             None
+         };
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:4485:
+         event["pull_request"]["labels"] = json!([]);
+         let untrusted_live = event["pull_request"].clone();
+         let mixed = run_repository_policy_body(
+-            &ci, "pull_request", "refs/pull/124/merge", "owner/repo", "12345",
+-            CI_REQUIRED_SHA, &event, Some(&untrusted_live), 0, None,
++            &ci,
++            "pull_request",
++            "refs/pull/124/merge",
++            "owner/repo",
++            "12345",
++            CI_REQUIRED_SHA,
++            &event,
++            Some(&untrusted_live),
++            0,
++            None,
+         );
+-        assert!(mixed.purpose.status.success(), "{}", String::from_utf8_lossy(&mixed.purpose.stderr));
+-        assert!(mixed.output.contains("release-candidate=true\n"), "{}", mixed.output);
+-        assert!(mixed.policy.as_ref().unwrap().status.success(), "{}", String::from_utf8_lossy(&mixed.policy.as_ref().unwrap().stderr));
+-        assert!(mixed.calls.contains("gh api repos/owner/repo/pulls/124"), "{}", mixed.calls);
+-        assert!(mixed.calls.contains("--release-candidate"), "{}", mixed.calls);
++        assert!(
++            mixed.purpose.status.success(),
++            "{}",
++            String::from_utf8_lossy(&mixed.purpose.stderr)
++        );
++        assert!(
++            mixed.output.contains("release-candidate=true\n"),
++            "{}",
++            mixed.output
++        );
++        assert!(
++            mixed.policy.as_ref().unwrap().status.success(),
++            "{}",
++            String::from_utf8_lossy(&mixed.policy.as_ref().unwrap().stderr)
++        );
++        assert!(
++            mixed.calls.contains("gh api repos/owner/repo/pulls/124"),
++            "{}",
++            mixed.calls
++        );
++        assert!(
++            mixed.calls.contains("--release-candidate"),
++            "{}",
++            mixed.calls
++        );
+         assert!(mixed.calls.contains(CI_REQUIRED_SHA), "{}", mixed.calls);
+ 
+         let mut ordinary = event.clone();
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:4499:
+         ordinary["pull_request"]["head"]["ref"] = json!("ordinary-feature");
+         let ordinary_live = ordinary["pull_request"].clone();
+         let result = run_repository_policy_body(
+-            &ci, "pull_request", "refs/pull/124/merge", "owner/repo", "12345",
+-            CI_REQUIRED_SHA, &ordinary, Some(&ordinary_live), 0, None,
++            &ci,
++            "pull_request",
++            "refs/pull/124/merge",
++            "owner/repo",
++            "12345",
++            CI_REQUIRED_SHA,
++            &ordinary,
++            Some(&ordinary_live),
++            0,
++            None,
+         );
+-        assert!(result.purpose.status.success(), "{}", String::from_utf8_lossy(&result.purpose.stderr));
+-        assert!(result.output.contains("release-candidate=false\n"), "{}", result.output);
++        assert!(
++            result.purpose.status.success(),
++            "{}",
++            String::from_utf8_lossy(&result.purpose.stderr)
++        );
++        assert!(
++            result.output.contains("release-candidate=false\n"),
++            "{}",
++            result.output
++        );
+         assert!(result.policy.as_ref().unwrap().status.success());
+-        assert!(!result.calls.contains("--release-candidate"), "{}", result.calls);
++        assert!(
++            !result.calls.contains("--release-candidate"),
++            "{}",
++            result.calls
++        );
+ 
+         let mut fork = event.clone();
+         fork["pull_request"]["head"]["repo"]["full_name"] = json!("fork/repo");
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:4512:
+         fork["pull_request"]["head"]["repo"]["id"] = json!(67890);
+         let fork_live = fork["pull_request"].clone();
+         let result = run_repository_policy_body(
+-            &ci, "pull_request", "refs/pull/124/merge", "owner/repo", "12345",
+-            CI_REQUIRED_SHA, &fork, Some(&fork_live), 0, None,
++            &ci,
++            "pull_request",
++            "refs/pull/124/merge",
++            "owner/repo",
++            "12345",
++            CI_REQUIRED_SHA,
++            &fork,
++            Some(&fork_live),
++            0,
++            None,
+         );
+-        assert!(result.purpose.status.success(), "{}", String::from_utf8_lossy(&result.purpose.stderr));
+-        assert!(result.output.contains("release-candidate=false\n"), "{}", result.output);
++        assert!(
++            result.purpose.status.success(),
++            "{}",
++            String::from_utf8_lossy(&result.purpose.stderr)
++        );
++        assert!(
++            result.output.contains("release-candidate=false\n"),
++            "{}",
++            result.output
++        );
+         assert!(result.policy.as_ref().unwrap().status.success());
+-        assert!(!result.calls.contains("--release-candidate"), "{}", result.calls);
++        assert!(
++            !result.calls.contains("--release-candidate"),
++            "{}",
++            result.calls
++        );
+ 
+         let mut mismatch_live = event["pull_request"].clone();
+         mismatch_live["base"]["sha"] = json!(CI_REQUIRED_SHA);
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:4525:
+         let failed = run_repository_policy_body(
+-            &ci, "pull_request", "refs/pull/124/merge", "owner/repo", "12345",
+-            CI_REQUIRED_SHA, &event, Some(&mismatch_live), 0, None,
++            &ci,
++            "pull_request",
++            "refs/pull/124/merge",
++            "owner/repo",
++            "12345",
++            CI_REQUIRED_SHA,
++            &event,
++            Some(&mismatch_live),
++            0,
++            None,
+         );
+-        assert!(!failed.purpose.status.success(), "stale API base was accepted");
+-        assert!(failed.policy.is_none(), "Cargo ran after stale purpose failure: {}", failed.calls);
++        assert!(
++            !failed.purpose.status.success(),
++            "stale API base was accepted"
++        );
++        assert!(
++            failed.policy.is_none(),
++            "Cargo ran after stale purpose failure: {}",
++            failed.calls
++        );
+         assert!(!failed.calls.contains("cargo "), "{}", failed.calls);
+ 
+         let unavailable = run_repository_policy_body(
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:4534:
+-            &ci, "pull_request", "refs/pull/124/merge", "owner/repo", "12345",
+-            CI_REQUIRED_SHA, &event, Some(&event["pull_request"]), 23, None,
++            &ci,
++            "pull_request",
++            "refs/pull/124/merge",
++            "owner/repo",
++            "12345",
++            CI_REQUIRED_SHA,
++            &event,
++            Some(&event["pull_request"]),
++            23,
++            None,
+         );
+-        assert!(!unavailable.purpose.status.success(), "API error was demoted to ordinary");
++        assert!(
++            !unavailable.purpose.status.success(),
++            "API error was demoted to ordinary"
++        );
+         assert!(unavailable.policy.is_none());
+-        assert!(!unavailable.calls.contains("cargo "), "{}", unavailable.calls);
++        assert!(
++            !unavailable.calls.contains("cargo "),
++            "{}",
++            unavailable.calls
++        );
+ 
+         let invalid_output = run_repository_policy_body(
+-            &ci, "push", "refs/heads/main", "owner/repo", "12345", CI_REQUIRED_SHA,
++            &ci,
++            "push",
++            "refs/heads/main",
++            "owner/repo",
++            "12345",
++            CI_REQUIRED_SHA,
+             &json!({"ref":"refs/heads/main","after":CI_REQUIRED_SHA,"repository":{"full_name":"owner/repo","id":12345}}),
+-            None, 0, Some("garbage"),
++            None,
++            0,
++            Some("garbage"),
+         );
+         assert!(invalid_output.purpose.status.success());
+-        assert!(invalid_output.policy.as_ref().is_some_and(|output| !output.status.success()));
+-        assert!(!invalid_output.calls.contains("cargo "), "invalid output invoked Cargo: {}", invalid_output.calls);
++        assert!(invalid_output
++            .policy
++            .as_ref()
++            .is_some_and(|output| !output.status.success()));
++        assert!(
++            !invalid_output.calls.contains("cargo "),
++            "invalid output invoked Cargo: {}",
++            invalid_output.calls
++        );
+     }
+ 
+     #[cfg(unix)]
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:6379:
+         let ci_mutations: Vec<CiMutation> = vec![
+             (
+                 "conditional common policy job",
+-                Box::new(|ci| ci["jobs"]["repository-policy"]["if"] = YamlValue::String("always()".into())),
++                Box::new(|ci| {
++                    ci["jobs"]["repository-policy"]["if"] = YamlValue::String("always()".into())
++                }),
+             ),
+             (
+                 "purpose output not used",
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:6386:
+-                Box::new(|ci| ci["jobs"]["repository-policy"]["steps"][2]["env"]["RELEASE_CANDIDATE"] = YamlValue::String("true".into())),
++                Box::new(|ci| {
++                    ci["jobs"]["repository-policy"]["steps"][2]["env"]["RELEASE_CANDIDATE"] =
++                        YamlValue::String("true".into())
++                }),
+             ),
+             (
+                 "tested checkout sha not used",
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:6390:
+-                Box::new(|ci| ci["jobs"]["repository-policy"]["steps"][1]["with"]["ref"] = YamlValue::String("${{ steps.purpose.outputs.base_sha }}".into())),
++                Box::new(|ci| {
++                    ci["jobs"]["repository-policy"]["steps"][1]["with"]["ref"] =
++                        YamlValue::String("${{ steps.purpose.outputs.base_sha }}".into())
++                }),
+             ),
+             (
+                 "credentials persist",
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:6394:
+-                Box::new(|ci| ci["jobs"]["repository-policy"]["steps"][1]["with"]["persist-credentials"] = YamlValue::Bool(true)),
++                Box::new(|ci| {
++                    ci["jobs"]["repository-policy"]["steps"][1]["with"]["persist-credentials"] =
++                        YamlValue::Bool(true)
++                }),
+             ),
+             (
+                 "candidate purpose invocation missing",
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:6398:
+                 Box::new(|ci| {
+-                    let run = ci["jobs"]["repository-policy"]["steps"][2]["run"].as_str().unwrap().replace("true) args+=(--release-candidate) ;;", "true) ;; ");
++                    let run = ci["jobs"]["repository-policy"]["steps"][2]["run"]
++                        .as_str()
++                        .unwrap()
++                        .replace("true) args+=(--release-candidate) ;;", "true) ;; ");
+                     ci["jobs"]["repository-policy"]["steps"][2]["run"] = YamlValue::String(run);
+                 }),
+             ),
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:41:
+ fn preflight_failures() -> Vec<PreflightFailure> {
+     let valid = valid_preflight_report();
+     let mut cases = vec![
+-        PreflightFailure { name: "failed result", report: Some(valid.clone()), overrides: vec![("PREFLIGHT_RESULT", "failure")] },
+-        PreflightFailure { name: "cancelled result", report: Some(valid.clone()), overrides: vec![("PREFLIGHT_RESULT", "cancelled")] },
+-        PreflightFailure { name: "missing result", report: Some(valid.clone()), overrides: vec![("PREFLIGHT_RESULT", "")] },
+-        PreflightFailure { name: "unexpected skipped result", report: Some(valid.clone()), overrides: vec![("PREFLIGHT_RESULT", "skipped")] },
+-        PreflightFailure { name: "missing report", report: None, overrides: vec![] },
+-        PreflightFailure { name: "wrong source environment", report: Some(valid.clone()), overrides: vec![("SOURCE_SHA", MAIN)] },
+-        PreflightFailure { name: "wrong version environment", report: Some(valid.clone()), overrides: vec![("RELEASE_VERSION", "2.0.1")] },
+-        PreflightFailure { name: "wrong tag environment", report: Some(valid.clone()), overrides: vec![("RELEASE_TAG", "v2.0.1")] },
+-        PreflightFailure { name: "wrong producer run", report: Some(valid.clone()), overrides: vec![("PREFLIGHT_RUN_ID", "41")] },
+-        PreflightFailure { name: "missing producer attempt", report: Some(valid.clone()), overrides: vec![("PREFLIGHT_ATTEMPT", "")] },
+-        PreflightFailure { name: "zero producer attempt", report: Some(valid.clone()), overrides: vec![("PREFLIGHT_ATTEMPT", "0")] },
+-        PreflightFailure { name: "future producer attempt", report: Some(valid.clone()), overrides: vec![("PREFLIGHT_ATTEMPT", "4")] },
+-        PreflightFailure { name: "invalid current attempt", report: Some(valid.clone()), overrides: vec![("GITHUB_RUN_ATTEMPT", "0")] },
+-        PreflightFailure { name: "wrong artifact attempt", report: Some(valid.clone()), overrides: vec![("PREFLIGHT_ARTIFACT", "crate-preflight-42-2")] },
+-        PreflightFailure { name: "wrong artifact run", report: Some(valid.clone()), overrides: vec![("PREFLIGHT_ARTIFACT", "crate-preflight-41-3")] },
++        PreflightFailure {
++            name: "failed result",
++            report: Some(valid.clone()),
++            overrides: vec![("PREFLIGHT_RESULT", "failure")],
++        },
++        PreflightFailure {
++            name: "cancelled result",
++            report: Some(valid.clone()),
++            overrides: vec![("PREFLIGHT_RESULT", "cancelled")],
++        },
++        PreflightFailure {
++            name: "missing result",
++            report: Some(valid.clone()),
++            overrides: vec![("PREFLIGHT_RESULT", "")],
++        },
++        PreflightFailure {
++            name: "unexpected skipped result",
++            report: Some(valid.clone()),
++            overrides: vec![("PREFLIGHT_RESULT", "skipped")],
++        },
++        PreflightFailure {
++            name: "missing report",
++            report: None,
++            overrides: vec![],
++        },
++        PreflightFailure {
++            name: "wrong source environment",
++            report: Some(valid.clone()),
++            overrides: vec![("SOURCE_SHA", MAIN)],
++        },
++        PreflightFailure {
++            name: "wrong version environment",
++            report: Some(valid.clone()),
++            overrides: vec![("RELEASE_VERSION", "2.0.1")],
++        },
++        PreflightFailure {
++            name: "wrong tag environment",
++            report: Some(valid.clone()),
++            overrides: vec![("RELEASE_TAG", "v2.0.1")],
++        },
++        PreflightFailure {
++            name: "wrong producer run",
++            report: Some(valid.clone()),
++            overrides: vec![("PREFLIGHT_RUN_ID", "41")],
++        },
++        PreflightFailure {
++            name: "missing producer attempt",
++            report: Some(valid.clone()),
++            overrides: vec![("PREFLIGHT_ATTEMPT", "")],
++        },
++        PreflightFailure {
++            name: "zero producer attempt",
++            report: Some(valid.clone()),
++            overrides: vec![("PREFLIGHT_ATTEMPT", "0")],
++        },
++        PreflightFailure {
++            name: "future producer attempt",
++            report: Some(valid.clone()),
++            overrides: vec![("PREFLIGHT_ATTEMPT", "4")],
++        },
++        PreflightFailure {
++            name: "invalid current attempt",
++            report: Some(valid.clone()),
++            overrides: vec![("GITHUB_RUN_ATTEMPT", "0")],
++        },
++        PreflightFailure {
++            name: "wrong artifact attempt",
++            report: Some(valid.clone()),
++            overrides: vec![("PREFLIGHT_ARTIFACT", "crate-preflight-42-2")],
++        },
++        PreflightFailure {
++            name: "wrong artifact run",
++            report: Some(valid.clone()),
++            overrides: vec![("PREFLIGHT_ARTIFACT", "crate-preflight-41-3")],
++        },
+     ];
+     for (name, field, value) in [
+         ("wrong source report", "source_sha", json!(MAIN)),
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:67:
+         ("oversize package", "crate_bytes", json!(10_485_761)),
+         ("fractional package size", "crate_bytes", json!(1.5)),
+         ("string package size", "crate_bytes", json!("1")),
+-        ("uppercase digest", "crate_sha256", json!("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")),
+-        ("short digest", "crate_sha256", json!("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")),
++        (
++            "uppercase digest",
++            "crate_sha256",
++            json!("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"),
++        ),
++        (
++            "short digest",
++            "crate_sha256",
++            json!("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
++        ),
+     ] {
+         let mut report = valid.clone();
+         report[field] = value;
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:75:
+-        cases.push(PreflightFailure { name, report: Some(report), overrides: vec![] });
++        cases.push(PreflightFailure {
++            name,
++            report: Some(report),
++            overrides: vec![],
++        });
+     }
+     cases
+ }
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:596:
+ }
+ 
+ fn finalize_release() -> String {
+-    step("finalize-release", "Mark only the completed release PR tagged")
++    step(
++        "finalize-release",
++        "Mark only the completed release PR tagged",
++    )
+ }
+ 
+ #[test]
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:603:
+ fn immutable_release_uploads_before_publication_and_retries_without_writes() {
+     let f = Fixture::new();
+-    assert_success(&f.execute_with_preflight(
+-        &publisher(),
+-        Some(valid_preflight_report()),
+-        &[],
+-    ));
++    assert_success(&f.execute_with_preflight(&publisher(), Some(valid_preflight_report()), &[]));
+     let release: Value =
+         serde_json::from_slice(&fs::read(f.root.join("release")).unwrap()).unwrap();
+     assert_eq!(release["draft"], false);
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:616:
+         crate::NATIVE_TARGETS.len() * 2
+     );
+     fs::write(f.root.join("calls"), "").unwrap();
+-    assert_success(&f.execute_with_preflight(
+-        &publisher(),
+-        Some(valid_preflight_report()),
+-        &[],
+-    ));
++    assert_success(&f.execute_with_preflight(&publisher(), Some(valid_preflight_report()), &[]));
+     let calls = fs::read_to_string(f.root.join("calls")).unwrap();
+     assert!(
+         !calls.contains("--method POST")
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:653:
+         [
+             "run",
+             "--manifest-path",
+-            f.root.join("workflow-helper/crates/xtask/Cargo.toml").to_str().unwrap(),
++            f.root
++                .join("workflow-helper/crates/xtask/Cargo.toml")
++                .to_str()
++                .unwrap(),
+             "--locked",
+             "--",
+             "release-package-preflight",
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:688:
+         assert_eq!(output.status.code(), Some(status), "{failure}");
+         assert!(f.output().is_empty(), "{failure}: {}", f.output());
+         assert!(
+-            !f.root.join("crate-preflight-42-3/crate-preflight.json").exists(),
++            !f.root
++                .join("crate-preflight-42-3/crate-preflight.json")
++                .exists(),
+             "{failure} emitted a successful report"
+         );
+         let calls = f.process_calls();
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:711:
+         assert!(!output.status.success(), "accepted invalid {name} {value}");
+         assert!(f.output().is_empty());
+         let calls = f.process_calls();
+-        assert!(calls.is_empty(), "invalid {name} {value} launched subprocesses: {calls:?}");
++        assert!(
++            calls.is_empty(),
++            "invalid {name} {value} launched subprocesses: {calls:?}"
++        );
+         assert!(f.calls().is_empty());
+     }
+ }
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:720:
+ fn publisher_rejects_unbound_preflight_before_any_github_request() {
+     for failure in preflight_failures() {
+         let f = Fixture::new();
+-        let output = f.execute_with_preflight(
+-            &publisher(),
+-            failure.report.clone(),
+-            &failure.overrides,
+-        );
++        let output =
++            f.execute_with_preflight(&publisher(), failure.report.clone(), &failure.overrides);
+         assert!(
+             !output.status.success(),
+             "accepted invalid preflight: {}",
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:751:
+             "accepted invalid preflight: {}",
+             failure.name
+         );
+-        assert!(f.process_calls().is_empty(), "{}: {:?}", failure.name, f.process_calls());
++        assert!(
++            f.process_calls().is_empty(),
++            "{}: {:?}",
++            failure.name,
++            f.process_calls()
++        );
+         assert!(f.calls().is_empty(), "{}: {}", failure.name, f.calls());
+     }
+ }
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:821:
+     assert_eq!(calls[1].program, "curl");
+     assert_eq!(calls[2].program, "cargo");
+     assert_eq!(calls[2].args, ["publish", "--locked"]);
+-    assert!(calls.iter().all(|call| !call.args.iter().any(|arg| arg.contains("dry-run") || arg == "package")));
++    assert!(calls.iter().all(|call| !call
++        .args
++        .iter()
++        .any(|arg| arg.contains("dry-run") || arg == "package")));
+     assert!(f.calls().is_empty());
+ }
+ 
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:838:
+     );
+     assert_success(&output);
+     let calls = f.process_calls();
+-    assert_eq!(calls.iter().filter(|call| call.program == "curl").count(), 2);
+-    let cargo = calls.iter().filter(|call| call.program == "cargo").collect::<Vec<_>>();
++    assert_eq!(
++        calls.iter().filter(|call| call.program == "curl").count(),
++        2
++    );
++    let cargo = calls
++        .iter()
++        .filter(|call| call.program == "cargo")
++        .collect::<Vec<_>>();
+     assert_eq!(cargo.len(), 1, "{calls:?}");
+     assert_eq!(cargo[0].args, ["publish", "--locked"]);
+     assert!(!calls.iter().any(|call| call.program == "sleep"));
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:859:
+     );
+     assert_eq!(output.status.code(), Some(23));
+     let calls = f.process_calls();
+-    assert_eq!(calls.iter().filter(|call| call.program == "cargo").count(), 4);
+-    assert_eq!(calls.iter().filter(|call| call.program == "curl").count(), 5);
++    assert_eq!(
++        calls.iter().filter(|call| call.program == "cargo").count(),
++        4
++    );
++    assert_eq!(
++        calls.iter().filter(|call| call.program == "curl").count(),
++        5
++    );
+     let sleeps = calls
+         .iter()
+         .filter(|call| call.program == "sleep")
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:896:
+         yaml_serde::from_str(include_str!("../../../../.github/workflows/release.yml")).unwrap();
+     let publish_assets_job = &workflow["jobs"]["publish-release-assets"];
+     let assets_needs = publish_assets_job["needs"].as_sequence().unwrap();
+-    assert!(assets_needs.iter().any(|job| job.as_str() == Some("crate-preflight")));
++    assert!(assets_needs
++        .iter()
++        .any(|job| job.as_str() == Some("crate-preflight")));
+ 
+     let crate_job = &workflow["jobs"]["publish-crate"];
+     let crate_needs = crate_job["needs"].as_sequence().unwrap();
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:903:
+-    for dependency in ["release-target", "publish-release-assets", "crate-preflight"] {
+-        assert!(crate_needs.iter().any(|job| job.as_str() == Some(dependency)));
++    for dependency in [
++        "release-target",
++        "publish-release-assets",
++        "crate-preflight",
++    ] {
++        assert!(crate_needs
++            .iter()
++            .any(|job| job.as_str() == Some(dependency)));
+     }
+     let crate_condition = crate_job["if"].as_str().unwrap();
+     for clause in [
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:911:
+         "needs.release-target.outputs.automatic == 'true'",
+         "needs.release-target.outputs.publish_assets == 'true'",
+     ] {
+-        assert!(crate_condition.contains(clause), "missing crate gate: {clause}");
++        assert!(
++            crate_condition.contains(clause),
++            "missing crate gate: {clause}"
++        );
+     }
+ 
+     let finalize_job = &workflow["jobs"]["finalize-release"];
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:918:
+     let finalize_needs = finalize_job["needs"].as_sequence().unwrap();
+     for dependency in ["release-target", "publish-release-assets", "publish-crate"] {
+-        assert!(finalize_needs.iter().any(|job| job.as_str() == Some(dependency)));
++        assert!(finalize_needs
++            .iter()
++            .any(|job| job.as_str() == Some(dependency)));
+     }
+     let finalize_condition = finalize_job["if"].as_str().unwrap();
+     for clause in [
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:926:
+         "needs.publish-crate.result == 'success'",
+         "needs.release-target.outputs.automatic == 'true'",
+     ] {
+-        assert!(finalize_condition.contains(clause), "missing finalization gate: {clause}");
++        assert!(
++            finalize_condition.contains(clause),
++            "missing finalization gate: {clause}"
++        );
+     }
+ 
+     let f = Fixture::new();
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:933:
+     let report = Some(valid_preflight_report());
+     assert_success(&f.execute_with_preflight(&publisher(), report.clone(), &[]));
+-    let crate_output = f.execute_with_preflight(
+-        &crate_publisher(),
+-        report,
+-        &[("MOCK_CURL_MODE", "absent")],
+-    );
++    let crate_output =
++        f.execute_with_preflight(&crate_publisher(), report, &[("MOCK_CURL_MODE", "absent")]);
+     assert_success(&crate_output);
+     assert_success(&f.execute(&finalize_release(), &[]));
+     assert!(f.root.join("finalized").is_file());
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:944:
+     let calls = f.process_calls();
+     let native_upload = calls
+         .iter()
+-        .position(|call| call.program == "gh" && call.args.starts_with(&["release".into(), "upload".into()]))
++        .position(|call| {
++            call.program == "gh" && call.args.starts_with(&["release".into(), "upload".into()])
++        })
+         .unwrap();
+     let native_publish = calls
+         .iter()
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:951:
+-        .position(|call| call.program == "gh" && call.args.starts_with(&["api".into(), "--method".into(), "PATCH".into()]))
++        .position(|call| {
++            call.program == "gh"
++                && call
++                    .args
++                    .starts_with(&["api".into(), "--method".into(), "PATCH".into()])
++        })
+         .unwrap();
+     let crate_upload = calls
+         .iter()
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:956:
+         .unwrap();
+     let finalize = calls
+         .iter()
+-        .rposition(|call| call.program == "gh" && call.args.starts_with(&["pr".into(), "edit".into()]))
++        .rposition(|call| {
++            call.program == "gh" && call.args.starts_with(&["pr".into(), "edit".into()])
++        })
+         .unwrap();
+-    assert!(native_upload < native_publish && native_publish < crate_upload && crate_upload < finalize);
++    assert!(
++        native_upload < native_publish && native_publish < crate_upload && crate_upload < finalize
++    );
+ }
+ 
+ #[test]
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:1055:
+     let script = step("publish-release-assets", "Create only the verified release");
+     let wrong = json!({"object":{"sha":MAIN,"type":"commit"}}).to_string();
+     assert!(!f
+-        .execute_with_preflight(&script, Some(valid_preflight_report()), &[("MOCK_REF", &wrong)])
++        .execute_with_preflight(
++            &script,
++            Some(valid_preflight_report()),
++            &[("MOCK_REF", &wrong)]
++        )
+         .status
+         .success());
+     assert!(!f.root.join("request").exists());
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:1215:
+ fn published_mutable_partial_assets_can_resume_without_republishing() {
+     let f = Fixture::new();
+     f.seed_release(false, false);
+-    assert_success(&f.execute_with_preflight(
+-        &publisher(),
+-        Some(valid_preflight_report()),
+-        &[],
+-    ));
++    assert_success(&f.execute_with_preflight(&publisher(), Some(valid_preflight_report()), &[]));
+     assert_eq!(f.release()["draft"], false);
+     assert!(f.calls().contains("release upload"));
+     assert!(!f.calls().contains("--method POST") && !f.calls().contains("--method PATCH"));
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:1226:
+     fs::write(f.root.join("calls"), "").unwrap();
+-    assert_success(&f.execute_with_preflight(
+-        &publisher(),
+-        Some(valid_preflight_report()),
+-        &[],
+-    ));
++    assert_success(&f.execute_with_preflight(&publisher(), Some(valid_preflight_report()), &[]));
+     f.assert_no_writes();
+ }
+ 
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:1260:
+             }
+         };
+         assert!(
+-            !f
+-                .execute_with_preflight(&publisher(), Some(valid_preflight_report()), &overrides)
++            !f.execute_with_preflight(&publisher(), Some(valid_preflight_report()), &overrides)
+                 .status
+                 .success(),
+             "{kind}"
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:1600:
+     {
+         return Err("publisher gate is missing or duplicates a required condition");
+     }
+-    let normalized = required_clauses.iter().fold(condition.to_owned(), |expression, clause| {
+-        expression.replacen(*clause, "x", 1)
+-    });
++    let normalized = required_clauses
++        .iter()
++        .fold(condition.to_owned(), |expression, clause| {
++            expression.replacen(*clause, "x", 1)
++        });
+     if normalized.split_whitespace().collect::<String>() != "x&&x&&x&&((x&&x)||(x&&x))&&x" {
+         return Err("unsupported publisher gate expression");
+     }

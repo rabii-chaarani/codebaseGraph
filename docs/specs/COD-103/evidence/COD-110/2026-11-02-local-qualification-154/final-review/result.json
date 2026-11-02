@@ -1,0 +1,239 @@
+{
+  "status": "PASS_INTEGRATED_FINAL_REVIEW_BOUNDED_PRE_PR_SNAPSHOT",
+  "confirmed_findings": [],
+  "conditional_source_findings": [],
+  "repo": "/private/tmp/codebasegraph-cod110-20261101",
+  "branch": "cod103-stack/cod-110",
+  "source_baseline": "9ae63f3302bf4cae90ebd5a56173fff341ca815b",
+  "source_baseline_tree": "057ecd3260ea46b53253f73b199914d1d156b93e",
+  "docs_head": "754c82f4dc22c203c22a433f5bbae5f2f6e80231",
+  "docs_tree": "fdf2f21db4c05965a7c4020075a9e66fddfa2db5",
+  "approved_committed_document_paths": {
+    "docs/specs/COD-103/decisions/2026-11-01-cod110-compatibility.md": {
+      "sha256": "19f05279eba4e2f93709c3cc6c0aa58b3a37845f8236b5a5ee148e102ab525a0",
+      "bytes": 5343,
+      "mode": "100644",
+      "baseline": "absent at COD-108; already approved documentation commit"
+    },
+    "docs/specs/COD-103/approvals/2026-11-01-cod110-compatibility.md": {
+      "sha256": "c70567850a096256dde58915fcc1e0e5c50ec01338f27e0f54d04021051a31ab",
+      "bytes": 4377,
+      "mode": "100644",
+      "baseline": "absent at COD-108; already approved documentation commit"
+    }
+  },
+  "baseline_seven": {
+    "crates/xtask/src/main.rs": {
+      "sha256": "94e36cb3ceed27f45b552e42c9d6a52aa7cfef8dd70876f6e6ab4e562ec8891d",
+      "bytes": 235135,
+      "mode": "100644",
+      "git_blob": "f023e3f6afa60c244ff3ac9e7513f0be1fdec1b4"
+    },
+    "crates/xtask/src/ci.rs": {
+      "sha256": "52595249047f49a2b8c9dece9fb48fbbafda6cd5e70849c5b8ffaf252c0f400c",
+      "bytes": 49894,
+      "mode": "100644",
+      "git_blob": "8b3e3543a917de0f515f2926ce72fb4b73d06748"
+    },
+    "crates/xtask/src/release.rs": {
+      "sha256": "dc74317037a68df27c98c24678d2b46589ef64fc1ef0d484b415cae33435ebd7",
+      "bytes": 5026,
+      "mode": "100644",
+      "git_blob": "45e1d324db5f86f5152b825f0f114e99fa85990e"
+    },
+    "crates/xtask/src/release/workflow_tests.rs": {
+      "sha256": "66c2921315dae1dad20a1cfd4eed620019d702da6c0e7e6ec3c1c43ff8ab0450",
+      "bytes": 44385,
+      "mode": "100644",
+      "git_blob": "f6fea96536d774a4fd40fc4091cc6a2a002aab46"
+    },
+    ".github/workflows/ci.yml": {
+      "sha256": "b59d7028101120f6885870cec054a65d9788f55d364dc0f2eb2b53bd4fd9c339",
+      "bytes": 21095,
+      "mode": "100644",
+      "git_blob": "1c9c2e3f45f425ebca2d980915a6e32b6bf5c213"
+    },
+    ".github/workflows/release.yml": {
+      "sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "bytes": 33468,
+      "mode": "100644",
+      "git_blob": "bd87a4495840cd5801138330be6833ff5dcb9d73"
+    },
+    "docs/release.md": {
+      "sha256": "90d84f6614be6cd74b8340dd73b1a2c1000457af319475cf8939b1c316ebf486",
+      "bytes": 22125,
+      "mode": "100644",
+      "git_blob": "db9e0b2a43307f5203977c0cc766b71c12992613"
+    }
+  },
+  "current_seven": {
+    "crates/xtask/src/main.rs": {
+      "sha256": "6709677c3e48887731a1768c9ea3c5b5448c9ff0765391fb9a91a300c3386a71",
+      "bytes": 272999,
+      "mode": "100644"
+    },
+    "crates/xtask/src/ci.rs": {
+      "sha256": "7db803caf383175b0842c9b01e2725588a96794fc8e9b021db550fd4e129139a",
+      "bytes": 93664,
+      "mode": "100644"
+    },
+    "crates/xtask/src/release.rs": {
+      "sha256": "34090159b154bb5a9676f50b441313ba11e70d43211ea5d24748322b0afe9b62",
+      "bytes": 30161,
+      "mode": "100644"
+    },
+    "crates/xtask/src/release/workflow_tests.rs": {
+      "sha256": "e09f974a6c5e43c6dc61adf28d55920caf35116d40064bb2c1547825abbaf0bb",
+      "bytes": 73254,
+      "mode": "100644"
+    },
+    ".github/workflows/ci.yml": {
+      "sha256": "8827a9a41ab87f509be0fe9719f84c7d144da485dea7d3932e4fe6d59d4ff9fb",
+      "bytes": 25607,
+      "mode": "100644"
+    },
+    ".github/workflows/release.yml": {
+      "sha256": "64d219b8ae84dabc03eb5b7202ffd40b7046171f061b0aab9330b35f19c6c955",
+      "bytes": 40524,
+      "mode": "100644"
+    },
+    "docs/release.md": {
+      "sha256": "4fafaeec5fc9c975a68c75367fd114c9a32c4bd90093f20e1267a9299380d34d",
+      "bytes": 27695,
+      "mode": "100644"
+    }
+  },
+  "reviewed_diff": {
+    "path": "reviewed-delta.patch",
+    "base": "9ae63f3302bf4cae90ebd5a56173fff341ca815b",
+    "head": "docsHEAD plus exact seven dirty paths",
+    "sha256": "e88bd3a7be2e0e05e34302bbf291476244b747a626dccf96835b9f3e08174024",
+    "bytes": 219582
+  },
+  "authority": {
+    "approved_five_contracts_sha": "316be4c4bb81d4f6e025016b12374836b4dcc1a8",
+    "separate_approval_sha": "0e6008a1f46679a86aba85ac513beb05af94b0c0",
+    "compatibility_decision_sha": "49612ec66814ad6b883a0c4c3c624911bd5a8825",
+    "compatibility_approval_sha": "754c82f4dc22c203c22a433f5bbae5f2f6e80231",
+    "requirements_acceptance": [
+      "C103-R07/A07",
+      "C103-R08/A08",
+      "retained C103-R04\u2013R06/A04\u2013A06"
+    ],
+    "scryer_project": "/Users/rabii/Projects/Repositories/codebaseGraph",
+    "scryer_node": "node-1",
+    "current_change": "chg-wzt5hk",
+    "lane_change": "chg-ttvrrh",
+    "linear": "https://linear.app/codebasegraph/issue/COD-110"
+  },
+  "evidence": {
+    "root": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-3aa840b3/cod110-integrated-lint-corrected-verification",
+    "report_sha256": "65a5c45d3f099373d8acef07df588c82e57938cbfe6a1e8c5af5f5bf1b84370b",
+    "result_sha256": "08c75e8774c8d8b8675d920fb696e20ee8041f34b4a876e14e582436ff85e6d0",
+    "manifest_sha256": "9c6b8c9f2eccc112c6c479ea82cd3677a0bb06ac5c641a79094901f095c57e45",
+    "all18_payloads_hash_size_match": true,
+    "junit_sha256": "3989e689fa6fbc56d39ca83492da5f7fbb59151fc81113508d4609c0afb5aa67",
+    "junit_uuid": "cc347ab0-542a-451e-96dd-5279125bbdbf",
+    "registered": 154,
+    "executed_passed": 154,
+    "failures": 0,
+    "errors": 0,
+    "skipped_notrun_retries": 0,
+    "inventory_exact_names_match": true,
+    "binary_readback": {
+      "/private/tmp/codebasegraph-cod110-20261101/target/native-tests/deps/xtask-eed5a74c0d8f01ef": {
+        "sha256": "d540c510f196b82516b262f0d19998d00e8d7939a91310347b1eda033656bcc8",
+        "bytes": 3552960
+      },
+      "/private/tmp/codebasegraph-cod110-20261101/target/native-tests/xtask": {
+        "sha256": "63df67451f452d32fc670d9e4572ef25c8ac51bc2ea91ee1caaf1a710e5bd69b",
+        "bytes": 2194688
+      }
+    },
+    "all_authorized_local_checks_exit0": true,
+    "warnings": 0,
+    "ordinary_gate_has_no_source_sha_on_dirty_source": true,
+    "prerequisite_report_sha256": "1abc13f5d0678bb3d98119e43080c7310c300091caf792bdcbe8ad840fd320f7",
+    "prerequisite_manifest_sha256": "9c3b9768e050858657cc363aa240c2d49fc99128c7cbf5e4498cda9133ead7d5",
+    "prerequisite114_payloads_match": true,
+    "counts_not_summed": true
+  },
+  "reviewer_actual_method": [
+    "read-only static causal traces and baseline comparison",
+    "independent SHA/size/mode and source-path table readback",
+    "closed manifest/JUnit/inventory/provenance/binary inspection",
+    "version-pinned primary documentation consultation"
+  ],
+  "no_reviewer_project_build_test_format_or_source_mutation": true,
+  "full2459_source_match": true,
+  "protected350_match": true,
+  "canonical_model19_match": true,
+  "ordinary_four_source_unchanged": {
+    "check_release_version_sync": true,
+    "cargo_version": true,
+    "dependency_version": true,
+    "release_version": true
+  },
+  "settings": {
+    "required_model": "openai-codex/gpt-6.1-sol",
+    "required_effort": "max",
+    "host_acceptance_receipt": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/cod110-final-review-host-acceptance.json",
+    "host_acceptance_sha256": "5a7f44b217ec4ad0ba1cf50efd916730b32a994e92a49514fb661b233cb55625",
+    "actual_native_call": "await rlm.spawn(prompt, name=\"cod110-final-review\", model=\"openai-codex/gpt-6.1-sol\", thinking=\"max\")",
+    "returned_model": "openai-codex/gpt-6.1-sol",
+    "child_id": "sub-9b6667ff",
+    "fresh_native_default_nonfork_context": true,
+    "agent_type_fork_turns_not_native_parameter_keys": true,
+    "self_runtime_metadata": "unexposed",
+    "nested_dispatch": false,
+    "fallback_or_settings_change": false
+  },
+  "primary_documentation": {
+    "download-action-yml": {
+      "url": "https://raw.githubusercontent.com/actions/download-artifact/3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c/action.yml",
+      "sha256": "e98559b7a31ba31be4709f20d22102dc2737fa630f69a339eb89981151e505fe",
+      "bytes": 2635
+    },
+    "checkout-action-yml": {
+      "url": "https://raw.githubusercontent.com/actions/checkout/df4cb1c069e1874edd31b4311f1884172cec0e10/action.yml",
+      "sha256": "11b63452f6e43ffb5ab8bfdaaafb8a915b354318e3ad9bce4eb0686b9e380f90",
+      "bytes": 4593
+    },
+    "download-readme": {
+      "url": "https://raw.githubusercontent.com/actions/download-artifact/3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c/README.md",
+      "sha256": "471860120617d716593e46c3c0cd86ba9c3779b4a271eb4f7938fbb0afe5d1e1",
+      "bytes": 13722
+    },
+    "upload-readme": {
+      "url": "https://raw.githubusercontent.com/actions/upload-artifact/043fb46d1a93c77aae656e7c1c64a875d1fc6a0a/README.md",
+      "sha256": "82e3d7226dabea938b107b93e015aa816150d6894fff631064aa2884c26771f7",
+      "bytes": 18601
+    }
+  },
+  "local_cargo_documentation": {
+    "cargo-package.html": {
+      "path": "/Users/rabii/.rustup/toolchains/stable-aarch64-apple-darwin/share/doc/rust/html/cargo/commands/cargo-package.html",
+      "sha256": "09c9763b864d37afb77308c689b7b8ae5ec49cdd6a13d11dc8bfd2381ddcd37d"
+    },
+    "cargo-publish.html": {
+      "path": "/Users/rabii/.rustup/toolchains/stable-aarch64-apple-darwin/share/doc/rust/html/cargo/commands/cargo-publish.html",
+      "sha256": "e06910910a71208896150f5d20f89c3063f5fb68333b0946bdcf24a8c1d5174b"
+    }
+  },
+  "constants_changed": [],
+  "next_owner": "Engineer accepts bounded review; Production persists related evidence/source/docs and obtains the authorized PR/child-CI stage",
+  "remaining_gates": [
+    "faithful same-PR Git evidence/source/docs persistence",
+    "COD-110 PR own full child/stable-required CI",
+    "applicable hosted/platform and final shared rollout qualification at approved stage",
+    "authorized serial non-bypass strict main integration and own full main CI",
+    "complete-queue exact-source release/publication and independent verification; original aggregate closure owners"
+  ],
+  "does_not_authorize": [
+    "issue Done",
+    "queue advance",
+    "merge",
+    "release",
+    "aggregate closure"
+  ]
+}

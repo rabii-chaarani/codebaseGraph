@@ -2,8 +2,9 @@
 
 Release-please manages version pull requests and changelogs. Publication is bound to the successful `main` CI run
 for the exact release-PR merge commit. Subsequent merges do not invalidate that release while its commit remains
-on `main`. The workflow validates both retained native artifacts before creating its tag and GitHub Release,
-then publishes the crate from the same source SHA. Release-please itself always runs with tag creation disabled.
+on `main`. Before any tag, release, or native-upload mutation, the workflow validates both retained native artifacts
+and verifies the selected source package and its compressed size. It publishes native assets before the crate from
+that same source SHA. Release-please itself always runs with tag creation disabled.
 
 Failed CI, ordinary commits, ambiguous release PRs, and commits removed from main history cannot authorize publication.
 After native assets and the crate succeed, the specific release PR is marked tagged and proposal maintenance resumes.
@@ -38,9 +39,25 @@ Staging checks are not release qualification; a changed head/base needs fresh qu
 No privileged PR trigger or PR artifact promotion/publication is added.
 
 Every event requires successful `classify`, `fmt`, `supply-chain`, `repository-policy`, and
-`native_retention` jobs. The policy job is the single ordinary `release-gate` invocation and runs
-`cargo test -p xtask --locked` for classifier/workflow regressions. Formatting stays `cargo fmt --check`;
-the existing advisory scan and time-parsing feature guard remain unchanged.
+`native_retention` jobs. The policy job runs the single `release-gate --source-sha "$TESTED_SHA"` invocation
+on the actual tested checkout **T** (`github.sha`, normally the PR merge/test commit), in both modes.
+It also runs `cargo test -p xtask --locked` for classifier/workflow regressions. Formatting stays
+`cargo fmt --check`; the existing advisory scan and time-parsing feature guard remain unchanged.
+
+A separate read-only current-PR identity check determines policy purpose, not lightweight admission.
+Event and current API data must agree on repository IDs/names, PR number, base/head refs and SHAs.
+The same-repository release head `release-please--branches--main--components--codebase-graph` adds
+`--release-candidate`, even for mixed, untrusted, or full-mode PRs. API failure, incomplete identity, or
+stale B/H fails this mandatory job; uncertainty never waives candidate checks by selecting ordinary policy.
+Ordinary PRs and main pushes retain ordinary policy without candidate-only future version/notes obligations.
+
+Candidate and final validation share the strict six-file metadata core: root/wiki/local-dependency/xtask/
+manifest/workspace-lock versions agree, with a nonempty exact-version changelog section. Leading-zero candidate
+versions are rejected; ordinary version-reader and native `release_version` compatibility is unchanged.
+Exact-SHA checkout verification checks actual tracked bytes and modes, including changes hidden by
+`assume-unchanged` or `skip-worktree` and index/worktree cancellation, without changing the real index or flags.
+Byte-clean flagged checkouts and benign untracked build output remain allowed; missing required regular tracked
+metadata is not excused. Candidate validity does not itself grant lightweight admission or publication authority.
 
 Only a positively verified metadata-only release PR may use lightweight verification. Current API and
 event data must agree on the open, non-draft same-repository PR targeting current `main`, exact release
@@ -95,9 +112,13 @@ and supplies its own exact-source native artifacts; there is no PR-artifact subs
 2. Review and merge that release PR. Its merge commit must pass the entire `CI` push workflow.
 3. Release verifies the run's repository, workflow path, event, branch, status, SHA, and exact trusted release PR identity.
    The merge SHA must still be in main history; it need not be the latest main commit.
-4. Immutable metadata must agree across the root package, wiki package/dependency, release manifest, and changelog.
-   Production checks and both native artifacts are validated before any tag or release is created.
-5. The single publisher creates only `vX.Y.Z` at that SHA and creates or resumes its draft GitHub Release.
+4. Immutable metadata must agree through the shared candidate core. The selected release merge is **S**, distinct
+   from a premerge tested checkout T and the protected classifier base B. After exact-CI selection, the read-only
+   `crate-preflight` job runs the immutable workflow helper at `github.workflow_sha` against a separate checkout of S.
+   Historical S need not contain the new helper. Production confirmations and both native artifact validations remain
+   independent requirements and can run in parallel with this package preflight.
+5. Before the first public mutation, the native publisher requires successful `crate-preflight` and its exact named
+   same-release-run report. The single publisher creates only `vX.Y.Z` at S and creates or resumes its draft GitHub Release.
    It uploads the validated archives and checksum sidecars, reads every expected asset back, and compares its size and
    bytes with the staged validated set before publishing the draft. Only then may the crate publish.
    Existing matching tags/releases can be resumed. A complete matching immutable release is verified without writes;
@@ -105,6 +126,46 @@ and supplies its own exact-source native artifacts; there is no PR-artifact subs
    Latest-version selection occurs when the draft is published, so delayed older versions do not replace newer ones.
 6. After both publishers succeed, mark that PR `autorelease: tagged`, remove `autorelease: pending`, and run proposal
    maintenance if current main has successful CI. Ordinary runs never tag an outstanding release as a side effect.
+
+### Exact-source crate preflight
+
+The helper command is:
+
+```bash
+cargo run --manifest-path "$WORKFLOW_HELPER/crates/xtask/Cargo.toml" --locked -- \
+  release-package-preflight --source-dir "$SELECTED_SOURCE" --source-sha "$SOURCE_SHA" \
+  --tag "$RELEASE_TAG" --output "$REPORT_OUTSIDE_SOURCE"
+```
+
+The helper/source checkouts persist no credentials. This job has read-only permissions, no protected `cargo`
+environment, no publishing secret, and no upload to a registry. It validates S and its selected version first.
+Only an authoritative crates.io404 selects `cargo publish --dry-run --locked`; a matching exact-version200 selects
+`cargo package --locked` with normal extracted-source verification, not `--no-verify`. Other statuses, unavailable
+responses, or malformed/mismatched200 fail. Both commands run in S with a fresh owned absolute target directory.
+The helper requires exactly `package/codebase-graph-<version>.crate`, checks its compressed size at or below
+**10,485,760 bytes**, hashes it, and rechecks tracked-source identity before writing a success-only report outside S.
+The temporary package directory is removed on success/error; cancellation does not authorize a leftover report.
+
+The schema1 report binds `source_sha`, `version`, `tag_name`, `verification` (`publish-dry-run` or
+`package-already-published`), `crate_bytes`, and `crate_sha256`. Artifact name
+`crate-preflight-<release-run-id>-<producing-attempt>` is an explicit successful job output. Consumers download that
+exact name from the current release run, never the latest report or a PR artifact. They require successful producer
+status, the same release-run ID, a producing attempt no later than the consuming attempt, and exact S/version/tag
+plus valid report shape. A failed, cancelled, missing, mismatched, or unexpectedly skipped preflight cannot authorize
+any public mutation. A same-run rerun may use only its successful bound predecessor report; a changed S needs its own
+main qualification and preflight. This producer identity is not the selected main CI run/attempt or native provenance.
+
+Both public publishers directly require this preflight. The later crate job checks its checkout HEAD and version
+against the successful bound report, then reuses the verification **result** instead of repeating dry-run/size checks.
+Ordinary `cargo publish --locked` may repackage unchanged S/version; identical preflight/upload `.crate` bytes are not
+claimed or required. Native archives still must be the exact promoted, validated bytes. The existing initial exact-version
+no-upload success and post-failure visibility reconciliation remain, with at most4 attempts and15×attempt-second backoff.
+Native and crate success are both required for finalization. A later external failure does not imply atomic rollback.
+
+Only legacy `automatic=false` existing-tag assets-only recovery permits `crate-preflight` to be skipped. It cannot
+publish a crate, create a new tag/release, or bypass the existing tag/current-main-ancestry and native validation barriers.
+No hosted scheduling, publication, or full acceptance result is claimed by this workflow description. Final corrected
+lightweight/common-policy and mixed/untrusted-full hosted evidence remains required at its approved rollout stage.
 
 Cargo's package verification compiles the extracted source package with the `dev` profile by default. That compile is
 not a distributed binary. The native GitHub Release archives are built separately with `cargo build --release`, and
@@ -250,7 +311,9 @@ Dispatch `Release` on `main` with exactly one target:
   crate, and never changes release PR labels. Immutable assets must already match the validated set.
 
 `dry-run` defaults to `true`. It resolves identity, runs the production gate, acquires artifacts, and validates the full
-archive/checksum/provenance set without creating tags, releases, labels, proposals, or publishing crates. After checking
+archive/checksum/provenance set. Automatic/CI-run crate-publishing targets also run the bound exact-source package
+preflight, including dry-run/verified-package and size checks, without creating tags, releases, labels, proposals, or
+publishing crates. Legacy existing-tag assets-only recovery skips only that crate-specific preflight. After checking
 the successful dry-run, dispatch the same target with `dry-run: false` to publish.
 
 For existing-tag recovery, `artifact-source: rebuild-if-missing` rebuilds **both** targets with the shared native

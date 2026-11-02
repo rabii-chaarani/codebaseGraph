@@ -1,0 +1,30 @@
+{
+  "status": "FAIL_INTEGRATED_FULL_XTASK_TEST",
+  "fmt_exit": 0,
+  "nextest_exit": 100,
+  "registered": 154,
+  "executed": 140,
+  "passed": 139,
+  "failed": 1,
+  "skipped": 0,
+  "not_run_due_failfast": 14,
+  "failure": "tests::workflow_policy_rejects_missing_crate_size_gates",
+  "source_line": "crates/xtask/src/main.rs:6839",
+  "actual_assertion": "[]",
+  "junit_uuid": "757ec66b-a11b-459f-a785-349e566364d2",
+  "junit_sha256": "4d30fb6a39a382c873d47294c5f6f4a01f6163218824ca4e21da9af30896fb7e",
+  "not_executed": [
+    "workspace all-targets all-features strict Clippy",
+    "actual check-workflows",
+    "ordinary release-gate"
+  ],
+  "source2459prepost_equal": true,
+  "dirty_paths": 7,
+  "baseline_files": 2452,
+  "model19_equal": true,
+  "current_protection_count": 350,
+  "current_protection_equal": true,
+  "no_retry_fix_fmtwrites": true,
+  "next_owner": "Engineer routes failing test/policy to exact owner; then new frozen affected verification",
+  "not_acceptance_FinalReview_platform_delivery": true
+}

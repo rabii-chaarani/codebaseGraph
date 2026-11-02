@@ -1,0 +1,127 @@
+{
+  "commands": [
+    {
+      "name": "environment",
+      "command": "env LBUG_LIBRARY_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_INCLUDE_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_VERSION=0.19.0 OPENSSL_LIB_DIR=/opt/homebrew/Cellar/openssl@3/3.6.2/lib MACOSX_DEPLOYMENT_TARGET=13.3 CARGO_BUILD_JOBS=2 GIT_OPTIONAL_LOCKS=0 /usr/bin/python3 -c 'import os,json;print(json.dumps({k:v for k,v in os.environ.items() if k.startswith((\"LBUG\",\"OPENSSL\",\"MACOSX\",\"CARGO\",\"RUST\",\"GIT_OPTIONAL\"))},sort_keys=True))'",
+      "cwd": "/private/tmp/codebasegraph-cod110-20261101",
+      "exit_code": 0,
+      "duration": 0.051417583832517266
+    },
+    {
+      "name": "identity-pre",
+      "command": "env LBUG_LIBRARY_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_INCLUDE_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_VERSION=0.19.0 OPENSSL_LIB_DIR=/opt/homebrew/Cellar/openssl@3/3.6.2/lib MACOSX_DEPLOYMENT_TARGET=13.3 CARGO_BUILD_JOBS=2 GIT_OPTIONAL_LOCKS=0 git rev-parse --show-toplevel HEAD HEAD^{tree}",
+      "cwd": "/private/tmp/codebasegraph-cod110-20261101",
+      "exit_code": 0,
+      "duration": 0.02401100005954504
+    },
+    {
+      "name": "tree",
+      "command": "env LBUG_LIBRARY_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_INCLUDE_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_VERSION=0.19.0 OPENSSL_LIB_DIR=/opt/homebrew/Cellar/openssl@3/3.6.2/lib MACOSX_DEPLOYMENT_TARGET=13.3 CARGO_BUILD_JOBS=2 GIT_OPTIONAL_LOCKS=0 git ls-tree -rz HEAD",
+      "cwd": "/private/tmp/codebasegraph-cod110-20261101",
+      "exit_code": 0,
+      "duration": 0.050606208154931664
+    },
+    {
+      "name": "diff-pre",
+      "command": "env LBUG_LIBRARY_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_INCLUDE_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_VERSION=0.19.0 OPENSSL_LIB_DIR=/opt/homebrew/Cellar/openssl@3/3.6.2/lib MACOSX_DEPLOYMENT_TARGET=13.3 CARGO_BUILD_JOBS=2 GIT_OPTIONAL_LOCKS=0 git diff --binary HEAD",
+      "cwd": "/private/tmp/codebasegraph-cod110-20261101",
+      "exit_code": 0,
+      "duration": 0.03739399998448789
+    },
+    {
+      "name": "status-pre",
+      "command": "env LBUG_LIBRARY_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_INCLUDE_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_VERSION=0.19.0 OPENSSL_LIB_DIR=/opt/homebrew/Cellar/openssl@3/3.6.2/lib MACOSX_DEPLOYMENT_TARGET=13.3 CARGO_BUILD_JOBS=2 GIT_OPTIONAL_LOCKS=0 git status --porcelain=v1 --untracked-files=all",
+      "cwd": "/private/tmp/codebasegraph-cod110-20261101",
+      "exit_code": 0,
+      "duration": 0.024373000022023916
+    },
+    {
+      "name": "fmt",
+      "command": "env LBUG_LIBRARY_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_INCLUDE_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_VERSION=0.19.0 OPENSSL_LIB_DIR=/opt/homebrew/Cellar/openssl@3/3.6.2/lib MACOSX_DEPLOYMENT_TARGET=13.3 CARGO_BUILD_JOBS=2 GIT_OPTIONAL_LOCKS=0 cargo fmt --all --check",
+      "cwd": "/private/tmp/codebasegraph-cod110-20261101",
+      "exit_code": 1,
+      "duration": 1.231380166951567
+    }
+  ],
+  "environment": {
+    "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+    "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+    "LBUG_VERSION": "0.19.0",
+    "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+    "MACOSX_DEPLOYMENT_TARGET": "13.3",
+    "CARGO_BUILD_JOBS": "2",
+    "GIT_OPTIONAL_LOCKS": "0"
+  },
+  "format_diff_locations": [
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:1498:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:1527:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:1566:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:1589:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:1600:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:1613:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:1620:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:1645:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:1653:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:1689:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:1704:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:1711:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:1717:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:3463:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:4402:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:4423:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:4459:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:4485:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:4499:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:4512:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:4525:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:4534:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:6379:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:6386:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:6390:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:6394:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:6398:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:41:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:67:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:75:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:596:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:603:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:616:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:653:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:688:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:711:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:720:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:751:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:821:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:838:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:859:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:896:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:903:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:911:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:918:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:926:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:933:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:944:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:951:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:956:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:1055:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:1215:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:1226:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:1260:",
+    "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:1600:"
+  ],
+  "native019": {
+    "lbug.h": {
+      "sha256": "7da5b7e36d6610e43a1512e4997ac123ba0886cf5598ae44aca5449aa02a8aa3",
+      "bytes": 77406
+    },
+    "lbug.hpp": {
+      "sha256": "0b463bef0fa7a9ba1bb14cee12b23bf5bc7c2d6cfc4b3779d6f7cbe92bf4831d",
+      "bytes": 333665
+    },
+    "liblbug.a": {
+      "sha256": "d2e9a5c37617b0affb01f18f6ef48bb1531f5744f5ba06c849226842617ad142",
+      "bytes": 81722416
+    }
+  },
+  "no_test_execution_inventory_or_JUnit_in_this_attempt": true
+}

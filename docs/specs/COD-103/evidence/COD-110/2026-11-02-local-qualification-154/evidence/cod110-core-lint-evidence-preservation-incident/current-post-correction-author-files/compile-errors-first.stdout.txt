@@ -1,0 +1,44 @@
+   Compiling xtask v4.0.5 (/private/tmp/codebasegraph-cod110-20261101/crates/xtask)
+error[E0425]: cannot find type `PathBuf` in this scope
+   --> crates/xtask/src/release.rs:247:15
+    |
+247 |         root: PathBuf,
+    |               ^^^^^^^ not found in this scope
+    |
+help: consider importing one of these structs
+    |
+223 +     use crate::PathBuf;
+    |
+223 +     use std::path::PathBuf;
+    |
+
+warning: unused import: `std::os::unix::fs::PermissionsExt`
+   --> crates/xtask/src/release.rs:253:17
+    |
+253 |             use std::os::unix::fs::PermissionsExt;
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+error[E0609]: no field `0` on type `std::string::String`
+   --> crates/xtask/src/ci.rs:127:60
+    |
+127 |         ("workspace codebase-graph lock identity", lock[0].0.as_str()),
+    |                                                            ^ unknown field
+
+error[E0609]: no field `0` on type `std::string::String`
+   --> crates/xtask/src/ci.rs:128:52
+    |
+128 |         ("workspace k-wiki lock identity", lock[1].0.as_str()),
+    |                                                    ^ unknown field
+
+error[E0609]: no field `0` on type `std::string::String`
+   --> crates/xtask/src/ci.rs:129:51
+    |
+129 |         ("workspace xtask lock identity", lock[2].0.as_str()),
+    |                                                   ^ unknown field
+
+Some errors have detailed explanations: E0425, E0609.
+For more information about an error, try `rustc --explain E0425`.
+warning: `xtask` (bin "xtask" test) generated 1 warning
+error: could not compile `xtask` (bin "xtask" test) due to 4 previous errors; 1 warning emitted

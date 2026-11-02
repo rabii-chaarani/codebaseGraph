@@ -1,0 +1,19 @@
+   Compiling xtask v4.0.5 (/private/tmp/codebasegraph-cod110-20261101/crates/xtask)
+    Finished `native-tests` profile [optimized] target(s) in 7.04s
+     Running unittests src/main.rs (target/native-tests/deps/xtask-eed5a74c0d8f01ef)
+
+running 1 test
+test tests::workflow_policy_accepts_actual_repository_purpose_and_preflight_wiring ... 
+thread 'tests::workflow_policy_accepts_actual_repository_purpose_and_preflight_wiring' (42090177) panicked at crates/xtask/src/main.rs:6365:9:
+actual CI YAML rejected: ["FAIL: repository-policy-job-invalid: repository-policy must own exactly one release-gate and the bounded xtask regression suite.", "FAIL: repository-policy-job-invalid: the always-mandatory policy job must validate purpose, check out tested source, and run release-gate with its source identity.", "FAIL: release-crate-preflight-invalid: automatic crate publication must consume only a same-run exact-source preflight report; legacy assets-only mode may skip it.", "FAIL: release-publish-gate-missing: selected source must pass crate preflight before the ordinary locked crate upload."]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+
+failures:
+
+failures:
+    tests::workflow_policy_accepts_actual_repository_purpose_and_preflight_wiring
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p xtask --bin xtask`

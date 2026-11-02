@@ -1,0 +1,122 @@
+{
+  "status": "PASS_AUTHORIZED_INTEGRATED_LOCAL_CHECKS",
+  "head": "754c82f4dc22c203c22a433f5bbae5f2f6e80231",
+  "tree": "fdf2f21db4c05965a7c4020075a9e66fddfa2db5",
+  "dirty_source_hashes": {
+    ".github/workflows/ci.yml": {
+      "sha256": "8827a9a41ab87f509be0fe9719f84c7d144da485dea7d3932e4fe6d59d4ff9fb",
+      "bytes": 25607,
+      "mode": "100644",
+      "oid": "731e2e79b8dde7e410da09b79036f654a03874a3",
+      "baseline": {
+        "mode": "100644",
+        "kind": "blob",
+        "oid": "1c9c2e3f45f425ebca2d980915a6e32b6bf5c213"
+      },
+      "baseline_match": false
+    },
+    ".github/workflows/release.yml": {
+      "sha256": "64d219b8ae84dabc03eb5b7202ffd40b7046171f061b0aab9330b35f19c6c955",
+      "bytes": 40524,
+      "mode": "100644",
+      "oid": "d8cd87f969a83200e76fd30fe7dae1eca9b1f16e",
+      "baseline": {
+        "mode": "100644",
+        "kind": "blob",
+        "oid": "bd87a4495840cd5801138330be6833ff5dcb9d73"
+      },
+      "baseline_match": false
+    },
+    "crates/xtask/src/ci.rs": {
+      "sha256": "7db803caf383175b0842c9b01e2725588a96794fc8e9b021db550fd4e129139a",
+      "bytes": 93664,
+      "mode": "100644",
+      "oid": "c503af2aafe87ecad5185b631b0103d0a1c960b4",
+      "baseline": {
+        "mode": "100644",
+        "kind": "blob",
+        "oid": "8b3e3543a917de0f515f2926ce72fb4b73d06748"
+      },
+      "baseline_match": false
+    },
+    "crates/xtask/src/main.rs": {
+      "sha256": "6709677c3e48887731a1768c9ea3c5b5448c9ff0765391fb9a91a300c3386a71",
+      "bytes": 272999,
+      "mode": "100644",
+      "oid": "b0cc8c044f2d63166b9141aab28ca28502a13793",
+      "baseline": {
+        "mode": "100644",
+        "kind": "blob",
+        "oid": "f023e3f6afa60c244ff3ac9e7513f0be1fdec1b4"
+      },
+      "baseline_match": false
+    },
+    "crates/xtask/src/release.rs": {
+      "sha256": "34090159b154bb5a9676f50b441313ba11e70d43211ea5d24748322b0afe9b62",
+      "bytes": 30161,
+      "mode": "100644",
+      "oid": "95bfe457328de383da54c5c351439d62d1236c6d",
+      "baseline": {
+        "mode": "100644",
+        "kind": "blob",
+        "oid": "45e1d324db5f86f5152b825f0f114e99fa85990e"
+      },
+      "baseline_match": false
+    },
+    "crates/xtask/src/release/workflow_tests.rs": {
+      "sha256": "e09f974a6c5e43c6dc61adf28d55920caf35116d40064bb2c1547825abbaf0bb",
+      "bytes": 73254,
+      "mode": "100644",
+      "oid": "787c86f0625e69a0f66dd14d6610d13fec93eb8a",
+      "baseline": {
+        "mode": "100644",
+        "kind": "blob",
+        "oid": "f6fea96536d774a4fd40fc4091cc6a2a002aab46"
+      },
+      "baseline_match": false
+    },
+    "docs/release.md": {
+      "sha256": "4fafaeec5fc9c975a68c75367fd114c9a32c4bd90093f20e1267a9299380d34d",
+      "bytes": 27695,
+      "mode": "100644",
+      "oid": "8211dc41b2fabdbde167d5f19b6c41e7e18ede99",
+      "baseline": {
+        "mode": "100644",
+        "kind": "blob",
+        "oid": "db9e0b2a43307f5203977c0cc766b71c12992613"
+      },
+      "baseline_match": false
+    }
+  },
+  "checks": {
+    "fmt": 0,
+    "full_xtask_nextest": 0,
+    "strict_workspace_alltargets_allfeatures_clippy": 0,
+    "actual_check_workflows": 0,
+    "ordinary_release_gate_without_source_sha": 0
+  },
+  "warnings": 0,
+  "registered": 154,
+  "executed": 154,
+  "passed": 154,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "not_run": 0,
+  "junit_uuid": "cc347ab0-542a-451e-96dd-5279125bbdbf",
+  "junit_sha256": "3989e689fa6fbc56d39ca83492da5f7fbb59151fc81113508d4609c0afb5aa67",
+  "full2459prepost_equal": true,
+  "baseline2452_dirty7": true,
+  "model19_equal": true,
+  "current_protected350_equal": true,
+  "no_sourcefix_retry_modelingestion": true,
+  "remaining": [
+    "Fresh independent required Sol/MAX integrated FinalReview",
+    "Git evidence/source commit and PR/full child CI",
+    "Windows and hosted/support-platform qualification",
+    "Rollout/main/release/publication and original closure gates"
+  ],
+  "next_owner": "Engineer accepts local evidence and dispatches required fresh FinalReviewer; Production persists supplied evidence unchanged",
+  "not_release_or_wholeissue_completion": true,
+  "constants_changed": []
+}

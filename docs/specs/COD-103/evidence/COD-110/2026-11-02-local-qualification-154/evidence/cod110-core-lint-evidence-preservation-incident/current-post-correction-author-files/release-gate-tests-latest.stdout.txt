@@ -1,0 +1,10 @@
+    Finished `native-tests` profile [optimized] target(s) in 0.05s
+     Running unittests src/main.rs (target/native-tests/deps/xtask-eed5a74c0d8f01ef)
+
+running 3 tests
+test tests::release_gate_candidate_requires_source_sha ... ok
+test tests::release_gate_source_sha_binding_uses_current_process_checkout ... ok
+test tests::release_gate_source_sha_option_rejects_missing_and_duplicate_values ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 131 filtered out; finished in 0.12s
+

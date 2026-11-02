@@ -1,0 +1,28 @@
+{
+  "baseline_sha256": "8eb8dde94de2bf9866e58175c68a0de836c0bae0249640df8cba09f09270b348",
+  "baseline_bytes": 271046,
+  "final_sha256": "9f649bf9a97f82320d74afeb902f2c2b578b03a3d77f7f05e26487baee4e3864",
+  "final_bytes": 271209,
+  "scope": [
+    "crates/xtask/src/main.rs"
+  ],
+  "diagnosis": "The regression removed only the obsolete literal cargo run command, but the current step invokes the release gate using args=(release-gate --source-sha \"$TESTED_SHA\") and cargo run ... \"${args[@]}\". Thus the mutation removed no step. The test now removes the named current gate step and asserts exactly one step was removed before checking repository policy rejects it.",
+  "diff_sha256": "a7583e1f6a68935d1d96c7d5719a6eac31121b6440f5fb223c78d06e4c8f5e20",
+  "diff_bytes": 762,
+  "checks": [
+    {
+      "command": "rustfmt --edition 2021 --config skip_children=true crates/xtask/src/main.rs",
+      "exit": 0,
+      "duration_seconds": 0.20419916696846485,
+      "output": ""
+    },
+    {
+      "command": "cargo fmt --all --check",
+      "exit": 0,
+      "duration_seconds": 1.0247739998158067,
+      "output": ""
+    }
+  ],
+  "tests_run": false,
+  "full_suite_prior_fact": "The previously reported integrated 154-case run had 153 passing and this one stale-mutation failure. This correction has not been executed in tests."
+}

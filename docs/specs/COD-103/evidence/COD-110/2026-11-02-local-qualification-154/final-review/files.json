@@ -1,0 +1,16 @@
+{
+  "files": {
+    "report.md": {
+      "sha256": "b984dd3e65e2572dc96b0bb23742f1821eeafaed8e757fd48615dcca3f3d2da8",
+      "bytes": 21770
+    },
+    "result.json": {
+      "sha256": "70c17f03c33c95211465a6c6f3fd2487194d24d6610244e33a39299631f31711",
+      "bytes": 10384
+    },
+    "reviewed-delta.patch": {
+      "sha256": "e88bd3a7be2e0e05e34302bbf291476244b747a626dccf96835b9f3e08174024",
+      "bytes": 219582
+    }
+  }
+}

@@ -1,0 +1,211 @@
+--- a/main.rs
++++ b/main.rs
+@@ -4413,18 +4413,34 @@
+     }
+ 
+     #[cfg(unix)]
++    struct RepositoryPolicyCase<'a> {
++        event_name: &'a str,
++        github_ref: &'a str,
++        repository: &'a str,
++        repository_id: &'a str,
++        tested_sha: &'a str,
++        event: &'a Value,
++        live_pr: Option<&'a Value>,
++        gh_exit: i32,
++        purpose_override: Option<&'a str>,
++    }
++
++    #[cfg(unix)]
+     fn run_repository_policy_body(
+         ci: &YamlValue,
+-        event_name: &str,
+-        github_ref: &str,
+-        repository: &str,
+-        repository_id: &str,
+-        tested_sha: &str,
+-        event: &Value,
+-        live_pr: Option<&Value>,
+-        gh_exit: i32,
+-        purpose_override: Option<&str>,
++        case: RepositoryPolicyCase<'_>,
+     ) -> RepositoryPolicyRun {
++        let RepositoryPolicyCase {
++            event_name,
++            github_ref,
++            repository,
++            repository_id,
++            tested_sha,
++            event,
++            live_pr,
++            gh_exit,
++            purpose_override,
++        } = case;
+         let root = super::unique_temp_dir("repository_policy_body").unwrap();
+         let bin = root.join("bin");
+         fs::create_dir_all(&bin).unwrap();
+@@ -4525,15 +4541,17 @@
+         let untrusted_live = event["pull_request"].clone();
+         let mixed = run_repository_policy_body(
+             &ci,
+-            "pull_request",
+-            "refs/pull/124/merge",
+-            "owner/repo",
+-            "12345",
+-            CI_REQUIRED_SHA,
+-            &event,
+-            Some(&untrusted_live),
+-            0,
+-            None,
++            RepositoryPolicyCase {
++                event_name: "pull_request",
++                github_ref: "refs/pull/124/merge",
++                repository: "owner/repo",
++                repository_id: "12345",
++                tested_sha: CI_REQUIRED_SHA,
++                event: &event,
++                live_pr: Some(&untrusted_live),
++                gh_exit: 0,
++                purpose_override: None,
++            },
+         );
+         assert!(
+             mixed.purpose.status.success(),
+@@ -4567,15 +4585,17 @@
+         let ordinary_live = ordinary["pull_request"].clone();
+         let result = run_repository_policy_body(
+             &ci,
+-            "pull_request",
+-            "refs/pull/124/merge",
+-            "owner/repo",
+-            "12345",
+-            CI_REQUIRED_SHA,
+-            &ordinary,
+-            Some(&ordinary_live),
+-            0,
+-            None,
++            RepositoryPolicyCase {
++                event_name: "pull_request",
++                github_ref: "refs/pull/124/merge",
++                repository: "owner/repo",
++                repository_id: "12345",
++                tested_sha: CI_REQUIRED_SHA,
++                event: &ordinary,
++                live_pr: Some(&ordinary_live),
++                gh_exit: 0,
++                purpose_override: None,
++            },
+         );
+         assert!(
+             result.purpose.status.success(),
+@@ -4600,15 +4620,17 @@
+         let fork_live = fork["pull_request"].clone();
+         let result = run_repository_policy_body(
+             &ci,
+-            "pull_request",
+-            "refs/pull/124/merge",
+-            "owner/repo",
+-            "12345",
+-            CI_REQUIRED_SHA,
+-            &fork,
+-            Some(&fork_live),
+-            0,
+-            None,
++            RepositoryPolicyCase {
++                event_name: "pull_request",
++                github_ref: "refs/pull/124/merge",
++                repository: "owner/repo",
++                repository_id: "12345",
++                tested_sha: CI_REQUIRED_SHA,
++                event: &fork,
++                live_pr: Some(&fork_live),
++                gh_exit: 0,
++                purpose_override: None,
++            },
+         );
+         assert!(
+             result.purpose.status.success(),
+@@ -4631,15 +4653,17 @@
+         mismatch_live["base"]["sha"] = json!(CI_REQUIRED_SHA);
+         let failed = run_repository_policy_body(
+             &ci,
+-            "pull_request",
+-            "refs/pull/124/merge",
+-            "owner/repo",
+-            "12345",
+-            CI_REQUIRED_SHA,
+-            &event,
+-            Some(&mismatch_live),
+-            0,
+-            None,
++            RepositoryPolicyCase {
++                event_name: "pull_request",
++                github_ref: "refs/pull/124/merge",
++                repository: "owner/repo",
++                repository_id: "12345",
++                tested_sha: CI_REQUIRED_SHA,
++                event: &event,
++                live_pr: Some(&mismatch_live),
++                gh_exit: 0,
++                purpose_override: None,
++            },
+         );
+         assert!(
+             !failed.purpose.status.success(),
+@@ -4654,15 +4678,17 @@
+ 
+         let unavailable = run_repository_policy_body(
+             &ci,
+-            "pull_request",
+-            "refs/pull/124/merge",
+-            "owner/repo",
+-            "12345",
+-            CI_REQUIRED_SHA,
+-            &event,
+-            Some(&event["pull_request"]),
+-            23,
+-            None,
++            RepositoryPolicyCase {
++                event_name: "pull_request",
++                github_ref: "refs/pull/124/merge",
++                repository: "owner/repo",
++                repository_id: "12345",
++                tested_sha: CI_REQUIRED_SHA,
++                event: &event,
++                live_pr: Some(&event["pull_request"]),
++                gh_exit: 23,
++                purpose_override: None,
++            },
+         );
+         assert!(
+             !unavailable.purpose.status.success(),
+@@ -4675,17 +4701,20 @@
+             unavailable.calls
+         );
+ 
++        let push_event = json!({"ref":"refs/heads/main","after":CI_REQUIRED_SHA,"repository":{"full_name":"owner/repo","id":12345}});
+         let invalid_output = run_repository_policy_body(
+             &ci,
+-            "push",
+-            "refs/heads/main",
+-            "owner/repo",
+-            "12345",
+-            CI_REQUIRED_SHA,
+-            &json!({"ref":"refs/heads/main","after":CI_REQUIRED_SHA,"repository":{"full_name":"owner/repo","id":12345}}),
+-            None,
+-            0,
+-            Some("garbage"),
++            RepositoryPolicyCase {
++                event_name: "push",
++                github_ref: "refs/heads/main",
++                repository: "owner/repo",
++                repository_id: "12345",
++                tested_sha: CI_REQUIRED_SHA,
++                event: &push_event,
++                live_pr: None,
++                gh_exit: 0,
++                purpose_override: Some("garbage"),
++            },
+         );
+         assert!(invalid_output.purpose.status.success());
+         assert!(invalid_output

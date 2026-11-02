@@ -1,0 +1,1549 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="nextest-run" tests="154" failures="0" errors="0" uuid="33917d13-3b96-42d1-8b34-716b64b2167f" timestamp="2026-11-02T14:24:49.632+09:30" time="60.994">
+    <testsuite name="xtask::bin/xtask" tests="154" disabled="0" errors="0" failures="0">
+        <testcase name="ci::tests::classifier_requires_strictly_increasing_versions_and_new_changelog_section" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:49.632+09:30" time="0.005">
+            <system-out>
+running 1 test
+test ci::tests::classifier_requires_strictly_increasing_versions_and_new_changelog_section ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="ci::tests::git_acquisition_failures_select_full_and_same_sha_is_full" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:49.638+09:30" time="0.048">
+            <system-out>
+running 1 test
+test ci::tests::git_acquisition_failures_select_full_and_same_sha_is_full ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.04s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="ci::tests::git_newline_path_names_remain_nul_delimited" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:49.686+09:30" time="0.075">
+            <system-out>
+running 1 test
+test ci::tests::git_newline_path_names_remain_nul_delimited ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.07s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="ci::tests::git_path_names_are_nul_delimited_and_extra_paths_force_full" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:49.761+09:30" time="0.074">
+            <system-out>
+running 1 test
+test ci::tests::git_path_names_are_nul_delimited_and_extra_paths_force_full ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.07s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="ci::tests::immutable_git_diff_rejects_added_deleted_and_symlink_paths" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:49.835+09:30" time="0.086">
+            <system-out>
+running 1 test
+test ci::tests::immutable_git_diff_rejects_added_deleted_and_symlink_paths ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.08s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="ci::tests::immutable_git_diff_rejects_executable_metadata_modes" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:49.921+09:30" time="0.078">
+            <system-out>
+running 1 test
+test ci::tests::immutable_git_diff_rejects_executable_metadata_modes ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.07s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="ci::tests::immutable_git_diff_rejects_submodule_mode" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:49.999+09:30" time="0.074">
+            <system-out>
+running 1 test
+test ci::tests::immutable_git_diff_rejects_submodule_mode ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.07s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="ci::tests::immutable_git_diff_requires_ancestor_and_exact_metadata_paths" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:50.073+09:30" time="0.131">
+            <system-out>
+running 1 test
+test ci::tests::immutable_git_diff_requires_ancestor_and_exact_metadata_paths ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.13s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="ci::tests::metadata_classifier_rejects_duplicate_and_decoy_contexts" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:50.204+09:30" time="0.005">
+            <system-out>
+running 1 test
+test ci::tests::metadata_classifier_rejects_duplicate_and_decoy_contexts ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="ci::tests::metadata_classifier_rejects_partial_mismatch_external_lock_and_history_edits" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:50.208+09:30" time="0.004">
+            <system-out>
+running 1 test
+test ci::tests::metadata_classifier_rejects_partial_mismatch_external_lock_and_history_edits ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="ci::tests::metadata_recognizers_reject_multiline_comment_context_and_duplicate_workspace_records" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:50.213+09:30" time="0.004">
+            <system-out>
+running 1 test
+test ci::tests::metadata_recognizers_reject_multiline_comment_context_and_duplicate_workspace_records ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="ci::tests::pr165_shaped_complete_metadata_transition_is_lightweight" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:50.217+09:30" time="0.004">
+            <system-out>
+running 1 test
+test ci::tests::pr165_shaped_complete_metadata_transition_is_lightweight ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="ci::tests::pr167_shaped_complete_metadata_transition_is_lightweight" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:50.221+09:30" time="0.004">
+            <system-out>
+running 1 test
+test ci::tests::pr167_shaped_complete_metadata_transition_is_lightweight ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="ci::tests::raw_diff_parser_accepts_newline_names_and_rejects_unknown_or_truncated_records" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:50.226+09:30" time="0.004">
+            <system-out>
+running 1 test
+test ci::tests::raw_diff_parser_accepts_newline_names_and_rejects_unknown_or_truncated_records ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="ci::tests::verify_checkout_accepts_clean_flagged_executable_and_nonexecutable_modes" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:50.230+09:30" time="0.283">
+            <system-out>
+running 1 test
+test ci::tests::verify_checkout_accepts_clean_flagged_executable_and_nonexecutable_modes ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.28s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="ci::tests::verify_checkout_accepts_clean_flagged_metadata_without_mutating_index" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:50.513+09:30" time="0.270">
+            <system-out>
+running 1 test
+test ci::tests::verify_checkout_accepts_clean_flagged_metadata_without_mutating_index ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.27s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="ci::tests::verify_checkout_accepts_clean_flagged_tracked_source_outside_metadata" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:50.782+09:30" time="0.245">
+            <system-out>
+running 1 test
+test ci::tests::verify_checkout_accepts_clean_flagged_tracked_source_outside_metadata ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.24s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="ci::tests::verify_checkout_accepts_exact_clean_tracked_metadata_and_untracked_build_output" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:51.027+09:30" time="0.109">
+            <system-out>
+running 1 test
+test ci::tests::verify_checkout_accepts_exact_clean_tracked_metadata_and_untracked_build_output ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.10s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="ci::tests::verify_checkout_allows_clean_assume_unchanged_and_skip_worktree_metadata" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:51.136+09:30" time="0.259">
+            <system-out>
+running 1 test
+test ci::tests::verify_checkout_allows_clean_assume_unchanged_and_skip_worktree_metadata ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.25s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="ci::tests::verify_checkout_rejects_dirty_tracked_source_hidden_by_index_flags_outside_metadata" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:51.395+09:30" time="0.102">
+            <system-out>
+running 1 test
+test ci::tests::verify_checkout_rejects_dirty_tracked_source_hidden_by_index_flags_outside_metadata ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.10s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="ci::tests::verify_checkout_rejects_dirty_tracked_source_outside_metadata_set" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:51.498+09:30" time="0.111">
+            <system-out>
+running 1 test
+test ci::tests::verify_checkout_rejects_dirty_tracked_source_outside_metadata_set ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.11s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="ci::tests::verify_checkout_rejects_flagged_dirty_metadata_without_mutating_index" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:51.608+09:30" time="0.108">
+            <system-out>
+running 1 test
+test ci::tests::verify_checkout_rejects_flagged_dirty_metadata_without_mutating_index ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.10s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="ci::tests::verify_checkout_rejects_flagged_mode_only_change_without_mutating_index" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:51.717+09:30" time="0.140">
+            <system-out>
+running 1 test
+test ci::tests::verify_checkout_rejects_flagged_mode_only_change_without_mutating_index ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.14s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="ci::tests::verify_checkout_rejects_invalid_or_mismatched_sha_and_changed_head" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:51.857+09:30" time="0.048">
+            <system-out>
+running 1 test
+test ci::tests::verify_checkout_rejects_invalid_or_mismatched_sha_and_changed_head ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.04s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="ci::tests::verify_checkout_rejects_missing_or_untracked_required_metadata" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:51.905+09:30" time="0.036">
+            <system-out>
+running 1 test
+test ci::tests::verify_checkout_rejects_missing_or_untracked_required_metadata ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.03s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="ci::tests::verify_checkout_rejects_staged_metadata_change_when_worktree_matches_head" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:51.941+09:30" time="0.046">
+            <system-out>
+running 1 test
+test ci::tests::verify_checkout_rejects_staged_metadata_change_when_worktree_matches_head ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.04s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="ci::tests::verify_checkout_rejects_staged_unstaged_and_deleted_tracked_files" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:51.988+09:30" time="0.163">
+            <system-out>
+running 1 test
+test ci::tests::verify_checkout_rejects_staged_unstaged_and_deleted_tracked_files ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.16s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="ci::tests::verify_checkout_rejects_submodule_metadata_mode" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:52.150+09:30" time="0.131">
+            <system-out>
+running 1 test
+test ci::tests::verify_checkout_rejects_submodule_metadata_mode ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.13s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="ci::tests::verify_checkout_rejects_symlinked_required_metadata" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:52.282+09:30" time="0.074">
+            <system-out>
+running 1 test
+test ci::tests::verify_checkout_rejects_symlinked_required_metadata ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.07s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="ci::tests::verify_checkout_rejects_tracked_changes_hidden_by_assume_unchanged_or_skip_worktree" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:52.356+09:30" time="0.124">
+            <system-out>
+running 1 test
+test ci::tests::verify_checkout_rejects_tracked_changes_hidden_by_assume_unchanged_or_skip_worktree ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.12s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="ci::tests::verify_checkout_rejects_unflagged_mode_only_change" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:52.481+09:30" time="0.133">
+            <system-out>
+running 1 test
+test ci::tests::verify_checkout_rejects_unflagged_mode_only_change ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.13s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="ci::tests::verify_checkout_respects_configured_core_filemode_false_for_flagged_files" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:52.614+09:30" time="0.143">
+            <system-out>
+running 1 test
+test ci::tests::verify_checkout_respects_configured_core_filemode_false_for_flagged_files ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.14s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="ci::tests::verify_checkout_uses_git_normalized_bytes_for_tracked_text" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:52.757+09:30" time="0.114">
+            <system-out>
+running 1 test
+test ci::tests::verify_checkout_uses_git_normalized_bytes_for_tracked_text ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.11s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="macos::tests::dependency_parser_preserves_paths_with_spaces" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:52.871+09:30" time="0.004">
+            <system-out>
+running 1 test
+test macos::tests::dependency_parser_preserves_paths_with_spaces ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="macos::tests::dylib_dependency_parser_filters_only_matching_install_id" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:52.876+09:30" time="0.004">
+            <system-out>
+running 1 test
+test macos::tests::dylib_dependency_parser_filters_only_matching_install_id ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="macos::tests::minimum_version_parser_reads_macos_build_and_legacy_commands" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:52.880+09:30" time="0.004">
+            <system-out>
+running 1 test
+test macos::tests::minimum_version_parser_reads_macos_build_and_legacy_commands ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="macos::tests::rpath_parser_reads_and_rejects_malformed_entries" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:52.884+09:30" time="0.004">
+            <system-out>
+running 1 test
+test macos::tests::rpath_parser_reads_and_rejects_malformed_entries ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="macos::tests::source_archive_accepts_comment_metadata_without_extracting_it" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:52.888+09:30" time="0.006">
+            <system-out>
+running 1 test
+test macos::tests::source_archive_accepts_comment_metadata_without_extracting_it ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="macos_installer_tests::dry_run_validates_all_payloads_without_creating_destination" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:52.894+09:30" time="1.190">
+            <system-out>
+running 1 test
+test macos_installer_tests::dry_run_validates_all_payloads_without_creating_destination ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 1.19s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="macos_installer_tests::invalid_inventory_rows_and_mixed_versions_preserve_destination" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:54.084+09:30" time="0.404">
+            <system-out>
+running 1 test
+test macos_installer_tests::invalid_inventory_rows_and_mixed_versions_preserve_destination ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.39s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="macos_installer_tests::missing_corrupt_and_symlink_payloads_preserve_existing_destination_files" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:54.488+09:30" time="0.537">
+            <system-out>
+running 1 test
+test macos_installer_tests::missing_corrupt_and_symlink_payloads_preserve_existing_destination_files ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.53s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="macos_installer_tests::nonzero_binary_probe_preserves_existing_destination_files" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:55.025+09:30" time="0.775">
+            <system-out>
+running 1 test
+test macos_installer_tests::nonzero_binary_probe_preserves_existing_destination_files ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.77s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="macos_installer_tests::real_install_places_verified_runtime_license_and_binaries_in_spaced_directory" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:55.800+09:30" time="0.811">
+            <system-out>
+running 1 test
+test macos_installer_tests::real_install_places_verified_runtime_license_and_binaries_in_spaced_directory ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.80s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="native_tests::shards::tests::empty_shard_never_runs_an_unfiltered_suite" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:56.612+09:30" time="0.007">
+            <system-out>
+running 1 test
+test native_tests::shards::tests::empty_shard_never_runs_an_unfiltered_suite ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="native_tests::shards::tests::selected_exact_filters_execute_the_expected_real_harness_cases" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:56.618+09:30" time="0.007">
+            <system-out>
+running 1 test
+test native_tests::shards::tests::selected_exact_filters_execute_the_expected_real_harness_cases ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="native_tests::shards::tests::shards_cover_every_listed_case_once_and_bound_windows_arguments" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:56.626+09:30" time="0.006">
+            <system-out>
+running 1 test
+test native_tests::shards::tests::shards_cover_every_listed_case_once_and_bound_windows_arguments ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="native_tests::tests::captured_cli_survives_cargo_replacing_its_output" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:56.632+09:30" time="0.006">
+            <system-out>
+running 1 test
+test native_tests::tests::captured_cli_survives_cargo_replacing_its_output ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="native_tests::tests::partitions_every_test_target_and_keeps_new_integration_targets" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:56.638+09:30" time="0.005">
+            <system-out>
+running 1 test
+test native_tests::tests::partitions_every_test_target_and_keeps_new_integration_targets ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="native_tests::tests::windows_regressions_precede_the_complete_unfiltered_suite" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:56.644+09:30" time="0.005">
+            <system-out>
+running 1 test
+test native_tests::tests::windows_regressions_precede_the_complete_unfiltered_suite ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::tests::candidate_metadata_accepts_current_real_generated_six_file_layout" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:56.648+09:30" time="0.006">
+            <system-out>
+running 1 test
+test release::tests::candidate_metadata_accepts_current_real_generated_six_file_layout ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::tests::candidate_metadata_does_not_require_metadata_transition_or_changelog_history_rewrite" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:56.654+09:30" time="0.032">
+            <system-out>
+running 1 test
+test release::tests::candidate_metadata_does_not_require_metadata_transition_or_changelog_history_rewrite ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.03s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::tests::candidate_metadata_rejects_duplicate_lock_identity_and_missing_changelog_version" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:56.686+09:30" time="0.057">
+            <system-out>
+running 1 test
+test release::tests::candidate_metadata_rejects_duplicate_lock_identity_and_missing_changelog_version ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.05s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::tests::candidate_metadata_rejects_leading_zero_in_all_candidate_entrypoints" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:56.743+09:30" time="0.030">
+            <system-out>
+running 1 test
+test release::tests::candidate_metadata_rejects_leading_zero_in_all_candidate_entrypoints ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.03s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::tests::candidate_metadata_rejects_missing_duplicate_empty_and_mismatched_inputs" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:56.774+09:30" time="0.180">
+            <system-out>
+running 1 test
+test release::tests::candidate_metadata_rejects_missing_duplicate_empty_and_mismatched_inputs ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.18s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::tests::candidate_metadata_rejects_missing_or_mismatched_generated_identities" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:56.953+09:30" time="0.105">
+            <system-out>
+running 1 test
+test release::tests::candidate_metadata_rejects_missing_or_mismatched_generated_identities ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.10s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::tests::candidate_metadata_requires_checksumless_source_less_workspace_lock_records" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:57.059+09:30" time="0.055">
+            <system-out>
+running 1 test
+test release::tests::candidate_metadata_requires_checksumless_source_less_workspace_lock_records ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.05s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::tests::candidate_metadata_requires_complete_consistent_generated_contract" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:57.114+09:30" time="0.030">
+            <system-out>
+running 1 test
+test release::tests::candidate_metadata_requires_complete_consistent_generated_contract ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.03s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::tests::metadata_rejects_inconsistent_versions" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:57.144+09:30" time="0.111">
+            <system-out>
+running 1 test
+test release::tests::metadata_rejects_inconsistent_versions ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.11s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::tests::notes_only_include_the_exact_release" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:57.254+09:30" time="0.005">
+            <system-out>
+running 1 test
+test release::tests::notes_only_include_the_exact_release ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::tests::notes_reject_missing_duplicate_and_empty_sections" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:57.259+09:30" time="0.004">
+            <system-out>
+running 1 test
+test release::tests::notes_reject_missing_duplicate_and_empty_sections ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::tests::package_preflight_accepts_exact_registry_size_limit" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:57.263+09:30" time="1.170">
+            <system-out>
+running 1 test
+test release::tests::package_preflight_accepts_exact_registry_size_limit ... crate package preflight passed for v4.0.5 (10485760 bytes)
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 1.17s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::tests::package_preflight_present_version_uses_verified_cargo_package" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:58.433+09:30" time="1.128">
+            <system-out>
+running 1 test
+test release::tests::package_preflight_present_version_uses_verified_cargo_package ... crate package preflight passed for v4.0.5 (13 bytes)
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 1.12s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::tests::package_preflight_rejects_registry_errors_cargo_failure_missing_archive_and_oversize" classname="xtask::bin/xtask" timestamp="2026-11-02T14:24:59.562+09:30" time="6.055">
+            <system-out>
+running 1 test
+test release::tests::package_preflight_rejects_registry_errors_cargo_failure_missing_archive_and_oversize ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 6.05s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::tests::package_preflight_rejects_report_inside_selected_source_before_external_commands" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:05.617+09:30" time="0.037">
+            <system-out>
+running 1 test
+test release::tests::package_preflight_rejects_report_inside_selected_source_before_external_commands ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.03s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::tests::package_preflight_uses_exact_command_cwd_archive_and_writes_bound_report" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:05.654+09:30" time="1.328">
+            <system-out>
+running 1 test
+test release::tests::package_preflight_uses_exact_command_cwd_archive_and_writes_bound_report ... crate package preflight passed for v4.0.5 (13 bytes)
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 1.32s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::workflow_tests::accepted_writes_with_lost_responses_resume_without_replay" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:06.982+09:30" time="1.137">
+            <system-out>
+running 1 test
+test release::workflow_tests::accepted_writes_with_lost_responses_resume_without_replay ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 1.13s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::workflow_tests::ci_run_recovery_dry_run_validates_without_authorizing_publication" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:08.120+09:30" time="0.301">
+            <system-out>
+running 1 test
+test release::workflow_tests::ci_run_recovery_dry_run_validates_without_authorizing_publication ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.30s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::workflow_tests::crate_preflight_child_failures_never_emit_a_report_or_job_outputs" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:08.421+09:30" time="0.695">
+            <system-out>
+running 1 test
+test release::workflow_tests::crate_preflight_child_failures_never_emit_a_report_or_job_outputs ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.69s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::workflow_tests::crate_preflight_executes_the_selected_source_helper_and_names_the_current_attempt" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:09.116+09:30" time="0.252">
+            <system-out>
+running 1 test
+test release::workflow_tests::crate_preflight_executes_the_selected_source_helper_and_names_the_current_attempt ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.24s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::workflow_tests::crate_preflight_rejects_invalid_run_identity_before_launch" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:09.367+09:30" time="0.043">
+            <system-out>
+running 1 test
+test release::workflow_tests::crate_preflight_rejects_invalid_run_identity_before_launch ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.03s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::workflow_tests::crate_publish_caps_retries_and_logs_backoff_without_waiting" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:09.411+09:30" time="1.647">
+            <system-out>
+running 1 test
+test release::workflow_tests::crate_publish_caps_retries_and_logs_backoff_without_waiting ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 1.64s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::workflow_tests::crate_publish_checks_exact_version_without_repackaging_an_existing_version" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:11.058+09:30" time="0.603">
+            <system-out>
+running 1 test
+test release::workflow_tests::crate_publish_checks_exact_version_without_repackaging_an_existing_version ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.60s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::workflow_tests::crate_publish_reconciles_a_lost_response_without_replaying_upload" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:11.661+09:30" time="0.710">
+            <system-out>
+running 1 test
+test release::workflow_tests::crate_publish_reconciles_a_lost_response_without_replaying_upload ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.70s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::workflow_tests::crate_publish_rejects_changed_head_or_version_before_registry_or_upload" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:12.371+09:30" time="0.516">
+            <system-out>
+running 1 test
+test release::workflow_tests::crate_publish_rejects_changed_head_or_version_before_registry_or_upload ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.51s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::workflow_tests::crate_publish_uses_only_normal_locked_publish_when_the_version_is_absent" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:12.887+09:30" time="0.689">
+            <system-out>
+running 1 test
+test release::workflow_tests::crate_publish_uses_only_normal_locked_publish_when_the_version_is_absent ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.68s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::workflow_tests::crate_upload_rejects_unbound_preflight_before_registry_or_cargo_calls" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:13.576+09:30" time="0.189">
+            <system-out>
+running 1 test
+test release::workflow_tests::crate_upload_rejects_unbound_preflight_before_registry_or_cargo_calls ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.17s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::workflow_tests::draft_partial_upload_resumes_and_latest_is_selected_at_publication" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:13.766+09:30" time="0.442">
+            <system-out>
+running 1 test
+test release::workflow_tests::draft_partial_upload_resumes_and_latest_is_selected_at_publication ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.44s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::workflow_tests::existing_tag_mode_remains_assets_only_for_draft_mutable_and_immutable_releases" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:14.208+09:30" time="1.841">
+            <system-out>
+running 1 test
+test release::workflow_tests::existing_tag_mode_remains_assets_only_for_draft_mutable_and_immutable_releases ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 1.84s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::workflow_tests::existing_tag_resolver_accepts_historical_lightweight_and_annotated_ancestors" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:16.049+09:30" time="0.788">
+            <system-out>
+running 1 test
+test release::workflow_tests::existing_tag_resolver_accepts_historical_lightweight_and_annotated_ancestors ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.78s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::workflow_tests::existing_tag_resolver_rejects_nonancestors_and_bad_identity_before_authorizing" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:16.837+09:30" time="3.758">
+            <system-out>
+running 1 test
+test release::workflow_tests::existing_tag_resolver_rejects_nonancestors_and_bad_identity_before_authorizing ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 3.75s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::workflow_tests::immutable_missing_or_mismatched_assets_fail_without_mutation" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:20.595+09:30" time="1.394">
+            <system-out>
+running 1 test
+test release::workflow_tests::immutable_missing_or_mismatched_assets_fail_without_mutation ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 1.39s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::workflow_tests::immutable_release_uploads_before_publication_and_retries_without_writes" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:21.989+09:30" time="0.576">
+            <system-out>
+running 1 test
+test release::workflow_tests::immutable_release_uploads_before_publication_and_retries_without_writes ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.57s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::workflow_tests::legacy_dry_run_resolves_without_scheduling_the_publisher" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:22.565+09:30" time="0.277">
+            <system-out>
+running 1 test
+test release::workflow_tests::legacy_dry_run_resolves_without_scheduling_the_publisher ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.27s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::workflow_tests::legacy_publisher_rechecks_fresh_tag_and_main_before_upload_and_allows_advancement" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:22.843+09:30" time="1.285">
+            <system-out>
+running 1 test
+test release::workflow_tests::legacy_publisher_rechecks_fresh_tag_and_main_before_upload_and_allows_advancement ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 1.28s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::workflow_tests::legacy_publisher_rejects_late_history_and_tag_races_without_mutation" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:24.129+09:30" time="3.393">
+            <system-out>
+running 1 test
+test release::workflow_tests::legacy_publisher_rejects_late_history_and_tag_races_without_mutation ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 3.39s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::workflow_tests::native_publication_precedes_crate_upload_and_finalization" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:27.522+09:30" time="1.130">
+            <system-out>
+running 1 test
+test release::workflow_tests::native_publication_precedes_crate_upload_and_finalization ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 1.12s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::workflow_tests::ordinary_commit_cannot_authorize_release_and_tagged_retry_still_can" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:28.652+09:30" time="0.547">
+            <system-out>
+running 1 test
+test release::workflow_tests::ordinary_commit_cannot_authorize_release_and_tagged_retry_still_can ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.54s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::workflow_tests::proposal_reports_pending_release_then_proceeds_after_finalization" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:29.199+09:30" time="0.302">
+            <system-out>
+running 1 test
+test release::workflow_tests::proposal_reports_pending_release_then_proceeds_after_finalization ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.29s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::workflow_tests::published_mutable_partial_assets_can_resume_without_republishing" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:29.501+09:30" time="0.533">
+            <system-out>
+running 1 test
+test release::workflow_tests::published_mutable_partial_assets_can_resume_without_republishing ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.53s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::workflow_tests::publisher_accepts_a_successful_prior_attempt_from_the_current_run" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:30.034+09:30" time="0.426">
+            <system-out>
+running 1 test
+test release::workflow_tests::publisher_accepts_a_successful_prior_attempt_from_the_current_run ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.42s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::workflow_tests::publisher_rejects_conflicting_tags_and_does_not_regress_latest" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:30.460+09:30" time="0.456">
+            <system-out>
+running 1 test
+test release::workflow_tests::publisher_rejects_conflicting_tags_and_does_not_regress_latest ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.45s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::workflow_tests::publisher_rejects_identity_metadata_prerelease_and_ambiguous_drafts_before_writes" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:30.916+09:30" time="0.570">
+            <system-out>
+running 1 test
+test release::workflow_tests::publisher_rejects_identity_metadata_prerelease_and_ambiguous_drafts_before_writes ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.56s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::workflow_tests::publisher_rejects_unbound_preflight_before_any_github_request" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:31.486+09:30" time="0.173">
+            <system-out>
+running 1 test
+test release::workflow_tests::publisher_rejects_unbound_preflight_before_any_github_request ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.17s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::workflow_tests::publisher_targets_original_sha_and_is_idempotent" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:31.659+09:30" time="0.548">
+            <system-out>
+running 1 test
+test release::workflow_tests::publisher_targets_original_sha_and_is_idempotent ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.54s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::workflow_tests::recovery_requires_one_target_and_forbids_ci_run_rebuilds" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:32.207+09:30" time="0.018">
+            <system-out>
+running 1 test
+test release::workflow_tests::recovery_requires_one_target_and_forbids_ci_run_rebuilds ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::workflow_tests::staged_assets_match_the_supported_native_targets" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:32.225+09:30" time="0.035">
+            <system-out>
+running 1 test
+test release::workflow_tests::staged_assets_match_the_supported_native_targets ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.03s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::workflow_tests::upload_or_remote_byte_failure_never_publishes" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:32.260+09:30" time="1.315">
+            <system-out>
+running 1 test
+test release::workflow_tests::upload_or_remote_byte_failure_never_publishes ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 1.31s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::workflow_tests::verified_release_rejects_failed_ci_and_untrusted_run_identity" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:33.575+09:30" time="1.507">
+            <system-out>
+running 1 test
+test release::workflow_tests::verified_release_rejects_failed_ci_and_untrusted_run_identity ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 1.50s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::workflow_tests::verified_release_rejects_untrusted_prs_and_removed_history" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:35.082+09:30" time="2.138">
+            <system-out>
+running 1 test
+test release::workflow_tests::verified_release_rejects_untrusted_prs_and_removed_history ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 2.13s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="release::workflow_tests::verified_release_survives_main_advancing_and_ignores_other_pending_releases" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:37.220+09:30" time="0.281">
+            <system-out>
+running 1 test
+test release::workflow_tests::verified_release_survives_main_advancing_and_ignores_other_pending_releases ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.27s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::archive_contract_rejects_unexpected_entries" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:37.501+09:30" time="0.010">
+            <system-out>
+running 1 test
+test tests::archive_contract_rejects_unexpected_entries ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::ci_decision_body_executes_protected_classifier_and_falls_back_full" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:37.511+09:30" time="1.922">
+            <system-out>
+running 1 test
+test tests::ci_decision_body_executes_protected_classifier_and_falls_back_full ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 1.92s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::ci_identity_body_executes_trusted_release_pr_and_fails_closed" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:39.433+09:30" time="2.751">
+            <system-out>
+running 1 test
+test tests::ci_identity_body_executes_trusted_release_pr_and_fails_closed ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 2.74s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::ci_mode_policy_rejects_missing_selector_wiring_and_repository_gate_ownership" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:42.184+09:30" time="0.017">
+            <system-out>
+running 1 test
+test tests::ci_mode_policy_rejects_missing_selector_wiring_and_repository_gate_ownership ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::complete_artifact_set_rejects_mixed_provenance" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:42.201+09:30" time="0.012">
+            <system-out>
+running 1 test
+test tests::complete_artifact_set_rejects_mixed_provenance ... validated 2 native artifact targets
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::crate_size_validation_enforces_the_registry_limit" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:42.213+09:30" time="0.006">
+            <system-out>
+running 1 test
+test tests::crate_size_validation_enforces_the_registry_limit ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::docs_python_exception_rejects_component_aliases_and_symlinks" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:42.219+09:30" time="0.051">
+            <system-out>
+running 1 test
+test tests::docs_python_exception_rejects_component_aliases_and_symlinks ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.05s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::docs_python_gate_accepts_root_and_nested_helpers_in_both_modes" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:42.271+09:30" time="0.015">
+            <system-out>
+running 1 test
+test tests::docs_python_gate_accepts_root_and_nested_helpers_in_both_modes ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::docs_python_gate_rejects_neighbors_root_tooling_and_workflow_python" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:42.286+09:30" time="0.014">
+            <system-out>
+running 1 test
+test tests::docs_python_gate_rejects_neighbors_root_tooling_and_workflow_python ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::installer_rejects_removed_hosts_before_reading_archives_or_writing_destinations" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:42.300+09:30" time="0.302">
+            <system-out>
+running 1 test
+test tests::installer_rejects_removed_hosts_before_reading_archives_or_writing_destinations ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.30s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::macos_smoke_commands_use_a_fixture_home_and_system_path" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:42.602+09:30" time="0.009">
+            <system-out>
+running 1 test
+test tests::macos_smoke_commands_use_a_fixture_home_and_system_path ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::mcp_smoke_accepts_valid_initialize_and_tools" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:42.611+09:30" time="0.007">
+            <system-out>
+running 1 test
+test tests::mcp_smoke_accepts_valid_initialize_and_tools ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::mcp_smoke_rejects_errors_missing_malformed_duplicate_and_decoy_responses" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:42.618+09:30" time="0.006">
+            <system-out>
+running 1 test
+test tests::mcp_smoke_rejects_errors_missing_malformed_duplicate_and_decoy_responses ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::mcp_smoke_rejects_nonzero_child_with_success_payload" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:42.624+09:30" time="0.006">
+            <system-out>
+running 1 test
+test tests::mcp_smoke_rejects_nonzero_child_with_success_payload ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::native_capture_requires_unique_source_bound_normal_cli_artifact" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:42.630+09:30" time="0.006">
+            <system-out>
+running 1 test
+test tests::native_capture_requires_unique_source_bound_normal_cli_artifact ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::native_capture_reuses_the_exact_test_profile_and_features" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:42.637+09:30" time="0.005">
+            <system-out>
+running 1 test
+test tests::native_capture_reuses_the_exact_test_profile_and_features ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::native_payload_integrity_covers_runtime_files_and_preserves_windows_inventory" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:42.642+09:30" time="0.006">
+            <system-out>
+running 1 test
+test tests::native_payload_integrity_covers_runtime_files_and_preserves_windows_inventory ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::native_retention_actual_body_is_cod107_only" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:42.648+09:30" time="0.251">
+            <system-out>
+running 1 test
+test tests::native_retention_actual_body_is_cod107_only ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.25s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::native_retention_invalid_input_cannot_succeed" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:42.899+09:30" time="0.025">
+            <system-out>
+running 1 test
+test tests::native_retention_invalid_input_cannot_succeed ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.02s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::native_target_contract_maps_names_and_binaries" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:42.924+09:30" time="0.005">
+            <system-out>
+running 1 test
+test tests::native_target_contract_maps_names_and_binaries ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::native_test_failure_cannot_authorize_artifact_production" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:42.928+09:30" time="0.006">
+            <system-out>
+running 1 test
+test tests::native_test_failure_cannot_authorize_artifact_production ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::ordinary_release_version_readers_keep_existing_permissive_manifest_behavior" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:42.934+09:30" time="0.005">
+            <system-out>
+running 1 test
+test tests::ordinary_release_version_readers_keep_existing_permissive_manifest_behavior ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::release_gate_candidate_requires_source_sha" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:42.939+09:30" time="0.004">
+            <system-out>
+running 1 test
+test tests::release_gate_candidate_requires_source_sha ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::release_gate_source_sha_binding_uses_current_process_checkout" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:42.944+09:30" time="0.132">
+            <system-out>
+running 1 test
+test tests::release_gate_source_sha_binding_uses_current_process_checkout ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.13s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::release_gate_source_sha_option_rejects_missing_and_duplicate_values" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:43.075+09:30" time="0.004">
+            <system-out>
+running 1 test
+test tests::release_gate_source_sha_option_rejects_missing_and_duplicate_values ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::release_identity_validation_is_strict" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:43.080+09:30" time="0.004">
+            <system-out>
+running 1 test
+test tests::release_identity_validation_is_strict ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::repository_policy_executes_actual_purpose_and_tested_source_bodies" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:43.084+09:30" time="2.425">
+            <system-out>
+running 1 test
+test tests::repository_policy_executes_actual_purpose_and_tested_source_bodies ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 2.42s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::required_accepts_main_push_only_in_full_mode_and_rejects_stale_full_pr" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:45.509+09:30" time="0.505">
+            <system-out>
+running 1 test
+test tests::required_accepts_main_push_only_in_full_mode_and_rejects_stale_full_pr ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.50s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::required_executes_current_full_and_lightweight_bodies_with_eight_exact_results" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:46.014+09:30" time="0.956">
+            <system-out>
+running 1 test
+test tests::required_executes_current_full_and_lightweight_bodies_with_eight_exact_results ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.95s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::required_rejects_malformed_decision_schema_and_selector_output" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:46.970+09:30" time="0.038">
+            <system-out>
+running 1 test
+test tests::required_rejects_malformed_decision_schema_and_selector_output ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.03s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::required_rejects_missing_malformed_or_wrong_mode_results_and_stale_identity" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:47.008+09:30" time="3.453">
+            <system-out>
+running 1 test
+test tests::required_rejects_missing_malformed_or_wrong_mode_results_and_stale_identity ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 3.45s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::windows_native_tests_forward_bundled_extensions" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:50.461+09:30" time="0.013">
+            <system-out>
+running 1 test
+test tests::windows_native_tests_forward_bundled_extensions ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::workflow_policy_accepts_actual_repository_purpose_and_preflight_wiring" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:50.474+09:30" time="0.012">
+            <system-out>
+running 1 test
+test tests::workflow_policy_accepts_actual_repository_purpose_and_preflight_wiring ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::workflow_policy_accepts_exact_cod103_stack_bases" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:50.486+09:30" time="0.009">
+            <system-out>
+running 1 test
+test tests::workflow_policy_accepts_exact_cod103_stack_bases ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::workflow_policy_rejects_automatic_rebuild_recovery" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:50.495+09:30" time="0.008">
+            <system-out>
+running 1 test
+test tests::workflow_policy_rejects_automatic_rebuild_recovery ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::workflow_policy_rejects_direct_release_push_trigger" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:50.503+09:30" time="0.007">
+            <system-out>
+running 1 test
+test tests::workflow_policy_rejects_direct_release_push_trigger ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::workflow_policy_rejects_github_sha_for_release_identity" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:50.511+09:30" time="0.007">
+            <system-out>
+running 1 test
+test tests::workflow_policy_rejects_github_sha_for_release_identity ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::workflow_policy_rejects_missing_ci_success_guard" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:50.518+09:30" time="0.006">
+            <system-out>
+running 1 test
+test tests::workflow_policy_rejects_missing_ci_success_guard ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::workflow_policy_rejects_missing_crate_publish_retry" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:50.524+09:30" time="0.008">
+            <system-out>
+running 1 test
+test tests::workflow_policy_rejects_missing_crate_publish_retry ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::workflow_policy_rejects_missing_crate_size_gates" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:50.532+09:30" time="0.007">
+            <system-out>
+running 1 test
+test tests::workflow_policy_rejects_missing_crate_size_gates ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::workflow_policy_rejects_missing_repository_release_gate" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:50.539+09:30" time="0.006">
+            <system-out>
+running 1 test
+test tests::workflow_policy_rejects_missing_repository_release_gate ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::workflow_policy_rejects_missing_triggering_run_binding" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:50.545+09:30" time="0.006">
+            <system-out>
+running 1 test
+test tests::workflow_policy_rejects_missing_triggering_run_binding ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::workflow_policy_rejects_mutated_purpose_and_preflight_consumers" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:50.551+09:30" time="0.009">
+            <system-out>
+running 1 test
+test tests::workflow_policy_rejects_mutated_purpose_and_preflight_consumers ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::workflow_policy_rejects_privileged_pr_event" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:50.560+09:30" time="0.005">
+            <system-out>
+running 1 test
+test tests::workflow_policy_rejects_privileged_pr_event ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::workflow_policy_rejects_release_queue_replacement" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:50.566+09:30" time="0.005">
+            <system-out>
+running 1 test
+test tests::workflow_policy_rejects_release_queue_replacement ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::workflow_policy_rejects_unapproved_pull_request_activity" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:50.571+09:30" time="0.006">
+            <system-out>
+running 1 test
+test tests::workflow_policy_rejects_unapproved_pull_request_activity ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::workflow_policy_rejects_unconditional_release_publication" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:50.577+09:30" time="0.005">
+            <system-out>
+running 1 test
+test tests::workflow_policy_rejects_unconditional_release_publication ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::workflow_policy_rejects_unknown_stack_base_and_push_namespace" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:50.582+09:30" time="0.008">
+            <system-out>
+running 1 test
+test tests::workflow_policy_rejects_unknown_stack_base_and_push_namespace ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::workflow_policy_rejects_unvalidated_publishers" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:50.590+09:30" time="0.007">
+            <system-out>
+running 1 test
+test tests::workflow_policy_rejects_unvalidated_publishers ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::workflow_policy_requires_ci_completion_release_trigger" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:50.597+09:30" time="0.006">
+            <system-out>
+running 1 test
+test tests::workflow_policy_requires_ci_completion_release_trigger ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::workflow_policy_requires_publication_revalidation" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:50.603+09:30" time="0.007">
+            <system-out>
+running 1 test
+test tests::workflow_policy_requires_publication_revalidation ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::workflow_policy_retention_wiring_is_closed" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:50.610+09:30" time="0.006">
+            <system-out>
+running 1 test
+test tests::workflow_policy_retention_wiring_is_closed ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::workflow_yaml_validation_rejects_unindented_heredoc_body" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:50.616+09:30" time="0.005">
+            <system-out>
+running 1 test
+test tests::workflow_yaml_validation_rejects_unindented_heredoc_body ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="tests::workflows_reject_removed_platform_targets" classname="xtask::bin/xtask" timestamp="2026-11-02T14:25:50.620+09:30" time="0.006">
+            <system-out>
+running 1 test
+test tests::workflows_reject_removed_platform_targets ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+    </testsuite>
+</testsuites>

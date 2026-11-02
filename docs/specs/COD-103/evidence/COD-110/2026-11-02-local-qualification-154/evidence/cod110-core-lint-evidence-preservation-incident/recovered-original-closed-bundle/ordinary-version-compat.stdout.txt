@@ -1,0 +1,8 @@
+    Finished `native-tests` profile [optimized] target(s) in 0.05s
+     Running unittests src/main.rs (target/native-tests/deps/xtask-eed5a74c0d8f01ef)
+
+running 1 test
+test tests::ordinary_release_version_readers_keep_existing_permissive_manifest_behavior ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 133 filtered out; finished in 0.00s
+

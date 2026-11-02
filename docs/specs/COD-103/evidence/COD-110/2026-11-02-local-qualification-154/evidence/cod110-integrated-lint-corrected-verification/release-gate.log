@@ -1,0 +1,3 @@
+    Finished `native-tests` profile [optimized] target(s) in 0.03s
+     Running `target/native-tests/xtask release-gate`
+release gate passed

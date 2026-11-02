@@ -1,0 +1,33 @@
+{
+  "baseline_sha256": "3139adb944854f00baee145faf1872dc194afbce65c097e9a9f3846dc500de33",
+  "baseline_bytes": 271417,
+  "final_sha256": "6709677c3e48887731a1768c9ea3c5b5448c9ff0765391fb9a91a300c3386a71",
+  "final_bytes": 272999,
+  "scope": [
+    "crates/xtask/src/main.rs"
+  ],
+  "change": "Grouped repository-policy body fixture environment/identity/PR inputs and mock exit controls into a test-only RepositoryPolicyCase value. All values and assertions retained.",
+  "checks": [
+    {
+      "command": "cd \"/private/tmp/codebasegraph-cod110-20261101\" && rustfmt --edition 2021 --config skip_children=true crates/xtask/src/main.rs",
+      "exit": 0,
+      "duration_seconds": 0.10398224997334182,
+      "output": ""
+    },
+    {
+      "command": "cd \"/private/tmp/codebasegraph-cod110-20261101\" && cargo fmt --all --check",
+      "exit": 0,
+      "duration_seconds": 0.9802148749586195,
+      "output": ""
+    },
+    {
+      "command": "cd \"/private/tmp/codebasegraph-cod110-20261101\" && env LBUG_LIBRARY_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_INCLUDE_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_VERSION=0.19.0 OPENSSL_LIB_DIR=/opt/homebrew/Cellar/openssl@3/3.6.2/lib MACOSX_DEPLOYMENT_TARGET=13.3 CARGO_BUILD_JOBS=2 GIT_OPTIONAL_LOCKS=0 cargo clippy --offline --locked -p xtask --all-targets --all-features -- -D warnings",
+      "exit": 0,
+      "duration_seconds": 0.9870642910245806,
+      "output": "    Checking xtask v4.0.5 (/private/tmp/codebasegraph-cod110-20261101/crates/xtask)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.90s\n"
+    }
+  ],
+  "tests_run": false,
+  "diff_sha256": "fec38d3ffd25189a6292ded9722aa3bbca3afab932456ba589771c14404e122e",
+  "diff_bytes": 9923
+}

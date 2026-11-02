@@ -1,0 +1,335 @@
+{
+  "schema_version": 1,
+  "not_copied_unrelated_huge_trees": true,
+  "references": [
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-3aa840b3/cod110-checkout-binding-independent",
+      "purpose": "Initial checkout/hidden-byte fail evidence; retain original reports/logs, not current acceptance."
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-3aa840b3/cod110-checkout-F1-corrected-independent",
+      "purpose": "Corrected F1 with original failed history/limits retained."
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-3aa840b3/cod110-shared-rust-independent",
+      "purpose": "Original compiler/strict core failure evidence, not current source proof."
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-3aa840b3/cod110-shared-rust-corrected-independent",
+      "purpose": "Earlier corrected core before mode regression; source-specific scope only."
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/cod110-core-lint-evidence-preservation-incident",
+      "purpose": "Copied full89manifest plus original40recovery/current40 exact; old overwritten author root is never relabelled original."
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/cod110-lint-author-artifact-preservation",
+      "purpose": "Copied actual original1328B d909 and current1757B5ae5 receipts; old authorfocusedraw only transcript, no standaloneJUnit synthesized."
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7b3f2b06/cod110-repository-gate-policy-test-correction",
+      "purpose": "Original CLI96 wrong nextest profile did NOT run test; corrected authorfocused1PASS recorded by coordinator transcript, not a reconstructed standalone report. Current independent154 is authoritative current test proof."
+    }
+  ],
+  "history_results_preserved": [
+    {
+      "root": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-3aa840b3/cod110-integrated-formatted-verification",
+      "copied_to": "evidence/cod110-integrated-formatted-verification",
+      "original_result": {
+        "status": "FAIL_INTEGRATED_FULL_XTASK_TEST",
+        "fmt_exit": 0,
+        "nextest_exit": 100,
+        "registered": 154,
+        "executed": 140,
+        "passed": 139,
+        "failed": 1,
+        "skipped": 0,
+        "not_run_due_failfast": 14,
+        "failure": "tests::workflow_policy_rejects_missing_crate_size_gates",
+        "source_line": "crates/xtask/src/main.rs:6839",
+        "actual_assertion": "[]",
+        "junit_uuid": "757ec66b-a11b-459f-a785-349e566364d2",
+        "junit_sha256": "4d30fb6a39a382c873d47294c5f6f4a01f6163218824ca4e21da9af30896fb7e",
+        "not_executed": [
+          "workspace all-targets all-features strict Clippy",
+          "actual check-workflows",
+          "ordinary release-gate"
+        ],
+        "source2459prepost_equal": true,
+        "dirty_paths": 7,
+        "baseline_files": 2452,
+        "model19_equal": true,
+        "current_protection_count": 350,
+        "current_protection_equal": true,
+        "no_retry_fix_fmtwrites": true,
+        "next_owner": "Engineer routes failing test/policy to exact owner; then new frozen affected verification",
+        "not_acceptance_FinalReview_platform_delivery": true
+      },
+      "report_summary": "# COD-110 formatted integrated local verification \u2014 CLOSED / FAIL\n\nRequired full relevant xtask suite failed. Formatting passed. No source edits, retries, formatting writes, waiver or new scope. Engineer owns correction routing and new frozen verification grant.\n\nSnapshot /private/tmp/codebasegraph-cod110-20261101, HEAD754c82f4dc22c203c22a433f5bbae5f2f6e80231/treefdf2f21db4c05965a7c4020075a9e66fddfa2db5. main.rsa3d82671485e3c49b182634c43df11607fe"
+    },
+    {
+      "root": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-3aa840b3/cod110-integrated-current-verification",
+      "copied_to": "evidence/cod110-integrated-current-verification",
+      "original_result": {
+        "status": "FAIL_INTEGRATED_FULL_XTASK",
+        "fmt_exit": 0,
+        "nextest_exit": 100,
+        "registered": 154,
+        "executed": 154,
+        "passed": 153,
+        "failed": 1,
+        "skipped": 0,
+        "not_run": 0,
+        "failure": "tests::workflow_policy_rejects_missing_repository_release_gate",
+        "source_line": "main.rs6826",
+        "assertion": "[]",
+        "junit_uuid": "2c56936e-9636-4ef5-a325-0299aa0d34d9",
+        "junit_sha256": "5c511a2fac708907561c223517a0c9145d27ed6678a94e97c5fbf00915c755f1",
+        "size_policy_corrected_case": "PASS",
+        "not_executed": [
+          "workspace strict Clippy",
+          "actual check-workflows",
+          "ordinary release-gate"
+        ],
+        "source2459prepost_equal": true,
+        "baseline2452_dirty7": true,
+        "model19_equal": true,
+        "current_protection_equal": true,
+        "no_sourcefix_retry": true,
+        "next_owner": "Engineer routes remaining repository-gate policy test failure, then grants corrected frozen verification"
+      },
+      "report_summary": "# COD-110 current integrated verification \u2014 CLOSED / FAIL\n\nFormatting passed; full relevant xtask nextest failed exit100. All154 registered cases executed once with --no-fail-fast/retries0/thread1:153PASS1FAIL0skip0notrun. `tests::workflow_policy_rejects_missing_repository_release_gate` panicked at main.rs6826 with `[]`. Corrected crate-size mutation test passes. No root-cause claim without authorized source analysis; Engineer routes exact remain"
+    },
+    {
+      "root": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-3aa840b3/cod110-integrated-final-local-verification",
+      "copied_to": "evidence/cod110-integrated-final-local-verification",
+      "original_result": {
+        "status": "FAIL_INTEGRATED_FULL_XTASK",
+        "fmt_exit": 0,
+        "nextest_exit": 100,
+        "registered": 154,
+        "executed": 154,
+        "passed": 153,
+        "failed": 1,
+        "skipped": 0,
+        "not_run": 0,
+        "failure": "tests::workflow_policy_rejects_missing_repository_release_gate",
+        "source_line": "main.rs6831",
+        "actual_issues": [
+          "repository-policy-job-invalid:exactly one release-gate/bounded regression suite",
+          "repository-policy-job-invalid:purpose/testedsource/sourceidentity"
+        ],
+        "junit_uuid": "3b2a99ad-42ca-44d5-98ec-b41d9a08d916",
+        "junit_sha256": "bc28f004689fd4864cf7031e13f334e4acb5990c13cc421c912fb827cffa877a",
+        "not_executed": [
+          "workspace strict Clippy",
+          "actual check-workflows",
+          "ordinary release-gate"
+        ],
+        "source2459prepost_equal": true,
+        "model19_equal": true,
+        "current_protection_equal": true,
+        "no_retry_fix": true,
+        "next_owner": "Engineer exactowner assertion reconciliation then newverification"
+      },
+      "report_summary": "# COD-110 final-local attempt \u2014 CLOSED / FAIL\n\nFormatting exit0; full relevant xtask native-tests nextest exit100.154registered/executed,153PASS1FAIL0skip0notrun, --no-fail-fast/retries0/thread1/offline locked/private outside reporter. `tests::workflow_policy_rejects_missing_repository_release_gate` fails main.rs6831. Unlike prior no-op, current mutation produces two actual repository-policy-job-invalid issues (exactly-one gate/bounded suite and "
+    },
+    {
+      "root": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-3aa840b3/cod110-integrated-diagnostic-corrected-verification",
+      "copied_to": "evidence/cod110-integrated-diagnostic-corrected-verification",
+      "original_result": {
+        "status": "FAIL_REQUIRED_WORKSPACE_CLIPPY",
+        "fmt_exit": 0,
+        "nextest_exit": 0,
+        "registered": 154,
+        "executed": 154,
+        "passed": 154,
+        "failed": 0,
+        "skipped": 0,
+        "not_run": 0,
+        "junit_uuid": "33917d13-3b96-42d1-8b34-716b64b2167f",
+        "junit_sha256": "9113dfbd16fe5121a283b7bfaae508f77387711f6a3191dbf7cbd8024d6aef7a",
+        "workspace_clippy_exit": 101,
+        "diagnostic": "main.rs4416 run_repository_policy_body10arguments/limit7 clippy::too_many_arguments",
+        "actual_gates": "not executed",
+        "source2459_equal": true,
+        "model19_equal": true,
+        "current_protection_equal": true,
+        "no_retry_fix": true,
+        "next_owner": "Engineer exactowner lint correction then newfrozenaffectedverification"
+      },
+      "report_summary": "# COD-110 diagnostic-corrected integrated verification \u2014 CLOSED / FAIL lint\n\nFormatting PASS. Full relevant xtask nextest154/154PASS0failure/error/skip/notrun, exit0. Required STRICT workspace/alltargets/allfeatures Clippy exit101: main.rs4416 run_repository_policy_body has10arguments/7, clippy::too_many_arguments under-Dwarnings. Full raw compiler output retained. Native environment did not fail; build reached xtask/k-wiki. No source edit/suppre"
+    },
+    {
+      "root": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-3aa840b3/cod110-integrated-local-verification",
+      "copied_to": "evidence/cod110-integrated-local-verification",
+      "original_result": {
+        "status": "FAIL_FORMAT_REQUIRED_GATE",
+        "fmt_exit": 1,
+        "locations": [
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:1498:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:1527:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:1566:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:1589:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:1600:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:1613:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:1620:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:1645:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:1653:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:1689:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:1704:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:1711:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:1717:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:3463:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:4402:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:4423:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:4459:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:4485:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:4499:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:4512:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:4525:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:4534:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:6379:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:6386:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:6390:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:6394:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:6398:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:41:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:67:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:75:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:596:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:603:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:616:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:653:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:688:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:711:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:720:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:751:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:821:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:838:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:859:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:896:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:903:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:911:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:918:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:926:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:933:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:944:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:951:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:956:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:1055:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:1215:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:1226:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:1260:",
+          "Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/release/workflow_tests.rs:1600:"
+        ],
+        "not_executed": [
+          "nextest inventory",
+          "full xtask nextest/JUnit",
+          "workspace strict Clippy",
+          "actual check-workflows",
+          "actual release-gate"
+        ],
+        "source2459_prepost_equal": true,
+        "unmodified_baseline_count": 2452,
+        "dirty_count": 7,
+        "canonical_model19_equal": true,
+        "current_protected_metadata_count": 350,
+        "current_protection_equal": true,
+        "no_source_fix_retry": true,
+        "next_owner": "Engineer routes formatting to exact source owners; then new frozen verification grant",
+        "prior_evidence": "Previous closed source-specific CLI matrices/35 actual-body tests remain unchanged historical evidence, not this integrated attempt passing",
+        "no_acceptance_FinalReview_platform_delivery_claim": true
+      },
+      "report_summary": "# COD-110 integrated local verification \u2014 stopped at formatting failure\n\nStatus: FAIL required first check. `cargo fmt --all --check` exited1. Full diff and exact source locations are in fmt.log/provenance.json. No formatting/source writes or retry occurred. No inventory, tests/JUnit, workspace Clippy or actual gate command was started, so none is reported passing.\n\nSnapshot: /private/tmp/codebasegraph-cod110-20261101, docsHEAD754c82f4dc22c203c22"
+    },
+    {
+      "root": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-3aa840b3/cod110-integrated-policy-corrected-verification",
+      "copied_to": "evidence/cod110-integrated-policy-corrected-verification",
+      "original_result": {
+        "status": "FAIL_REQUIRED_FORMAT",
+        "fmt_exit": 1,
+        "fmt_locations": [
+          "main.rs6843",
+          "main.rs6851"
+        ],
+        "focused_size_policy": {
+          "exit": 0,
+          "passed": 1,
+          "failed": 0
+        },
+        "execution_disclosure": "Focused test was executed after fmt failure within same tool cell; no further project checks or passing acceptance continued.",
+        "not_executed": [
+          "nextest inventory/full suite/JUnit",
+          "workspace strict Clippy",
+          "actual check-workflows",
+          "actual release-gate"
+        ],
+        "source2459_equal": true,
+        "baseline2452_dirty7": true,
+        "model19_equal": true,
+        "current_protection_equal": true,
+        "next_owner": "Engineer source owner formats two assertions, then new frozen verification",
+        "no_retry_fix": true
+      },
+      "report_summary": "# COD-110 policy-corrected integrated verification \u2014 CLOSED / FAIL\n\nCurrent main80deb3c5bb288c6be8c65a29413db4bba76e97bbc4c5fea3b6b72c2bf5aeae47/271070B; docsHEAD754c82/treefdf2 unchanged. Required cargo fmt --all --check exit1: main.rs6843/6851 assert_ne formatting. Full raw diff retained. Focused size-policy test executed once afterward in the same tool cell:1PASS0FAIL/exit0. This post-format-failure focused execution is explicitly disclosed, n"
+    }
+  ],
+  "JUnit_actual_counts": [
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-3aa840b3/cod110-integrated-lint-corrected-verification/junit.xml",
+      "actual_testcase_nodes": 154,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "source_SHA256": "3989e689fa6fbc56d39ca83492da5f7fbb59151fc81113508d4609c0afb5aa67",
+      "interpretation": "Original counts preserved; not added together as current passes."
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-3aa840b3/cod110-shared-core-mode-fixed-independent/junit.xml",
+      "actual_testcase_nodes": 54,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "source_SHA256": "c8b56107591aee79eb57b7ec795bc751d1b667f8c8d8990d65ebb52c0bfbe632",
+      "interpretation": "Original counts preserved; not added together as current passes."
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-3aa840b3/cod110-integrated-formatted-verification/junit.xml",
+      "actual_testcase_nodes": 140,
+      "failures": 1,
+      "errors": 0,
+      "skips": 0,
+      "source_SHA256": "4d30fb6a39a382c873d47294c5f6f4a01f6163218824ca4e21da9af30896fb7e",
+      "interpretation": "Original counts preserved; not added together as current passes."
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-3aa840b3/cod110-integrated-current-verification/junit.xml",
+      "actual_testcase_nodes": 154,
+      "failures": 1,
+      "errors": 0,
+      "skips": 0,
+      "source_SHA256": "5c511a2fac708907561c223517a0c9145d27ed6678a94e97c5fbf00915c755f1",
+      "interpretation": "Original counts preserved; not added together as current passes."
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-3aa840b3/cod110-integrated-final-local-verification/junit.xml",
+      "actual_testcase_nodes": 154,
+      "failures": 1,
+      "errors": 0,
+      "skips": 0,
+      "source_SHA256": "bc28f004689fd4864cf7031e13f334e4acb5990c13cc421c912fb827cffa877a",
+      "interpretation": "Original counts preserved; not added together as current passes."
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-3aa840b3/cod110-integrated-diagnostic-corrected-verification/junit.xml",
+      "actual_testcase_nodes": 154,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "source_SHA256": "9113dfbd16fe5121a283b7bfaae508f77387711f6a3191dbf7cbd8024d6aef7a",
+      "interpretation": "Original counts preserved; not added together as current passes."
+    }
+  ],
+  "not_current_or_summed": true
+}

@@ -1,0 +1,36 @@
+   Compiling xtask v4.0.5 (/private/tmp/codebasegraph-cod110-20261101/crates/xtask)
+error[E0425]: cannot find function `unique_temp_dir` in this scope
+    --> crates/xtask/src/main.rs:3718:20
+     |
+3718 |         let root = unique_temp_dir("cod110_ordinary_version_readers").unwrap();
+     |                    ^^^^^^^^^^^^^^^ not found in this scope
+     |
+help: consider importing this function
+     |
+3228 +     use crate::unique_temp_dir;
+     |
+
+error[E0425]: cannot find function `cargo_version` in this scope
+    --> crates/xtask/src/main.rs:3721:20
+     |
+3721 |         assert_eq!(cargo_version(&manifest).unwrap(), "01.2.3");
+     |                    ^^^^^^^^^^^^^ not found in this scope
+     |
+help: consider importing this function
+     |
+3228 +     use crate::cargo_version;
+     |
+
+error[E0425]: cannot find function `dependency_version` in this scope
+    --> crates/xtask/src/main.rs:3729:13
+     |
+3729 |             dependency_version(&dependency_manifest, "codebase-graph").unwrap(),
+     |             ^^^^^^^^^^^^^^^^^^ not found in this scope
+     |
+help: consider importing this function
+     |
+3228 +     use crate::dependency_version;
+     |
+
+For more information about this error, try `rustc --explain E0425`.
+error: could not compile `xtask` (bin "xtask" test) due to 3 previous errors

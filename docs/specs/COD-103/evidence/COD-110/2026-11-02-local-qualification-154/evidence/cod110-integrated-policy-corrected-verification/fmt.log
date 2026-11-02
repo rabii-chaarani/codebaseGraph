@@ -1,0 +1,19 @@
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:6843:
+                 "echo size unchecked",
+             );
+         assert_ne!(
+-            preflight_run,
+-            "echo size unchecked",
++            preflight_run, "echo size unchecked",
+             "preflight command mutation did not apply"
+         );
+         broken_release["jobs"]["crate-preflight"]["steps"][2]["run"] =
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/main.rs:6851:
+             YamlValue::String(preflight_run);
+         assert_ne!(
+-            broken_release,
+-            release,
++            broken_release, release,
+             "crate preflight mutation did not apply"
+         );
+         let mut issues = Vec::new();

@@ -1,0 +1,83 @@
+{
+  "scope": "single affected diagnostic batch, not full acceptance/FinalReview",
+  "source_pre": {
+    ".github/workflows/release.yml": {
+      "sha256": "64d219b8ae84dabc03eb5b7202ffd40b7046171f061b0aab9330b35f19c6c955",
+      "bytes": 40524
+    },
+    "crates/xtask/src/main.rs": {
+      "sha256": "f26e2d15ab606dfef3d76adb9bec1db1edfe694bfb68503d9248acf34d1954d0",
+      "bytes": 268025
+    },
+    "crates/xtask/src/release/workflow_tests.rs": {
+      "sha256": "ad62cbb495ae5cb493433eae35bbec54694a488ef8a967635112fd975215c334",
+      "bytes": 71934
+    }
+  },
+  "source_post": {
+    ".github/workflows/release.yml": {
+      "sha256": "64d219b8ae84dabc03eb5b7202ffd40b7046171f061b0aab9330b35f19c6c955",
+      "bytes": 40524
+    },
+    "crates/xtask/src/main.rs": {
+      "sha256": "f26e2d15ab606dfef3d76adb9bec1db1edfe694bfb68503d9248acf34d1954d0",
+      "bytes": 268025
+    },
+    "crates/xtask/src/release/workflow_tests.rs": {
+      "sha256": "ad62cbb495ae5cb493433eae35bbec54694a488ef8a967635112fd975215c334",
+      "bytes": 71934
+    }
+  },
+  "source_equal": true,
+  "results": {
+    "invalid-run-identity": {
+      "exit": 0,
+      "passed": 1,
+      "failed": 0
+    },
+    "release-workflow-suite": {
+      "exit": 0,
+      "passed": 35,
+      "failed": 0,
+      "seconds": 34.48
+    },
+    "actual-wiring": {
+      "exit": 0,
+      "passed": 1,
+      "failed": 0
+    }
+  },
+  "logs": {
+    "invalid-run-identity.log": {
+      "sha256": "12a32d6f40f1401a53db2cf292e6fffb82441c787e7773560d0e9863a643495d",
+      "bytes": 446
+    },
+    "actual-wiring.log": {
+      "sha256": "34e29dc99308a6d9b16f92dc016f81b2472e2e3861acdfb67e92b89a4d16ef23",
+      "bytes": 356
+    },
+    "release-workflow-suite.log": {
+      "sha256": "7de52cef018a496cef1f43cb2b81e2d7e8f5fcdc2c60826b7faa53383f99f124",
+      "bytes": 3883
+    }
+  },
+  "commands": [
+    {
+      "command": "env LBUG_LIBRARY_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_INCLUDE_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_VERSION=0.19.0 OPENSSL_LIB_DIR=/opt/homebrew/Cellar/openssl@3/3.6.2/lib MACOSX_DEPLOYMENT_TARGET=13.3 CARGO_BUILD_JOBS=2 GIT_OPTIONAL_LOCKS=0 cargo test --offline --locked -p xtask --bin xtask --profile native-tests release::workflow_tests::crate_preflight_rejects_invalid_run_identity_before_launch -- --exact --nocapture",
+      "exit_code": 0,
+      "duration": 8.413842708105221
+    },
+    {
+      "command": "env LBUG_LIBRARY_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_INCLUDE_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_VERSION=0.19.0 OPENSSL_LIB_DIR=/opt/homebrew/Cellar/openssl@3/3.6.2/lib MACOSX_DEPLOYMENT_TARGET=13.3 CARGO_BUILD_JOBS=2 GIT_OPTIONAL_LOCKS=0 cargo test --offline --locked -p xtask --bin xtask --profile native-tests release::workflow_tests:: -- --nocapture",
+      "exit_code": 0,
+      "duration": 34.56612933403812
+    },
+    {
+      "command": "env LBUG_LIBRARY_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_INCLUDE_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_VERSION=0.19.0 OPENSSL_LIB_DIR=/opt/homebrew/Cellar/openssl@3/3.6.2/lib MACOSX_DEPLOYMENT_TARGET=13.3 CARGO_BUILD_JOBS=2 GIT_OPTIONAL_LOCKS=0 cargo test --offline --locked -p xtask --bin xtask --profile native-tests tests::workflow_policy_accepts_actual_repository_purpose_and_preflight_wiring -- --exact --nocapture",
+      "exit_code": 0,
+      "duration": 0.14941908279433846
+    }
+  ],
+  "no_retry_edits": true,
+  "no_outstanding_processes": true
+}

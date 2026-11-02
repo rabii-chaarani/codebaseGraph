@@ -1,0 +1,26 @@
+{
+  "status": "FAIL_REQUIRED_FORMAT",
+  "fmt_exit": 1,
+  "fmt_locations": [
+    "main.rs6843",
+    "main.rs6851"
+  ],
+  "focused_size_policy": {
+    "exit": 0,
+    "passed": 1,
+    "failed": 0
+  },
+  "execution_disclosure": "Focused test was executed after fmt failure within same tool cell; no further project checks or passing acceptance continued.",
+  "not_executed": [
+    "nextest inventory/full suite/JUnit",
+    "workspace strict Clippy",
+    "actual check-workflows",
+    "actual release-gate"
+  ],
+  "source2459_equal": true,
+  "baseline2452_dirty7": true,
+  "model19_equal": true,
+  "current_protection_equal": true,
+  "next_owner": "Engineer source owner formats two assertions, then new frozen verification",
+  "no_retry_fix": true
+}

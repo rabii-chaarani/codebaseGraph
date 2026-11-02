@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "decision": "Engineer accepts bounded local implementation and fresh required FinalReview and grants source/evidence commit, normal push, PR110\u2192108 and observation of own full CI only",
+  "reference": "https://linear.app/codebasegraph/issue/COD-110#comment-aa03cd75-7f80-4ca3-83fd-bc33daa6f2db",
+  "approved_contracts_SHA": "316be4c4bb81d4f6e025016b12374836b4dcc1a8",
+  "separate_approval_SHA": "0e6008a1f46679a86aba85ac513beb05af94b0c0",
+  "compatibility_decision_SHA": "49612ec66814ad6b883a0c4c3c624911bd5a8825",
+  "separate_compatibility_approval_SHA": "754c82f4dc22c203c22a433f5bbae5f2f6e80231",
+  "existing_Scryer": "node-1 DESIGN/EXECUTION/chg-wzt5hk",
+  "scope": "C103-R07/A07 and R08/A08, retainedR04\u2013R06/A04\u2013A06",
+  "not_granted": [
+    "merge",
+    "release",
+    "retargetotherPR",
+    "settings/permissions/credentials",
+    "model lifecycle",
+    "newbehavior/sourcefix"
+  ]
+}

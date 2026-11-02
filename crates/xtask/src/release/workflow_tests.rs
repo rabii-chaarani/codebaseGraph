@@ -13,6 +13,168 @@ const NEXT_MAIN: &str = "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
 const TAG_OBJECT: &str = "cccccccccccccccccccccccccccccccccccccccc";
 const NEW_TAG_OBJECT: &str = "dddddddddddddddddddddddddddddddddddddddd";
 
+#[derive(Debug)]
+struct ProcessCall {
+    program: String,
+    cwd: String,
+    args: Vec<String>,
+}
+
+struct PreflightFailure {
+    name: &'static str,
+    report: Option<Value>,
+    overrides: Vec<(&'static str, &'static str)>,
+}
+
+fn valid_preflight_report() -> Value {
+    json!({
+        "schema_version": 1,
+        "source_sha": SHA,
+        "version": "2.0.0",
+        "tag_name": "v2.0.0",
+        "verification": "publish-dry-run",
+        "crate_bytes": 1,
+        "crate_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    })
+}
+
+fn preflight_failures() -> Vec<PreflightFailure> {
+    let valid = valid_preflight_report();
+    let mut cases = vec![
+        PreflightFailure {
+            name: "failed result",
+            report: Some(valid.clone()),
+            overrides: vec![("PREFLIGHT_RESULT", "failure")],
+        },
+        PreflightFailure {
+            name: "cancelled result",
+            report: Some(valid.clone()),
+            overrides: vec![("PREFLIGHT_RESULT", "cancelled")],
+        },
+        PreflightFailure {
+            name: "missing result",
+            report: Some(valid.clone()),
+            overrides: vec![("PREFLIGHT_RESULT", "")],
+        },
+        PreflightFailure {
+            name: "unexpected skipped result",
+            report: Some(valid.clone()),
+            overrides: vec![("PREFLIGHT_RESULT", "skipped")],
+        },
+        PreflightFailure {
+            name: "missing report",
+            report: None,
+            overrides: vec![],
+        },
+        PreflightFailure {
+            name: "wrong source environment",
+            report: Some(valid.clone()),
+            overrides: vec![("SOURCE_SHA", MAIN)],
+        },
+        PreflightFailure {
+            name: "wrong version environment",
+            report: Some(valid.clone()),
+            overrides: vec![("RELEASE_VERSION", "2.0.1")],
+        },
+        PreflightFailure {
+            name: "wrong tag environment",
+            report: Some(valid.clone()),
+            overrides: vec![("RELEASE_TAG", "v2.0.1")],
+        },
+        PreflightFailure {
+            name: "wrong producer run",
+            report: Some(valid.clone()),
+            overrides: vec![("PREFLIGHT_RUN_ID", "41")],
+        },
+        PreflightFailure {
+            name: "missing producer attempt",
+            report: Some(valid.clone()),
+            overrides: vec![("PREFLIGHT_ATTEMPT", "")],
+        },
+        PreflightFailure {
+            name: "zero producer attempt",
+            report: Some(valid.clone()),
+            overrides: vec![("PREFLIGHT_ATTEMPT", "0")],
+        },
+        PreflightFailure {
+            name: "future producer attempt",
+            report: Some(valid.clone()),
+            overrides: vec![("PREFLIGHT_ATTEMPT", "4")],
+        },
+        PreflightFailure {
+            name: "invalid current attempt",
+            report: Some(valid.clone()),
+            overrides: vec![("GITHUB_RUN_ATTEMPT", "0")],
+        },
+        PreflightFailure {
+            name: "wrong artifact attempt",
+            report: Some(valid.clone()),
+            overrides: vec![("PREFLIGHT_ARTIFACT", "crate-preflight-42-2")],
+        },
+        PreflightFailure {
+            name: "wrong artifact run",
+            report: Some(valid.clone()),
+            overrides: vec![("PREFLIGHT_ARTIFACT", "crate-preflight-41-3")],
+        },
+    ];
+    for (name, field, value) in [
+        ("wrong source report", "source_sha", json!(MAIN)),
+        ("wrong version report", "version", json!("2.0.1")),
+        ("wrong tag report", "tag_name", json!("v2.0.1")),
+        ("wrong schema", "schema_version", json!(2)),
+        ("wrong verification", "verification", json!("package")),
+        ("zero package size", "crate_bytes", json!(0)),
+        ("oversize package", "crate_bytes", json!(10_485_761)),
+        ("fractional package size", "crate_bytes", json!(1.5)),
+        ("string package size", "crate_bytes", json!("1")),
+        (
+            "uppercase digest",
+            "crate_sha256",
+            json!("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"),
+        ),
+        (
+            "short digest",
+            "crate_sha256",
+            json!("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
+        ),
+    ] {
+        let mut report = valid.clone();
+        report[field] = value;
+        cases.push(PreflightFailure {
+            name,
+            report: Some(report),
+            overrides: vec![],
+        });
+    }
+    cases
+}
+
+fn process_calls(path: &PathBuf) -> Vec<ProcessCall> {
+    let bytes = fs::read(path).unwrap_or_default();
+    let values = bytes
+        .split(|byte| *byte == 0)
+        .filter(|value| !value.is_empty())
+        .map(|value| String::from_utf8(value.to_vec()).unwrap())
+        .collect::<Vec<_>>();
+    let mut calls = Vec::new();
+    let mut index = 0;
+    while index < values.len() {
+        let program = values[index].clone();
+        let cwd = values[index + 1].clone();
+        let count = values[index + 2].parse::<usize>().unwrap();
+        index += 3;
+        let end = index + count;
+        assert!(end <= values.len(), "truncated subprocess call log");
+        calls.push(ProcessCall {
+            program,
+            cwd,
+            args: values[index..end].to_vec(),
+        });
+        index = end;
+    }
+    calls
+}
+
 struct Fixture {
     root: PathBuf,
     run: Value,
@@ -21,12 +183,16 @@ struct Fixture {
 
 impl Fixture {
     fn new() -> Self {
-        let root = crate::unique_temp_dir("release_workflow").unwrap();
+        let root = fs::canonicalize(crate::unique_temp_dir("release_workflow").unwrap()).unwrap();
         fs::create_dir_all(root.join("bin")).unwrap();
         fs::create_dir_all(root.join("dist/metadata")).unwrap();
         fs::create_dir_all(root.join("dist/release-assets")).unwrap();
         fs::create_dir_all(root.join("assets")).unwrap();
+        fs::create_dir_all(root.join("workflow-helper/crates/xtask")).unwrap();
+        fs::create_dir_all(root.join("selected-source")).unwrap();
         fs::write(root.join("calls"), "").unwrap();
+        fs::write(root.join("process-calls"), "").unwrap();
+        fs::write(root.join("curl-reads"), "0").unwrap();
         for target in crate::NATIVE_TARGETS {
             let archive = target.archive_name("2.0.0");
             fs::write(
@@ -45,6 +211,8 @@ impl Fixture {
             root.join("bin/gh"),
             r##"#!/bin/bash
 set -euo pipefail
+printf '%s\0%s\0%s\0' "gh" "$PWD" "$#" >> "$RUNNER_TEMP/process-calls"
+printf '%s\0' "$@" >> "$RUNNER_TEMP/process-calls"
 echo "$*" >> "$RUNNER_TEMP/calls"
 release_file="$RUNNER_TEMP/release"
 assets="$RUNNER_TEMP/assets"
@@ -120,6 +288,7 @@ case "$*" in
     pages="$MOCK_RELEASES"
     if [[ -e "$RUNNER_TEMP/uploaded" ]]; then pages="$(jq --argjson late "$MOCK_LATE_RELEASES" '. + $late' <<<"$pages")"; fi
     jq --slurpfile release <(if [[ -e "$release_file" ]]; then cat "$release_file"; fi) '. + [$release]' <<<"$pages" ;;
+  "pr edit 124 --repo owner/repo --add-label autorelease: tagged --remove-label autorelease: pending") touch "$RUNNER_TEMP/finalized" ;;
   "release upload "*)
     [[ "$(jq -r .immutable "$release_file")" != true ]] || { echo 'Immutable release rejects asset upload' >&2; exit 93; }
     [[ "$MOCK_UPLOAD_FAIL" != true ]] || exit 90
@@ -135,7 +304,106 @@ esac
 "##,
         )
         .unwrap();
-        fs::set_permissions(root.join("bin/gh"), fs::Permissions::from_mode(0o755)).unwrap();
+        fs::write(
+            root.join("bin/cargo"),
+            r##"#!/bin/bash
+set -euo pipefail
+printf '%s\0%s\0%s\0' "cargo" "$PWD" "$#" >> "$RUNNER_TEMP/process-calls"
+printf '%s\0' "$@" >> "$RUNNER_TEMP/process-calls"
+case "${1:-}" in
+  run)
+    [[ "$#" -eq 14 && "$PWD" == "$GITHUB_WORKSPACE" &&
+       "$1" == run && "$2" == --manifest-path &&
+       "$3" == "$GITHUB_WORKSPACE/workflow-helper/crates/xtask/Cargo.toml" &&
+       "$4" == --locked && "$5" == -- && "$6" == release-package-preflight &&
+       "$7" == --source-dir && "$8" == "$GITHUB_WORKSPACE/selected-source" &&
+       "$9" == --source-sha && "${10}" == "$SOURCE_SHA" &&
+       "${11}" == --tag && "${12}" == "$RELEASE_TAG" &&
+       "${13}" == --output &&
+       "${14}" == "$RUNNER_TEMP/crate-preflight-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT/crate-preflight.json" ]] || {
+      echo "Unexpected crate preflight invocation: $*" >&2
+      exit 96
+    }
+    case "$MOCK_PREFLIGHT_FAILURE" in
+      dry-run) echo 'mock cargo dry-run failed' >&2; exit 41 ;;
+      size) echo 'mock exact-size check failed' >&2; exit 42 ;;
+      none) ;;
+      *) echo "Unexpected preflight failure mode: $MOCK_PREFLIGHT_FAILURE" >&2; exit 97 ;;
+    esac
+    printf '{"schema_version":1,"source_sha":"%s","version":"2.0.0","tag_name":"%s","verification":"publish-dry-run","crate_bytes":1,"crate_sha256":"%064d"}\n'       "$SOURCE_SHA" "$RELEASE_TAG" 0 > "${14}"
+    ;;
+  publish)
+    [[ "$#" -eq 2 && "$1" == publish && "$2" == --locked && "$PWD" == "$GITHUB_WORKSPACE" ]] || {
+      echo "Unexpected Cargo publish invocation: $*" >&2
+      exit 96
+    }
+    status="$MOCK_CARGO_PUBLISH_STATUS"
+    [[ "$status" =~ ^[0-9]+$ ]] || { echo 'Invalid mock Cargo status' >&2; exit 97; }
+    exit "$status"
+    ;;
+  *) echo "Unexpected Cargo invocation: $*" >&2; exit 97 ;;
+esac
+"##,
+        )
+        .unwrap();
+        fs::write(
+            root.join("bin/curl"),
+            r##"#!/bin/bash
+set -euo pipefail
+printf '%s\0%s\0%s\0' "curl" "$PWD" "$#" >> "$RUNNER_TEMP/process-calls"
+printf '%s\0' "$@" >> "$RUNNER_TEMP/process-calls"
+[[ "$#" -eq 10 && "$1" == --fail && "$2" == --silent && "$3" == --show-error &&
+   "$4" == --connect-timeout && "$5" == 10 && "$6" == --max-time && "$7" == 30 &&
+   "$8" == --user-agent &&
+   "$9" == "codebaseGraph-release-workflow ($GITHUB_SERVER_URL/$GITHUB_REPOSITORY)" &&
+   "${10}" == "https://crates.io/api/v1/crates/$CRATE_NAME/$CRATE_VERSION" ]] || {
+  echo "Unexpected crates.io query: $*" >&2
+  exit 96
+}
+count="$(cat "$RUNNER_TEMP/curl-reads")"
+count=$((count + 1))
+printf '%s' "$count" > "$RUNNER_TEMP/curl-reads"
+case "$MOCK_CURL_MODE" in
+  present) exit 0 ;;
+  absent) exit 22 ;;
+  lost) if [[ "$count" == 1 ]]; then exit 22; else exit 0; fi ;;
+  *) echo "Unexpected curl mode: $MOCK_CURL_MODE" >&2; exit 97 ;;
+esac
+"##,
+        )
+        .unwrap();
+        fs::write(
+            root.join("bin/git"),
+            r##"#!/bin/bash
+set -euo pipefail
+printf '%s\0%s\0%s\0' "git" "$PWD" "$#" >> "$RUNNER_TEMP/process-calls"
+printf '%s\0' "$@" >> "$RUNNER_TEMP/process-calls"
+[[ "$#" -eq 2 && "$1" == rev-parse && "$2" == HEAD ]] || {
+  echo "Unexpected Git invocation: $*" >&2
+  exit 96
+}
+printf '%s\n' "$MOCK_GIT_HEAD"
+"##,
+        )
+        .unwrap();
+        fs::write(
+            root.join("bin/sleep"),
+            r##"#!/bin/bash
+set -euo pipefail
+printf '%s\0%s\0%s\0' "sleep" "$PWD" "$#" >> "$RUNNER_TEMP/process-calls"
+printf '%s\0' "$@" >> "$RUNNER_TEMP/process-calls"
+[[ "$#" -eq 1 ]] || { echo "Unexpected sleep invocation: $*" >&2; exit 96; }
+case "$1" in 15|30|45) exit 0 ;; *) echo "Unexpected sleep duration: $1" >&2; exit 97 ;; esac
+"##,
+        )
+        .unwrap();
+        for executable in ["gh", "cargo", "curl", "git", "sleep"] {
+            fs::set_permissions(
+                root.join("bin").join(executable),
+                fs::Permissions::from_mode(0o755),
+            )
+            .unwrap();
+        }
         fs::write(root.join("dist/metadata/release-metadata.json"), json!({
             "source_sha":SHA,"tag_name":"v2.0.0","version":"2.0.0","notes":"## 2.0.0\nVerified notes, not $(touch injected)."
         }).to_string()).unwrap();
@@ -153,38 +421,116 @@ esac
 
     fn execute(&self, script: &str, overrides: &[(&str, &str)]) -> Output {
         fs::write(self.root.join("output"), "").unwrap();
+        let path = format!(
+            "{}:{}",
+            self.root.join("bin").display(),
+            std::env::var("PATH").unwrap_or_default()
+        );
         let mut command = Command::new("bash");
-        command.args(["-c",script]).current_dir(&self.root).envs([
-            ("PATH",format!("{}:{}",self.root.join("bin").display(),std::env::var("PATH").unwrap())),
-            ("GITHUB_REPOSITORY","owner/repo".into()),("CI_RUN_ID","42".into()),
-            ("EXPECTED_SHA",SHA.into()),("REQUIRE_RELEASE","true".into()),
-            ("MOCK_RUN",self.run.to_string()),("MOCK_PULLS",self.pulls.to_string()),
-            ("MOCK_MAIN",MAIN.into()),("MOCK_COMPARISON","ahead".into()),
-            ("MOCK_MAIN_FAIL","false".into()),("MOCK_COMPARE_FAIL","false".into()),
-            ("MOCK_COMPARE_SOURCE",SHA.into()),
-            ("MOCK_REF","null".into()),("MOCK_TAG_NAME","v2.0.0".into()),
-            ("MOCK_TAG_FAIL","false".into()),("MOCK_TAG_FAIL_AFTER","0".into()),
-            ("MOCK_TAG_CHANGE_AFTER","0".into()),
-            ("MOCK_FINAL_REF",json!({"object":{"type":"commit","sha":SHA}}).to_string()),
-            ("MOCK_ANNOTATION_FAIL","false".into()),
-            ("MOCK_ANNOTATED_OBJECT",TAG_OBJECT.into()),
-            ("MOCK_ANNOTATED_TARGET",SHA.into()),
-            ("MOCK_FINAL_ANNOTATED_OBJECT",NEW_TAG_OBJECT.into()),
-            ("MOCK_FINAL_ANNOTATED_TARGET",MAIN.into()),
-            ("MOCK_RELEASES","[]".into()),
-            ("AUTOMATIC","true".into()),("MOCK_FREEZE","true".into()),
-            ("MOCK_UPLOAD_FAIL","false".into()),("MOCK_CORRUPT","".into()),
-            ("MOCK_LOST_CREATE","false".into()),("MOCK_LOST_PUBLISH","false".into()),
-            ("MOCK_LATE_RELEASES","[]".into()),
-            ("MOCK_PENDING_PULLS",self.pulls.to_string()),
-            ("MOCK_PROPOSAL_RUNS",json!([{"workflow_runs":[{"path":".github/workflows/ci.yml","head_sha":MAIN,"head_branch":"main","event":"push","status":"completed","conclusion":"success"}]}]).to_string()),
-            ("SOURCE_SHA",SHA.into()),("RELEASE_TAG","v2.0.0".into()),
-            ("RELEASE_PR","124".into()),("VERIFIED_PR","124".into()),
-            ("RUNNER_TEMP",self.root.display().to_string()),
-            ("GITHUB_OUTPUT",self.root.join("output").display().to_string()),
-            ("GITHUB_STEP_SUMMARY",self.root.join("summary").display().to_string()),
-        ]).env_remove("GH_TOKEN").env_remove("GITHUB_TOKEN");
-        command.envs(overrides.iter().copied()).output().unwrap()
+        command
+            .args(["-c", script])
+            .current_dir(&self.root)
+            .env_clear()
+            .envs([
+                ("PATH", path),
+                ("GITHUB_REPOSITORY", "owner/repo".into()),
+                ("GITHUB_SERVER_URL", "https://github.com".into()),
+                ("GITHUB_WORKSPACE", self.root.display().to_string()),
+                ("GITHUB_RUN_ID", "42".into()),
+                ("GITHUB_RUN_ATTEMPT", "3".into()),
+                ("CI_RUN_ID", "42".into()),
+                ("EXPECTED_SHA", SHA.into()),
+                ("REQUIRE_RELEASE", "true".into()),
+                ("MOCK_RUN", self.run.to_string()),
+                ("MOCK_PULLS", self.pulls.to_string()),
+                ("MOCK_MAIN", MAIN.into()),
+                ("MOCK_COMPARISON", "ahead".into()),
+                ("MOCK_MAIN_FAIL", "false".into()),
+                ("MOCK_COMPARE_FAIL", "false".into()),
+                ("MOCK_COMPARE_SOURCE", SHA.into()),
+                ("MOCK_REF", "null".into()),
+                ("MOCK_TAG_NAME", "v2.0.0".into()),
+                ("MOCK_TAG_FAIL", "false".into()),
+                ("MOCK_TAG_FAIL_AFTER", "0".into()),
+                ("MOCK_TAG_CHANGE_AFTER", "0".into()),
+                (
+                    "MOCK_FINAL_REF",
+                    json!({"object":{"type":"commit","sha":SHA}}).to_string(),
+                ),
+                ("MOCK_ANNOTATION_FAIL", "false".into()),
+                ("MOCK_ANNOTATED_OBJECT", TAG_OBJECT.into()),
+                ("MOCK_ANNOTATED_TARGET", SHA.into()),
+                ("MOCK_FINAL_ANNOTATED_OBJECT", NEW_TAG_OBJECT.into()),
+                ("MOCK_FINAL_ANNOTATED_TARGET", MAIN.into()),
+                ("MOCK_RELEASES", "[]".into()),
+                ("AUTOMATIC", "true".into()),
+                ("MOCK_FREEZE", "true".into()),
+                ("MOCK_UPLOAD_FAIL", "false".into()),
+                ("MOCK_CORRUPT", "".into()),
+                ("MOCK_LOST_CREATE", "false".into()),
+                ("MOCK_LOST_PUBLISH", "false".into()),
+                ("MOCK_LATE_RELEASES", "[]".into()),
+                ("MOCK_PENDING_PULLS", self.pulls.to_string()),
+                (
+                    "MOCK_PROPOSAL_RUNS",
+                    json!([{"workflow_runs":[{"path":".github/workflows/ci.yml","head_sha":MAIN,"head_branch":"main","event":"push","status":"completed","conclusion":"success"}]}]).to_string(),
+                ),
+                ("SOURCE_SHA", SHA.into()),
+                ("RELEASE_TAG", "v2.0.0".into()),
+                ("RELEASE_VERSION", "2.0.0".into()),
+                ("CRATE_NAME", "codebase-graph".into()),
+                ("CRATE_VERSION", "2.0.0".into()),
+                ("PREFLIGHT_RESULT", "skipped".into()),
+                ("PREFLIGHT_ARTIFACT", "".into()),
+                ("PREFLIGHT_RUN_ID", "".into()),
+                ("PREFLIGHT_ATTEMPT", "".into()),
+                ("MOCK_PREFLIGHT_FAILURE", "none".into()),
+                ("MOCK_CURL_MODE", "absent".into()),
+                ("MOCK_CARGO_PUBLISH_STATUS", "0".into()),
+                ("MOCK_GIT_HEAD", SHA.into()),
+                ("RELEASE_PR", "124".into()),
+                ("VERIFIED_PR", "124".into()),
+                ("RUNNER_TEMP", self.root.display().to_string()),
+                ("GITHUB_OUTPUT", self.root.join("output").display().to_string()),
+                (
+                    "GITHUB_STEP_SUMMARY",
+                    self.root.join("summary").display().to_string(),
+                ),
+            ])
+            .envs(overrides.iter().copied());
+        command.output().unwrap()
+    }
+
+    fn seed_preflight_report(&self, report: &Value) {
+        let directory = self.root.join("dist/crate-preflight");
+        fs::create_dir_all(&directory).unwrap();
+        fs::write(directory.join("crate-preflight.json"), report.to_string()).unwrap();
+    }
+
+    fn execute_with_preflight(
+        &self,
+        script: &str,
+        report: Option<Value>,
+        overrides: &[(&str, &str)],
+    ) -> Output {
+        let report_path = self.root.join("dist/crate-preflight/crate-preflight.json");
+        if let Some(report) = report {
+            self.seed_preflight_report(&report);
+        } else {
+            let _ = fs::remove_file(report_path);
+        }
+        let mut env = vec![
+            ("PREFLIGHT_RESULT", "success"),
+            ("PREFLIGHT_ARTIFACT", "crate-preflight-42-3"),
+            ("PREFLIGHT_RUN_ID", "42"),
+            ("PREFLIGHT_ATTEMPT", "3"),
+        ];
+        env.extend_from_slice(overrides);
+        self.execute(script, &env)
+    }
+
+    fn process_calls(&self) -> Vec<ProcessCall> {
+        process_calls(&self.root.join("process-calls"))
     }
 
     fn release(&self) -> Value {
@@ -313,10 +659,25 @@ fn publisher() -> String {
     step("publish-release-assets", "Create only the verified release")
 }
 
+fn crate_preflight() -> String {
+    step("crate-preflight", "Verify exact-source package and size")
+}
+
+fn crate_publisher() -> String {
+    step("publish-crate", "Publish crates.io package")
+}
+
+fn finalize_release() -> String {
+    step(
+        "finalize-release",
+        "Mark only the completed release PR tagged",
+    )
+}
+
 #[test]
 fn immutable_release_uploads_before_publication_and_retries_without_writes() {
     let f = Fixture::new();
-    assert_success(&f.execute(&publisher(), &[]));
+    assert_success(&f.execute_with_preflight(&publisher(), Some(valid_preflight_report()), &[]));
     let release: Value =
         serde_json::from_slice(&fs::read(f.root.join("release")).unwrap()).unwrap();
     assert_eq!(release["draft"], false);
@@ -326,7 +687,7 @@ fn immutable_release_uploads_before_publication_and_retries_without_writes() {
         crate::NATIVE_TARGETS.len() * 2
     );
     fs::write(f.root.join("calls"), "").unwrap();
-    assert_success(&f.execute(&publisher(), &[]));
+    assert_success(&f.execute_with_preflight(&publisher(), Some(valid_preflight_report()), &[]));
     let calls = fs::read_to_string(f.root.join("calls")).unwrap();
     assert!(
         !calls.contains("--method POST")
@@ -341,6 +702,378 @@ fn assert_success(output: &Output) {
         output.status.success(),
         "{}",
         String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+#[test]
+fn crate_preflight_executes_the_selected_source_helper_and_names_the_current_attempt() {
+    let f = Fixture::new();
+    let output = f.execute(&crate_preflight(), &[]);
+    assert_success(&output);
+
+    let calls = f.process_calls();
+    assert_eq!(calls.len(), 1, "{calls:?}");
+    assert_eq!(calls[0].program, "cargo");
+    assert_eq!(calls[0].cwd, f.root.display().to_string());
+    assert_eq!(
+        calls[0].args,
+        [
+            "run",
+            "--manifest-path",
+            f.root
+                .join("workflow-helper/crates/xtask/Cargo.toml")
+                .to_str()
+                .unwrap(),
+            "--locked",
+            "--",
+            "release-package-preflight",
+            "--source-dir",
+            f.root.join("selected-source").to_str().unwrap(),
+            "--source-sha",
+            SHA,
+            "--tag",
+            "v2.0.0",
+            "--output",
+            f.root
+                .join("crate-preflight-42-3/crate-preflight.json")
+                .to_str()
+                .unwrap(),
+        ]
+    );
+    let report = f.root.join("crate-preflight-42-3/crate-preflight.json");
+    assert!(report.is_file());
+    assert!(!report.starts_with(f.root.join("selected-source")));
+    assert_eq!(
+        f.output(),
+        "artifact-name=crate-preflight-42-3\nrun-id=42\nrun-attempt=3\n"
+    );
+    assert!(f.calls().is_empty());
+}
+
+#[test]
+fn crate_preflight_child_failures_never_emit_a_report_or_job_outputs() {
+    for (failure, status) in [("dry-run", 41), ("size", 42)] {
+        let f = Fixture::new();
+        let output = f.execute(&crate_preflight(), &[("MOCK_PREFLIGHT_FAILURE", failure)]);
+        assert_eq!(output.status.code(), Some(status), "{failure}");
+        assert!(f.output().is_empty(), "{failure}: {}", f.output());
+        assert!(
+            !f.root
+                .join("crate-preflight-42-3/crate-preflight.json")
+                .exists(),
+            "{failure} emitted a successful report"
+        );
+        let calls = f.process_calls();
+        assert_eq!(calls.len(), 1, "{failure}: {calls:?}");
+        assert_eq!(calls[0].program, "cargo");
+        assert!(f.calls().is_empty());
+    }
+}
+
+#[test]
+fn crate_preflight_rejects_invalid_run_identity_before_launch() {
+    for (name, variable, value) in [
+        ("run id", "GITHUB_RUN_ID", "0"),
+        ("run id", "GITHUB_RUN_ID", "not-a-run"),
+        ("attempt", "GITHUB_RUN_ATTEMPT", "0"),
+        ("attempt", "GITHUB_RUN_ATTEMPT", ""),
+    ] {
+        let f = Fixture::new();
+        let output = f.execute(&crate_preflight(), &[(variable, value)]);
+        assert!(!output.status.success(), "accepted invalid {name} {value}");
+        assert!(f.output().is_empty());
+        let calls = f.process_calls();
+        assert!(
+            calls.is_empty(),
+            "invalid {name} {value} launched subprocesses: {calls:?}"
+        );
+        assert!(f.calls().is_empty());
+    }
+}
+
+#[test]
+fn publisher_rejects_unbound_preflight_before_any_github_request() {
+    for failure in preflight_failures() {
+        let f = Fixture::new();
+        let output =
+            f.execute_with_preflight(&publisher(), failure.report.clone(), &failure.overrides);
+        assert!(
+            !output.status.success(),
+            "accepted invalid preflight: {}",
+            failure.name
+        );
+        assert!(f.calls().is_empty(), "{}: {}", failure.name, f.calls());
+        assert!(f.process_calls().is_empty(), "{}", failure.name);
+        assert!(!f.root.join("release").exists(), "{}", failure.name);
+        assert!(f.assets_snapshot().is_empty(), "{}", failure.name);
+    }
+}
+
+#[test]
+fn crate_upload_rejects_unbound_preflight_before_registry_or_cargo_calls() {
+    for failure in preflight_failures() {
+        let f = Fixture::new();
+        let output = f.execute_with_preflight(
+            &crate_publisher(),
+            failure.report.clone(),
+            &failure.overrides,
+        );
+        assert!(
+            !output.status.success(),
+            "accepted invalid preflight: {}",
+            failure.name
+        );
+        assert!(
+            f.process_calls().is_empty(),
+            "{}: {:?}",
+            failure.name,
+            f.process_calls()
+        );
+        assert!(f.calls().is_empty(), "{}: {}", failure.name, f.calls());
+    }
+}
+
+#[test]
+fn publisher_accepts_a_successful_prior_attempt_from_the_current_run() {
+    let f = Fixture::new();
+    let output = f.execute_with_preflight(
+        &publisher(),
+        Some(valid_preflight_report()),
+        &[
+            ("PREFLIGHT_ATTEMPT", "2"),
+            ("PREFLIGHT_ARTIFACT", "crate-preflight-42-2"),
+        ],
+    );
+    assert_success(&output);
+    assert!(f.calls().contains("release upload"));
+}
+
+#[test]
+fn crate_publish_checks_exact_version_without_repackaging_an_existing_version() {
+    let f = Fixture::new();
+    let output = f.execute_with_preflight(
+        &crate_publisher(),
+        Some(valid_preflight_report()),
+        &[("MOCK_CURL_MODE", "present")],
+    );
+    assert_success(&output);
+    let calls = f.process_calls();
+    assert_eq!(calls.len(), 2, "{calls:?}");
+    assert_eq!(calls[0].program, "git");
+    assert_eq!(calls[0].args, ["rev-parse", "HEAD"]);
+    assert_eq!(calls[0].cwd, f.root.display().to_string());
+    assert_eq!(calls[1].program, "curl");
+    assert_eq!(
+        calls[1].args,
+        [
+            "--fail",
+            "--silent",
+            "--show-error",
+            "--connect-timeout",
+            "10",
+            "--max-time",
+            "30",
+            "--user-agent",
+            "codebaseGraph-release-workflow (https://github.com/owner/repo)",
+            "https://crates.io/api/v1/crates/codebase-graph/2.0.0",
+        ]
+    );
+    assert!(!calls.iter().any(|call| call.program == "cargo"));
+    assert!(f.calls().is_empty());
+    assert!(String::from_utf8_lossy(&output.stdout).contains("already published"));
+}
+
+#[test]
+fn crate_publish_uses_only_normal_locked_publish_when_the_version_is_absent() {
+    let f = Fixture::new();
+    let output = f.execute_with_preflight(
+        &crate_publisher(),
+        Some(valid_preflight_report()),
+        &[("MOCK_CURL_MODE", "absent")],
+    );
+    assert_success(&output);
+    let calls = f.process_calls();
+    assert_eq!(calls.len(), 3, "{calls:?}");
+    assert_eq!(calls[0].program, "git");
+    assert_eq!(calls[1].program, "curl");
+    assert_eq!(calls[2].program, "cargo");
+    assert_eq!(calls[2].args, ["publish", "--locked"]);
+    assert!(calls.iter().all(|call| !call
+        .args
+        .iter()
+        .any(|arg| arg.contains("dry-run") || arg == "package")));
+    assert!(f.calls().is_empty());
+}
+
+#[test]
+fn crate_publish_reconciles_a_lost_response_without_replaying_upload() {
+    let f = Fixture::new();
+    let output = f.execute_with_preflight(
+        &crate_publisher(),
+        Some(valid_preflight_report()),
+        &[
+            ("MOCK_CURL_MODE", "lost"),
+            ("MOCK_CARGO_PUBLISH_STATUS", "23"),
+        ],
+    );
+    assert_success(&output);
+    let calls = f.process_calls();
+    assert_eq!(
+        calls.iter().filter(|call| call.program == "curl").count(),
+        2
+    );
+    let cargo = calls
+        .iter()
+        .filter(|call| call.program == "cargo")
+        .collect::<Vec<_>>();
+    assert_eq!(cargo.len(), 1, "{calls:?}");
+    assert_eq!(cargo[0].args, ["publish", "--locked"]);
+    assert!(!calls.iter().any(|call| call.program == "sleep"));
+    assert!(f.calls().is_empty());
+}
+
+#[test]
+fn crate_publish_caps_retries_and_logs_backoff_without_waiting() {
+    let f = Fixture::new();
+    let output = f.execute_with_preflight(
+        &crate_publisher(),
+        Some(valid_preflight_report()),
+        &[
+            ("MOCK_CURL_MODE", "absent"),
+            ("MOCK_CARGO_PUBLISH_STATUS", "23"),
+        ],
+    );
+    assert_eq!(output.status.code(), Some(23));
+    let calls = f.process_calls();
+    assert_eq!(
+        calls.iter().filter(|call| call.program == "cargo").count(),
+        4
+    );
+    assert_eq!(
+        calls.iter().filter(|call| call.program == "curl").count(),
+        5
+    );
+    let sleeps = calls
+        .iter()
+        .filter(|call| call.program == "sleep")
+        .map(|call| call.args[0].as_str())
+        .collect::<Vec<_>>();
+    assert_eq!(sleeps, ["15", "30", "45"]);
+    assert!(f.calls().is_empty());
+}
+
+#[test]
+fn crate_publish_rejects_changed_head_or_version_before_registry_or_upload() {
+    for (name, overrides) in [
+        ("changed HEAD", vec![("MOCK_GIT_HEAD", MAIN)]),
+        ("changed crate version", vec![("CRATE_VERSION", "2.0.1")]),
+    ] {
+        let f = Fixture::new();
+        let output = f.execute_with_preflight(
+            &crate_publisher(),
+            Some(valid_preflight_report()),
+            &overrides,
+        );
+        assert!(!output.status.success(), "accepted {name}");
+        let calls = f.process_calls();
+        assert_eq!(calls.len(), 1, "{name}: {calls:?}");
+        assert_eq!(calls[0].program, "git");
+        assert!(f.calls().is_empty());
+    }
+}
+
+#[test]
+fn native_publication_precedes_crate_upload_and_finalization() {
+    let workflow: yaml_serde::Value =
+        yaml_serde::from_str(include_str!("../../../../.github/workflows/release.yml")).unwrap();
+    let publish_assets_job = &workflow["jobs"]["publish-release-assets"];
+    let assets_needs = publish_assets_job["needs"].as_sequence().unwrap();
+    assert!(assets_needs
+        .iter()
+        .any(|job| job.as_str() == Some("crate-preflight")));
+
+    let crate_job = &workflow["jobs"]["publish-crate"];
+    let crate_needs = crate_job["needs"].as_sequence().unwrap();
+    for dependency in [
+        "release-target",
+        "publish-release-assets",
+        "crate-preflight",
+    ] {
+        assert!(crate_needs
+            .iter()
+            .any(|job| job.as_str() == Some(dependency)));
+    }
+    let crate_condition = crate_job["if"].as_str().unwrap();
+    for clause in [
+        "needs.release-target.result == 'success'",
+        "needs.publish-release-assets.result == 'success'",
+        "needs.crate-preflight.result == 'success'",
+        "needs.release-target.outputs.automatic == 'true'",
+        "needs.release-target.outputs.publish_assets == 'true'",
+    ] {
+        assert!(
+            crate_condition.contains(clause),
+            "missing crate gate: {clause}"
+        );
+    }
+
+    let finalize_job = &workflow["jobs"]["finalize-release"];
+    let finalize_needs = finalize_job["needs"].as_sequence().unwrap();
+    for dependency in ["release-target", "publish-release-assets", "publish-crate"] {
+        assert!(finalize_needs
+            .iter()
+            .any(|job| job.as_str() == Some(dependency)));
+    }
+    let finalize_condition = finalize_job["if"].as_str().unwrap();
+    for clause in [
+        "needs.release-target.result == 'success'",
+        "needs.publish-release-assets.result == 'success'",
+        "needs.publish-crate.result == 'success'",
+        "needs.release-target.outputs.automatic == 'true'",
+    ] {
+        assert!(
+            finalize_condition.contains(clause),
+            "missing finalization gate: {clause}"
+        );
+    }
+
+    let f = Fixture::new();
+    let report = Some(valid_preflight_report());
+    assert_success(&f.execute_with_preflight(&publisher(), report.clone(), &[]));
+    let crate_output =
+        f.execute_with_preflight(&crate_publisher(), report, &[("MOCK_CURL_MODE", "absent")]);
+    assert_success(&crate_output);
+    assert_success(&f.execute(&finalize_release(), &[]));
+    assert!(f.root.join("finalized").is_file());
+
+    let calls = f.process_calls();
+    let native_upload = calls
+        .iter()
+        .position(|call| {
+            call.program == "gh" && call.args.starts_with(&["release".into(), "upload".into()])
+        })
+        .unwrap();
+    let native_publish = calls
+        .iter()
+        .position(|call| {
+            call.program == "gh"
+                && call
+                    .args
+                    .starts_with(&["api".into(), "--method".into(), "PATCH".into()])
+        })
+        .unwrap();
+    let crate_upload = calls
+        .iter()
+        .position(|call| call.program == "cargo" && call.args == ["publish", "--locked"])
+        .unwrap();
+    let finalize = calls
+        .iter()
+        .rposition(|call| {
+            call.program == "gh" && call.args.starts_with(&["pr".into(), "edit".into()])
+        })
+        .unwrap();
+    assert!(
+        native_upload < native_publish && native_publish < crate_upload && crate_upload < finalize
     );
 }
 
@@ -415,7 +1148,7 @@ fn ordinary_commit_cannot_authorize_release_and_tagged_retry_still_can() {
 fn publisher_targets_original_sha_and_is_idempotent() {
     let f = Fixture::new();
     let script = step("publish-release-assets", "Create only the verified release");
-    assert_success(&f.execute(&script, &[]));
+    assert_success(&f.execute_with_preflight(&script, Some(valid_preflight_report()), &[]));
     let request: Value =
         serde_json::from_slice(&fs::read(f.root.join("request")).unwrap()).unwrap();
     assert_eq!(request["target_commitish"], SHA);
@@ -426,7 +1159,7 @@ fn publisher_targets_original_sha_and_is_idempotent() {
     assert_eq!(published["make_latest"], "true");
     assert!(!f.root.join("injected").exists());
     fs::write(f.root.join("calls"), "").unwrap();
-    assert_success(&f.execute(&script, &[]));
+    assert_success(&f.execute_with_preflight(&script, Some(valid_preflight_report()), &[]));
     assert!(!fs::read_to_string(f.root.join("calls"))
         .unwrap()
         .contains("--method POST"));
@@ -437,10 +1170,18 @@ fn publisher_rejects_conflicting_tags_and_does_not_regress_latest() {
     let f = Fixture::new();
     let script = step("publish-release-assets", "Create only the verified release");
     let wrong = json!({"object":{"sha":MAIN,"type":"commit"}}).to_string();
-    assert!(!f.execute(&script, &[("MOCK_REF", &wrong)]).status.success());
+    assert!(!f
+        .execute_with_preflight(
+            &script,
+            Some(valid_preflight_report()),
+            &[("MOCK_REF", &wrong)]
+        )
+        .status
+        .success());
     assert!(!f.root.join("request").exists());
-    assert_success(&f.execute(
+    assert_success(&f.execute_with_preflight(
         &script,
+        Some(valid_preflight_report()),
         &[(
             "MOCK_RELEASES",
             r#"[[{"tag_name":"v3.0.0","draft":false,"prerelease":false}]]"#,
@@ -457,8 +1198,9 @@ fn draft_partial_upload_resumes_and_latest_is_selected_at_publication() {
     f.seed_release(true, false);
     let asset = crate::NATIVE_TARGETS[0].archive_name("2.0.0");
     fs::write(f.root.join("assets").join(asset), b"partial old bytes").unwrap();
-    assert_success(&f.execute(
+    assert_success(&f.execute_with_preflight(
         &publisher(),
+        Some(valid_preflight_report()),
         &[(
             "MOCK_LATE_RELEASES",
             r#"[[{"tag_name":"v3.0.0","draft":false,"prerelease":false}]]"#,
@@ -481,7 +1223,10 @@ fn upload_or_remote_byte_failure_never_publishes() {
         vec![("MOCK_CORRUPT", sidecar.as_str())],
     ] {
         let f = Fixture::new();
-        assert!(!f.execute(&publisher(), &overrides).status.success());
+        assert!(!f
+            .execute_with_preflight(&publisher(), Some(valid_preflight_report()), &overrides)
+            .status
+            .success());
         assert_eq!(f.release()["draft"], true);
         assert!(!f.calls().contains("--method PATCH"));
     }
@@ -508,7 +1253,10 @@ fn immutable_missing_or_mismatched_assets_fail_without_mutation() {
             } else {
                 fs::remove_file(path).unwrap();
             }
-            assert!(!f.execute(&publisher(), &[]).status.success());
+            assert!(!f
+                .execute_with_preflight(&publisher(), Some(valid_preflight_report()), &[])
+                .status
+                .success());
             f.assert_no_writes();
         }
     }
@@ -518,7 +1266,14 @@ fn immutable_missing_or_mismatched_assets_fail_without_mutation() {
 fn accepted_writes_with_lost_responses_resume_without_replay() {
     for lost in ["MOCK_LOST_CREATE", "MOCK_LOST_PUBLISH"] {
         let f = Fixture::new();
-        assert!(!f.execute(&publisher(), &[(lost, "true")]).status.success());
+        assert!(!f
+            .execute_with_preflight(
+                &publisher(),
+                Some(valid_preflight_report()),
+                &[(lost, "true")],
+            )
+            .status
+            .success());
         let calls = f.calls();
         assert_eq!(
             calls
@@ -534,7 +1289,11 @@ fn accepted_writes_with_lost_responses_resume_without_replay() {
             assert_eq!(calls.matches("--method PATCH").count(), 1);
         }
         fs::write(f.root.join("calls"), "").unwrap();
-        assert_success(&f.execute(&publisher(), &[]));
+        assert_success(&f.execute_with_preflight(
+            &publisher(),
+            Some(valid_preflight_report()),
+            &[],
+        ));
         assert!(!f.calls().contains("--method POST"));
         if lost == "MOCK_LOST_PUBLISH" {
             f.assert_no_writes();
@@ -576,12 +1335,12 @@ fn existing_tag_mode_remains_assets_only_for_draft_mutable_and_immutable_release
 fn published_mutable_partial_assets_can_resume_without_republishing() {
     let f = Fixture::new();
     f.seed_release(false, false);
-    assert_success(&f.execute(&publisher(), &[]));
+    assert_success(&f.execute_with_preflight(&publisher(), Some(valid_preflight_report()), &[]));
     assert_eq!(f.release()["draft"], false);
     assert!(f.calls().contains("release upload"));
     assert!(!f.calls().contains("--method POST") && !f.calls().contains("--method PATCH"));
     fs::write(f.root.join("calls"), "").unwrap();
-    assert_success(&f.execute(&publisher(), &[]));
+    assert_success(&f.execute_with_preflight(&publisher(), Some(valid_preflight_report()), &[]));
     f.assert_no_writes();
 }
 
@@ -613,7 +1372,9 @@ fn publisher_rejects_identity_metadata_prerelease_and_ambiguous_drafts_before_wr
             }
         };
         assert!(
-            !f.execute(&publisher(), &overrides).status.success(),
+            !f.execute_with_preflight(&publisher(), Some(valid_preflight_report()), &overrides)
+                .status
+                .success(),
             "{kind}"
         );
         f.assert_no_writes();
@@ -925,6 +1686,8 @@ fn existing_tag_resolver_rejects_nonancestors_and_bad_identity_before_authorizin
 
 fn publisher_job_scheduled_for_assets_output(
     condition: &str,
+    automatic: Option<&str>,
+    preflight_result: Option<&str>,
     publish_assets: Option<&str>,
 ) -> Result<bool, &'static str> {
     let condition = condition
@@ -932,25 +1695,42 @@ fn publisher_job_scheduled_for_assets_output(
         .strip_prefix("${{")
         .and_then(|condition| condition.strip_suffix("}}"))
         .ok_or("missing GitHub expression delimiters")?;
-    let mut clause_counts = [0; 4];
-    for clause in condition.split("&&").map(str::trim) {
-        let index = match clause {
-            "always()" => 0,
-            "needs.release-target.result == 'success'" => 1,
-            "needs.validate-artifacts.result == 'success'" => 2,
-            "needs.release-target.outputs.publish_assets == 'true'" => 3,
-            _ => return Err("unsupported publisher gate expression"),
-        };
-        clause_counts[index] += 1;
-    }
-    if clause_counts != [1; 4] {
+    let required_clauses = [
+        "always()",
+        "needs.release-target.result == 'success'",
+        "needs.validate-artifacts.result == 'success'",
+        "needs.release-target.outputs.automatic == 'true'",
+        "needs.crate-preflight.result == 'success'",
+        "needs.release-target.outputs.automatic == 'false'",
+        "needs.crate-preflight.result == 'skipped'",
+        "needs.release-target.outputs.publish_assets == 'true'",
+    ];
+    if required_clauses
+        .iter()
+        .any(|clause| condition.matches(*clause).count() != 1)
+    {
         return Err("publisher gate is missing or duplicates a required condition");
     }
-    match publish_assets {
-        Some("true") => Ok(true),
-        Some("false") => Ok(false),
-        _ => Err("missing or invalid publish_assets output"),
+    let normalized = required_clauses
+        .iter()
+        .fold(condition.to_owned(), |expression, clause| {
+            expression.replacen(*clause, "x", 1)
+        });
+    if normalized.split_whitespace().collect::<String>() != "x&&x&&x&&((x&&x)||(x&&x))&&x" {
+        return Err("unsupported publisher gate expression");
     }
+
+    let preflight_succeeded = match (automatic, preflight_result) {
+        (Some("true"), Some("success")) | (Some("false"), Some("skipped")) => true,
+        (Some("true"), Some(_)) | (Some("false"), Some(_)) => false,
+        _ => return Err("missing or invalid publisher producer state"),
+    };
+    let publish_assets = match publish_assets {
+        Some("true") => true,
+        Some("false") => false,
+        _ => return Err("missing or invalid publish_assets output"),
+    };
+    Ok(preflight_succeeded && publish_assets)
 }
 
 #[test]
@@ -973,23 +1753,66 @@ fn legacy_dry_run_resolves_without_scheduling_the_publisher() {
         .iter()
         .any(|job| { job.as_str() == Some("release-target") }));
     let condition = publisher_job["if"].as_str().unwrap();
+    let automatic = outputs
+        .lines()
+        .find_map(|line| line.strip_prefix("automatic="));
     let publish_assets = outputs
         .lines()
         .find_map(|line| line.strip_prefix("publish_assets="));
+    assert_eq!(automatic, Some("false"));
     assert_eq!(publish_assets, Some("false"));
     assert_eq!(
-        publisher_job_scheduled_for_assets_output(condition, publish_assets),
+        publisher_job_scheduled_for_assets_output(
+            condition,
+            automatic,
+            Some("skipped"),
+            publish_assets,
+        ),
         Ok(false)
     );
     assert_eq!(
-        publisher_job_scheduled_for_assets_output(condition, Some("true")),
+        publisher_job_scheduled_for_assets_output(
+            condition,
+            Some("false"),
+            Some("skipped"),
+            Some("true"),
+        ),
         Ok(true)
     );
+    assert_eq!(
+        publisher_job_scheduled_for_assets_output(
+            condition,
+            Some("true"),
+            Some("success"),
+            Some("true"),
+        ),
+        Ok(true)
+    );
+    for (automatic, preflight_result) in [
+        ("true", "failure"),
+        ("true", "skipped"),
+        ("false", "success"),
+    ] {
+        assert_eq!(
+            publisher_job_scheduled_for_assets_output(
+                condition,
+                Some(automatic),
+                Some(preflight_result),
+                Some("true"),
+            ),
+            Ok(false),
+            "scheduled publisher with automatic={automatic}, preflight={preflight_result}",
+        );
+    }
 
     let required_clauses = [
         "always()",
         "needs.release-target.result == 'success'",
         "needs.validate-artifacts.result == 'success'",
+        "needs.release-target.outputs.automatic == 'true'",
+        "needs.crate-preflight.result == 'success'",
+        "needs.release-target.outputs.automatic == 'false'",
+        "needs.crate-preflight.result == 'skipped'",
         "needs.release-target.outputs.publish_assets == 'true'",
     ];
     for clause in required_clauses {
@@ -999,28 +1822,63 @@ fn legacy_dry_run_resolves_without_scheduling_the_publisher() {
             "missing-condition mutation did not apply"
         );
         assert!(
-            publisher_job_scheduled_for_assets_output(&missing, publish_assets).is_err(),
+            publisher_job_scheduled_for_assets_output(
+                &missing,
+                Some("false"),
+                Some("skipped"),
+                publish_assets,
+            )
+            .is_err(),
             "missing required condition was accepted: {clause}"
         );
         let duplicated = condition.replace(clause, &format!("{clause} && {clause}"));
         assert!(
-            publisher_job_scheduled_for_assets_output(&duplicated, publish_assets).is_err(),
+            publisher_job_scheduled_for_assets_output(
+                &duplicated,
+                Some("false"),
+                Some("skipped"),
+                publish_assets,
+            )
+            .is_err(),
             "duplicate required condition was accepted: {clause}"
         );
     }
     let bypassed = condition.replace(
-        required_clauses[3],
+        required_clauses[7],
         "true || needs.release-target.outputs.publish_assets == 'true'",
     );
-    assert!(publisher_job_scheduled_for_assets_output(&bypassed, publish_assets).is_err());
+    assert!(publisher_job_scheduled_for_assets_output(
+        &bypassed,
+        Some("false"),
+        Some("skipped"),
+        publish_assets,
+    )
+    .is_err());
     let unsupported_after_false = condition.replace(
-        required_clauses[3],
+        required_clauses[7],
         "needs.release-target.outputs.publish_assets == 'true' && true",
     );
-    assert!(
-        publisher_job_scheduled_for_assets_output(&unsupported_after_false, Some("false")).is_err()
-    );
-    assert!(publisher_job_scheduled_for_assets_output(condition, None).is_err());
+    assert!(publisher_job_scheduled_for_assets_output(
+        &unsupported_after_false,
+        Some("false"),
+        Some("skipped"),
+        Some("false"),
+    )
+    .is_err());
+    assert!(publisher_job_scheduled_for_assets_output(
+        condition,
+        None,
+        Some("skipped"),
+        Some("false"),
+    )
+    .is_err());
+    assert!(publisher_job_scheduled_for_assets_output(
+        condition,
+        Some("false"),
+        Some("skipped"),
+        None,
+    )
+    .is_err());
     f.assert_no_writes();
 }
 

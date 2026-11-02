@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "file_count": 11,
+  "self_excluded": {
+    "path": "files.json",
+    "reason": "hash supplied separately"
+  },
+  "files": {
+    "diff-pre.log": {
+      "sha256": "db8ba34ce83d755f6b95dabc53fe46c5b1b948b1c160cdffb6d9e7d1b81850fb",
+      "bytes": 201088
+    },
+    "environment.log": {
+      "sha256": "8ead593dd19a151dc84710e1db25c822702c489ff9b231e95d220b8f3e7657ba",
+      "bytes": 332
+    },
+    "fmt.log": {
+      "sha256": "94f5fd62b53c15caa87e3d75846bf7fc04863be19b9c57aa43cda52061240462",
+      "bytes": 47872
+    },
+    "identity-pre.log": {
+      "sha256": "b4752665667ba688919879c126c5221875d581026fff6f96cf87f6ca14f20f61",
+      "bytes": 125
+    },
+    "provenance.json": {
+      "sha256": "da017459a87a1fcbf3c5524c8d84187702ce813b5fca42c846584d918fb03978",
+      "bytes": 9472
+    },
+    "report.md": {
+      "sha256": "35008641101fb73500ea3e40cdad50a4cee5d353dc2d76f56da783785ddf0f7d",
+      "bytes": 2243
+    },
+    "result.json": {
+      "sha256": "bb6a3ceb0fb1691fb3a18f036858a19254636b172fde73ee08e81391c1f0a660",
+      "bytes": 6190
+    },
+    "source-post.json": {
+      "sha256": "579fe22ddc60c0da7decab069a0eba388008e06cbbdaf70d7a1aa6b287734f20",
+      "bytes": 1242699
+    },
+    "source-pre.json": {
+      "sha256": "07f9411c433531981a5ac1c91e9d776673ccb6b42b03f9b6a3e724436f320bf8",
+      "bytes": 1245512
+    },
+    "status-pre.log": {
+      "sha256": "596fa9ef1ce63cc85548a00847bc13a797f43b29c70f7215eb9f7c3ae45c6080",
+      "bytes": 211
+    },
+    "tree.log": {
+      "sha256": "0d7dc1b6c815d64cfb85d0e94d93e2c21fad12d9020abc13275b92db9037bcb2",
+      "bytes": 376692
+    }
+  },
+  "source_identity": [
+    "source-pre.json",
+    "source-post.json"
+  ]
+}

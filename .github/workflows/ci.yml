@@ -183,11 +183,82 @@ jobs:
   repository-policy:
     name: repository policy
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
-      - name: Check out repository
+      - name: Read current policy purpose
+        id: purpose
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY_ID: ${{ github.repository_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${GITHUB_EVENT_NAME:?}" "${GITHUB_REPOSITORY:?}" "${GITHUB_SHA:?}" "${GITHUB_REF:?}" "${GITHUB_EVENT_PATH:?}" "${GITHUB_OUTPUT:?}" "${RUNNER_TEMP:?}" "${REPOSITORY_ID:?}"
+          [[ "$GITHUB_REPOSITORY" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ && "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
+          candidate=false
+          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
+            number="$(jq -er '.number | select(type == "number" and . > 0 and floor == .)' "$GITHUB_EVENT_PATH")"
+            [[ "$number" =~ ^[1-9][0-9]*$ && "$GITHUB_REF" == "refs/pull/$number/merge" ]]
+            mkdir -p "$RUNNER_TEMP/cod110-policy"
+            current="$RUNNER_TEMP/cod110-policy/pr.json"
+            gh api "repos/$GITHUB_REPOSITORY/pulls/$number" > "$current"
+            jq -se --slurpfile event "$GITHUB_EVENT_PATH" \
+              --arg repository "$GITHUB_REPOSITORY" --arg id "$REPOSITORY_ID" --argjson number "$number" '
+              def identity:
+                (.base.sha | type == "string" and test("^[0-9a-f]{40}$")) and
+                (.head.sha | type == "string" and test("^[0-9a-f]{40}$")) and
+                (.base.ref | type == "string" and length > 0) and
+                (.head.ref | type == "string" and length > 0) and
+                .base.repo.full_name == $repository and (.base.repo.id | tostring) == $id and
+                (.base.repo.id | type == "number" and . > 0 and floor == .) and
+                (.head.repo.full_name | type == "string" and test("^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")) and
+                (.head.repo.id | type == "number" and . > 0 and floor == .);
+              length == 1 and ($event | length) == 1 and (.[0] |
+                type == "object" and identity and .state == "open" and .number == $number and
+                $event[0].repository.full_name == $repository and ($event[0].repository.id | tostring) == $id and
+                $event[0].number == $number and $event[0].pull_request.number == $number and
+                ($event[0].action | IN("opened", "synchronize", "reopened", "edited", "labeled", "unlabeled")) and
+                ($event[0].pull_request | identity) and
+                .base.sha == $event[0].pull_request.base.sha and .head.sha == $event[0].pull_request.head.sha and
+                .base.ref == $event[0].pull_request.base.ref and .head.ref == $event[0].pull_request.head.ref and
+                .base.repo.full_name == $event[0].pull_request.base.repo.full_name and
+                .base.repo.id == $event[0].pull_request.base.repo.id and
+                .head.repo.full_name == $event[0].pull_request.head.repo.full_name and
+                .head.repo.id == $event[0].pull_request.head.repo.id)' "$current" >/dev/null
+            candidate="$(jq -er --arg repository "$GITHUB_REPOSITORY" --arg id "$REPOSITORY_ID" '
+              (.head.ref == "release-please--branches--main--components--codebase-graph" and
+               .head.repo.full_name == $repository and (.head.repo.id | tostring) == $id) | tostring' "$current")"
+          elif [[ "$GITHUB_EVENT_NAME" == push && "$GITHUB_REF" == refs/heads/main ]]; then
+            jq -se --arg repository "$GITHUB_REPOSITORY" --arg id "$REPOSITORY_ID" --arg sha "$GITHUB_SHA" '
+              length == 1 and (.[0] | type == "object" and .repository.full_name == $repository and
+              (.repository.id | tostring) == $id and .ref == "refs/heads/main" and .after == $sha)' "$GITHUB_EVENT_PATH" >/dev/null
+          else
+            echo 'Unsupported repository-policy event' >&2
+            exit 1
+          fi
+          printf 'release-candidate=%s\n' "$candidate" >> "$GITHUB_OUTPUT"
+      - name: Check out tested source
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
       - name: Check repository release policy
-        run: cargo run -p xtask --locked -- release-gate
+        env:
+          TESTED_SHA: ${{ github.sha }}
+          RELEASE_CANDIDATE: ${{ steps.purpose.outputs.release-candidate }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${TESTED_SHA:?}" "${RELEASE_CANDIDATE:?}"
+          args=(release-gate --source-sha "$TESTED_SHA")
+          case "$RELEASE_CANDIDATE" in
+            true) args+=(--release-candidate) ;;
+            false) ;;
+            *) echo 'Invalid repository-policy purpose' >&2; exit 1 ;;
+          esac
+          cargo run -p xtask --locked -- "${args[@]}"
       - name: Check classifier and workflow regressions
         run: cargo test -p xtask --locked
 

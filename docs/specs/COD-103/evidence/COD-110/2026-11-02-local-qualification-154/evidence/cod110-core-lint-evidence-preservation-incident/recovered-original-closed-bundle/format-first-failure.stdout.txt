@@ -1,0 +1,51 @@
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/ci.rs:416:
+     match staged.status.code() {
+         Some(0) => {}
+         Some(1) => {
+-            return Err("source checkout has staged tracked changes relative to --source-sha".to_string());
++            return Err(
++                "source checkout has staged tracked changes relative to --source-sha".to_string(),
++            );
+         }
+         _ => return Err("could not verify source checkout staged tracked state".to_string()),
+     }
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/ci.rs:426:
+     match worktree.status.code() {
+         Some(0) => {}
+         Some(1) => {
+-            return Err("source checkout has worktree tracked changes relative to its index".to_string());
++            return Err(
++                "source checkout has worktree tracked changes relative to its index".to_string(),
++            );
+         }
+         _ => return Err("could not verify source checkout worktree tracked state".to_string()),
+     }
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/ci.rs:1237:
+             assert!(git_output(&fixture.root, ["diff", "--quiet", "--"])
+                 .status
+                 .success());
+-            assert!(super::verify_checkout(&fixture.root, &sha)
+-                .unwrap_err()
+-                .contains("index flags"), "flag={flag}");
++            assert!(
++                super::verify_checkout(&fixture.root, &sha)
++                    .unwrap_err()
++                    .contains("index flags"),
++                "flag={flag}"
++            );
+         }
+     }
+ 
+Diff in /private/tmp/codebasegraph-cod110-20261101/crates/xtask/src/ci.rs:1249:
+         let mut files = checkout_files();
+         files.insert("src/lib.rs".to_string(), b"tracked source\n".to_vec());
+         let sha = fixture.commit(&files, "source checkout with product file");
+-        fs::write(fixture.root.join("src/lib.rs"), b"modified tracked source\n").unwrap();
++        fs::write(
++            fixture.root.join("src/lib.rs"),
++            b"modified tracked source\n",
++        )
++        .unwrap();
+         assert!(super::verify_checkout(&fixture.root, &sha)
+             .unwrap_err()
+             .contains("worktree tracked changes"));

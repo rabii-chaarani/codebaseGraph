@@ -1,0 +1,24 @@
+   Compiling xtask v4.0.5 (/private/tmp/codebasegraph-cod110-20261101/crates/xtask)
+    Finished `native-tests` profile [optimized] target(s) in 11.55s
+     Running unittests src/main.rs (target/native-tests/deps/xtask-eed5a74c0d8f01ef)
+
+running 16 tests
+test release::tests::candidate_metadata_accepts_current_real_generated_six_file_layout ... ok
+test release::tests::candidate_metadata_does_not_require_metadata_transition_or_changelog_history_rewrite ... ok
+test release::tests::candidate_metadata_rejects_duplicate_lock_identity_and_missing_changelog_version ... ok
+test release::tests::candidate_metadata_rejects_leading_zero_in_all_candidate_entrypoints ... ok
+test release::tests::candidate_metadata_rejects_missing_duplicate_empty_and_mismatched_inputs ... ok
+test release::tests::candidate_metadata_rejects_missing_or_mismatched_generated_identities ... ok
+test release::tests::candidate_metadata_requires_checksumless_source_less_workspace_lock_records ... ok
+test release::tests::candidate_metadata_requires_complete_consistent_generated_contract ... ok
+test release::tests::metadata_rejects_inconsistent_versions ... ok
+test release::tests::notes_only_include_the_exact_release ... ok
+test release::tests::notes_reject_missing_duplicate_and_empty_sections ... ok
+test release::tests::package_preflight_accepts_exact_registry_size_limit ... ok
+test release::tests::package_preflight_present_version_uses_verified_cargo_package ... ok
+test release::tests::package_preflight_rejects_registry_errors_cargo_failure_missing_archive_and_oversize ... ok
+test release::tests::package_preflight_rejects_report_inside_selected_source_before_external_commands ... ok
+test release::tests::package_preflight_uses_exact_command_cwd_archive_and_writes_bound_report ... ok
+
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 117 filtered out; finished in 9.28s
+

@@ -1,0 +1,88 @@
+{
+  "scope": "one serialized bounded diagnostic batch, not acceptance or FinalReview",
+  "source_pre": {
+    "crates/xtask/src/main.rs": {
+      "sha256": "c1b0850d259ffd61862405491f6fe815897acea4fe07ac58e1b6d1fde4f8d325",
+      "bytes": 267780
+    },
+    "crates/xtask/src/release/workflow_tests.rs": {
+      "sha256": "859e7280a1c025a0a40b2b82446968cacf51ecca9794f268d09004991f606b43",
+      "bytes": 68200
+    }
+  },
+  "source_post": {
+    "crates/xtask/src/main.rs": {
+      "sha256": "c1b0850d259ffd61862405491f6fe815897acea4fe07ac58e1b6d1fde4f8d325",
+      "bytes": 267780
+    },
+    "crates/xtask/src/release/workflow_tests.rs": {
+      "sha256": "859e7280a1c025a0a40b2b82446968cacf51ecca9794f268d09004991f606b43",
+      "bytes": 68200
+    }
+  },
+  "source_equal": true,
+  "results": {
+    "actual-wiring": {
+      "exit": 101,
+      "passed": 0,
+      "failed": 1
+    },
+    "mutated-consumers": {
+      "exit": 0,
+      "passed": 1,
+      "failed": 0
+    },
+    "purpose-tested-source": {
+      "exit": 0,
+      "passed": 1,
+      "failed": 0
+    },
+    "release-workflow-suite": {
+      "exit": 101,
+      "passed": 21,
+      "failed": 14
+    }
+  },
+  "logs": {
+    "purpose-tested-source.log": {
+      "sha256": "368d557603726d93234885a00d897b8e4a926dcd09db7e26dac35c716ee6fbb1",
+      "bytes": 352
+    },
+    "mutated-consumers.log": {
+      "sha256": "e77ceeee11a9edaae7386553f068fdcfe74de7bd02f89ab81d3b2ec5a0e69605",
+      "bytes": 349
+    },
+    "actual-wiring.log": {
+      "sha256": "1b470367ea1a733bca502dd9b49f3d02fb6a88d44a35f7c1d721e8e0fbe50b4b",
+      "bytes": 1445
+    },
+    "release-workflow-suite.log": {
+      "sha256": "3d27bacd93af033c5556cf4b30297aba1a09e29c04f636e15e0b97c977d1322f",
+      "bytes": 9803
+    }
+  },
+  "commands": [
+    {
+      "command": "env LBUG_LIBRARY_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_INCLUDE_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_VERSION=0.19.0 OPENSSL_LIB_DIR=/opt/homebrew/Cellar/openssl@3/3.6.2/lib MACOSX_DEPLOYMENT_TARGET=13.3 CARGO_BUILD_JOBS=2 GIT_OPTIONAL_LOCKS=0 cargo test -p xtask --bin xtask --offline --locked --profile native-tests tests::workflow_policy_accepts_actual_repository_purpose_and_preflight_wiring -- --exact --nocapture",
+      "exit": 101,
+      "duration": 9.653357167029753
+    },
+    {
+      "command": "env LBUG_LIBRARY_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_INCLUDE_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_VERSION=0.19.0 OPENSSL_LIB_DIR=/opt/homebrew/Cellar/openssl@3/3.6.2/lib MACOSX_DEPLOYMENT_TARGET=13.3 CARGO_BUILD_JOBS=2 GIT_OPTIONAL_LOCKS=0 cargo test -p xtask --bin xtask --offline --locked --profile native-tests tests::workflow_policy_rejects_mutated_purpose_and_preflight_consumers -- --exact --nocapture",
+      "exit": 0,
+      "duration": 0.12693141703493893
+    },
+    {
+      "command": "env LBUG_LIBRARY_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_INCLUDE_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_VERSION=0.19.0 OPENSSL_LIB_DIR=/opt/homebrew/Cellar/openssl@3/3.6.2/lib MACOSX_DEPLOYMENT_TARGET=13.3 CARGO_BUILD_JOBS=2 GIT_OPTIONAL_LOCKS=0 cargo test -p xtask --bin xtask --offline --locked --profile native-tests tests::repository_policy_executes_actual_purpose_and_tested_source_bodies -- --exact --nocapture",
+      "exit": 0,
+      "duration": 2.776152624981478
+    },
+    {
+      "command": "env LBUG_LIBRARY_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_INCLUDE_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_VERSION=0.19.0 OPENSSL_LIB_DIR=/opt/homebrew/Cellar/openssl@3/3.6.2/lib MACOSX_DEPLOYMENT_TARGET=13.3 CARGO_BUILD_JOBS=2 GIT_OPTIONAL_LOCKS=0 cargo test -p xtask --bin xtask --offline --locked --profile native-tests release::workflow_tests:: -- --nocapture",
+      "exit": 101,
+      "duration": 29.584066708106548
+    }
+  ],
+  "no_retry_source_changes_or_tests_outside_batch": true,
+  "no_outstanding_Bash": true
+}

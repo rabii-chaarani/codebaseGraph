@@ -1,0 +1,7 @@
+[profile.cod110-lint-corrected]
+retries = 0
+test-threads = 1
+[profile.cod110-lint-corrected.junit]
+path = "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-3aa840b3/cod110-integrated-lint-corrected-verification/junit.xml"
+store-success-output = true
+store-failure-output = true

@@ -116,6 +116,7 @@ fn run() -> Result<(), String> {
         Some("release-gate") => release_gate(args.collect()),
         Some("check-workflows") => check_workflows_command(),
         Some("release-metadata") => release::metadata_command(args.collect()),
+        Some("release-package-preflight") => release::package_preflight_command(args.collect()),
         Some("native-test") => native_test(args.collect()),
         Some("native-artifact") => native_artifact(args.collect()),
         Some("validate-native-artifacts") => validate_native_artifacts(args.collect()),
@@ -145,7 +146,7 @@ fn run() -> Result<(), String> {
         }
         Some(command) => Err(format!("unknown xtask command: {command}")),
         None => Err(
-            "usage: cargo run -p xtask -- <ci-mode|release-gate|check-workflows|native-test|native-artifact|validate-native-artifacts|smoke-artifact|smoke-wiki-artifact|verify-release-version|verify-crate-size>"
+            "usage: cargo run -p xtask -- <ci-mode|release-gate|release-metadata|release-package-preflight|check-workflows|native-test|native-artifact|validate-native-artifacts|smoke-artifact|smoke-wiki-artifact|verify-release-version|verify-crate-size>"
                 .to_string(),
         ),
     }
@@ -410,18 +411,7 @@ fn release_version() -> Result<String, String> {
 }
 
 fn release_version_from_tag(tag: &str) -> Result<String, String> {
-    let version = tag
-        .strip_prefix('v')
-        .ok_or_else(|| format!("release tag must match vX.Y.Z, got {tag:?}"))?;
-    let parts: Vec<&str> = version.split('.').collect();
-    if parts.len() != 3
-        || parts
-            .iter()
-            .any(|part| part.is_empty() || !part.bytes().all(|byte| byte.is_ascii_digit()))
-    {
-        return Err(format!("release tag must match vX.Y.Z, got {tag:?}"));
-    }
-    Ok(version.to_string())
+    ci::validate_release_tag(tag)
 }
 
 fn configure_native_build(command: &mut Command, runtime: Option<&Path>) {
@@ -927,12 +917,24 @@ fn run_command(command: &mut Command, description: &str) -> Result<(), String> {
 fn release_gate(args: Vec<String>) -> Result<(), String> {
     let mut production = false;
     let mut require_conda = false;
+    let mut source_sha = None;
+    let mut release_candidate = false;
     let mut confirmations = BTreeSet::new();
     let mut index = 0;
     while index < args.len() {
         match args[index].as_str() {
             "--production" => production = true,
             "--require-conda" => require_conda = true,
+            "--release-candidate" => release_candidate = true,
+            "--source-sha" => {
+                index += 1;
+                let sha = args
+                    .get(index)
+                    .ok_or_else(|| "--source-sha requires a value".to_string())?;
+                if source_sha.replace(sha.clone()).is_some() {
+                    return Err("--source-sha may only be provided once".to_string());
+                }
+            }
             "--confirm" => {
                 index += 1;
                 let flag = args
@@ -945,7 +947,19 @@ fn release_gate(args: Vec<String>) -> Result<(), String> {
         index += 1;
     }
 
+    if release_candidate && source_sha.is_none() {
+        return Err("--release-candidate requires --source-sha".to_string());
+    }
+    if let Some(source_sha) = source_sha.as_deref() {
+        ci::verify_checkout(Path::new("."), source_sha)?;
+    }
+
     let mut issues = Vec::new();
+    if release_candidate {
+        if let Err(error) = ci::validate_release_candidate(Path::new("."), None) {
+            issues.push(format!("FAIL: release-candidate-invalid: {error}."));
+        }
+    }
     check_security_policy(&mut issues);
     check_rust_only_files(&mut issues);
     check_cargo_metadata(&mut issues);
@@ -1479,6 +1493,268 @@ fn workflow_step_id<'a>(job: &'a YamlValue, id: &str) -> Option<&'a YamlValue> {
     yaml_step_by_id(job, id)
 }
 
+fn ci_repository_policy_valid(ci: &YamlValue) -> bool {
+    let job = yaml_path(ci, &["jobs", "repository-policy"]).unwrap_or(&YamlValue::Null);
+    let steps = yaml_path(job, &["steps"]).and_then(YamlValue::as_sequence);
+    let purpose = yaml_step_by_id(job, "purpose").unwrap_or(&YamlValue::Null);
+    let checkout = yaml_step_by_name(job, "Check out tested source").unwrap_or(&YamlValue::Null);
+    let policy =
+        yaml_step_by_name(job, "Check repository release policy").unwrap_or(&YamlValue::Null);
+    let regression = yaml_step_by_name(job, "Check classifier and workflow regressions")
+        .unwrap_or(&YamlValue::Null);
+    let permissions = BTreeSet::from(["contents".to_string(), "pull-requests".to_string()]);
+    let purpose_run = yaml_path(purpose, &["run"])
+        .and_then(YamlValue::as_str)
+        .unwrap_or_default();
+    let policy_run = yaml_path(policy, &["run"])
+        .and_then(YamlValue::as_str)
+        .unwrap_or_default();
+    let purpose_valid = yaml_path(purpose, &["name"]).and_then(YamlValue::as_str)
+        == Some("Read current policy purpose")
+        && yaml_path(purpose, &["shell"]).and_then(YamlValue::as_str) == Some("bash")
+        && yaml_path(purpose, &["env", "GH_TOKEN"]).and_then(YamlValue::as_str)
+            == Some("${{ github.token }}")
+        && yaml_path(purpose, &["env", "REPOSITORY_ID"]).and_then(YamlValue::as_str)
+            == Some("${{ github.repository_id }}")
+        && purpose.get("if").is_none()
+        && purpose.get("continue-on-error").is_none()
+        && purpose_run.contains("set -euo pipefail")
+        && purpose_run.contains("GITHUB_EVENT_NAME")
+        && purpose_run.contains("GITHUB_REPOSITORY")
+        && purpose_run.contains("GITHUB_SHA")
+        && purpose_run.contains("GITHUB_REF")
+        && purpose_run.contains("REPOSITORY_ID")
+        && purpose_run.contains("gh api \"repos/$GITHUB_REPOSITORY/pulls/$number\"")
+        && purpose_run.contains("($event[0].pull_request | identity)")
+        && purpose_run.contains(".state == \"open\"")
+        && purpose_run.contains(
+            ".head.ref == \"release-please--branches--main--components--codebase-graph\"",
+        )
+        && purpose_run.contains(".head.repo.full_name == $repository")
+        && purpose_run.contains(".head.repo.id == $event[0].pull_request.head.repo.id")
+        && purpose_run.contains(".base.sha == $event[0].pull_request.base.sha")
+        && purpose_run.contains(".head.sha == $event[0].pull_request.head.sha")
+        && purpose_run.contains("Unsupported repository-policy event")
+        && purpose_run.contains("release-candidate=%s")
+        && !purpose_run.contains("|| candidate=false")
+        && !purpose_run.contains("cargo run");
+    let checkout_valid = yaml_path(checkout, &["uses"]).and_then(YamlValue::as_str)
+        == Some("actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10")
+        && yaml_path(checkout, &["with", "ref"]).and_then(YamlValue::as_str)
+            == Some("${{ github.sha }}")
+        && yaml_path(checkout, &["with", "persist-credentials"]).and_then(YamlValue::as_bool)
+            == Some(false)
+        && checkout.get("if").is_none();
+    let candidate_append = "true) args+=(--release-candidate) ;;";
+    let ordinary_branch = "false) ;;";
+    let policy_valid = yaml_path(policy, &["name"]).and_then(YamlValue::as_str)
+        == Some("Check repository release policy")
+        && yaml_path(policy, &["shell"]).and_then(YamlValue::as_str) == Some("bash")
+        && yaml_path(policy, &["env", "TESTED_SHA"]).and_then(YamlValue::as_str)
+            == Some("${{ github.sha }}")
+        && yaml_path(policy, &["env", "RELEASE_CANDIDATE"]).and_then(YamlValue::as_str)
+            == Some("${{ steps.purpose.outputs.release-candidate }}")
+        && policy.get("if").is_none()
+        && policy.get("continue-on-error").is_none()
+        && policy_run.contains("args=(release-gate --source-sha \"$TESTED_SHA\")")
+        && policy_run.contains(candidate_append)
+        && policy_run.contains(ordinary_branch)
+        && policy_run.contains("Invalid repository-policy purpose")
+        && policy_run.contains("cargo run -p xtask --locked -- \"${args[@]}\"")
+        && !policy_run.contains("--allow-dirty");
+    let regression_valid = yaml_path(regression, &["run"]).and_then(YamlValue::as_str)
+        == Some("cargo test -p xtask --locked")
+        && regression.get("if").is_none();
+    yaml_path(job, &["name"]).and_then(YamlValue::as_str) == Some("repository policy")
+        && yaml_path(job, &["runs-on"]).and_then(YamlValue::as_str) == Some("ubuntu-latest")
+        && yaml_mapping_key_set(yaml_path(job, &["permissions"])) == Some(permissions)
+        && yaml_path(job, &["permissions", "contents"]).and_then(YamlValue::as_str) == Some("read")
+        && yaml_path(job, &["permissions", "pull-requests"]).and_then(YamlValue::as_str)
+            == Some("read")
+        && job.get("if").is_none()
+        && job.get("continue-on-error").is_none()
+        && job.get("environment").is_none()
+        && job.get("env").is_none()
+        && steps.is_some_and(|steps| steps.len() == 4)
+        && purpose_valid
+        && checkout_valid
+        && policy_valid
+        && regression_valid
+}
+
+fn crate_preflight_policy_valid(release: &YamlValue) -> bool {
+    let job = yaml_path(release, &["jobs", "crate-preflight"]).unwrap_or(&YamlValue::Null);
+    let expected_needs = BTreeSet::from(["release-target".to_string(), "ci-gate".to_string()]);
+    let expected_outputs = BTreeSet::from([
+        "artifact-name".to_string(),
+        "run-id".to_string(),
+        "run-attempt".to_string(),
+    ]);
+    let helper_checkout =
+        yaml_step_by_name(job, "Check out immutable workflow helper").unwrap_or(&YamlValue::Null);
+    let source_checkout =
+        yaml_step_by_name(job, "Check out selected package source").unwrap_or(&YamlValue::Null);
+    let preflight = yaml_step_by_id(job, "preflight").unwrap_or(&YamlValue::Null);
+    let retention = yaml_step_by_name(job, "Retain successful crate preflight report")
+        .unwrap_or(&YamlValue::Null);
+    let preflight_steps = yaml_path(job, &["steps"]).and_then(YamlValue::as_sequence);
+    let run = yaml_path(preflight, &["run"])
+        .and_then(YamlValue::as_str)
+        .unwrap_or_default();
+    let report_artifact = yaml_path(retention, &["with", "name"]).and_then(YamlValue::as_str);
+    let artifact_path = yaml_path(retention, &["with", "path"]).and_then(YamlValue::as_str);
+    let preflight_outputs = yaml_path(job, &["outputs"]).unwrap_or(&YamlValue::Null);
+    let publish_assets =
+        yaml_path(release, &["jobs", "publish-release-assets"]).unwrap_or(&YamlValue::Null);
+    let publish_assets_run = yaml_step_by_name(publish_assets, "Create only the verified release")
+        .and_then(|step| yaml_path(step, &["run"]))
+        .and_then(YamlValue::as_str)
+        .unwrap_or_default();
+    let publish_crate = yaml_path(release, &["jobs", "publish-crate"]).unwrap_or(&YamlValue::Null);
+    let publish_crate_step =
+        yaml_step_by_name(publish_crate, "Publish crates.io package").unwrap_or(&YamlValue::Null);
+    let publish_crate_run = yaml_path(publish_crate_step, &["run"])
+        .and_then(YamlValue::as_str)
+        .unwrap_or_default();
+    let finalize = yaml_path(release, &["jobs", "finalize-release"]).unwrap_or(&YamlValue::Null);
+    let job_condition = yaml_path(job, &["if"]).and_then(YamlValue::as_str);
+    let publisher_condition = yaml_path(publish_assets, &["if"])
+        .and_then(YamlValue::as_str)
+        .unwrap_or_default();
+    let crate_condition = yaml_path(publish_crate, &["if"])
+        .and_then(YamlValue::as_str)
+        .unwrap_or_default();
+    let job_bound = job_condition
+        == Some("needs.release-target.outputs.should-publish == 'true' && needs.release-target.outputs.automatic == 'true'")
+        && yaml_path(job, &["needs"]).and_then(yaml_string_set) == Some(expected_needs)
+        && yaml_path(job, &["runs-on"]).and_then(YamlValue::as_str) == Some("ubuntu-latest")
+        && preflight_steps.is_some_and(|steps| steps.len() == 4)
+        && yaml_mapping_key_set(yaml_path(job, &["permissions"]))
+            == Some(BTreeSet::from(["contents".to_string()]))
+        && yaml_path(job, &["permissions", "contents"]).and_then(YamlValue::as_str) == Some("read")
+        && job.get("environment").is_none()
+        && job.get("env").is_none()
+        && job.get("continue-on-error").is_none()
+        && yaml_mapping_key_set(Some(preflight_outputs)) == Some(expected_outputs)
+        && yaml_path(preflight_outputs, &["artifact-name"]).and_then(YamlValue::as_str)
+            == Some("${{ steps.preflight.outputs.artifact-name }}")
+        && yaml_path(preflight_outputs, &["run-id"]).and_then(YamlValue::as_str)
+            == Some("${{ steps.preflight.outputs.run-id }}")
+        && yaml_path(preflight_outputs, &["run-attempt"]).and_then(YamlValue::as_str)
+            == Some("${{ steps.preflight.outputs.run-attempt }}");
+    let checkouts_valid = yaml_path(helper_checkout, &["uses"]).and_then(YamlValue::as_str)
+        == Some("actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10")
+        && yaml_path(helper_checkout, &["with", "ref"]).and_then(YamlValue::as_str)
+            == Some("${{ github.workflow_sha }}")
+        && yaml_path(helper_checkout, &["with", "path"]).and_then(YamlValue::as_str)
+            == Some("workflow-helper")
+        && yaml_path(helper_checkout, &["with", "persist-credentials"])
+            .and_then(YamlValue::as_bool)
+            == Some(false)
+        && yaml_path(source_checkout, &["uses"]).and_then(YamlValue::as_str)
+            == Some("actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10")
+        && yaml_path(source_checkout, &["with", "ref"]).and_then(YamlValue::as_str)
+            == Some("${{ needs.release-target.outputs.source-sha }}")
+        && yaml_path(source_checkout, &["with", "path"]).and_then(YamlValue::as_str)
+            == Some("selected-source")
+        && yaml_path(source_checkout, &["with", "persist-credentials"])
+            .and_then(YamlValue::as_bool)
+            == Some(false);
+    let preflight_valid = yaml_path(preflight, &["name"]).and_then(YamlValue::as_str)
+        == Some("Verify exact-source package and size")
+        && yaml_path(preflight, &["shell"]).and_then(YamlValue::as_str) == Some("bash")
+        && yaml_path(preflight, &["env", "SOURCE_SHA"]).and_then(YamlValue::as_str)
+            == Some("${{ needs.release-target.outputs.source-sha }}")
+        && yaml_path(preflight, &["env", "RELEASE_TAG"]).and_then(YamlValue::as_str)
+            == Some("${{ needs.release-target.outputs.tag-name }}")
+        && run.contains("cargo run --manifest-path \"$GITHUB_WORKSPACE/workflow-helper/crates/xtask/Cargo.toml\"")
+        && run.contains("release-package-preflight --source-dir \"$GITHUB_WORKSPACE/selected-source\"")
+        && run.contains("--source-sha \"$SOURCE_SHA\" --tag \"$RELEASE_TAG\"")
+        && run.contains("--output \"$report_dir/crate-preflight.json\"")
+        && run.contains("report_dir=\"$RUNNER_TEMP/crate-preflight-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT\"")
+        && run.contains("artifact-name=crate-preflight-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT")
+        && run.contains("run-id=$GITHUB_RUN_ID")
+        && run.contains("run-attempt=$GITHUB_RUN_ATTEMPT")
+        && preflight.get("continue-on-error").is_none()
+        && preflight.get("if").is_none();
+    let report_retained = yaml_path(retention, &["uses"]).and_then(YamlValue::as_str)
+        == Some("actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a")
+        && report_artifact == Some("${{ steps.preflight.outputs.artifact-name }}")
+        && artifact_path == Some("${{ runner.temp }}/${{ steps.preflight.outputs.artifact-name }}/crate-preflight.json")
+        && yaml_path(retention, &["with", "if-no-files-found"]).and_then(YamlValue::as_str)
+            == Some("error")
+        && yaml_path(retention, &["with", "retention-days"]).and_then(YamlValue::as_i64) == Some(7)
+        && retention.get("if").is_none();
+    let publisher_consumer = yaml_path(publish_assets, &["needs"])
+        .and_then(yaml_string_set)
+        .is_some_and(|needs| needs.contains("crate-preflight"))
+        && publisher_condition.contains("needs.crate-preflight.result == 'success'")
+        && publisher_condition.contains("needs.release-target.outputs.automatic == 'true'")
+        && publisher_condition.contains("needs.crate-preflight.result == 'skipped'")
+        && publisher_condition.contains("needs.release-target.outputs.automatic == 'false'")
+        && yaml_path(publish_assets, &["steps"])
+            .and_then(YamlValue::as_sequence)
+            .is_some_and(|steps| {
+                steps.iter().any(|step| {
+                    yaml_path(step, &["name"]).and_then(YamlValue::as_str)
+                        == Some("Download exact crate preflight report")
+                        && yaml_path(step, &["with", "name"]).and_then(YamlValue::as_str)
+                            == Some("${{ needs.crate-preflight.outputs.artifact-name }}")
+                        && yaml_path(step, &["if"]).and_then(YamlValue::as_str)
+                            == Some("needs.release-target.outputs.automatic == 'true'")
+                })
+            })
+        && yaml_path(
+            yaml_step_by_name(publish_assets, "Create only the verified release")
+                .unwrap_or(&YamlValue::Null),
+            &["env", "PREFLIGHT_RESULT"],
+        )
+        .and_then(YamlValue::as_str)
+            == Some("${{ needs.crate-preflight.result }}")
+        && publish_assets_run.contains("\"$PREFLIGHT_RUN_ID\" == \"$GITHUB_RUN_ID\"")
+        && publish_assets_run.contains("crate-preflight-$GITHUB_RUN_ID-$PREFLIGHT_ATTEMPT")
+        && publish_assets_run
+            .contains(".source_sha == $sha and .version == $version and .tag_name == $tag");
+    let crate_consumer = yaml_path(publish_crate, &["needs"])
+        .and_then(yaml_string_set)
+        .is_some_and(|needs| {
+            needs.contains("crate-preflight") && needs.contains("publish-release-assets")
+        })
+        && crate_condition.contains("needs.crate-preflight.result == 'success'")
+        && crate_condition.contains("needs.publish-release-assets.result == 'success'")
+        && crate_condition.contains("needs.release-target.outputs.automatic == 'true'")
+        && yaml_path(
+            yaml_step_by_name(publish_crate, "Download exact crate preflight report")
+                .unwrap_or(&YamlValue::Null),
+            &["with", "name"],
+        )
+        .and_then(YamlValue::as_str)
+            == Some("${{ needs.crate-preflight.outputs.artifact-name }}")
+        && yaml_path(publish_crate_step, &["env", "PREFLIGHT_RESULT"]).and_then(YamlValue::as_str)
+            == Some("${{ needs.crate-preflight.result }}")
+        && publish_crate_run.contains("\"$PREFLIGHT_RUN_ID\" == \"$GITHUB_RUN_ID\"")
+        && publish_crate_run.contains("git rev-parse HEAD")
+        && publish_crate_run.contains("cargo publish --locked");
+    let finalization_ordered = yaml_path(finalize, &["needs"])
+        .and_then(yaml_string_set)
+        .is_some_and(|needs| {
+            needs.contains("publish-crate") && needs.contains("publish-release-assets")
+        })
+        && yaml_path(finalize, &["if"])
+            .and_then(YamlValue::as_str)
+            .is_some_and(|condition| {
+                condition.contains("needs.publish-crate.result == 'success'")
+                    && condition.contains("needs.publish-release-assets.result == 'success'")
+            });
+    job_bound
+        && checkouts_valid
+        && preflight_valid
+        && report_retained
+        && publisher_consumer
+        && crate_consumer
+        && finalization_ordered
+}
+
 fn ci_mode_policy_valid(ci: &YamlValue, issues: &mut Vec<String>) {
     let expected_bases = BTreeSet::from([
         "main",
@@ -1596,13 +1872,30 @@ fn ci_mode_policy_valid(ci: &YamlValue, issues: &mut Vec<String>) {
         .filter_map(|step| yaml_path(step, &["run"]).and_then(YamlValue::as_str))
         .collect();
     let publication_job = yaml_path(jobs, &["publish-dry-run"]).unwrap_or(&YamlValue::Null);
-    let repository_policy_valid = policy_runs
-        .iter()
-        .filter(|run| **run == "cargo run -p xtask --locked -- release-gate")
-        .count()
-        == 1
-        && policy_runs.contains(&"cargo test -p xtask --locked")
-        && policy_runs.len() == 2
+    let policy_gate = yaml_step_by_name(policy, "Check repository release policy")
+        .and_then(|step| yaml_path(step, &["run"]))
+        .and_then(YamlValue::as_str)
+        .unwrap_or_default();
+    let release_gate_steps = policy_steps
+        .into_iter()
+        .flatten()
+        .filter(|step| {
+            yaml_path(step, &["name"]).and_then(YamlValue::as_str)
+                == Some("Check repository release policy")
+                && yaml_path(step, &["run"])
+                    .and_then(YamlValue::as_str)
+                    .is_some_and(|run| run.contains("args=(release-gate --source-sha"))
+        })
+        .count();
+    let repository_policy_valid = ci_repository_policy_valid(ci)
+        && release_gate_steps == 1
+        && policy_runs.len() == 3
+        && policy_runs
+            .iter()
+            .filter(|run| **run == "cargo test -p xtask --locked")
+            .count()
+            == 1
+        && policy_gate.contains("args=(release-gate --source-sha")
         && !yaml_contains_string(
             publication_job,
             "cargo run -p xtask --locked -- release-gate",
@@ -1668,6 +1961,12 @@ fn check_workflow_policy(
     issues: &mut Vec<String>,
 ) {
     ci_mode_policy_valid(ci, issues);
+    if !ci_repository_policy_valid(ci) {
+        issues.push("FAIL: repository-policy-job-invalid: the always-mandatory policy job must validate purpose, check out tested source, and run release-gate with its source identity.".into());
+    }
+    if !crate_preflight_policy_valid(release) {
+        issues.push("FAIL: release-crate-preflight-invalid: automatic crate publication must consume only a same-run exact-source preflight report; legacy assets-only mode may skip it.".into());
+    }
     let pull_request_bases = BTreeSet::from([
         "main",
         "cod103-stack/cod-105",
@@ -1791,17 +2090,6 @@ fn check_workflow_policy(
         );
     }
     let ci_publish = yaml_path(ci, &["jobs", "publish-dry-run"]).unwrap_or(&YamlValue::Null);
-    let repository_policy =
-        yaml_path(ci, &["jobs", "repository-policy"]).unwrap_or(&YamlValue::Null);
-    if !yaml_contains_string(
-        repository_policy,
-        "cargo run -p xtask --locked -- release-gate",
-    ) {
-        issues.push(
-            "FAIL: repository-release-gate-missing: CI must check repository release policy."
-                .to_string(),
-        );
-    }
     if !yaml_contains_string(ci_publish, "cargo package --locked --no-verify")
         || !yaml_contains_string(ci_publish, "verify-crate-size")
     {
@@ -2127,19 +2415,11 @@ fn check_workflow_policy(
         );
     }
     let publish_crate = yaml_path(release, &["jobs", "publish-crate"]).unwrap_or(&YamlValue::Null);
-    if !yaml_contains_string(publish_crate, "cargo publish --dry-run --locked")
+    if !crate_preflight_policy_valid(release)
         || !yaml_contains_string(publish_crate, "cargo publish --locked")
     {
         issues.push(
-            "FAIL: release-publish-gate-missing: crate publication must retain dry-run and publish steps."
-                .to_string(),
-        );
-    }
-    if !yaml_contains_string(publish_crate, "cargo package --locked --no-verify")
-        || !yaml_contains_string(publish_crate, "verify-crate-size")
-    {
-        issues.push(
-            "FAIL: crates-io-package-size-gate-missing: Release must recheck the .crate file before upload."
+            "FAIL: release-publish-gate-missing: selected source must pass crate preflight before the ordinary locked crate upload."
                 .to_string(),
         );
     }
@@ -3033,35 +3313,9 @@ fn validate_mcp_smoke_output(output: &std::process::Output) -> Result<(), String
 }
 
 fn verify_release_version(tag: &str) -> Result<(), String> {
-    let expected = tag
-        .strip_prefix('v')
-        .ok_or_else(|| format!("release tag must match vX.Y.Z, got {tag:?}"))?;
-    if expected.split('.').count() != 3
-        || !expected
-            .chars()
-            .all(|item| item.is_ascii_digit() || item == '.')
-    {
-        return Err(format!("release tag must match vX.Y.Z, got {tag:?}"));
-    }
-    let actual = cargo_version(Path::new("Cargo.toml"))?;
-    if actual != expected {
-        return Err(format!(
-            "Cargo package version {actual} does not match release tag {tag}"
-        ));
-    }
-    let wiki = cargo_version(Path::new("crates/k-wiki/Cargo.toml"))?;
-    if wiki != expected {
-        return Err(format!(
-            "Knowledge Wiki package version {wiki} does not match release tag {tag}"
-        ));
-    }
-    let dependency = dependency_version(Path::new("crates/k-wiki/Cargo.toml"), "codebase-graph")?;
-    if dependency != expected {
-        return Err(format!(
-            "Knowledge Wiki depends on codebase-graph {dependency} but release tag is {tag}"
-        ));
-    }
-    println!("{actual}");
+    let expected = ci::validate_release_tag(tag)?;
+    let candidate = ci::validate_release_candidate(Path::new("."), Some(&expected))?;
+    println!("{}", candidate.version);
     Ok(())
 }
 
@@ -3238,8 +3492,9 @@ fn files_under(root: &Path) -> Vec<PathBuf> {
 #[cfg(test)]
 mod tests {
     use super::{
-        check_workflow_policy, create_native_archive, extract_and_validate_native_archive,
-        native_retention_policy_valid, native_test_command, release_version_from_tag, sha256_file,
+        cargo_version, check_workflow_policy, crate_preflight_policy_valid, create_native_archive,
+        dependency_version, extract_and_validate_native_archive, native_retention_policy_valid,
+        native_test_command, release_version_from_tag, sha256_file, unique_temp_dir,
         validate_commit_sha, validate_crate_size, validate_native_artifact_set,
         workflow_yaml_error, NativeProvenance, NativeTarget, YamlValue,
         CRATES_IO_PACKAGE_LIMIT_BYTES, NATIVE_TARGETS,
@@ -3605,11 +3860,151 @@ mod tests {
         fs::remove_dir_all(root).unwrap();
     }
 
+    fn release_gate_source_sha_fixture() -> (PathBuf, String) {
+        let root = release_gate_fixture();
+        let project = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        for relative in [
+            ".release-please-manifest.json",
+            "Cargo.lock",
+            "CHANGELOG.md",
+            "crates/xtask/Cargo.toml",
+        ] {
+            let source = project.join(relative);
+            let destination = root.join(relative);
+            fs::create_dir_all(destination.parent().unwrap()).unwrap();
+            fs::copy(source, destination).unwrap();
+        }
+        for args in [
+            vec!["init", "--quiet", "-b", "main"],
+            vec!["add", "--all"],
+            vec![
+                "-c",
+                "user.name=COD-110 tests",
+                "-c",
+                "user.email=cod110@example.invalid",
+                "commit",
+                "--quiet",
+                "-m",
+                "release gate source fixture",
+            ],
+        ] {
+            let output = Command::new("git")
+                .arg("-C")
+                .arg(&root)
+                .args(args)
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "git command failed: {}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+        let head = Command::new("git")
+            .args(["-C", root.to_str().unwrap(), "rev-parse", "HEAD"])
+            .output()
+            .unwrap();
+        assert!(head.status.success());
+        let sha = String::from_utf8(head.stdout).unwrap().trim().to_string();
+        (root, sha)
+    }
+
+    #[test]
+    fn release_gate_source_sha_binding_uses_current_process_checkout() {
+        if let Ok(source_sha) = std::env::var("COD110_GATE_CHILD_SHA") {
+            let argument = if source_sha == "mismatch" {
+                "0".repeat(40)
+            } else {
+                source_sha.clone()
+            };
+            let result = super::release_gate(vec!["--source-sha".to_string(), argument]);
+            if source_sha == "invalid" {
+                assert!(result
+                    .unwrap_err()
+                    .contains("full 40-character hexadecimal commit"));
+            } else if source_sha == "mismatch" {
+                assert!(result
+                    .unwrap_err()
+                    .contains("HEAD does not match --source-sha"));
+            } else {
+                assert!(
+                    result.is_ok() || result.as_ref().unwrap_err() == "release gate failed",
+                    "release-gate source binding failed: {result:?}"
+                );
+            }
+            return;
+        }
+
+        let (root, sha) = release_gate_source_sha_fixture();
+        for case in [&sha, "mismatch", "invalid"] {
+            let output = Command::new(std::env::current_exe().unwrap())
+                .args([
+                    "--exact",
+                    "tests::release_gate_source_sha_binding_uses_current_process_checkout",
+                    "--nocapture",
+                ])
+                .current_dir(&root)
+                .env("COD110_GATE_CHILD_SHA", case)
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "source SHA child failed for {case}:\n{}\n{}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn release_gate_candidate_requires_source_sha() {
+        assert!(super::release_gate(vec!["--release-candidate".to_string()])
+            .unwrap_err()
+            .contains("--release-candidate requires --source-sha"));
+    }
+
+    #[test]
+    fn release_gate_source_sha_option_rejects_missing_and_duplicate_values() {
+        assert!(super::release_gate(vec!["--source-sha".to_string()])
+            .unwrap_err()
+            .contains("--source-sha requires a value"));
+        let sha = "a".repeat(40);
+        assert!(super::release_gate(vec![
+            "--source-sha".to_string(),
+            sha.clone(),
+            "--source-sha".to_string(),
+            sha,
+        ])
+        .unwrap_err()
+        .contains("may only be provided once"));
+    }
+
+    #[test]
+    fn ordinary_release_version_readers_keep_existing_permissive_manifest_behavior() {
+        let root = unique_temp_dir("cod110_ordinary_version_readers").unwrap();
+        let manifest = root.join("Cargo.toml");
+        fs::write(&manifest, "version = \"01.2.3\"\n").unwrap();
+        assert_eq!(cargo_version(&manifest).unwrap(), "01.2.3");
+        let dependency_manifest = root.join("wiki-Cargo.toml");
+        fs::write(
+            &dependency_manifest,
+            "codebase-graph = { version = \"01.2.3\", path = \"../..\" }\n",
+        )
+        .unwrap();
+        assert_eq!(
+            dependency_version(&dependency_manifest, "codebase-graph").unwrap(),
+            "01.2.3"
+        );
+        fs::remove_dir_all(root).unwrap();
+    }
+
     #[test]
     fn release_identity_validation_is_strict() {
         assert_eq!(release_version_from_tag("v1.2.3").unwrap(), "1.2.3");
         assert!(release_version_from_tag("1.2.3").is_err());
         assert!(release_version_from_tag("v1.2").is_err());
+        assert!(release_version_from_tag("v01.2.3").is_err());
         assert!(validate_commit_sha("0123456789abcdef0123456789abcdef01234567").is_ok());
         assert!(validate_commit_sha("abc").is_err());
     }
@@ -4007,6 +4402,330 @@ mod tests {
             calls,
             stdout_files,
         }
+    }
+
+    #[cfg(unix)]
+    struct RepositoryPolicyRun {
+        purpose: Output,
+        policy: Option<Output>,
+        calls: String,
+        output: String,
+    }
+
+    #[cfg(unix)]
+    struct RepositoryPolicyCase<'a> {
+        event_name: &'a str,
+        github_ref: &'a str,
+        repository: &'a str,
+        repository_id: &'a str,
+        tested_sha: &'a str,
+        event: &'a Value,
+        live_pr: Option<&'a Value>,
+        gh_exit: i32,
+        purpose_override: Option<&'a str>,
+    }
+
+    #[cfg(unix)]
+    fn run_repository_policy_body(
+        ci: &YamlValue,
+        case: RepositoryPolicyCase<'_>,
+    ) -> RepositoryPolicyRun {
+        let RepositoryPolicyCase {
+            event_name,
+            github_ref,
+            repository,
+            repository_id,
+            tested_sha,
+            event,
+            live_pr,
+            gh_exit,
+            purpose_override,
+        } = case;
+        let root = super::unique_temp_dir("repository_policy_body").unwrap();
+        let bin = root.join("bin");
+        fs::create_dir_all(&bin).unwrap();
+        fs::write(root.join("calls"), "").unwrap();
+        fs::write(root.join("output"), "").unwrap();
+        fs::write(root.join("event.json"), serde_json::to_vec(event).unwrap()).unwrap();
+        if let Some(live_pr) = live_pr {
+            fs::write(
+                root.join("live-pr.json"),
+                serde_json::to_vec(live_pr).unwrap(),
+            )
+            .unwrap();
+        }
+        let gh = "#!/bin/bash\nset -euo pipefail\nprintf 'gh %s\\n' \"$*\" >> \"$RUNNER_TEMP/calls\"\ncase \"$*\" in\n  \"api repos/$GITHUB_REPOSITORY/pulls/124\")\n    [[ \"$MOCK_GH_EXIT\" == 0 ]] || { echo 'mock API failure' >&2; exit \"$MOCK_GH_EXIT\"; }\n    cat \"$RUNNER_TEMP/live-pr.json\" ;;\n  *) echo \"Unexpected GitHub request: $*\" >&2; exit 97 ;;\nesac\n";
+        let cargo = "#!/bin/bash\nset -euo pipefail\nprintf 'cargo cwd=%s argv=%s\\n' \"$PWD\" \"$*\" >> \"$RUNNER_TEMP/calls\"\n[[ \"$*\" == \"run -p xtask --locked -- release-gate --source-sha $TESTED_SHA\" || \"$*\" == \"run -p xtask --locked -- release-gate --source-sha $TESTED_SHA --release-candidate\" ]] || { echo \"Unexpected Cargo invocation: $*\" >&2; exit 97; }\nexit \"$MOCK_CARGO_EXIT\"\n";
+        for (name, body) in [("gh", gh), ("cargo", cargo)] {
+            let path = bin.join(name);
+            fs::write(&path, body).unwrap();
+            fs::set_permissions(&path, fs::Permissions::from_mode(0o755)).unwrap();
+        }
+        let purpose = yaml_step_by_id(
+            yaml_path(ci, &["jobs", "repository-policy"]).unwrap(),
+            "purpose",
+        )
+        .and_then(|step| yaml_path(step, &["run"]))
+        .and_then(YamlValue::as_str)
+        .unwrap();
+        let policy_step = yaml_step_by_name(
+            yaml_path(ci, &["jobs", "repository-policy"]).unwrap(),
+            "Check repository release policy",
+        )
+        .unwrap();
+        let policy = yaml_path(policy_step, &["run"])
+            .and_then(YamlValue::as_str)
+            .unwrap();
+        let base_path =
+            std::env::split_paths(&std::env::var_os("PATH").unwrap()).collect::<Vec<_>>();
+        let path = std::env::join_paths(std::iter::once(bin).chain(base_path)).unwrap();
+        let run_step = |script: &str, candidate: &str| {
+            Command::new("bash")
+                .arg("-c")
+                .arg(script)
+                .current_dir(&root)
+                .env_clear()
+                .env("PATH", &path)
+                .env("BASH_ENV", "")
+                .env("RUNNER_TEMP", &root)
+                .env("GITHUB_EVENT_PATH", root.join("event.json"))
+                .env("GITHUB_OUTPUT", root.join("output"))
+                .env("GITHUB_EVENT_NAME", event_name)
+                .env("GITHUB_REPOSITORY", repository)
+                .env("REPOSITORY_ID", repository_id)
+                .env("GITHUB_REPOSITORY_ID", repository_id)
+                .env("GITHUB_SHA", tested_sha)
+                .env("GITHUB_REF", github_ref)
+                .env("GH_TOKEN", "fixture-only")
+                .env("MOCK_GH_EXIT", gh_exit.to_string())
+                .env("MOCK_CARGO_EXIT", "0")
+                .env("TESTED_SHA", tested_sha)
+                .env("RELEASE_CANDIDATE", candidate)
+                .output()
+                .unwrap()
+        };
+        let purpose_output = run_step(purpose, "false");
+        let candidate = purpose_override.map(str::to_string).or_else(|| {
+            fs::read_to_string(root.join("output"))
+                .ok()?
+                .lines()
+                .find_map(|line| line.strip_prefix("release-candidate=").map(str::to_string))
+        });
+        let policy_output = if purpose_output.status.success() {
+            candidate
+                .as_deref()
+                .map(|candidate| run_step(policy, candidate))
+        } else {
+            None
+        };
+        let calls = fs::read_to_string(root.join("calls")).unwrap_or_default();
+        let output = fs::read_to_string(root.join("output")).unwrap_or_default();
+        let result = RepositoryPolicyRun {
+            purpose: purpose_output,
+            policy: policy_output,
+            calls,
+            output,
+        };
+        let _ = fs::remove_dir_all(root);
+        result
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn repository_policy_executes_actual_purpose_and_tested_source_bodies() {
+        let ci = valid_ci_workflow();
+        let mut event = github_pr(124, CI_REQUIRED_BASE, CI_REQUIRED_SHA, "labeled");
+        event["pull_request"]["user"]["id"] = json!(123);
+        event["pull_request"]["user"]["login"] = json!("not-release-bot");
+        event["pull_request"]["labels"] = json!([]);
+        let untrusted_live = event["pull_request"].clone();
+        let mixed = run_repository_policy_body(
+            &ci,
+            RepositoryPolicyCase {
+                event_name: "pull_request",
+                github_ref: "refs/pull/124/merge",
+                repository: "owner/repo",
+                repository_id: "12345",
+                tested_sha: CI_REQUIRED_SHA,
+                event: &event,
+                live_pr: Some(&untrusted_live),
+                gh_exit: 0,
+                purpose_override: None,
+            },
+        );
+        assert!(
+            mixed.purpose.status.success(),
+            "{}",
+            String::from_utf8_lossy(&mixed.purpose.stderr)
+        );
+        assert!(
+            mixed.output.contains("release-candidate=true\n"),
+            "{}",
+            mixed.output
+        );
+        assert!(
+            mixed.policy.as_ref().unwrap().status.success(),
+            "{}",
+            String::from_utf8_lossy(&mixed.policy.as_ref().unwrap().stderr)
+        );
+        assert!(
+            mixed.calls.contains("gh api repos/owner/repo/pulls/124"),
+            "{}",
+            mixed.calls
+        );
+        assert!(
+            mixed.calls.contains("--release-candidate"),
+            "{}",
+            mixed.calls
+        );
+        assert!(mixed.calls.contains(CI_REQUIRED_SHA), "{}", mixed.calls);
+
+        let mut ordinary = event.clone();
+        ordinary["pull_request"]["head"]["ref"] = json!("ordinary-feature");
+        let ordinary_live = ordinary["pull_request"].clone();
+        let result = run_repository_policy_body(
+            &ci,
+            RepositoryPolicyCase {
+                event_name: "pull_request",
+                github_ref: "refs/pull/124/merge",
+                repository: "owner/repo",
+                repository_id: "12345",
+                tested_sha: CI_REQUIRED_SHA,
+                event: &ordinary,
+                live_pr: Some(&ordinary_live),
+                gh_exit: 0,
+                purpose_override: None,
+            },
+        );
+        assert!(
+            result.purpose.status.success(),
+            "{}",
+            String::from_utf8_lossy(&result.purpose.stderr)
+        );
+        assert!(
+            result.output.contains("release-candidate=false\n"),
+            "{}",
+            result.output
+        );
+        assert!(result.policy.as_ref().unwrap().status.success());
+        assert!(
+            !result.calls.contains("--release-candidate"),
+            "{}",
+            result.calls
+        );
+
+        let mut fork = event.clone();
+        fork["pull_request"]["head"]["repo"]["full_name"] = json!("fork/repo");
+        fork["pull_request"]["head"]["repo"]["id"] = json!(67890);
+        let fork_live = fork["pull_request"].clone();
+        let result = run_repository_policy_body(
+            &ci,
+            RepositoryPolicyCase {
+                event_name: "pull_request",
+                github_ref: "refs/pull/124/merge",
+                repository: "owner/repo",
+                repository_id: "12345",
+                tested_sha: CI_REQUIRED_SHA,
+                event: &fork,
+                live_pr: Some(&fork_live),
+                gh_exit: 0,
+                purpose_override: None,
+            },
+        );
+        assert!(
+            result.purpose.status.success(),
+            "{}",
+            String::from_utf8_lossy(&result.purpose.stderr)
+        );
+        assert!(
+            result.output.contains("release-candidate=false\n"),
+            "{}",
+            result.output
+        );
+        assert!(result.policy.as_ref().unwrap().status.success());
+        assert!(
+            !result.calls.contains("--release-candidate"),
+            "{}",
+            result.calls
+        );
+
+        let mut mismatch_live = event["pull_request"].clone();
+        mismatch_live["base"]["sha"] = json!(CI_REQUIRED_SHA);
+        let failed = run_repository_policy_body(
+            &ci,
+            RepositoryPolicyCase {
+                event_name: "pull_request",
+                github_ref: "refs/pull/124/merge",
+                repository: "owner/repo",
+                repository_id: "12345",
+                tested_sha: CI_REQUIRED_SHA,
+                event: &event,
+                live_pr: Some(&mismatch_live),
+                gh_exit: 0,
+                purpose_override: None,
+            },
+        );
+        assert!(
+            !failed.purpose.status.success(),
+            "stale API base was accepted"
+        );
+        assert!(
+            failed.policy.is_none(),
+            "Cargo ran after stale purpose failure: {}",
+            failed.calls
+        );
+        assert!(!failed.calls.contains("cargo "), "{}", failed.calls);
+
+        let unavailable = run_repository_policy_body(
+            &ci,
+            RepositoryPolicyCase {
+                event_name: "pull_request",
+                github_ref: "refs/pull/124/merge",
+                repository: "owner/repo",
+                repository_id: "12345",
+                tested_sha: CI_REQUIRED_SHA,
+                event: &event,
+                live_pr: Some(&event["pull_request"]),
+                gh_exit: 23,
+                purpose_override: None,
+            },
+        );
+        assert!(
+            !unavailable.purpose.status.success(),
+            "API error was demoted to ordinary"
+        );
+        assert!(unavailable.policy.is_none());
+        assert!(
+            !unavailable.calls.contains("cargo "),
+            "{}",
+            unavailable.calls
+        );
+
+        let push_event = json!({"ref":"refs/heads/main","after":CI_REQUIRED_SHA,"repository":{"full_name":"owner/repo","id":12345}});
+        let invalid_output = run_repository_policy_body(
+            &ci,
+            RepositoryPolicyCase {
+                event_name: "push",
+                github_ref: "refs/heads/main",
+                repository: "owner/repo",
+                repository_id: "12345",
+                tested_sha: CI_REQUIRED_SHA,
+                event: &push_event,
+                live_pr: None,
+                gh_exit: 0,
+                purpose_override: Some("garbage"),
+            },
+        );
+        assert!(invalid_output.purpose.status.success());
+        assert!(invalid_output
+            .policy
+            .as_ref()
+            .is_some_and(|output| !output.status.success()));
+        assert!(
+            !invalid_output.calls.contains("cargo "),
+            "invalid output invoked Cargo: {}",
+            invalid_output.calls
+        );
     }
 
     #[cfg(unix)]
@@ -5826,6 +6545,77 @@ mod tests {
     }
 
     #[test]
+    fn workflow_policy_accepts_actual_repository_purpose_and_preflight_wiring() {
+        let ci = valid_ci_workflow();
+        let issues = workflow_policy_issues_for_ci(&ci);
+        assert!(issues.is_empty(), "actual CI YAML rejected: {issues:?}");
+        let release = yaml_serde::from_str::<YamlValue>(&valid_release_workflow_text()).unwrap();
+        assert!(crate_preflight_policy_valid(&release));
+    }
+
+    #[test]
+    fn workflow_policy_rejects_mutated_purpose_and_preflight_consumers() {
+        type CiMutation = (&'static str, Box<dyn Fn(&mut YamlValue)>);
+        let ci_mutations: Vec<CiMutation> = vec![
+            (
+                "conditional common policy job",
+                Box::new(|ci| {
+                    ci["jobs"]["repository-policy"]["if"] = YamlValue::String("always()".into())
+                }),
+            ),
+            (
+                "purpose output not used",
+                Box::new(|ci| {
+                    ci["jobs"]["repository-policy"]["steps"][2]["env"]["RELEASE_CANDIDATE"] =
+                        YamlValue::String("true".into())
+                }),
+            ),
+            (
+                "tested checkout sha not used",
+                Box::new(|ci| {
+                    ci["jobs"]["repository-policy"]["steps"][1]["with"]["ref"] =
+                        YamlValue::String("${{ steps.purpose.outputs.base_sha }}".into())
+                }),
+            ),
+            (
+                "credentials persist",
+                Box::new(|ci| {
+                    ci["jobs"]["repository-policy"]["steps"][1]["with"]["persist-credentials"] =
+                        YamlValue::Bool(true)
+                }),
+            ),
+            (
+                "candidate purpose invocation missing",
+                Box::new(|ci| {
+                    let run = ci["jobs"]["repository-policy"]["steps"][2]["run"]
+                        .as_str()
+                        .unwrap()
+                        .replace("true) args+=(--release-candidate) ;;", "true) ;; ");
+                    ci["jobs"]["repository-policy"]["steps"][2]["run"] = YamlValue::String(run);
+                }),
+            ),
+            (
+                "untrusted purpose demotes on identity failure",
+                Box::new(|ci| {
+                    let run = ci["jobs"]["repository-policy"]["steps"][0]["run"].as_str().unwrap().replace("gh api \"repos/$GITHUB_REPOSITORY/pulls/$number\" > \"$current\"", "gh api \"repos/$GITHUB_REPOSITORY/pulls/$number\" > \"$current\" || candidate=false");
+                    ci["jobs"]["repository-policy"]["steps"][0]["run"] = YamlValue::String(run);
+                }),
+            ),
+        ];
+        for (label, mutate) in ci_mutations {
+            let mut changed = valid_ci_workflow();
+            mutate(&mut changed);
+            let issues = workflow_policy_issues_for_ci(&changed);
+            assert!(
+                issues
+                    .iter()
+                    .any(|issue| issue.contains("repository-policy-job-invalid")),
+                "accepted {label}: {issues:?}"
+            );
+        }
+    }
+
+    #[test]
     fn workflow_policy_accepts_exact_cod103_stack_bases() {
         assert!(workflow_policy_issues_for_ci(&valid_ci_workflow()).is_empty());
     }
@@ -6051,10 +6841,15 @@ mod tests {
         let steps = ci["jobs"]["repository-policy"]["steps"]
             .as_sequence_mut()
             .unwrap();
+        let original_steps = steps.len();
         steps.retain(|step| {
-            step.get("run").and_then(YamlValue::as_str)
-                != Some("cargo run -p xtask --locked -- release-gate")
+            step.get("name").and_then(YamlValue::as_str) != Some("Check repository release policy")
         });
+        assert_eq!(
+            steps.len() + 1,
+            original_steps,
+            "repository policy gate mutation did not apply"
+        );
         let mut issues = Vec::new();
         check_workflow_policy(
             &ci,
@@ -6063,23 +6858,48 @@ mod tests {
             &mut issues,
         );
         assert!(
-            issues
-                .iter()
-                .any(|issue| issue.contains("repository-release-gate-missing")),
-            "{issues:?}"
+            issues.iter().any(|issue| {
+                issue.contains(
+                    "repository-policy-job-invalid: the always-mandatory policy job must validate purpose, check out tested source, and run release-gate with its source identity.",
+                )
+            }),
+            "missing current repository-policy rejection: {issues:?}"
         );
     }
 
     #[test]
     fn workflow_policy_rejects_missing_crate_size_gates() {
-        let broken_release = valid_release_workflow_text()
-            .replace("cargo package --locked --no-verify", "echo size unchecked");
-        let issues = workflow_policy_issues(&broken_release);
+        let release = yaml_serde::from_str::<YamlValue>(&valid_release_workflow_text()).unwrap();
+        let mut broken_release = release.clone();
+        let preflight_run = broken_release["jobs"]["crate-preflight"]["steps"][2]["run"]
+            .as_str()
+            .unwrap()
+            .replace(
+                "release-package-preflight --source-dir \"$GITHUB_WORKSPACE/selected-source\"",
+                "echo size unchecked",
+            );
+        assert_ne!(
+            preflight_run, "echo size unchecked",
+            "preflight command mutation did not apply"
+        );
+        broken_release["jobs"]["crate-preflight"]["steps"][2]["run"] =
+            YamlValue::String(preflight_run);
+        assert_ne!(
+            broken_release, release,
+            "crate preflight mutation did not apply"
+        );
+        let mut issues = Vec::new();
+        check_workflow_policy(
+            &valid_ci_workflow(),
+            &valid_native_workflow(),
+            &broken_release,
+            &mut issues,
+        );
         assert!(
             issues
                 .iter()
-                .any(|issue| issue.contains("crates-io-package-size-gate-missing")),
-            "{issues:?}"
+                .any(|issue| issue.contains("release-crate-preflight-invalid")),
+            "missing actual release-package-preflight invocation was accepted: {issues:?}"
         );
 
         let broken_ci: YamlValue = yaml_serde::from_str(

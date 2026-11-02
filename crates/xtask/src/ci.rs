@@ -35,6 +35,12 @@ struct CiModeOutput<'a> {
     head_sha: &'a str,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(super) struct ReleaseCandidate {
+    pub(super) version: String,
+    pub(super) notes: String,
+}
+
 #[derive(Debug, Clone, Copy)]
 struct Span {
     start: usize,
@@ -46,6 +52,133 @@ struct LockPackage {
     name: Option<String>,
     version: Option<(String, Span)>,
     source_seen: bool,
+    checksum_seen: bool,
+    duplicate_key: bool,
+    keys_seen: BTreeSet<String>,
+}
+
+fn candidate_version(value: &str) -> Result<(String, (u64, u64, u64)), String> {
+    let parsed = parse_version(value).ok_or_else(|| {
+        format!("release version must be strict X.Y.Z without leading zeroes: {value:?}")
+    })?;
+    Ok((value.to_string(), parsed))
+}
+
+pub(super) fn validate_release_tag(tag: &str) -> Result<String, String> {
+    let version = tag
+        .strip_prefix('v')
+        .ok_or_else(|| format!("release tag must match vX.Y.Z, got {tag:?}"))?;
+    candidate_version(version).map(|(value, _)| value)
+}
+
+pub(super) fn validate_release_candidate(
+    root: &Path,
+    expected_version: Option<&str>,
+) -> Result<ReleaseCandidate, String> {
+    let paths = [
+        ".release-please-manifest.json",
+        "Cargo.toml",
+        "Cargo.lock",
+        "CHANGELOG.md",
+        "crates/k-wiki/Cargo.toml",
+        "crates/xtask/Cargo.toml",
+    ];
+    let mut blobs = BTreeMap::new();
+    for path in paths {
+        let bytes = std::fs::read(root.join(path))
+            .map_err(|error| format!("could not read release metadata {path}: {error}"))?;
+        if bytes.len() as u64 > MAX_BLOB_SIZE {
+            return Err(format!(
+                "release metadata {path} exceeds the supported size"
+            ));
+        }
+        blobs.insert(path, bytes);
+    }
+
+    let root_versions = recognize_toml(&blobs["Cargo.toml"], TomlTarget::Package, "codebase-graph")
+        .map_err(|_| {
+            "root Cargo.toml has unsupported or ambiguous generated metadata".to_string()
+        })?;
+    let wiki_versions = recognize_toml(
+        &blobs["crates/k-wiki/Cargo.toml"],
+        TomlTarget::Wiki,
+        "k-wiki",
+    )
+    .map_err(|_| "k-wiki Cargo.toml has unsupported or ambiguous generated metadata".to_string())?;
+    let xtask_versions = recognize_toml(
+        &blobs["crates/xtask/Cargo.toml"],
+        TomlTarget::Package,
+        "xtask",
+    )
+    .map_err(|_| "xtask Cargo.toml has unsupported or ambiguous generated metadata".to_string())?;
+    let manifest = recognize_manifest(&blobs[".release-please-manifest.json"]).map_err(|_| {
+        "release manifest has unsupported or ambiguous generated metadata".to_string()
+    })?;
+    let lock = recognize_candidate_lock(&blobs["Cargo.lock"])
+        .map_err(|_| "Cargo.lock has unsupported or ambiguous workspace metadata".to_string())?;
+
+    let mut versions = vec![
+        ("root package", root_versions[0].0.as_str()),
+        ("k-wiki package", wiki_versions[0].0.as_str()),
+        (
+            "k-wiki local codebase-graph dependency",
+            wiki_versions[1].0.as_str(),
+        ),
+        ("xtask package", xtask_versions[0].0.as_str()),
+        ("release manifest", manifest.0.as_str()),
+        ("workspace codebase-graph lock identity", lock[0].as_str()),
+        ("workspace k-wiki lock identity", lock[1].as_str()),
+        ("workspace xtask lock identity", lock[2].as_str()),
+    ];
+    let version = versions[0].1.to_string();
+    let (_, version_parts) = candidate_version(&version)?;
+    for (identity, value) in versions.drain(..) {
+        if value != version {
+            return Err(format!(
+                "{identity} version {value:?} does not match {version:?}"
+            ));
+        }
+        candidate_version(value)?;
+    }
+    if let Some(expected) = expected_version {
+        let (_, expected_parts) = candidate_version(expected)?;
+        if expected_parts != version_parts {
+            return Err(format!(
+                "selected release version {expected:?} does not match source {version:?}"
+            ));
+        }
+    }
+
+    let changelog = std::str::from_utf8(&blobs["CHANGELOG.md"])
+        .map_err(|_| "CHANGELOG.md is not valid UTF-8".to_string())?;
+    let notes = release_notes(changelog, &version)?;
+    Ok(ReleaseCandidate { version, notes })
+}
+
+pub(super) fn release_notes(changelog: &str, version: &str) -> Result<String, String> {
+    let linked = format!("## [{version}](");
+    let plain = format!("## {version}");
+    let mut matches = 0;
+    let mut collecting = false;
+    let mut notes = Vec::new();
+    for line in changelog.lines() {
+        if line.starts_with("## ") {
+            let selected = line.starts_with(&linked)
+                || line == plain
+                || line.starts_with(&format!("{plain} "));
+            collecting = selected;
+            matches += usize::from(selected);
+        }
+        if collecting {
+            notes.push(line);
+        }
+    }
+    if matches != 1 || notes.iter().skip(1).all(|line| line.trim().is_empty()) {
+        return Err(format!(
+            "expected one nonempty changelog section for {version}"
+        ));
+    }
+    Ok(notes.join("\n").trim().to_string())
 }
 
 pub(super) fn run_ci_mode(args: Vec<String>) -> Result<(), String> {
@@ -278,6 +411,391 @@ fn verify_commit(repo: &Path, sha: &str) -> Result<(), ()> {
     }
 }
 
+pub(super) fn verify_checkout(root: &Path, expected_sha: &str) -> Result<(), String> {
+    if !is_full_sha(expected_sha) {
+        return Err("source SHA must be a full 40-character hexadecimal commit".to_string());
+    }
+    let root = std::fs::canonicalize(root)
+        .map_err(|_| "could not resolve source checkout root".to_string())?;
+    if !root.is_dir() {
+        return Err("source checkout root is not a directory".to_string());
+    }
+    let head = git(
+        &root,
+        ["rev-parse", "--verify", "--end-of-options", "HEAD^{commit}"],
+        256,
+    )
+    .map_err(|_| "could not read source checkout HEAD".to_string())?;
+    if !head.status.success() {
+        return Err("could not read source checkout HEAD".to_string());
+    }
+    let actual_sha = String::from_utf8(head.stdout)
+        .map_err(|_| "source checkout HEAD is not valid UTF-8".to_string())?;
+    if !actual_sha.trim().eq_ignore_ascii_case(expected_sha) {
+        return Err("source checkout HEAD does not match --source-sha".to_string());
+    }
+
+    let staged = git(
+        &root,
+        ["diff", "--cached", "--quiet", expected_sha, "--"],
+        0,
+    )
+    .map_err(|_| "could not verify source checkout index state".to_string())?;
+    match staged.status.code() {
+        Some(0) => {}
+        Some(1) => {
+            return Err(
+                "source checkout has staged tracked changes relative to --source-sha".to_string(),
+            )
+        }
+        _ => return Err("could not verify source checkout index state".to_string()),
+    }
+
+    let tree = git(
+        &root,
+        ["ls-tree", "-r", "-z", "--full-tree", expected_sha, "--"],
+        MAX_DIFF_OUTPUT,
+    )
+    .map_err(|_| "could not inspect tracked source tree".to_string())?;
+    if !tree.status.success() {
+        return Err("could not inspect tracked source tree".to_string());
+    }
+    let mut tracked = BTreeMap::new();
+    for record in tree
+        .stdout
+        .split(|byte| *byte == 0)
+        .filter(|row| !row.is_empty())
+    {
+        let record = std::str::from_utf8(record)
+            .map_err(|_| "tracked source tree listing is invalid".to_string())?;
+        let (entry, path) = record
+            .split_once('\t')
+            .ok_or_else(|| "tracked source tree listing is invalid".to_string())?;
+        let fields: Vec<&str> = entry.split_ascii_whitespace().collect();
+        if fields.len() != 3
+            || !is_full_sha(fields[2])
+            || !matches!(fields[0], "100644" | "100755" | "120000" | "160000")
+            || tracked
+                .insert(
+                    path.to_string(),
+                    (fields[0].to_string(), fields[2].to_string()),
+                )
+                .is_some()
+        {
+            return Err(format!("tracked source tree entry is malformed: {path}"));
+        }
+    }
+    for relative in METADATA_PATHS {
+        if !tracked.contains_key(relative) {
+            return Err(format!(
+                "required release metadata is not tracked: {relative}"
+            ));
+        }
+    }
+
+    let flagged_paths = git(&root, ["ls-files", "-v", "-z"], MAX_DIFF_OUTPUT)
+        .map_err(|_| "could not inspect source checkout index flags".to_string())?;
+    if !flagged_paths.status.success() {
+        return Err("could not inspect source checkout index flags".to_string());
+    }
+    for entry in flagged_paths
+        .stdout
+        .split(|byte| *byte == 0)
+        .filter(|entry| !entry.is_empty())
+    {
+        let Some((&tag, rest)) = entry.split_first() else {
+            return Err("source checkout index listing is invalid".to_string());
+        };
+        let Some(path_bytes) = rest.strip_prefix(b" ") else {
+            return Err("source checkout index listing is invalid".to_string());
+        };
+        if tag == b'S' || tag.is_ascii_lowercase() {
+            let relative = std::str::from_utf8(path_bytes)
+                .map_err(|_| "flagged tracked path is not valid UTF-8".to_string())?;
+            let Some((mode, blob)) = tracked.get(relative) else {
+                return Err(format!(
+                    "flagged tracked path is absent from expected source tree: {relative}"
+                ));
+            };
+            verify_index_entry(&root, expected_sha, relative, mode, blob)?;
+            verify_flagged_tracked_file(&root, relative, mode, blob)?;
+        }
+    }
+    for relative in METADATA_PATHS {
+        let Some((mode, _blob)) = tracked.get(relative) else {
+            return Err(format!(
+                "required release metadata is not tracked: {relative}"
+            ));
+        };
+        if !matches!(mode.as_str(), "100644" | "100755") {
+            return Err(format!(
+                "required release metadata is not a regular tracked file: {relative}"
+            ));
+        }
+        let blob = &tracked[relative].1;
+        verify_index_entry(&root, expected_sha, relative, mode, blob)?;
+        verify_worktree_blob(&root, relative, mode, blob)?;
+        let mut path = root.clone();
+        let components: Vec<_> = Path::new(relative).components().collect();
+        for (index, component) in components.iter().enumerate() {
+            path.push(component.as_os_str());
+            let metadata = std::fs::symlink_metadata(&path)
+                .map_err(|_| format!("required release metadata is unavailable: {relative}"))?;
+            let leaf = index + 1 == components.len();
+            if metadata.file_type().is_symlink()
+                || if leaf {
+                    !metadata.is_file()
+                } else {
+                    !metadata.is_dir()
+                }
+            {
+                return Err(format!(
+                    "required release metadata is not a regular tracked file: {relative}"
+                ));
+            }
+            let canonical = std::fs::canonicalize(&path)
+                .map_err(|_| format!("required release metadata is unavailable: {relative}"))?;
+            if !canonical.starts_with(&root) {
+                return Err(format!(
+                    "required release metadata escapes the source checkout: {relative}"
+                ));
+            }
+        }
+    }
+
+    let worktree = git(&root, ["diff", "--quiet", expected_sha, "--"], 0)
+        .map_err(|_| "could not verify source checkout tracked state".to_string())?;
+    match worktree.status.code() {
+        Some(0) => {}
+        Some(1) => {
+            return Err("source checkout has tracked changes relative to --source-sha".to_string())
+        }
+        _ => return Err("could not verify source checkout tracked state".to_string()),
+    }
+    Ok(())
+}
+
+fn verify_index_entry(
+    root: &Path,
+    expected_sha: &str,
+    relative: &str,
+    expected_mode: &str,
+    expected_blob: &str,
+) -> Result<(), String> {
+    let index_pathspec = format!(":(literal){relative}");
+    let index = git(
+        root,
+        ["ls-files", "--stage", "-z", "--", &index_pathspec],
+        512,
+    )
+    .map_err(|_| format!("could not inspect required release metadata index: {relative}"))?;
+    if !index.status.success() {
+        return Err(format!(
+            "could not inspect required release metadata index: {relative}"
+        ));
+    }
+    let records: Vec<&[u8]> = index
+        .stdout
+        .split(|byte| *byte == 0)
+        .filter(|entry| !entry.is_empty())
+        .collect();
+    if records.len() != 1 {
+        return Err(format!(
+            "required release metadata index entry is missing or ambiguous: {relative}"
+        ));
+    }
+    let record = std::str::from_utf8(records[0])
+        .map_err(|_| format!("required release metadata index entry is invalid: {relative}"))?;
+    let (metadata, path) = record
+        .split_once('\t')
+        .ok_or_else(|| format!("required release metadata index entry is invalid: {relative}"))?;
+    let fields: Vec<&str> = metadata.split_ascii_whitespace().collect();
+    if path != relative
+        || fields.len() != 3
+        || fields[0] != expected_mode
+        || fields[1] != expected_blob
+        || fields[2] != "0"
+    {
+        return Err(format!(
+            "source checkout index differs from --source-sha: {relative}"
+        ));
+    }
+    let tree_pathspec = format!(":(literal){relative}");
+    let tree = git(
+        root,
+        ["ls-tree", "-z", expected_sha, "--", &tree_pathspec],
+        512,
+    )
+    .map_err(|_| format!("could not verify committed metadata entry: {relative}"))?;
+    if !tree.status.success() {
+        return Err(format!(
+            "could not verify committed metadata entry: {relative}"
+        ));
+    }
+    let entries: Vec<&[u8]> = tree
+        .stdout
+        .split(|byte| *byte == 0)
+        .filter(|entry| !entry.is_empty())
+        .collect();
+    if entries.len() != 1 {
+        return Err(format!(
+            "committed metadata entry is missing or ambiguous: {relative}"
+        ));
+    }
+    let tree = std::str::from_utf8(entries[0])
+        .map_err(|_| format!("committed metadata entry is invalid: {relative}"))?;
+    let (metadata, path) = tree
+        .split_once('\t')
+        .ok_or_else(|| format!("committed metadata entry is invalid: {relative}"))?;
+    let fields: Vec<&str> = metadata.split_ascii_whitespace().collect();
+    if path != relative
+        || fields.len() != 3
+        || fields[0] != expected_mode
+        || fields[1] != "blob"
+        || fields[2] != expected_blob
+    {
+        return Err(format!(
+            "committed metadata entry differs from source identity: {relative}"
+        ));
+    }
+    Ok(())
+}
+
+fn verify_worktree_blob(
+    root: &Path,
+    relative: &str,
+    expected_mode: &str,
+    expected_blob: &str,
+) -> Result<(), String> {
+    let path_option = format!("--path={relative}");
+    let actual = git(root, ["hash-object", &path_option, "--", relative], 256)
+        .map_err(|_| format!("could not hash tracked worktree file: {relative}"))?;
+    if !actual.status.success() || String::from_utf8_lossy(&actual.stdout).trim() != expected_blob {
+        return Err(format!(
+            "source checkout has tracked changes in worktree: {relative}"
+        ));
+    }
+    if let Some(actual_executable) = worktree_executable(root, relative)? {
+        if expected_mode == "100755" && !actual_executable
+            || expected_mode == "100644" && actual_executable
+        {
+            return Err(format!(
+                "source checkout has tracked mode changes in worktree: {relative}"
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn worktree_executable(root: &Path, relative: &str) -> Result<Option<bool>, String> {
+    let configured = git(root, ["config", "--bool", "--get", "core.filemode"], 32)
+        .map_err(|_| format!("could not read Git filemode setting: {relative}"))?;
+    match configured.status.code() {
+        Some(1) => {}
+        Some(0) if String::from_utf8_lossy(&configured.stdout).trim() == "false" => {
+            return Ok(None)
+        }
+        Some(0) if String::from_utf8_lossy(&configured.stdout).trim() == "true" => {}
+        _ => return Err(format!("Git filemode setting is invalid: {relative}")),
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        let metadata = std::fs::symlink_metadata(root.join(relative))
+            .map_err(|_| format!("could not inspect tracked mode: {relative}"))?;
+        Ok(Some(metadata.mode() & 0o111 != 0))
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = (root, relative);
+        Ok(None)
+    }
+}
+
+fn verify_flagged_tracked_file(
+    root: &Path,
+    relative: &str,
+    mode: &str,
+    blob: &str,
+) -> Result<(), String> {
+    let path = Path::new(relative);
+    if path.is_absolute()
+        || path
+            .components()
+            .any(|component| !matches!(component, std::path::Component::Normal(_)))
+    {
+        return Err("flagged tracked path is invalid".to_string());
+    }
+    let mut current = root.to_path_buf();
+    let components: Vec<_> = path.components().collect();
+    for (index, component) in components.iter().enumerate() {
+        current.push(component.as_os_str());
+        let metadata = std::fs::symlink_metadata(&current)
+            .map_err(|_| format!("flagged tracked worktree path is unavailable: {relative}"))?;
+        let leaf = index + 1 == components.len();
+        if metadata.file_type().is_symlink() {
+            if !leaf || mode != "120000" {
+                return Err(format!(
+                    "flagged tracked path type differs from source mode: {relative}"
+                ));
+            }
+            let target = std::fs::read_link(&current)
+                .map_err(|_| format!("could not read flagged symlink target: {relative}"))?;
+            let target_bytes = symlink_target_bytes(&target)
+                .map_err(|_| format!("flagged symlink target is not representable: {relative}"))?;
+            let expected = git(root, ["cat-file", "blob", blob], MAX_BLOB_SIZE as usize)
+                .map_err(|_| format!("could not read expected symlink blob: {relative}"))?;
+            if !expected.status.success() || expected.stdout != target_bytes {
+                return Err(format!(
+                    "source checkout has tracked symlink changes: {relative}"
+                ));
+            }
+            return Ok(());
+        }
+        if if leaf {
+            !metadata.is_file()
+        } else {
+            !metadata.is_dir()
+        } {
+            return Err(format!(
+                "flagged tracked path is not a regular worktree file: {relative}"
+            ));
+        }
+        let canonical = std::fs::canonicalize(&current)
+            .map_err(|_| format!("flagged tracked worktree path is unavailable: {relative}"))?;
+        if !canonical.starts_with(root) {
+            return Err(format!(
+                "flagged tracked path escapes source checkout: {relative}"
+            ));
+        }
+    }
+    if mode == "120000" {
+        return Err(format!(
+            "flagged tracked symlink is not a symlink: {relative}"
+        ));
+    }
+    verify_worktree_blob(root, relative, mode, blob)
+}
+
+fn symlink_target_bytes(path: &Path) -> Result<Vec<u8>, ()> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::ffi::OsStrExt;
+        Ok(path.as_os_str().as_bytes().to_vec())
+    }
+    #[cfg(windows)]
+    {
+        path.to_str()
+            .map(|value| value.as_bytes().to_vec())
+            .ok_or(())
+    }
+    #[cfg(not(any(unix, windows)))]
+    {
+        let _ = path;
+        Err(())
+    }
+}
+
 fn read_blob(repo: &Path, commit: &str, path: &str) -> Result<Vec<u8>, ()> {
     let object = format!("{commit}:{path}");
     let output =
@@ -292,9 +810,8 @@ fn git<const N: usize>(repo: &Path, args: [&str; N], max_stdout: usize) -> Resul
     let mut command = Command::new("git");
     command
         .arg("--no-replace-objects")
-        .arg("-C")
-        .arg(repo)
         .args(args)
+        .current_dir(repo)
         .stdout(Stdio::piped())
         .stderr(Stdio::null())
         .env("GIT_OPTIONAL_LOCKS", "0")
@@ -673,6 +1190,42 @@ fn parse_dependency(value: &str, offset: usize) -> Result<(String, Span), ()> {
 }
 
 fn recognize_lock(bytes: &[u8]) -> Result<Vec<(String, Span)>, ()> {
+    let packages = parse_lock_packages(bytes)?;
+    let mut spans = Vec::new();
+    for name in ["codebase-graph", "k-wiki", "xtask"] {
+        let matched: Vec<&LockPackage> = packages
+            .iter()
+            .filter(|package| package.name.as_deref() == Some(name) && !package.source_seen)
+            .collect();
+        if matched.len() != 1 {
+            return Err(());
+        }
+        spans.push(matched[0].version.clone().ok_or(())?);
+    }
+    Ok(spans)
+}
+
+fn recognize_candidate_lock(bytes: &[u8]) -> Result<Vec<String>, ()> {
+    let packages = parse_lock_packages(bytes)?;
+    let mut versions = Vec::new();
+    for name in ["codebase-graph", "k-wiki", "xtask"] {
+        let matched: Vec<&LockPackage> = packages
+            .iter()
+            .filter(|package| package.name.as_deref() == Some(name))
+            .collect();
+        if matched.len() != 1
+            || matched[0].source_seen
+            || matched[0].checksum_seen
+            || matched[0].duplicate_key
+        {
+            return Err(());
+        }
+        versions.push(matched[0].version.as_ref().ok_or(())?.0.clone());
+    }
+    Ok(versions)
+}
+
+fn parse_lock_packages(bytes: &[u8]) -> Result<Vec<LockPackage>, ()> {
     let text = std::str::from_utf8(bytes).map_err(|_| ())?;
     if text
         .as_bytes()
@@ -713,6 +1266,9 @@ fn recognize_lock(bytes: &[u8]) -> Result<Vec<(String, Span)>, ()> {
         }
         if let Some(package) = current.as_mut() {
             if let Some((key, value, value_offset)) = assignment(line, offset) {
+                if !package.keys_seen.insert(key.to_string()) {
+                    package.duplicate_key = true;
+                }
                 match key {
                     "name" => {
                         if package.name.is_some() {
@@ -732,6 +1288,7 @@ fn recognize_lock(bytes: &[u8]) -> Result<Vec<(String, Span)>, ()> {
                         }
                         package.source_seen = true;
                     }
+                    "checksum" => package.checksum_seen = true,
                     _ => {}
                 }
             }
@@ -741,18 +1298,7 @@ fn recognize_lock(bytes: &[u8]) -> Result<Vec<(String, Span)>, ()> {
     if let Some(package) = current {
         packages.push(package);
     }
-    let mut spans = Vec::new();
-    for name in ["codebase-graph", "k-wiki", "xtask"] {
-        let matched: Vec<&LockPackage> = packages
-            .iter()
-            .filter(|package| package.name.as_deref() == Some(name) && !package.source_seen)
-            .collect();
-        if matched.len() != 1 {
-            return Err(());
-        }
-        spans.push(matched[0].version.clone().ok_or(())?);
-    }
-    Ok(spans)
+    Ok(packages)
 }
 
 fn parse_plain(value: &str) -> Result<String, ()> {
@@ -908,7 +1454,7 @@ fn parse_version(value: &str) -> Option<(u64, u64, u64)> {
 
 #[cfg(test)]
 mod tests {
-    use super::{acquire_and_classify, classify_metadata_diff, MetadataDecision};
+    use super::{acquire_and_classify, classify_metadata_diff, MetadataDecision, METADATA_PATHS};
     use std::collections::BTreeMap;
     use std::fs;
     use std::path::{Path, PathBuf};
@@ -963,15 +1509,600 @@ mod tests {
         }
     }
     fn git<const N: usize>(root: &Path, args: [&str; N]) {
-        assert!(git_output(root, args).status.success());
+        let output = git_output(root, args);
+        assert!(
+            output.status.success(),
+            "git command {:?} failed ({}): stdout={}, stderr={}",
+            args,
+            output.status,
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
     }
     fn git_output<const N: usize>(root: &Path, args: [&str; N]) -> Output {
         Command::new("git")
             .arg("-C")
             .arg(root)
             .args(args)
+            .env("GIT_OPTIONAL_LOCKS", "0")
             .output()
             .unwrap()
+    }
+
+    fn checkout_files() -> BTreeMap<String, Vec<u8>> {
+        METADATA_PATHS
+            .into_iter()
+            .map(|path| (path.to_string(), b"tracked release metadata\n".to_vec()))
+            .collect()
+    }
+
+    fn checkout_fixture() -> (Fixture, String) {
+        let fixture = Fixture::new();
+        let sha = fixture.commit(&checkout_files(), "verified release metadata");
+        (fixture, sha)
+    }
+
+    #[test]
+    fn verify_checkout_accepts_exact_clean_tracked_metadata_and_untracked_build_output() {
+        let (fixture, sha) = checkout_fixture();
+        fs::write(fixture.root.join("build-output.tmp"), "cargo output").unwrap();
+        assert_eq!(super::verify_checkout(&fixture.root, &sha), Ok(()));
+    }
+
+    #[test]
+    fn verify_checkout_rejects_invalid_or_mismatched_sha_and_changed_head() {
+        let (fixture, sha) = checkout_fixture();
+        assert!(super::verify_checkout(&fixture.root, "abc")
+            .unwrap_err()
+            .contains("full 40-character"));
+        assert!(super::verify_checkout(&fixture.root, &"0".repeat(40))
+            .unwrap_err()
+            .contains("HEAD does not match"));
+
+        let new_sha = fixture.commit(
+            &BTreeMap::from([("Cargo.toml".to_string(), b"changed\n".to_vec())]),
+            "changed release metadata",
+        );
+        assert_ne!(sha, new_sha);
+        assert!(super::verify_checkout(&fixture.root, &sha)
+            .unwrap_err()
+            .contains("HEAD does not match"));
+    }
+
+    #[test]
+    fn verify_checkout_rejects_staged_unstaged_and_deleted_tracked_files() {
+        for staged in [false, true] {
+            let (fixture, sha) = checkout_fixture();
+            fs::write(fixture.root.join("Cargo.toml"), "modified\n").unwrap();
+            if staged {
+                git(&fixture.root, ["add", "Cargo.toml"]);
+            }
+            assert!(
+                super::verify_checkout(&fixture.root, &sha)
+                    .unwrap_err()
+                    .contains("tracked changes"),
+                "staged={staged}"
+            );
+        }
+
+        let (fixture, sha) = checkout_fixture();
+        fs::remove_file(fixture.root.join("Cargo.lock")).unwrap();
+        assert!(super::verify_checkout(&fixture.root, &sha).is_err());
+    }
+
+    #[test]
+    fn verify_checkout_rejects_staged_metadata_change_when_worktree_matches_head() {
+        let (fixture, sha) = checkout_fixture();
+        let metadata = fixture.root.join("Cargo.toml");
+        let head_contents = fs::read(&metadata).unwrap();
+        fs::write(&metadata, b"staged Cargo metadata change\n").unwrap();
+        git(&fixture.root, ["add", "Cargo.toml"]);
+        fs::write(&metadata, &head_contents).unwrap();
+
+        let head = git_output(&fixture.root, ["rev-parse", "HEAD"]);
+        assert_eq!(String::from_utf8(head.stdout).unwrap().trim(), sha);
+        assert_eq!(
+            git_output(&fixture.root, ["diff", "--quiet", "--cached", &sha, "--"])
+                .status
+                .code(),
+            Some(1)
+        );
+        let head_blob = git_output(&fixture.root, ["show", &format!("{sha}:Cargo.toml")]);
+        assert!(head_blob.status.success());
+        assert_eq!(fs::read(&metadata).unwrap(), head_blob.stdout);
+        assert!(super::verify_checkout(&fixture.root, &sha)
+            .unwrap_err()
+            .contains("staged tracked changes"));
+    }
+
+    #[test]
+    fn verify_checkout_allows_clean_assume_unchanged_and_skip_worktree_metadata() {
+        for flag in ["--assume-unchanged", "--skip-worktree"] {
+            let (fixture, sha) = checkout_fixture();
+            git(&fixture.root, ["update-index", flag, "Cargo.toml"]);
+            let flags_before = git_output(&fixture.root, ["ls-files", "-v", "-z"]);
+            assert!(flags_before.status.success());
+            let record = flags_before
+                .stdout
+                .split(|byte| *byte == 0)
+                .find(|record| record.ends_with(b" Cargo.toml"))
+                .expect("Cargo.toml is still in the index");
+            if flag == "--assume-unchanged" {
+                assert!(record.starts_with(b"h "), "{record:?}");
+            } else {
+                assert!(record.starts_with(b"S "), "{record:?}");
+            }
+            assert!(
+                super::verify_checkout(&fixture.root, &sha).is_ok(),
+                "flag={flag}"
+            );
+            let flags_after = git_output(&fixture.root, ["ls-files", "-v", "-z"]);
+            assert_eq!(flags_after.stdout, flags_before.stdout, "flag={flag}");
+        }
+    }
+
+    #[test]
+    fn verify_checkout_accepts_clean_flagged_metadata_without_mutating_index() {
+        for flag in ["--assume-unchanged", "--skip-worktree"] {
+            let (fixture, sha) = checkout_fixture();
+            git(&fixture.root, ["update-index", flag, "Cargo.toml"]);
+            let before = git_output(&fixture.root, ["ls-files", "--stage", "-v", "-z"]);
+            assert!(before.status.success());
+            assert!(
+                super::verify_checkout(&fixture.root, &sha).is_ok(),
+                "flag={flag}"
+            );
+            let after = git_output(&fixture.root, ["ls-files", "--stage", "-v", "-z"]);
+            assert_eq!(after.stdout, before.stdout, "flag={flag}");
+        }
+    }
+
+    #[test]
+    fn verify_checkout_rejects_flagged_dirty_metadata_without_mutating_index() {
+        for flag in ["--assume-unchanged", "--skip-worktree"] {
+            let (fixture, sha) = checkout_fixture();
+            git(&fixture.root, ["update-index", flag, "Cargo.toml"]);
+            let before = git_output(&fixture.root, ["ls-files", "--stage", "-v", "-z"]);
+            fs::write(fixture.root.join("Cargo.toml"), b"hidden dirty metadata\n").unwrap();
+            let error = super::verify_checkout(&fixture.root, &sha).unwrap_err();
+            assert!(error.contains("tracked changes"), "flag={flag}: {error}");
+            let after = git_output(&fixture.root, ["ls-files", "--stage", "-v", "-z"]);
+            assert_eq!(after.stdout, before.stdout, "flag={flag}");
+        }
+    }
+
+    #[test]
+    fn verify_checkout_rejects_tracked_changes_hidden_by_assume_unchanged_or_skip_worktree() {
+        for flag in ["--assume-unchanged", "--skip-worktree"] {
+            let fixture = Fixture::new();
+            let mut files = checkout_files();
+            files.insert("src/lib.rs".to_string(), b"tracked source\n".to_vec());
+            let sha = fixture.commit(&files, "flagged product source");
+            git(&fixture.root, ["update-index", flag, "src/lib.rs"]);
+            let before = git_output(&fixture.root, ["ls-files", "--stage", "-v", "-z"]);
+            fs::write(
+                fixture.root.join("src/lib.rs"),
+                b"hidden tracked source change\n",
+            )
+            .unwrap();
+
+            let flags = git_output(&fixture.root, ["ls-files", "-v", "-z"]);
+            assert!(flags.status.success());
+            let record = flags
+                .stdout
+                .split(|byte| *byte == 0)
+                .find(|record| record.ends_with(b" src/lib.rs"))
+                .expect("src/lib.rs is still in the index");
+            assert!(
+                record.starts_with(if flag == "--assume-unchanged" {
+                    b"h "
+                } else {
+                    b"S "
+                }),
+                "{record:?}"
+            );
+            assert!(git_output(&fixture.root, ["diff", "--quiet", "--"])
+                .status
+                .success());
+            let error = super::verify_checkout(&fixture.root, &sha).unwrap_err();
+            assert!(error.contains("tracked changes"), "flag={flag}: {error}");
+            let after = git_output(&fixture.root, ["ls-files", "--stage", "-v", "-z"]);
+            assert_eq!(after.stdout, before.stdout, "flag={flag}");
+        }
+    }
+
+    #[test]
+    fn verify_checkout_uses_git_normalized_bytes_for_tracked_text() {
+        let fixture = Fixture::new();
+        let mut files = checkout_files();
+        files.insert(
+            ".gitattributes".to_string(),
+            b"src/*.txt text eol=crlf\n".to_vec(),
+        );
+        files.insert("src/readme.txt".to_string(), b"normalized line\n".to_vec());
+        let sha = fixture.commit(&files, "checkout with normalized text attributes");
+        fs::write(fixture.root.join("src/readme.txt"), b"normalized line\r\n").unwrap();
+        assert!(git_output(&fixture.root, ["diff", "--quiet", &sha, "--"])
+            .status
+            .success());
+        assert!(super::verify_checkout(&fixture.root, &sha).is_ok());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn verify_checkout_accepts_clean_flagged_executable_and_nonexecutable_modes() {
+        use std::os::unix::fs::PermissionsExt;
+
+        for (committed_mode, executable, flag) in [
+            (0o755, true, "--assume-unchanged"),
+            (0o644, false, "--skip-worktree"),
+        ] {
+            let fixture = Fixture::new();
+            git(&fixture.root, ["config", "core.filemode", "true"]);
+            let mut files = checkout_files();
+            files.insert("src/tool.sh".to_string(), b"#!/bin/sh\nexit 0\n".to_vec());
+            fixture.commit(&files, "clean mode flagged source");
+            let path = fixture.root.join("src/tool.sh");
+            let mut permissions = fs::metadata(&path).unwrap().permissions();
+            permissions.set_mode(committed_mode);
+            fs::set_permissions(&path, permissions).unwrap();
+            let chmod = if executable {
+                "--chmod=+x"
+            } else {
+                "--chmod=-x"
+            };
+            git(&fixture.root, ["update-index", chmod, "src/tool.sh"]);
+            if executable {
+                git(
+                    &fixture.root,
+                    [
+                        "-c",
+                        "user.name=COD-110 tests",
+                        "-c",
+                        "user.email=cod110@example.invalid",
+                        "commit",
+                        "--quiet",
+                        "-m",
+                        "commit file mode",
+                    ],
+                );
+            }
+            let sha = String::from_utf8(git_output(&fixture.root, ["rev-parse", "HEAD"]).stdout)
+                .unwrap()
+                .trim()
+                .to_string();
+            git(&fixture.root, ["update-index", flag, "src/tool.sh"]);
+            let before = git_output(&fixture.root, ["ls-files", "--stage", "-v", "-z"]);
+            assert!(
+                super::verify_checkout(&fixture.root, &sha).is_ok(),
+                "mode={committed_mode:o}"
+            );
+            let after = git_output(&fixture.root, ["ls-files", "--stage", "-v", "-z"]);
+            assert_eq!(after.stdout, before.stdout);
+            assert_eq!(
+                fs::metadata(&path).unwrap().permissions().mode() & 0o111 != 0,
+                executable
+            );
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn verify_checkout_rejects_flagged_mode_only_change_without_mutating_index() {
+        use std::os::unix::fs::PermissionsExt;
+
+        for (flag, committed_mode, changed_mode) in [
+            ("--assume-unchanged", 0o644, 0o755),
+            ("--skip-worktree", 0o755, 0o644),
+        ] {
+            let fixture = Fixture::new();
+            git(&fixture.root, ["config", "core.filemode", "true"]);
+            let mut files = checkout_files();
+            files.insert("src/tool.sh".to_string(), b"#!/bin/sh\nexit 0\n".to_vec());
+            fixture.commit(&files, "mode-only flag fixture");
+            let path = fixture.root.join("src/tool.sh");
+            let mut permissions = fs::metadata(&path).unwrap().permissions();
+            permissions.set_mode(committed_mode);
+            fs::set_permissions(&path, permissions).unwrap();
+            let chmod = if committed_mode == 0o755 {
+                "--chmod=+x"
+            } else {
+                "--chmod=-x"
+            };
+            git(&fixture.root, ["update-index", chmod, "src/tool.sh"]);
+            if committed_mode == 0o755 {
+                git(
+                    &fixture.root,
+                    [
+                        "-c",
+                        "user.name=COD-110 tests",
+                        "-c",
+                        "user.email=cod110@example.invalid",
+                        "commit",
+                        "--quiet",
+                        "-m",
+                        "set source mode",
+                    ],
+                );
+            }
+            let sha = String::from_utf8(git_output(&fixture.root, ["rev-parse", "HEAD"]).stdout)
+                .unwrap()
+                .trim()
+                .to_string();
+            git(&fixture.root, ["update-index", flag, "src/tool.sh"]);
+            let index_before = git_output(&fixture.root, ["ls-files", "--stage", "-v", "-z"]);
+            let mut permissions = fs::metadata(&path).unwrap().permissions();
+            permissions.set_mode(changed_mode);
+            fs::set_permissions(&path, permissions).unwrap();
+            let err = super::verify_checkout(&fixture.root, &sha).unwrap_err();
+            assert!(err.contains("mode changes"), "{flag}: {err}");
+            let index_after = git_output(&fixture.root, ["ls-files", "--stage", "-v", "-z"]);
+            assert_eq!(index_after.stdout, index_before.stdout, "{flag}");
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn verify_checkout_rejects_unflagged_mode_only_change() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let fixture = Fixture::new();
+        git(&fixture.root, ["config", "core.filemode", "true"]);
+        let mut files = checkout_files();
+        files.insert("src/tool.sh".to_string(), b"#!/bin/sh\nexit 0\n".to_vec());
+        fixture.commit(&files, "unflagged mode fixture");
+        let path = fixture.root.join("src/tool.sh");
+        git(&fixture.root, ["update-index", "--chmod=+x", "src/tool.sh"]);
+        git(
+            &fixture.root,
+            [
+                "-c",
+                "user.name=COD-110 tests",
+                "-c",
+                "user.email=cod110@example.invalid",
+                "commit",
+                "--quiet",
+                "-m",
+                "commit executable source",
+            ],
+        );
+        let sha = String::from_utf8(git_output(&fixture.root, ["rev-parse", "HEAD"]).stdout)
+            .unwrap()
+            .trim()
+            .to_string();
+        let mut permissions = fs::metadata(&path).unwrap().permissions();
+        permissions.set_mode(0o755);
+        fs::set_permissions(&path, permissions).unwrap();
+        let index_before = git_output(&fixture.root, ["ls-files", "--stage", "-v", "-z"]);
+        let mut permissions = fs::metadata(&path).unwrap().permissions();
+        permissions.set_mode(0o644);
+        fs::set_permissions(&path, permissions).unwrap();
+
+        assert!(super::verify_checkout(&fixture.root, &sha)
+            .unwrap_err()
+            .contains("tracked changes"));
+        let index_after = git_output(&fixture.root, ["ls-files", "--stage", "-v", "-z"]);
+        assert_eq!(index_after.stdout, index_before.stdout);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn verify_checkout_respects_configured_core_filemode_false_for_flagged_files() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let fixture = Fixture::new();
+        let mut files = checkout_files();
+        files.insert("src/tool.sh".to_string(), b"#!/bin/sh\nexit 0\n".to_vec());
+        fixture.commit(&files, "filemode false fixture");
+        let path = fixture.root.join("src/tool.sh");
+        git(
+            &fixture.root,
+            [
+                "-c",
+                "user.name=COD-110 tests",
+                "-c",
+                "user.email=cod110@example.invalid",
+                "update-index",
+                "--chmod=+x",
+                "src/tool.sh",
+            ],
+        );
+        git(
+            &fixture.root,
+            [
+                "-c",
+                "user.name=COD-110 tests",
+                "-c",
+                "user.email=cod110@example.invalid",
+                "commit",
+                "--quiet",
+                "-m",
+                "tracked executable",
+            ],
+        );
+        let sha = String::from_utf8(git_output(&fixture.root, ["rev-parse", "HEAD"]).stdout)
+            .unwrap()
+            .trim()
+            .to_string();
+        git(&fixture.root, ["config", "core.filemode", "false"]);
+        git(
+            &fixture.root,
+            ["update-index", "--assume-unchanged", "src/tool.sh"],
+        );
+        let mut permissions = fs::metadata(&path).unwrap().permissions();
+        permissions.set_mode(0o644);
+        fs::set_permissions(&path, permissions).unwrap();
+        let result = super::verify_checkout(&fixture.root, &sha);
+        assert!(result.is_ok(), "{result:?}");
+    }
+
+    #[test]
+    fn verify_checkout_rejects_dirty_tracked_source_outside_metadata_set() {
+        let fixture = Fixture::new();
+        let mut files = checkout_files();
+        files.insert("src/lib.rs".to_string(), b"tracked source\n".to_vec());
+        let sha = fixture.commit(&files, "source checkout with product file");
+        fs::write(
+            fixture.root.join("src/lib.rs"),
+            b"modified tracked source\n",
+        )
+        .unwrap();
+        assert!(super::verify_checkout(&fixture.root, &sha)
+            .unwrap_err()
+            .contains("tracked changes"));
+    }
+
+    #[test]
+    fn verify_checkout_accepts_clean_flagged_tracked_source_outside_metadata() {
+        let fixture = Fixture::new();
+        let mut files = checkout_files();
+        files.insert("src/lib.rs".to_string(), b"tracked source\n".to_vec());
+        let sha = fixture.commit(&files, "source checkout with product file");
+        for flag in ["--assume-unchanged", "--skip-worktree"] {
+            git(&fixture.root, ["update-index", flag, "src/lib.rs"]);
+            let before = git_output(&fixture.root, ["ls-files", "--stage", "-v", "-z"]);
+            assert!(before.status.success());
+            let before_bytes = fs::read(fixture.root.join("src/lib.rs")).unwrap();
+            let error = super::verify_checkout(&fixture.root, &sha);
+            assert!(error.is_ok(), "flag={flag}: {error:?}");
+            let after = git_output(&fixture.root, ["ls-files", "--stage", "-v", "-z"]);
+            assert_eq!(after.stdout, before.stdout, "flag={flag}");
+            assert_eq!(
+                fs::read(fixture.root.join("src/lib.rs")).unwrap(),
+                before_bytes
+            );
+            git(
+                &fixture.root,
+                ["update-index", "--no-assume-unchanged", "src/lib.rs"],
+            );
+            git(
+                &fixture.root,
+                ["update-index", "--no-skip-worktree", "src/lib.rs"],
+            );
+        }
+    }
+
+    #[test]
+    fn verify_checkout_rejects_dirty_tracked_source_hidden_by_index_flags_outside_metadata() {
+        for flag in ["--assume-unchanged", "--skip-worktree"] {
+            let fixture = Fixture::new();
+            let mut files = checkout_files();
+            files.insert("src/lib.rs".to_string(), b"tracked source\n".to_vec());
+            let sha = fixture.commit(&files, "source checkout with product file");
+            git(&fixture.root, ["update-index", flag, "src/lib.rs"]);
+            fs::write(fixture.root.join("src/lib.rs"), b"changed tracked source\n").unwrap();
+            assert!(
+                super::verify_checkout(&fixture.root, &sha).is_err(),
+                "flag={flag}"
+            );
+        }
+    }
+
+    #[test]
+    fn verify_checkout_rejects_missing_or_untracked_required_metadata() {
+        let fixture = Fixture::new();
+        let mut files = checkout_files();
+        files.remove("crates/xtask/Cargo.toml");
+        let sha = fixture.commit(&files, "incomplete release metadata");
+        fs::create_dir_all(fixture.root.join("crates/xtask")).unwrap();
+        fs::write(
+            fixture.root.join("crates/xtask/Cargo.toml"),
+            "untracked release metadata\n",
+        )
+        .unwrap();
+        assert!(super::verify_checkout(&fixture.root, &sha)
+            .unwrap_err()
+            .contains("not tracked: crates/xtask/Cargo.toml"));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn verify_checkout_rejects_symlinked_required_metadata() {
+        use std::os::unix::fs::symlink;
+
+        let (fixture, sha) = checkout_fixture();
+        fs::remove_file(fixture.root.join("Cargo.lock")).unwrap();
+        symlink(
+            fixture.root.join("Cargo.toml"),
+            fixture.root.join("Cargo.lock"),
+        )
+        .unwrap();
+        assert!(super::verify_checkout(&fixture.root, &sha)
+            .unwrap_err()
+            .contains("Cargo.lock"));
+    }
+
+    #[test]
+    fn verify_checkout_rejects_submodule_metadata_mode() {
+        let (fixture, _) = checkout_fixture();
+        let child = fixture.root.join("submodule-source");
+        fs::create_dir_all(&child).unwrap();
+        assert!(Command::new("git")
+            .args([
+                "-C",
+                child.to_str().unwrap(),
+                "init",
+                "--quiet",
+                "-b",
+                "main"
+            ])
+            .status()
+            .unwrap()
+            .success());
+        fs::write(child.join("file"), "submodule\n").unwrap();
+        assert!(Command::new("git")
+            .args(["-C", child.to_str().unwrap(), "add", "file"])
+            .status()
+            .unwrap()
+            .success());
+        assert!(Command::new("git")
+            .args([
+                "-C",
+                child.to_str().unwrap(),
+                "-c",
+                "user.name=COD-110 tests",
+                "-c",
+                "user.email=cod110@example.invalid",
+                "commit",
+                "--quiet",
+                "-m",
+                "submodule source",
+            ])
+            .status()
+            .unwrap()
+            .success());
+        let submodule_sha = String::from_utf8(git_output(&child, ["rev-parse", "HEAD"]).stdout)
+            .unwrap()
+            .trim()
+            .to_string();
+        let cacheinfo = format!("160000,{submodule_sha},crates/xtask/Cargo.toml");
+        assert!(Command::new("git")
+            .arg("-C")
+            .arg(&fixture.root)
+            .args(["update-index", "--cacheinfo", cacheinfo.as_str()])
+            .status()
+            .unwrap()
+            .success());
+        git(
+            &fixture.root,
+            [
+                "-c",
+                "user.name=COD-110 tests",
+                "-c",
+                "user.email=cod110@example.invalid",
+                "commit",
+                "--quiet",
+                "-m",
+                "record submodule mode",
+            ],
+        );
+        let sha = String::from_utf8(git_output(&fixture.root, ["rev-parse", "HEAD"]).stdout)
+            .unwrap()
+            .trim()
+            .to_string();
+        assert!(super::verify_checkout(&fixture.root, &sha)
+            .unwrap_err()
+            .contains("not a regular tracked file: crates/xtask/Cargo.toml"));
     }
 
     fn release_log(version: &str, previous: &str, suffix: &str) -> String {

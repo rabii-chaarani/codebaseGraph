@@ -1,0 +1,9 @@
+# COD-110 policy-corrected integrated verification — CLOSED / FAIL
+
+Current main80deb3c5bb288c6be8c65a29413db4bba76e97bbc4c5fea3b6b72c2bf5aeae47/271070B; docsHEAD754c82/treefdf2 unchanged. Required cargo fmt --all --check exit1: main.rs6843/6851 assert_ne formatting. Full raw diff retained. Focused size-policy test executed once afterward in the same tool cell:1PASS0FAIL/exit0. This post-format-failure focused execution is explicitly disclosed, not a waived formatting gate or accepted continuation. No inventory/full nextest/JUnit/workspace Clippy/actual gate command started. No source fix/fmtwrite/retry.
+
+Full2459pre snapshot serialized, post identical hashes/modes;2452baseline7dirty; canonicalmodel19/current captured Git/index/ref/config protection unchanged. Explicit required native019/OpenSSL3.6.2/deployment13.3/jobs2/GIT_OPTIONAL_LOCKS0 per command and child receipt; no target/RUSTFLAGS/install/profile/features changes. All original evidence remains immutable; no model/API/Git/source writes.
+
+Authority reused316be/0e6008/Design9/R07A07R08A08 retained contracts, compatibility49612/754c82/user2917/wzt/ttvrrh. Required integrated gates remain unmet; focused regression is repaired but formatting is not. No new scope/approval/FinalReview/platform/hosted/PR/Done/release claim. Native origin/userwork preservation proof reused, not a fresh archive audit. EvidenceVerifier inherit/inherit, no fallback; actual runtime self-metadata unexposed. Assumptions supplied approved scope and exclusive quiescent lease; product constants changed:none. No reusable memory warranted for this mechanical failure.
+
+STOP all Cargo/read/private writes after manifest receipt; zero outstanding Bash/watch/source lease. Engineer routes exact two assertion formatting to owner then grants new frozen verification. No implementation or delivery authority transferred.
