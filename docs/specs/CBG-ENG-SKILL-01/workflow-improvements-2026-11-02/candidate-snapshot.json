@@ -1,0 +1,104 @@
+{
+  "kind": "candidate-install-path-identity-mapping",
+  "not_an_evidence_manifest": true,
+  "status": "NOT INSTALLED; live ownership pending",
+  "approved_spec": {
+    "path": "docs/specs/CBG-ENG-SKILL-01/workflow-improvements-2026-11-02.md",
+    "type": "commit",
+    "full_sha": "07eb8913ecdb3992615f56adeb565114866dacef",
+    "content_sha256": "8d99221b5bbcaaf574ef2a9870d3fd49140e231d121c9f93dadcb1b940ca2f24"
+  },
+  "repository_identity": {
+    "base": {
+      "type": "commit",
+      "sha": "01792cb097f6ca23f679396871ef273006732120"
+    },
+    "current_head": {
+      "type": "commit",
+      "sha": "e9f55dd1e16f020989feef8bca55b1fd8e568492"
+    },
+    "committed_tree": {
+      "type": "tree",
+      "sha": "3c197864e51b280575497dbef31032f7918aada7",
+      "note": "HEAD tree only; candidate source snapshots below are uncommitted and are not represented by this tree."
+    }
+  },
+  "files": [
+    {
+      "live_install_target": "/Users/rabii/Projects/Repositories/skills/codebasegraph-engineer/SKILL.md",
+      "before": {
+        "type": "file",
+        "path": "docs/specs/CBG-ENG-SKILL-01/workflow-improvements-2026-11-02/sources/before/codebasegraph-engineer/SKILL.md.txt",
+        "byte_size": 14736,
+        "sha256": "23f72f202d00fb74396fc911f5d8bfaf22d0c79cb5585358e485f6cd0af3a3d3"
+      },
+      "after": {
+        "type": "file",
+        "path": "docs/specs/CBG-ENG-SKILL-01/workflow-improvements-2026-11-02/sources/after/codebasegraph-engineer/SKILL.md.txt",
+        "byte_size": 14954,
+        "sha256": "0491089d68a2dd791b2661e66b7250fd9ec045f2dd3bce75f1ccb0ddc912d9b7"
+      }
+    },
+    {
+      "live_install_target": "/Users/rabii/Projects/Repositories/skills/codebasegraph-engineer/references/dispatch-and-recovery.md",
+      "before": {
+        "type": "file",
+        "path": "docs/specs/CBG-ENG-SKILL-01/workflow-improvements-2026-11-02/sources/before/codebasegraph-engineer/references/dispatch-and-recovery.md.txt",
+        "byte_size": 12924,
+        "sha256": "7afc7a52fab0eceedb4bb84a811b67cb602b6187113adba11ddf728e8dbd05b7"
+      },
+      "after": {
+        "type": "file",
+        "path": "docs/specs/CBG-ENG-SKILL-01/workflow-improvements-2026-11-02/sources/after/codebasegraph-engineer/references/dispatch-and-recovery.md.txt",
+        "byte_size": 15843,
+        "sha256": "7d423e284798dfe52f1bb0b947729eafabcf3424f1b725551172f06284085cab"
+      }
+    },
+    {
+      "live_install_target": "/Users/rabii/Projects/Repositories/skills/codebasegraph-engineer/references/handoff-contract.md",
+      "before": {
+        "type": "file",
+        "path": "docs/specs/CBG-ENG-SKILL-01/workflow-improvements-2026-11-02/sources/before/codebasegraph-engineer/references/handoff-contract.md.txt",
+        "byte_size": 5930,
+        "sha256": "b01896bf573ddc2d413b5a883f30f636a9b6ca5ec3eab5c2d5533d5c5a0c7fc0"
+      },
+      "after": {
+        "type": "file",
+        "path": "docs/specs/CBG-ENG-SKILL-01/workflow-improvements-2026-11-02/sources/after/codebasegraph-engineer/references/handoff-contract.md.txt",
+        "byte_size": 7133,
+        "sha256": "0227ef3b27534d282f1e3b72a18aa7c5e2458bf349f528d44e027da751b8ff67"
+      }
+    }
+  ],
+  "author_artifact_identities": [
+    {
+      "type": "file",
+      "path": "docs/specs/CBG-ENG-SKILL-01/workflow-improvements-2026-11-02/evidence/author-initial/attempt-report.md",
+      "byte_size": 6006,
+      "sha256": "7dc4de0a30b7980ff5c425449c2d0afe3aad7d29bb91437c744e2aa66df7c2c6",
+      "original_source": "/tmp/codebasegraph-workflow-implementation-f3002cbf84/attempt-report.md"
+    },
+    {
+      "type": "diff",
+      "path": "docs/specs/CBG-ENG-SKILL-01/workflow-improvements-2026-11-02/evidence/author-initial/candidate.diff",
+      "byte_size": 17470,
+      "sha256": "a1d8ebac602ec56a49f9f7fab4d578df408417849e2e53099b5f2056f9951717",
+      "original_source": "/tmp/codebasegraph-workflow-implementation-f3002cbf84/candidate.diff"
+    },
+    {
+      "type": "file",
+      "path": "docs/specs/CBG-ENG-SKILL-01/workflow-improvements-2026-11-02/evidence/author-correction/correction-report.md",
+      "byte_size": 2563,
+      "sha256": "500b9e34bd4d509b6b241a117ac8648ff26b304c7e8e530c353bd3c9e794991b",
+      "original_source": "/tmp/codebasegraph-workflow-implementation-1e065617da/correction-report.md"
+    },
+    {
+      "type": "diff",
+      "path": "docs/specs/CBG-ENG-SKILL-01/workflow-improvements-2026-11-02/evidence/author-correction/correction.diff",
+      "byte_size": 10995,
+      "sha256": "0bb0b24da218c1d2fb8a3eb13cd652279f3987df5df93452a0075c5246323a2c",
+      "original_source": "/tmp/codebasegraph-workflow-implementation-1e065617da/correction.diff"
+    }
+  ],
+  "diff_scope_note": "candidate.diff preserves original author attempt; correction.diff preserves the focused subsequent correction. Neither is relabeled as a Git commit/tree or assumed to be the final combined diff."
+}

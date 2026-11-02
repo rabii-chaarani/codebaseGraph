@@ -1,0 +1,229 @@
+{
+  "method": "standard-library in-REPL UTF-8/frontmatter/fence/JSON/table/local-link inspection; no renderer or added validator framework",
+  "candidate_files": [
+    {
+      "file": "SKILL.md",
+      "method": "bounded standard-library in-REPL inspection, not official renderer/validator",
+      "utf8": true,
+      "frontmatter_valid": true,
+      "code_fences_balanced": true,
+      "fence_pairs": [],
+      "table_rows": [],
+      "table_structure_valid": true,
+      "ends_with_newline": true
+    },
+    {
+      "file": "references/dispatch-and-recovery.md",
+      "method": "bounded standard-library in-REPL inspection, not official renderer/validator",
+      "utf8": true,
+      "frontmatter_valid": null,
+      "code_fences_balanced": true,
+      "fence_pairs": [
+        {
+          "start_line": 13,
+          "end_line": 22,
+          "language": "json",
+          "json_valid": true
+        }
+      ],
+      "table_rows": [],
+      "table_structure_valid": true,
+      "ends_with_newline": true
+    },
+    {
+      "file": "references/handoff-contract.md",
+      "method": "bounded standard-library in-REPL inspection, not official renderer/validator",
+      "utf8": true,
+      "frontmatter_valid": null,
+      "code_fences_balanced": true,
+      "fence_pairs": [
+        {
+          "start_line": 34,
+          "end_line": 36,
+          "language": "json",
+          "json_valid": true
+        }
+      ],
+      "table_rows": [
+        {
+          "line": 5,
+          "separator_count": 3
+        },
+        {
+          "line": 6,
+          "separator_count": 3
+        },
+        {
+          "line": 7,
+          "separator_count": 3
+        },
+        {
+          "line": 8,
+          "separator_count": 3
+        },
+        {
+          "line": 9,
+          "separator_count": 3
+        },
+        {
+          "line": 10,
+          "separator_count": 3
+        },
+        {
+          "line": 11,
+          "separator_count": 3
+        },
+        {
+          "line": 12,
+          "separator_count": 3
+        },
+        {
+          "line": 13,
+          "separator_count": 3
+        },
+        {
+          "line": 14,
+          "separator_count": 3
+        }
+      ],
+      "table_structure_valid": true,
+      "ends_with_newline": true
+    }
+  ],
+  "local_links": [
+    {
+      "file": "SKILL.md",
+      "line": 26,
+      "label": "intake-and-gates.md",
+      "target": "references/intake-and-gates.md",
+      "deployed_target": "/Users/rabii/Projects/Repositories/skills/codebasegraph-engineer/references/intake-and-gates.md",
+      "candidate_overlay": null,
+      "exists": true
+    },
+    {
+      "file": "SKILL.md",
+      "line": 34,
+      "label": "workflows.toml",
+      "target": "workflows.toml",
+      "deployed_target": "/Users/rabii/Projects/Repositories/skills/codebasegraph-engineer/workflows.toml",
+      "candidate_overlay": null,
+      "exists": true
+    },
+    {
+      "file": "SKILL.md",
+      "line": 34,
+      "label": "scripts/workflows.py",
+      "target": "scripts/workflows.py",
+      "deployed_target": "/Users/rabii/Projects/Repositories/skills/codebasegraph-engineer/scripts/workflows.py",
+      "candidate_overlay": null,
+      "exists": true
+    },
+    {
+      "file": "SKILL.md",
+      "line": 40,
+      "label": "models.toml",
+      "target": "models.toml",
+      "deployed_target": "/Users/rabii/Projects/Repositories/skills/codebasegraph-engineer/models.toml",
+      "candidate_overlay": null,
+      "exists": true
+    },
+    {
+      "file": "SKILL.md",
+      "line": 50,
+      "label": "models.toml",
+      "target": "models.toml",
+      "deployed_target": "/Users/rabii/Projects/Repositories/skills/codebasegraph-engineer/models.toml",
+      "candidate_overlay": null,
+      "exists": true
+    },
+    {
+      "file": "SKILL.md",
+      "line": 54,
+      "label": "dispatch-and-recovery.md",
+      "target": "references/dispatch-and-recovery.md",
+      "deployed_target": "/Users/rabii/Projects/Repositories/skills/codebasegraph-engineer/references/dispatch-and-recovery.md",
+      "candidate_overlay": "references/dispatch-and-recovery.md",
+      "exists": true
+    },
+    {
+      "file": "SKILL.md",
+      "line": 60,
+      "label": "dispatch-and-recovery.md",
+      "target": "references/dispatch-and-recovery.md",
+      "deployed_target": "/Users/rabii/Projects/Repositories/skills/codebasegraph-engineer/references/dispatch-and-recovery.md",
+      "candidate_overlay": "references/dispatch-and-recovery.md",
+      "exists": true
+    },
+    {
+      "file": "SKILL.md",
+      "line": 64,
+      "label": "queues-and-endpoints.md",
+      "target": "references/queues-and-endpoints.md",
+      "deployed_target": "/Users/rabii/Projects/Repositories/skills/codebasegraph-engineer/references/queues-and-endpoints.md",
+      "candidate_overlay": null,
+      "exists": true
+    },
+    {
+      "file": "SKILL.md",
+      "line": 70,
+      "label": "handoff-contract.md",
+      "target": "references/handoff-contract.md",
+      "deployed_target": "/Users/rabii/Projects/Repositories/skills/codebasegraph-engineer/references/handoff-contract.md",
+      "candidate_overlay": "references/handoff-contract.md",
+      "exists": true
+    },
+    {
+      "file": "references/dispatch-and-recovery.md",
+      "line": 7,
+      "label": "role map",
+      "target": "../models.toml",
+      "deployed_target": "/Users/rabii/Projects/Repositories/skills/codebasegraph-engineer/models.toml",
+      "candidate_overlay": null,
+      "exists": true
+    },
+    {
+      "file": "references/dispatch-and-recovery.md",
+      "line": 30,
+      "label": "workflow helper",
+      "target": "../scripts/workflows.py",
+      "deployed_target": "/Users/rabii/Projects/Repositories/skills/codebasegraph-engineer/scripts/workflows.py",
+      "candidate_overlay": null,
+      "exists": true
+    },
+    {
+      "file": "references/dispatch-and-recovery.md",
+      "line": 30,
+      "label": "catalog",
+      "target": "../workflows.toml",
+      "deployed_target": "/Users/rabii/Projects/Repositories/skills/codebasegraph-engineer/workflows.toml",
+      "candidate_overlay": null,
+      "exists": true
+    },
+    {
+      "file": "references/dispatch-and-recovery.md",
+      "line": 44,
+      "label": "common handoff fields",
+      "target": "handoff-contract.md",
+      "deployed_target": "/Users/rabii/Projects/Repositories/skills/codebasegraph-engineer/references/handoff-contract.md",
+      "candidate_overlay": "references/handoff-contract.md",
+      "exists": true
+    },
+    {
+      "file": "references/dispatch-and-recovery.md",
+      "line": 54,
+      "label": "measurement playbook",
+      "target": "../../codebasegraph-performance-engineer/references/measurement-and-experiments.md",
+      "deployed_target": "/Users/rabii/Projects/Repositories/skills/codebasegraph-performance-engineer/references/measurement-and-experiments.md",
+      "candidate_overlay": null,
+      "exists": true
+    }
+  ],
+  "result": "PASS",
+  "local_link_count": 14,
+  "deployment_mapping": "Resolve source Markdown names at intended installed paths, overlay 3 frozen candidate documents; do not resolve .txt captures as live deployment. Existing linked files checked for existence only, not changed or live-installed.",
+  "preserved_inspection_error": {
+    "private_raw": "markdown-check-first-attempt.json",
+    "error": "fixed-index 4 expected SKILL.md frontmatter closing fence, actual line 4/list index 3",
+    "classification": "verifier inspection mistake; corrected delimiter-aware inspection passed unchanged bytes; not candidate defect"
+  }
+}

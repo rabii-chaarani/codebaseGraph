@@ -1,0 +1,80 @@
+# Assignment, inspection and recovery
+
+Read before dispatching a specialist, recovering an interrupted writer, cancelling or resuming. The role map remains authoritative; this procedure does not authorize additional work.
+
+## Host settings and independence
+
+Read the current [role map](../models.toml) for every dispatch. Look up the assigned `agents` entry and use its `skill`, `model` and `reasoning_effort` fields directly; do not maintain a copied settings table.
+
+Use the skill path in the matching map entry. Pass explicit mapped values as model/effort overrides; for each `inherit` field omit that override so the host retains its settings. Never send `"inherit"` as a model or reasoning effort. Preserve the complete mapped provider/model selector, including `openai-codex` when used; never resolve a bare ID through another provider, map it to a built-in agent type with a fixed model, or fall back if the host rejects it. With the current collaboration API, explicit model/effort overrides require `fork_turns: "none"`; supply the minimal canonical artifacts and task context directly. Final Reviewer and any user-requested Proposal Reviewer use `agent_type: "default"` and `fork_turns: "none"`. Start a fresh reviewer who did not author the reviewed artifacts; do not reuse an implementer as its own independent reviewer. Final Reviewer uses its required adversarial review method for implemented changes. Proposal Reviewer uses its own method only when the user requests that optional assessment; it is not a standard implementation prerequisite.
+
+Illustrative `spawn_agent` arguments for an integrated-change final review, not a dispatched task or claim of review:
+
+```json
+{
+  "task_name":"illustrative_final_review",
+  "agent_type":"default",
+  "fork_turns":"none",
+  "model":"gpt-6.1-sol",
+  "reasoning_effort":"max",
+  "message":"Use the assigned codebaseGraph Final Reviewer skill. Review the supplied WORK-42 integrated diff, baseline, approved acceptance criteria and executed evidence. Read-only: no files or live records may be changed. Return confirmed findings, verdict and the exact reviewed snapshot."
+}
+```
+
+Capture the host's accepted requested settings. Compare exposed runtime metadata if available; report it separately. At start/resume check any explicit coordinator requirement in the current map against host evidence. `inherit` keeps host settings. Do not pretend a skill changed its own model or block only because the runtime does not expose self-inspection. A host rejection, known mismatch, unavailable required setting or absent required independent review leaves the dependent gate pending. Ask for the user's decision; do not silently downgrade, modify the map or substitute another reviewer.
+
+## Bound context and reuse outcomes
+
+Start a new specialist assignment with `agent_type: "default"` and `fork_turns: "none"`, supplying minimal current context and the exact mapped skill/settings. This also applies when model/effort inherit: omit those overrides, not the context boundary. Pass the bounded task, canonical references and relevant actual artifacts; do not copy full conversation histories, every playbook, whole manuals or repeated logs. The specialist still reads its required instructions and authoritative inputs; context discipline never removes a gate or material evidence.
+
+Use the [workflow helper](../scripts/workflows.py)'s actual `--help`, run `list` to select a known ID from the [catalog](../workflows.toml), `validate` to check catalog references and required gates, then `show <id>` for only that workflow and its shared definitions. An unknown ID must fail rather than guess. `diagram <id>` renders those same definitions. The helper never dispatches, evaluates live facts or authorizes a transition. Supply task-relevant language/runtime, UX and optimisation references through the assigned role's existing routing. Default to one implementer; use parallel work only for substantial ready independent slices with disjoint ownership and completed prerequisites.
+
+Reuse a role session for a bounded relevant follow-up when its context/settings/ownership remain suitable; use fresh minimal context for a new scope or bloated history. Final review must remain independent from authors; the original reviewer can perform focused fix verification against the identified final snapshot. Reuse an artifact only when its scope/source/base/contracts/environment remain valid. Deduplicate satisfied outcomes, not agents or role names; the same Production or Performance role can legitimately have several different assignments.
+
+Keep handoffs concise with exact evidence links and limitations rather than repeating raw outputs. Record the chosen workflow/endpoint, next unmet outcome and reuse reason once, updating when routing changes. Use soft report/context discipline: never truncate required findings, force a pass or skip verification/review to fit a token estimate. When comparing routing efficiency, actual tokens require exposed usage; calls/context bytes are proxies, not billing savings.
+
+## Build one complete assignment
+
+Check readiness for the role's stage before sending it. Discovery/proposal roles may establish missing decisions/artifacts within the requested scope; Final Reviewer receives the exact integrated snapshot, and an explicitly requested optional Proposal Reviewer receives the exact proposal. Code writers require exact implementation approval, completed prerequisites, settled shared contracts and no conflicting writer; no proposal-review result is required. Delivery actions additionally require authorization for their endpoint. Refer to the applicable canonical Scryer brief rather than copying a detailed plan into the message or Linear. The brief/assignment together must provide:
+
+- Role/skill/settings, repository/root/base/snapshot and working location; existing changes to preserve and the authorized endpoint.
+- Existing work/issue/slice identities, canonical revision and approval status, requirement/acceptance IDs, Scryer project/change/brief and exact assigned claims. Use the immutable approved spec revision/decision reference for implementation, and identify missing inputs/proposed snapshots for proposal work. Omit inapplicable fields rather than inventing them.
+- Exact writable files and exclusive owner, deliverable and exclusions; dependencies/contracts and proof prerequisites are ready. Assign shared types, config, manifests and lockfiles to one owner. Include assigned delivery automation files for Production only where needed.
+- Methods and measurable completion criteria for the role's artifact. Implementation/verification briefs name observable behavior and failure/recovery checks, environment/platform expectations, report locations and source/test anchors. For a fix, require safe feasible reproduction before correction and regression evidence.
+- Explicit read/write and live-action limits, what to do on a contract/design/ownership change, and the [common handoff fields](handoff-contract.md).
+
+Tell writers: they share the workspace, preserve others' edits and promptly report blockers or ownership/contract changes. Pass a compact, authority-linked task summary with the outcome, current source/base/environment, exact files and owners, ready prerequisites, next check, exclusions, endpoint and handoff; link the approved spec, Scryer brief and actual artifacts instead of replaying history. Keep detailed briefs in Scryer. Be concise, but impose no hard message-length limit or omit a required gate or evidence. No worker may dispatch another role, expand scope or edit another owner's file. A direct specialist returns the bounded result to its caller; it need not establish an orchestration hierarchy.
+
+Default to one implementation worker. Within the active issue, use two or three only for substantial, ready, independent file-level slices with disjoint ownership, settled contracts, checked prerequisites and matching approval. Give each file one writer; a dependent slice waits until its prerequisite contract is implemented and checked. Name one build/check owner for each shared target. Before the command, the owner identifies and briefly freezes its complete affected input closure. The command reads that stable closure; no writer changes it until the check finishes. Unrelated work outside the closure may continue, including safe reads. The named owner serializes builds for that target; Engineer and Production retain existing Git/integration ownership. Once readiness and the environment are established, run the smallest meaningful compile/check, then a focused behavior test before broader assigned gates. Target the first meaningful check within 5–10 minutes after readiness and environment setup; if it has not started, escalate the blocker to Engineer. This is an escalation target, not a timeout, deadline or acceptance threshold. Repartition overlap or arrange separate worktrees through Production, retaining an explicit integration owner; isolation does not settle interfaces. Engineer serializes Production Git/integration assignments. Worktrees do not authorize concurrent edits to the same shared workspace file.
+
+## Assign performance work proportionally
+
+Use the mapped `performance_engineer` role for the assigned investigation or approved optimisation slice. Distinguish diagnostic permissions/outputs from production-source ownership; specify workload/build identity, baseline availability, metrics/oracle, resource/numerical constraints, hardware/tool scope and a bounded experiment. Investigation may establish missing facts; an implementation assignment retains all starting gates. Backend, Frontend and Performance Engineer share the one-writer rule and report ownership changes through Engineer. Production retains delivery-automation files/actions.
+
+Use the [measurement playbook](../../codebasegraph-performance-engineer/references/measurement-and-experiments.md) when reviewing a performance handoff. Inspect raw comparisons, build/source/workload/environment identity, correctness and resource results, not an author's speedup summary. Route material design changes to Designer and acceptance/tradeoff changes to Requirements/user; Evidence Verifier independently evaluates performance claims. Inconclusive or no-justified-change is a valid diagnosis outcome and never a fabricated passing criterion.
+
+## Inspect and route results
+
+Read the actual changed files/diff, including untracked artifacts, against the approved revision, Scryer brief, ownership and baseline. Use graph discovery for source paths before reading them. Confirm the diff contains only the assigned behavior, preserves other work and uses the agreed contracts. Do not accept a clean summary as a substitute for inspection.
+
+Check evidence identifiers and reports: tested/reviewed snapshot, exact command or CI run/attempt, environment, result, criterion/claim coverage and limitations. A worker's local checks are useful evidence; independent verification and review remain their own gates. Source/test edits after a verdict require affected reruns. Have Evidence Verifier reconcile missing/stale/failing attachments/verdicts, assigned folds and drift; never fold a worker's claims merely on its assertion.
+
+Route the defect to the responsible owner. Workers fix implementation defects within the brief. Software Designer resolves internal or contract deviations; Architect resolves intended boundaries; Requirements handles behavior/acceptance changes and applicable user decisions. Production resolves assigned automation/Git/CI failures and mechanical integration, returning behavior-changing conflicts to technical authors. Engineer coordinates the decision and broadcasts agreed interfaces; it does not rewrite technical substance itself.
+
+After fixes, obtain affected verifier results and focused Final Reviewer verification of fixes/affected paths against the final snapshot. Resolve every confirmed P0–P3 finding. Record conditional risks/questions separately; unresolved defects are not a passing completion. Update Linear with accepted evidence by acceptance ID, revised dependency status and next owner.
+
+At checkpoints and resume, inspect a bounded delta from the last confirmed snapshot: affected source, base/head, approved scope and intent, assignment/owner, running build/process and relevant PR/CI/action state. Pause only work affected by a material input change; bookkeeping-only deltas do not pause unrelated work. If a cause or action outcome is not established, report it as unknown; do not infer attribution, restore or replay from assumptions.
+
+## Recover exclusive ownership
+
+While delegated work is active, observe the actual agent checkpoint at least every five minutes: current activity/last action, owned-file changes and any running command, process or external action. This is an observation cadence, not an automatic timeout or termination trigger. When a writer appears stalled, inspect its latest status, actual files and authoritative action state. Ask for its current blocker and checkpoint; do not infer failure from silence or start a second writer on the same files. If work can continue within the same assignment, supply the missing approved input.
+
+Before any ownership transfer, ask the original writer to stop before its next action and confirm the writer and all processes/jobs/command handles are quiescent; reconcile authoritative state for every external action to establish that no mutation remains in flight. When steering cannot be consumed, use the host's authorized interrupt/cancel control decisively; a stop request or stopped session status alone does not prove quiescence. If no authorized interrupt/cancel control is available when required, report that blocker and keep ownership pending. Preserve its changes; inspect the partial diff and completed operations. Reconcile Scryer pending entries, exact ownership, approval, contract version, verification freshness and Git/live-action state before transferring the same bounded assignment. If quiescence cannot be established, keep ownership blocked or isolate work; do not allow two writers to race or claim an external action was cancelled. Notify affected dependents of the new owner and remaining prerequisites.
+
+Production may retry a failed write once only after it establishes the actual authoritative outcome, revalidates authorization and all gates, and proves the same target/action is safe to retry. Keep the logical action/target and retry count in the handoff; replacing a worker does not reset it. An unknown outcome is not permission to repeat a mutation. If the outcome remains uncertain, safety cannot be established or the retry is exhausted, leave the action pending and request the user's decision. Do not change credentials, policy or CI gates to make it pass.
+
+## Cancel and resume
+
+On cancellation stop new dispatch, tell in-flight owners to stop before the next action and reconcile operations already underway. Preserve local work and report exact commits, PRs, running jobs, changes/claims, publication state, retry state and next owner. Cancel only actions covered by the user's request and current permissions. A merged release PR may already have committed to unattended publication; do not promise rollback or withdrawal.
+
+On resume compare the saved handoff with current repository/base/head/edits, PR/CI/release state, tool binding, approvals, Scryer pending/amended claims and live owners. Rebind each specialist session to its exact assigned existing change. Revalidate stale gates and retain valid evidence. Reconcile pending Linear synchronization without duplicate records. Resume from the next unmet gate inside the same authorized endpoint; do not reset a retry, reopen approved decisions without a material change or silently start the next queue.

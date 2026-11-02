@@ -1,0 +1,258 @@
+{
+  "captured_at": "2026-11-02T04:34:30.673221+00:00",
+  "scope": "three frozen inert document candidates; NOT INSTALLED; local documentation acceptance only",
+  "repository": {
+    "root": "/private/tmp/codebasegraph-workflow-improvements-20261102",
+    "branch": "docs/workflow-improvements-20261102",
+    "base": {
+      "type": "commit",
+      "sha": "01792cb097f6ca23f679396871ef273006732120"
+    },
+    "base_tree": {
+      "type": "tree",
+      "sha": "1597ff6eba868e1b18e69d55d9031ec39eb35365"
+    },
+    "head": {
+      "type": "commit",
+      "sha": "e9f55dd1e16f020989feef8bca55b1fd8e568492"
+    },
+    "head_tree": {
+      "type": "tree",
+      "sha": "3c197864e51b280575497dbef31032f7918aada7",
+      "limitation": "committed HEAD tree does not include untracked before/after candidates"
+    },
+    "tracked_unstaged_diff": {
+      "type": "diff-sha256",
+      "base": "HEAD",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "tracked_staged_diff": {
+      "type": "diff-sha256",
+      "base": "HEAD",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "untracked_inventory": [
+      {
+        "type": "file-sha256",
+        "path": "docs/specs/CBG-ENG-SKILL-01/workflow-improvements-2026-11-02/candidate-snapshot.json",
+        "bytes": 4884,
+        "sha256": "08fdeeabac8e68aaf19e825d80c1ae09dbef158706cfa2f74b44e90ce1006ee2"
+      },
+      {
+        "type": "file-sha256",
+        "path": "docs/specs/CBG-ENG-SKILL-01/workflow-improvements-2026-11-02/evidence/author-correction/correction-report.md",
+        "bytes": 2563,
+        "sha256": "500b9e34bd4d509b6b241a117ac8648ff26b304c7e8e530c353bd3c9e794991b"
+      },
+      {
+        "type": "file-sha256",
+        "path": "docs/specs/CBG-ENG-SKILL-01/workflow-improvements-2026-11-02/evidence/author-correction/correction.diff",
+        "bytes": 10995,
+        "sha256": "0bb0b24da218c1d2fb8a3eb13cd652279f3987df5df93452a0075c5246323a2c"
+      },
+      {
+        "type": "file-sha256",
+        "path": "docs/specs/CBG-ENG-SKILL-01/workflow-improvements-2026-11-02/evidence/author-initial/attempt-report.md",
+        "bytes": 6006,
+        "sha256": "7dc4de0a30b7980ff5c425449c2d0afe3aad7d29bb91437c744e2aa66df7c2c6"
+      },
+      {
+        "type": "file-sha256",
+        "path": "docs/specs/CBG-ENG-SKILL-01/workflow-improvements-2026-11-02/evidence/author-initial/candidate.diff",
+        "bytes": 17470,
+        "sha256": "a1d8ebac602ec56a49f9f7fab4d578df408417849e2e53099b5f2056f9951717"
+      },
+      {
+        "type": "file-sha256",
+        "path": "docs/specs/CBG-ENG-SKILL-01/workflow-improvements-2026-11-02/sources/after/codebasegraph-engineer/SKILL.md.txt",
+        "bytes": 14954,
+        "sha256": "0491089d68a2dd791b2661e66b7250fd9ec045f2dd3bce75f1ccb0ddc912d9b7"
+      },
+      {
+        "type": "file-sha256",
+        "path": "docs/specs/CBG-ENG-SKILL-01/workflow-improvements-2026-11-02/sources/after/codebasegraph-engineer/references/dispatch-and-recovery.md.txt",
+        "bytes": 15843,
+        "sha256": "7d423e284798dfe52f1bb0b947729eafabcf3424f1b725551172f06284085cab"
+      },
+      {
+        "type": "file-sha256",
+        "path": "docs/specs/CBG-ENG-SKILL-01/workflow-improvements-2026-11-02/sources/after/codebasegraph-engineer/references/handoff-contract.md.txt",
+        "bytes": 7133,
+        "sha256": "0227ef3b27534d282f1e3b72a18aa7c5e2458bf349f528d44e027da751b8ff67"
+      },
+      {
+        "type": "file-sha256",
+        "path": "docs/specs/CBG-ENG-SKILL-01/workflow-improvements-2026-11-02/sources/before/codebasegraph-engineer/SKILL.md.txt",
+        "bytes": 14736,
+        "sha256": "23f72f202d00fb74396fc911f5d8bfaf22d0c79cb5585358e485f6cd0af3a3d3"
+      },
+      {
+        "type": "file-sha256",
+        "path": "docs/specs/CBG-ENG-SKILL-01/workflow-improvements-2026-11-02/sources/before/codebasegraph-engineer/references/dispatch-and-recovery.md.txt",
+        "bytes": 12924,
+        "sha256": "7afc7a52fab0eceedb4bb84a811b67cb602b6187113adba11ddf728e8dbd05b7"
+      },
+      {
+        "type": "file-sha256",
+        "path": "docs/specs/CBG-ENG-SKILL-01/workflow-improvements-2026-11-02/sources/before/codebasegraph-engineer/references/handoff-contract.md.txt",
+        "bytes": 5930,
+        "sha256": "b01896bf573ddc2d413b5a883f30f636a9b6ca5ec3eab5c2d5533d5c5a0c7fc0"
+      }
+    ]
+  },
+  "approval": {
+    "path": "docs/specs/CBG-ENG-SKILL-01/workflow-improvements-2026-11-02.md",
+    "type": "commit",
+    "full_sha": "07eb8913ecdb3992615f56adeb565114866dacef",
+    "content_sha256": "8d99221b5bbcaaf574ef2a9870d3fd49140e231d121c9f93dadcb1b940ca2f24",
+    "approval_record_path": "docs/specs/CBG-ENG-SKILL-01/workflow-improvements-2026-11-02/approval.md",
+    "approval_record_commit": "e9f55dd1e16f020989feef8bca55b1fd8e568492",
+    "parent_supplied_user_decision": {
+      "id": "242b1696",
+      "timestamp": "2026-11-02T04:12:07.370Z",
+      "text": "approved"
+    },
+    "record_note": "Committed approval uses parent session/reply; separate record time is not asserted as user-message time."
+  },
+  "before_files": [
+    {
+      "type": "file-sha256",
+      "path": "/private/tmp/codebasegraph-workflow-improvements-20261102/docs/specs/CBG-ENG-SKILL-01/workflow-improvements-2026-11-02/sources/before/codebasegraph-engineer/SKILL.md.txt",
+      "sha256": "23f72f202d00fb74396fc911f5d8bfaf22d0c79cb5585358e485f6cd0af3a3d3",
+      "bytes": 14736,
+      "repository_path": "docs/specs/CBG-ENG-SKILL-01/workflow-improvements-2026-11-02/sources/before/codebasegraph-engineer/SKILL.md.txt"
+    },
+    {
+      "type": "file-sha256",
+      "path": "/private/tmp/codebasegraph-workflow-improvements-20261102/docs/specs/CBG-ENG-SKILL-01/workflow-improvements-2026-11-02/sources/before/codebasegraph-engineer/references/dispatch-and-recovery.md.txt",
+      "sha256": "7afc7a52fab0eceedb4bb84a811b67cb602b6187113adba11ddf728e8dbd05b7",
+      "bytes": 12924,
+      "repository_path": "docs/specs/CBG-ENG-SKILL-01/workflow-improvements-2026-11-02/sources/before/codebasegraph-engineer/references/dispatch-and-recovery.md.txt"
+    },
+    {
+      "type": "file-sha256",
+      "path": "/private/tmp/codebasegraph-workflow-improvements-20261102/docs/specs/CBG-ENG-SKILL-01/workflow-improvements-2026-11-02/sources/before/codebasegraph-engineer/references/handoff-contract.md.txt",
+      "sha256": "b01896bf573ddc2d413b5a883f30f636a9b6ca5ec3eab5c2d5533d5c5a0c7fc0",
+      "bytes": 5930,
+      "repository_path": "docs/specs/CBG-ENG-SKILL-01/workflow-improvements-2026-11-02/sources/before/codebasegraph-engineer/references/handoff-contract.md.txt"
+    }
+  ],
+  "after_files": [
+    {
+      "type": "file-sha256",
+      "path": "/private/tmp/codebasegraph-workflow-improvements-20261102/docs/specs/CBG-ENG-SKILL-01/workflow-improvements-2026-11-02/sources/after/codebasegraph-engineer/SKILL.md.txt",
+      "sha256": "0491089d68a2dd791b2661e66b7250fd9ec045f2dd3bce75f1ccb0ddc912d9b7",
+      "bytes": 14954,
+      "repository_path": "docs/specs/CBG-ENG-SKILL-01/workflow-improvements-2026-11-02/sources/after/codebasegraph-engineer/SKILL.md.txt"
+    },
+    {
+      "type": "file-sha256",
+      "path": "/private/tmp/codebasegraph-workflow-improvements-20261102/docs/specs/CBG-ENG-SKILL-01/workflow-improvements-2026-11-02/sources/after/codebasegraph-engineer/references/dispatch-and-recovery.md.txt",
+      "sha256": "7d423e284798dfe52f1bb0b947729eafabcf3424f1b725551172f06284085cab",
+      "bytes": 15843,
+      "repository_path": "docs/specs/CBG-ENG-SKILL-01/workflow-improvements-2026-11-02/sources/after/codebasegraph-engineer/references/dispatch-and-recovery.md.txt"
+    },
+    {
+      "type": "file-sha256",
+      "path": "/private/tmp/codebasegraph-workflow-improvements-20261102/docs/specs/CBG-ENG-SKILL-01/workflow-improvements-2026-11-02/sources/after/codebasegraph-engineer/references/handoff-contract.md.txt",
+      "sha256": "0227ef3b27534d282f1e3b72a18aa7c5e2458bf349f528d44e027da751b8ff67",
+      "bytes": 7133,
+      "repository_path": "docs/specs/CBG-ENG-SKILL-01/workflow-improvements-2026-11-02/sources/after/codebasegraph-engineer/references/handoff-contract.md.txt"
+    }
+  ],
+  "combined_diff": {
+    "type": "diff-sha256",
+    "path": "combined-before-final.diff",
+    "sha256": "142615205dcb42e1eb1c5c4fb2b1f7cc4c620d64cd406b919bbf0715ea4842f6",
+    "bytes": 17890,
+    "base": "exact three before inert captures",
+    "head": "exact three final after inert captures",
+    "method": "independent standard-library difflib unified_diff; not relabeled Git commit/tree"
+  },
+  "install_mapping": {
+    "type": "file-sha256",
+    "repository_path": "docs/specs/CBG-ENG-SKILL-01/workflow-improvements-2026-11-02/candidate-snapshot.json",
+    "sha256": "08fdeeabac8e68aaf19e825d80c1ae09dbef158706cfa2f74b44e90ce1006ee2",
+    "bytes": 4884,
+    "not_an_evidence_manifest": true,
+    "verified": "all 3 install targets and before/after path/hash/size entries match actual frozen sources"
+  },
+  "author_correction_diff": {
+    "type": "diff-sha256",
+    "original_path": "/tmp/codebasegraph-workflow-implementation-1e065617da/correction.diff",
+    "sha256": "0bb0b24da218c1d2fb8a3eb13cd652279f3987df5df93452a0075c5246323a2c",
+    "scope": "initial author candidate to focused correction ONLY; not full before-final diff"
+  },
+  "helper_config_model_map": {
+    "before": [
+      {
+        "type": "file-sha256",
+        "path": "/Users/rabii/Projects/Repositories/skills/codebasegraph-engineer/scripts/workflows.py",
+        "sha256": "bae027edbe119c628b13153b990e52ab6e31a39346bc24b3190e06b6b5877995",
+        "bytes": 50872
+      },
+      {
+        "type": "file-sha256",
+        "path": "/Users/rabii/Projects/Repositories/skills/codebasegraph-engineer/workflows.toml",
+        "sha256": "57f56cc7697ba8dbefe88d4d6b3d07843f153f8ff76d4d6a67d796f6797964b2",
+        "bytes": 41573
+      },
+      {
+        "type": "file-sha256",
+        "path": "/Users/rabii/Projects/Repositories/skills/codebasegraph-engineer/models.toml",
+        "sha256": "4bdcc0998cd9b8c552dd9df9b45307252e04f8070bad607012265406a539fcd6",
+        "bytes": 1565
+      }
+    ],
+    "after_preparation": [
+      {
+        "type": "file-sha256",
+        "path": "/Users/rabii/Projects/Repositories/skills/codebasegraph-engineer/scripts/workflows.py",
+        "sha256": "bae027edbe119c628b13153b990e52ab6e31a39346bc24b3190e06b6b5877995",
+        "bytes": 50872
+      },
+      {
+        "type": "file-sha256",
+        "path": "/Users/rabii/Projects/Repositories/skills/codebasegraph-engineer/workflows.toml",
+        "sha256": "57f56cc7697ba8dbefe88d4d6b3d07843f153f8ff76d4d6a67d796f6797964b2",
+        "bytes": 41573
+      },
+      {
+        "type": "file-sha256",
+        "path": "/Users/rabii/Projects/Repositories/skills/codebasegraph-engineer/models.toml",
+        "sha256": "4bdcc0998cd9b8c552dd9df9b45307252e04f8070bad607012265406a539fcd6",
+        "bytes": 1565
+      }
+    ],
+    "final": [
+      {
+        "type": "file-sha256",
+        "path": "/Users/rabii/Projects/Repositories/skills/codebasegraph-engineer/scripts/workflows.py",
+        "sha256": "bae027edbe119c628b13153b990e52ab6e31a39346bc24b3190e06b6b5877995",
+        "bytes": 50872
+      },
+      {
+        "type": "file-sha256",
+        "path": "/Users/rabii/Projects/Repositories/skills/codebasegraph-engineer/workflows.toml",
+        "sha256": "57f56cc7697ba8dbefe88d4d6b3d07843f153f8ff76d4d6a67d796f6797964b2",
+        "bytes": 41573
+      },
+      {
+        "type": "file-sha256",
+        "path": "/Users/rabii/Projects/Repositories/skills/codebasegraph-engineer/models.toml",
+        "sha256": "4bdcc0998cd9b8c552dd9df9b45307252e04f8070bad607012265406a539fcd6",
+        "bytes": 1565
+      }
+    ],
+    "unchanged": true
+  },
+  "quiescence": {
+    "source": "parent explicit final-freeze message; Backend author correction report",
+    "writer_quiescent": true,
+    "no_more_candidate_writes": true,
+    "no_running_author_process_build_external_or_live_skill_write_reported": true,
+    "independent_confirmation": "all candidate hashes matched on entry and after interruption/recovery; no live control attempted"
+  }
+}

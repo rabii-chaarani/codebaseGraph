@@ -1,0 +1,37 @@
+{
+  "captured_at": "2026-11-02T04:21:29.245783+00:00",
+  "platform": "macOS 26.6.2 build 25G83 / Darwin 25.6.0 / arm64",
+  "cwd": "/private/tmp/codebasegraph-workflow-improvements-20261102",
+  "native_python": "/Users/rabii/.local/bin/python3.11",
+  "native_python_resolved": "/Users/rabii/.local/share/uv/python/cpython-3.11.17-macos-aarch64-none/bin/python3.11",
+  "native_python_version": "3.11.17",
+  "helper": "/Users/rabii/Projects/Repositories/skills/codebasegraph-engineer/scripts/workflows.py",
+  "config": "/Users/rabii/Projects/Repositories/skills/codebasegraph-engineer/workflows.toml",
+  "map": "/Users/rabii/Projects/Repositories/skills/codebasegraph-engineer/models.toml",
+  "explicit_process_environment_overrides": {},
+  "relevant_inherited_environment": {
+    "PYTHONPATH": null,
+    "PYTHONHOME": null,
+    "PYTHONDONTWRITEBYTECODE": null,
+    "VIRTUAL_ENV": null,
+    "LANG": "en_AU.UTF-8",
+    "LC_ALL": null
+  },
+  "execution_role": "agents.evidence_verifier",
+  "requested_model_override": "omitted (inherit)",
+  "requested_effort_override": "omitted (inherit)",
+  "parent_reported_context": {
+    "agent_type": "default",
+    "fork_turns": "none",
+    "fresh_prompt_only": true
+  },
+  "exposed_runtime_model_provider_effort": "unavailable; no mismatch known",
+  "scope": "native unchanged helper CLI and isolated documentary oracles only; no product execution",
+  "final_evidence_captured_at": "2026-11-02T04:34:30.673221+00:00",
+  "final_repository_command_binding": "explicit git --no-optional-locks -C /private/tmp/codebasegraph-workflow-improvements-20261102",
+  "final_python_orchestration_cwd": "/private/tmp/codebasegraph-workflow-improvements-20261102",
+  "shell_cwd_variance": "unknown across interruption; wrong-root identity batch excluded and disclosed; commands explicitly rebound",
+  "native_helper_environment_reused": "unchanged helper/catalog/map hashes verified; native checks not redundantly rerun",
+  "native_runtime_check_scope": "Python native CLI only; no package imports/dependency installs/product Cargo/CI",
+  "required_environment_overrides": "none for the unchanged native read-only helper; scenario override examples are fictional acceptance inputs"
+}

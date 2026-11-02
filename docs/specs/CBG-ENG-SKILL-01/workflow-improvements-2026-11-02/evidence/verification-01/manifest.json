@@ -1,0 +1,45 @@
+{
+  "work": "CBG-ENG-SKILL-01 / COD-102 / WI-0.1",
+  "attempt": "cbg-wi-0.1-evidence-bh6i44ly",
+  "status": "CLOSED; WI-A01\u2013WI-A09 PASS only within report scope; NOT INSTALLED; fresh Final Reviewer and delivery gates separate",
+  "closed_at": "2026-11-02T04:36:24.568150+00:00",
+  "payload_order": "All seven selected payloads finalized and hashed before this one canonical manifest; manifest does not include its own hash. Do not rewrite this closed attempt.",
+  "payloads": [
+    {
+      "path": "report.md",
+      "bytes": 12343,
+      "sha256": "0c58e1ff83d450455d391deadebdf191bf70da31cd385addcda54a4b3d7ec059"
+    },
+    {
+      "path": "source-identities.json",
+      "bytes": 12202,
+      "sha256": "5202981527ab9fa2b4b0a4b5080f573fc2ef9409a860b80a487676b114952fc5"
+    },
+    {
+      "path": "combined-before-final.diff",
+      "bytes": 17890,
+      "sha256": "142615205dcb42e1eb1c5c4fb2b1f7cc4c620d64cd406b919bbf0715ea4842f6"
+    },
+    {
+      "path": "scenario-decisions.md",
+      "bytes": 11614,
+      "sha256": "07787a2fa85b53caa86d696aa5caaef26ba33fb0fb0a6ef49bfe535819624d2b"
+    },
+    {
+      "path": "command-results.json",
+      "bytes": 65794,
+      "sha256": "36355e1faa4c6150fb7e2e2d8a14692701f02c243e2cb5a2ddadfd41e3e3aa09"
+    },
+    {
+      "path": "markdown-link-results.json",
+      "bytes": 7551,
+      "sha256": "1d0c29efc46178dec14e722b58d98071b4385d517785628e0f82352a613860fa"
+    },
+    {
+      "path": "environment.json",
+      "bytes": 2205,
+      "sha256": "c55ba38b60e3c0c2ebfe4854545bd9ba653b453d9ce04692c5ced4b454ff9a7b"
+    }
+  ],
+  "excluded_private_material": "Broad tool catalogs/unrelated Scryer responses and raw failed/misbound preparation captures stay private; exact limitations and excluded attempts are disclosed in report/command-results. Canonical source snapshots are already repository artifacts; their exact before/after identities and combined diff are supplied here."
+}

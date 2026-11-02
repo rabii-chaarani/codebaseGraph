@@ -1,0 +1,36 @@
+# Common specialist handoff
+
+Use this compact Markdown contract for an assignment, direct specialist result or final Engineer handoff. Omit inapplicable fields without inventing IDs, claims, tests or approvals. Add the role's substantive result beneath the fields; this format does not replace its discipline method or canonical artifact.
+
+| Field | Required substance when applicable |
+| --- | --- |
+| **Status** | What is ready, completed, blocked, cancelled or pending; identify the gate this result can satisfy. Approval, implementation, qualification and closure are separate states. |
+| **Scope** | Repository/root and authorized task/endpoint; existing work/issue/slice identities, requirement/acceptance IDs and file ownership. Name excluded or unresolved scope only where it affects the result. |
+| **Canonical inputs** | Spec/contract path and revision; full approved Git SHA plus user decision reference, or preserved wiki revision/approval; applicable Scryer project/change/brief/claims/directives and Linear links. State missing or conflicting authority. |
+| **Artifacts / reviewed snapshot** | Actual files, canonical artifact links, diff baseline and exact commit/head/tree or preserved diff identifying the work examined. Include uncommitted changes needed to identify the snapshot. Reviews must identify what they reviewed. |
+| **Actual executed evidence** | Environment/platform, revision, command or method, result, report/CI run and attempt/artifact links, affected acceptance IDs and claims. Distinguish planned, executed, failed, skipped and unavailable checks. Record test attachment, verdict/fold and drift outcomes when assigned. |
+| **Blockers / decisions** | Specific missing prerequisite, confirmed defect, stale evidence or unresolved user choice; consequence and recommendation/options. Keep conditional risks separate from confirmed defects. |
+| **Next owner** | Who must act next, on which artifact or gate, and what makes it ready. A handoff does not authorize that action or transfer aggregate closure. |
+| **Execution settings / limitations** | Role/map entry and host-accepted model/effort/agent/fork settings; exposed actual metadata or explicitly unexposed metadata. State tool, platform, independence and scope limitations that constrain conclusions. |
+
+## Performance-specific substance
+
+For performance work, add the workload/inputs and metric/oracle, exact baseline and candidate source/build/configuration, hardware/runtime/tool conditions, warm/cold/load state, raw measurements/profile artifacts, correctness/resource/numerical results, comparison method, uncertainty and limitations. Label measured, inferred, inconclusive and unavailable findings. Reuse canonical IDs and artifact locations. Local performance evidence supports a handoff; Evidence Verifier owns independent acceptance evidence and claim reconciliation.
+
+Performance Engineer may implement only its approved exclusive source/benchmark/test slice. Designer retains consequential algorithms, representations and interfaces; Requirements/user retain observable behaviour and budget/accuracy tradeoffs; Production retains delivery automation/Git. No stage is added to work without a performance need.
+
+## Binding and authority shared by all roles
+
+- Read current project instructions and the relevant role-map entry. Use the actual assigned repository and correctly bound graph/wiki/Scryer/Linear tools. Pass explicit project/bundle/account identifiers where supported; never reuse another project's state. Fetch current Scryer rules before governed judgments or writes.
+- Engineer alone dispatches roles and advances the delivery workflow. A directly invoked specialist may produce a bounded result and questions for its caller; it need not invent an Engineer or dispatch another role. Missing model-write prerequisites remain pending. Skill invocation and assignment do not create user approval.
+- Engineer creates/resumes changes, records explicit sign-off and administers empty-ledger closure. A specialist may call `open_change` with the exact Engineer-supplied existing `change_id` and project to bind its session, including after resume. It must not create a change with `rationale`, self-approve, select unrelated pending work or fold claims outside its assignment. Read-only work performs no ledger or tracking writes.
+- Model intent belongs to Architect; implementation contracts and internals belong to Software Designer; detailed execution ownership/prerequisites belong in Scryer. Return deviations through Engineer, or to the direct caller, rather than silently changing these authorities.
+- Evidence Verifier owns test attachment, independent execution, JUnit ingestion and verified assigned-claim fold. Pre-attach existing tests when needed, run after the latest implementation/test edit, ingest each JUnit report once, then fold with both source anchors and tests in the same call. Missing/stale/failing/amended claims remain pending; never fabricate attachments or use force to clear them.
+- Production owns only assigned delivery files/actions and versions supplied evidence without rewriting its substance. Its one verified-safe retry is per logical failed write and authorized target across replacements; unresolved outcomes and exhausted retries stay pending.
+- The host applies dispatch settings; skills cannot change a running model. Omit model/effort overrides for each `inherit` field; send explicit mapped values for explicit fields. Report host-accepted settings and exposed runtime metadata separately. Lack of self-inspection alone is not a failed gate. Known mismatch or inability to accept a required setting/capability blocks dependent work; do not substitute or edit the map.
+
+Illustrative session-binding arguments only; these do not claim execution and do not create or approve a change:
+
+```json
+{"change_id":"illustrative-change-42","project":"/work/illustrative-codebasegraph"}
+```
