@@ -1,0 +1,12 @@
+# Workflow improvement provenance — 2026-11-02
+
+- Work: CBG-ENG-SKILL-01 / COD-102; procedural supplement WI-0.1. Historical spec and approvals retain their identities; no old unmerged branch is imported.
+- User direction: confirm the retrospective of session `01a18f18-3db0-73ba-a45a-f25faf5369ad` and start a new independent session to implement the bounded improvements. This session is `01a19a60-5a5a-73f3-b6f2-db4bb77b82df`.
+- Supplied handoff `confirmed-findings.md` SHA-256: `1871659e942c9bb9607a7a58d7caacd17e6b43aa50adcb3598fcd76fdd9d1a88`.
+- Independent transcript audit `codebasegraph-session-01a18f18-evidence-audit.md` SHA-256: `14dc3d795b76956e652a2a12139d2934f292692b92b1d63ee694730e5b95e0c1`. The audit inspected 5,583 transcript records through 2026-11-02 03:46 UTC, transcript SHA-256 `0ffa8b1a9a74a402674d963d5a22ef8a0fc17e78610cb9732cc4108e98b1c4a2`.
+- Supported findings: prolonged source-only coordination and delayed compilation; stalled writers and large briefs; closed evidence payload overwrite; overly broad test filtering; narrower lint scope than required; file digest mislabeled as HEAD; missing environment overrides after resume.
+- Qualifications: delay attribution is qualitative. Delivery gates remained active, but artifact/scope rules were violated; the audit does not establish that all safeguards were obeyed. Recovery reproduced original bytes at a new path, not restored original locations. No premature queue merge/release is evidenced in the transcript; this is not a certification of live or off-transcript state.
+- Approved objectives: small executable increments, confirmed exclusive recovery, compact assignments, ready file-level parallelism, immutable typed attempt evidence, bounded relevant-change checks, and outcome-based progress. Existing approvals, independent verification, fresh required Final Reviewer, current-head/base checks, protected merge and publication verification remain mandatory.
+- Timing: five-minute staleness checks are an existing user preference. A 5–10-minute first executable check after readiness is an escalation target, not a timeout or new gate.
+- Exact-content approval is still pending for the supplement's eventual committed path/full SHA. This provenance records scope direction, not approval of an unseen Git revision.
+- Endpoint: reviewed, verified PR/handoff only. No COD-110 product/test/worktree changes or other-session control; no graph development, integration/settings changes, framework, merge, release or aggregate closure.
