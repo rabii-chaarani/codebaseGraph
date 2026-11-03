@@ -1,9 +1,0 @@
-{
-  "command": "cargo test --locked -p xtask native_retention_actual_body_is_cod107_only -- --nocapture",
-  "exit_code": 0,
-  "running": false,
-  "capture": "BashResult.output combined stdout/stderr; not split by harness",
-  "note": "three actual-body semantic mutants killed by negative cases",
-  "output_file": "11_body_mutants_final_pass.combined-output.txt",
-  "output_sha256": "345072f9b4c7c0b529cdc294389bb8726994ea227704671a960fe9de1916eecc"
-}

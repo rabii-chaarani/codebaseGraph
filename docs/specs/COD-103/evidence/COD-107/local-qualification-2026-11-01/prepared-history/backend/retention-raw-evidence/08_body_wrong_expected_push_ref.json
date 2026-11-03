@@ -1,9 +1,0 @@
-{
-  "command": "cargo test --locked -p xtask native_retention_actual_body_is_cod107_only -- --nocapture",
-  "exit_code": 101,
-  "running": false,
-  "capture": "BashResult.output combined stdout/stderr; not split by harness",
-  "note": "selector test failed because push payload and GITHUB_REF test values disagreed",
-  "output_file": "08_body_wrong_expected_push_ref.combined-output.txt",
-  "output_sha256": "93a1b2b00c883389aadbee5b18f2c8df25e8ec25115702142f3a3b7bcf8e405e"
-}

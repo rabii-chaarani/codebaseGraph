@@ -1,3 +1,0 @@
-#!/bin/sh
-printf "unexpected git call: %s\n" "$*" >> "$RUNNER_TEMP/unexpected-calls"
-exit 97

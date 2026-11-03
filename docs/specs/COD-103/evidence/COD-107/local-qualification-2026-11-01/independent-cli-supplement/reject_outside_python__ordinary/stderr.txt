@@ -1,2 +1,0 @@
-FAIL: python-file-present: outside.py must not be maintained source.
-release gate failed

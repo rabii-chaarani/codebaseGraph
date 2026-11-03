@@ -1,7 +1,0 @@
-    Finished `native-tests` profile [optimized] target(s) in 0.06s
-────────────
- Nextest run ID 2b95310d-9221-42ba-8c04-1b52933c5288 with nextest profile: mcpdiagnostic
-    Starting 1 test across 1 binary (847 tests skipped)
-        PASS [   6.810s] (1/1) codebase-graph adapters::cli::tests::mcp::mcp_stdio_serves_tools_and_tool_errors
-────────────
-     Summary [   6.812s] 1 test run: 1 passed, 847 skipped

@@ -1,9 +1,0 @@
-{
-  "command": "cargo fmt --package xtask -- --check",
-  "exit_code": 1,
-  "running": false,
-  "capture": "BashResult.output combined stdout/stderr; not split by harness",
-  "note": "Rust parser rejected malformed raw JSON test literal",
-  "output_file": "07_body_initial_bad_json_literal.combined-output.txt",
-  "output_sha256": "4be22e4ec0e8ee56c38c35ba87c004448f2b0c67c46e4f5ed0dce38d139ef47b"
-}

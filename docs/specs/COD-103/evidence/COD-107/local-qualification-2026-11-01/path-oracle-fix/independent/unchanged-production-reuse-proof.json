@@ -1,9 +1,0 @@
-{
-  "old_main_sha256": "e4d256e451c03f447a4e374ed361d0d0b23d2898977d51953995fa307d896f1e",
-  "new_main_sha256": "076dd22a1da16a6d651016b7227536f1d65de766ff6c09a3dcb02631c51af5da",
-  "production_prefix_before_test_module_byte_equal": true,
-  "production_prefix_sha256": "569b9bfcb669917a172408cb0c315d4791564f6c29fb21257eb5661fc7fbe70e",
-  "actual_diff": "actual-path-oracle-only.diff",
-  "prior18CLI_results": "Reused only as previous actual execution on byte-identical production prefix/CLI gate input behavior. No new18caseexecution or relabelledsourcehash claimed.",
-  "prior_crates": "Actual clean2c4VCS-bound bytes unchanged historical inputs; no packagecommand on current dirtymain or futureVCS claim."
-}

@@ -1,9 +1,0 @@
-{
-  "command": "cargo clippy --locked -p xtask --all-targets -- -D warnings",
-  "exit_code": 0,
-  "running": false,
-  "capture": "BashResult.output combined stdout/stderr; not split by harness",
-  "note": "final strict Clippy pass",
-  "output_file": "17_scoped_clippy_final_pass.combined-output.txt",
-  "output_sha256": "c92508a29848820f033cd2ea015c85dde0953c88b07cc967ce34b7c08f610549"
-}
