@@ -1,8 +1,0 @@
-{
-  "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-b5aa2377/cod110-local-windows-baseline-repro": {
-    "manifest_sha256": "393c0cd702a785ee5ac4a4378447f5ce6bb3cfd6cc8fa8fae9e19986cbee4ced"
-  },
-  "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-b5aa2377/cod110-crlf-local-windows-verification": {
-    "manifest_sha256": "19570ec28a14ab9214e344cae77d7bd01b98638fb5fd8351bc49067cca42aa76"
-  }
-}

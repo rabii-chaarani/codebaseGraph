@@ -1,8 +1,0 @@
-[master (root-commit) 96d44cd] test: bind committed metadata fixture
- 6 files changed, 2623 insertions(+)
- create mode 100644 .release-please-manifest.json
- create mode 100644 CHANGELOG.md
- create mode 100644 Cargo.lock
- create mode 100644 Cargo.toml
- create mode 100644 crates/k-wiki/Cargo.toml
- create mode 100644 crates/xtask/Cargo.toml

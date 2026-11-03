@@ -1,4 +1,0 @@
-
-thread 'release::tests::candidate_metadata_accepts_current_real_generated_six_file_layout' (1208) panicked at crates\xtask\src\release.rs:551:83:
-called `Result::unwrap()` on an `Err` value: "root Cargo.toml has unsupported or ambiguous generated metadata"
-note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace

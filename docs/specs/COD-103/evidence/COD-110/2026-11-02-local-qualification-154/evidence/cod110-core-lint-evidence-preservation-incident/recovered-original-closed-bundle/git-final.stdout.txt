@@ -1,9 +1,0 @@
-754c82f4dc22c203c22a433f5bbae5f2f6e80231
-fdf2f21db4c05965a7c4020075a9e66fddfa2db5
- M crates/xtask/src/ci.rs
- M crates/xtask/src/main.rs
- M crates/xtask/src/release.rs
- crates/xtask/src/ci.rs      | 906 +++++++++++++++++++++++++++++++++++++++++++-
- crates/xtask/src/main.rs    | 222 ++++++++---
- crates/xtask/src/release.rs | 686 +++++++++++++++++++++++++++++----
- 3 files changed, 1684 insertions(+), 130 deletions(-)

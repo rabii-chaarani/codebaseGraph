@@ -1,7 +1,0 @@
- M .github/workflows/ci.yml
- M .github/workflows/release.yml
- M crates/xtask/src/ci.rs
- M crates/xtask/src/main.rs
- M crates/xtask/src/release.rs
- M crates/xtask/src/release/workflow_tests.rs
- M docs/release.md

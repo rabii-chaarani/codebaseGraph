@@ -1,9 +1,0 @@
-{
-  "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
-  "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
-  "LBUG_VERSION": "0.19.0",
-  "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
-  "MACOSX_DEPLOYMENT_TARGET": "13.3",
-  "CARGO_BUILD_JOBS": "2",
-  "GIT_OPTIONAL_LOCKS": "0"
-}

@@ -1,8 +1,0 @@
-rustfmt --edition 2021 --config skip_children=true crates/xtask/src/ci.rs
-exit=0
-
-cargo fmt --all --check
-exit=0
-
-LBUG_LIBRARY_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_INCLUDE_DIR=/private/tmp/codebasegraph-copy153-evidence/native019 LBUG_VERSION=0.19.0 OPENSSL_LIB_DIR=/opt/homebrew/Cellar/openssl@3/3.6.2/lib MACOSX_DEPLOYMENT_TARGET=13.3 CARGO_BUILD_JOBS=2 GIT_OPTIONAL_LOCKS=0 cargo test --offline --locked -p xtask --bin xtask --profile native-tests verify_checkout_accepts_stale_stat_without_mutating_index
-exit=0

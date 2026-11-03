@@ -1,8 +1,0 @@
-﻿{
-    "index_before":  "76b8ab081ea5e6829dc015b5db1cc7b80bb180331d4624b829d40506c0bcb48d",
-    "index_after":  "76b8ab081ea5e6829dc015b5db1cc7b80bb180331d4624b829d40506c0bcb48d",
-    "unchanged":  true,
-    "ended_utc":  "2026-11-02T09:38:23.0700264Z",
-    "test_invocations":  4,
-    "no_cargo_or_build":  true
-}

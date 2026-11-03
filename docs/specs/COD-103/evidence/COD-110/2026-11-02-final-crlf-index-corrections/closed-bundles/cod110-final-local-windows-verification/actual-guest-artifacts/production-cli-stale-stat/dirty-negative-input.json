@@ -1,6 +1,0 @@
-﻿{
-    "path":  "Cargo.toml",
-    "sha256":  "630f7c6578b585cf5a90d3b401afee69e70efe487c275ee38c388ceddd0f3db8",
-    "expected":  "Reject real tracked content change despite stale-stat, no normalization waiver",
-    "mtime_utc":  "2026-11-02T11:15:46.2707974Z"
-}

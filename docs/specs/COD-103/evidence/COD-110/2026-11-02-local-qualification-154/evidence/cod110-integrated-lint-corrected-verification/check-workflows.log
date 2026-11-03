@@ -1,4 +1,0 @@
-   Compiling xtask v4.0.5 (/private/tmp/codebasegraph-cod110-20261101/crates/xtask)
-    Finished `native-tests` profile [optimized] target(s) in 4.14s
-     Running `target/native-tests/xtask check-workflows`
-workflow policy passed

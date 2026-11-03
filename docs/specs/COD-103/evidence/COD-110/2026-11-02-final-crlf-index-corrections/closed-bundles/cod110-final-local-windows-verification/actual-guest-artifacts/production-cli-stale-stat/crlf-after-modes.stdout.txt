@@ -1,6 +1,0 @@
-100644 824fecd7d6fcc70bd0d4a99fd41227a3a852112a 0	.release-please-manifest.json
-100644 ac441b32456697a40cc19423edb7f8cd9ccf972a 0	CHANGELOG.md
-100644 26a3c2b212c40fd20d8994379b52a062c6b36151 0	Cargo.lock
-100644 edc36c806feeac102c6a7023710fc6af78aafa5f 0	Cargo.toml
-100644 daefc138a978ae8d04bb88d4df3492302e610e73 0	crates/k-wiki/Cargo.toml
-100644 33dd4a867b9d66e4aa9c815ac212eda7787e5d06 0	crates/xtask/Cargo.toml

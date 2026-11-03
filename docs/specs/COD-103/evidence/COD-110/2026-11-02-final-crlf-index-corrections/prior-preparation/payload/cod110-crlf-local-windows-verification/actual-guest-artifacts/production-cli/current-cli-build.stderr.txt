@@ -1,2 +1,0 @@
-   Compiling xtask v4.0.5 (C:\Users\rabii\AppData\Local\Temp\c110-fix-b5aa2377\crates\xtask)
-    Finished `native-tests` profile [optimized] target(s) in 10.50s

@@ -1,6 +1,0 @@
-i/lf    w/crlf  attr/                 	.release-please-manifest.json
-i/lf    w/crlf  attr/                 	CHANGELOG.md
-i/lf    w/crlf  attr/                 	Cargo.lock
-i/lf    w/crlf  attr/                 	Cargo.toml
-i/lf    w/crlf  attr/                 	crates/k-wiki/Cargo.toml
-i/lf    w/crlf  attr/                 	crates/xtask/Cargo.toml
