@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.1.0](https://github.com/rabii-chaarani/codebaseGraph/compare/v4.0.5...v4.1.0) (2026-11-03)
+
+
+### Features
+
+* **release:** consolidate approved COD-103 production gates ([053ef0e](https://github.com/rabii-chaarani/codebaseGraph/commit/053ef0e6b85259056a5766e637a0edd94a682b4e))
+
 ## [4.0.5](https://github.com/rabii-chaarani/codebaseGraph/compare/v4.0.4...v4.0.5) (2026-10-31)
 
 
