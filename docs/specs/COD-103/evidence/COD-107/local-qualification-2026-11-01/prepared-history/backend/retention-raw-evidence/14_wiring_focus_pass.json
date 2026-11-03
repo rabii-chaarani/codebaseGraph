@@ -1,9 +1,0 @@
-{
-  "command": "cargo test --locked -p xtask workflow_policy_retention_wiring_is_closed -- --nocapture",
-  "exit_code": 0,
-  "running": false,
-  "capture": "BashResult.output combined stdout/stderr; not split by harness",
-  "note": "typed wiring mutation test pass",
-  "output_file": "14_wiring_focus_pass.combined-output.txt",
-  "output_sha256": "1d534868eac757af3cac0fd956343ac557d145ba451cd9cb77c82e37f447605b"
-}

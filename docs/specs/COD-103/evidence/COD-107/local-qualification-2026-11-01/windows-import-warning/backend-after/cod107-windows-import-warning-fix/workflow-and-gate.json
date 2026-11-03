@@ -1,6 +1,0 @@
-{
-  "command": "cargo run -p xtask --locked -- check-workflows && cargo run -p xtask --locked -- release-gate",
-  "exit_code": 0,
-  "capture": "combined stdout/stderr string from BashResult",
-  "output_sha256": "6518acfbd0561b76566104e1643285fcc6f858e8ccad61509dd5b01560ff3c86"
-}

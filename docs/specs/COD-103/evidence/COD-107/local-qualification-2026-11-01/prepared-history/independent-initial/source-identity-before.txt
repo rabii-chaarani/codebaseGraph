@@ -1,9 +1,0 @@
- M .github/workflows/ci.yml
- M crates/xtask/src/main.rs
- M docs/release.md
-08d2c060bba8bf45db069fe53185f06f5b3d6cd9
-09552870917f232f59005cd73e41c788b0163dca
- .github/workflows/ci.yml |   37 +-
- crates/xtask/src/main.rs | 1504 +++++++++++++++++++++++++++++++++++++++++++++-
- docs/release.md          |   25 +-
- 3 files changed, 1536 insertions(+), 30 deletions(-)

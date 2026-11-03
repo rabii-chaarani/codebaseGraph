@@ -1,9 +1,0 @@
-{
-  "command": "cargo test --locked -p xtask required_rejects_retention_selector_failure -- --nocapture",
-  "exit_code": 0,
-  "running": false,
-  "capture": "BashResult.output combined stdout/stderr; not split by harness",
-  "note": "actual existing required body execution pass",
-  "output_file": "15_required_focus_pass.combined-output.txt",
-  "output_sha256": "dd9f58ed075f51a650160b86bc5bb1994c154ff6a44f02036c7717734691b25e"
-}

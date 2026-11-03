@@ -1,2 +1,0 @@
-FAIL: workflow-python-tooling-present: .github/workflows/ci.yml contains actions/setup-python.
-release gate failed

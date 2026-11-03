@@ -1,9 +1,0 @@
-{
-  "command": "cargo test --locked -p xtask workflow_policy_retention_wiring_is_closed -- --nocapture",
-  "exit_code": 101,
-  "running": false,
-  "capture": "BashResult.output combined stdout/stderr; not split by harness",
-  "note": "test module initially missing imports for restored helpers",
-  "output_file": "02_policy_initial_compile_failure.combined-output.txt",
-  "output_sha256": "1e28fe0d1fadfe66556ffbb984d1123a2231b44d3aaefb9e62235e881111442f"
-}

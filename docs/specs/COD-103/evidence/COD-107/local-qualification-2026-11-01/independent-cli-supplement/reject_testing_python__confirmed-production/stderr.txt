@@ -1,2 +1,0 @@
-FAIL: python-file-present: testing/helper.py must not be maintained source.
-release gate failed
