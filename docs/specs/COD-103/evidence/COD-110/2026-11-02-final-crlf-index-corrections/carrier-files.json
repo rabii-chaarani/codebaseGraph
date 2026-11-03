@@ -1,0 +1,31 @@
+{
+  "format_version": 1,
+  "scope": "New physical transport files only; unchanged files are not relisted.",
+  "self_excluded": "docs/specs/COD-103/evidence/COD-110/2026-11-02-final-crlf-index-corrections/carrier-files.json",
+  "files": [
+    {
+      "path": "docs/specs/COD-103/evidence/COD-110/2026-11-02-final-crlf-index-corrections/prior-preparation/payload/cod110-hosted-pr-independent/run-logs.tar",
+      "bytes": 13926400,
+      "sha256": "4d030504502194bf580c3b036d51c16cf72c5d24c35a069ef0d6acf1350cff01",
+      "git_mode": "100644"
+    },
+    {
+      "path": "docs/specs/COD-103/evidence/COD-110/2026-11-02-final-crlf-index-corrections/prior-preparation/payload/cod110-local-windows-baseline-repro/before-owned-wrapper-cleanup/actual-local-temp-resumed.tar",
+      "bytes": 962560,
+      "sha256": "8031a9ef05a329afafeda5426a2e4c3e0fa21f60dd3d17f9f7c6108e5e30a2bf",
+      "git_mode": "100644"
+    },
+    {
+      "path": "docs/specs/COD-103/evidence/COD-110/2026-11-02-final-crlf-index-corrections/carrier-map.json",
+      "bytes": 133777,
+      "sha256": "7c7f4856e47ae40698c8350f5d1844ce3809734aa2fe7977b1492c3bd38c5005",
+      "git_mode": "100644"
+    },
+    {
+      "path": "docs/specs/COD-103/evidence/COD-110/2026-11-02-final-crlf-index-corrections/TRANSPORT.md",
+      "bytes": 1873,
+      "sha256": "8a95c07cf36c0d5bfe17e59bebf57e0404ffa81ce48e6d67465b0c96a797fc17",
+      "git_mode": "100644"
+    }
+  ]
+}

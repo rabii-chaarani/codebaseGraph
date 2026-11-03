@@ -1,5 +1,0 @@
-﻿2026-11-02T06:10:39.5844688Z Post job cleanup.
-2026-11-02T06:10:39.5856888Z ##[start-action display=Restore Ladybug dependency;id=__bd9ca22d-d9d3-4314-a29b-1464d8a4d0cb.ladybug-cache]
-2026-11-02T06:10:39.6081291Z Post job cleanup.
-2026-11-02T06:10:39.7542345Z Cache hit occurred on the primary key lbug-0.19.0-windows-x86_64-v1, not saving cache.
-2026-11-02T06:10:39.7625740Z ##[end-action id=__bd9ca22d-d9d3-4314-a29b-1464d8a4d0cb.ladybug-cache;outcome=success;conclusion=success;duration_ms=176]

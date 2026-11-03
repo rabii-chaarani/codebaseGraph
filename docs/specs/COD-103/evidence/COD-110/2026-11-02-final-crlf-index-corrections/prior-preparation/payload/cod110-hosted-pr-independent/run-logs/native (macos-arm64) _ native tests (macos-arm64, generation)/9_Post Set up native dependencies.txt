@@ -1,5 +1,0 @@
-﻿2026-11-02T05:43:39.4232970Z Post job cleanup.
-2026-11-02T05:43:39.4239530Z ##[start-action display=Restore Ladybug dependency;id=__ca761f9a-49df-4ad3-b66b-ab59e06f9cbd.ladybug-cache]
-2026-11-02T05:43:39.4307020Z Post job cleanup.
-2026-11-02T05:43:39.5540650Z Cache hit occurred on the primary key lbug-0.19.0-macos-arm64-v1, not saving cache.
-2026-11-02T05:43:39.5564530Z ##[end-action id=__ca761f9a-49df-4ad3-b66b-ab59e06f9cbd.ladybug-cache;outcome=success;conclusion=success;duration_ms=132]

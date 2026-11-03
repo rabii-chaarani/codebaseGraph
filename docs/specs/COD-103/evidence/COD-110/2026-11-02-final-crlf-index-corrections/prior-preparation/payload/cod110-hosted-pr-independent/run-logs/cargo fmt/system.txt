@@ -1,8 +1,0 @@
-2026-11-02T05:26:05.0300000Z Job is waiting for a hosted runner to come online.
-2026-11-02T05:26:05.0310000Z Job is about to start running on the hosted runner: GitHub Actions 1000009427
-2026-11-02T05:26:05.0220000Z Evaluating fmt.if
-2026-11-02T05:26:05.0220000Z Evaluating: success()
-2026-11-02T05:26:05.0220000Z Result: true
-2026-11-02T05:26:05.0240000Z Requested labels: ubuntu-latest
-2026-11-02T05:26:05.0240000Z Job defined at: rabii-chaarani/codebaseGraph/.github/workflows/ci.yml@refs/pull/178/merge
-2026-11-02T05:26:05.0240000Z Waiting for a runner to pick up this job...
