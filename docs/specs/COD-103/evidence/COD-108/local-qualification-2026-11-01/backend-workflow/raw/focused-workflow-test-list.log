@@ -1,9 +1,0 @@
-COMMAND: cd "/private/tmp/codebasegraph-cod108-20261101" && cargo test -p xtask --locked tests::required_executes_current_full_and_lightweight_bodies_with_eight_exact_results tests::required_rejects_missing_malformed_or_wrong_mode_results_and_stale_identity tests::ci_identity_body_executes_trusted_release_pr_and_fails_closed tests::ci_decision_body_executes_protected_classifier_and_falls_back_full tests::native_retention_actual_body_is_cod107_only tests::native_retention_invalid_input_cannot_succeed tests::workflow_policy_accepts_exact_cod103_stack_bases tests::workflow_policy_rejects_unknown_stack_base_and_push_namespace tests::workflow_policy_rejects_missing_repository_release_gate
-EXIT: 1
-OUTPUT:
-error: unexpected argument 'tests::required_rejects_missing_malformed_or_wrong_mode_results_and_stale_identity' found
-
-Usage: cargo test [OPTIONS] [TESTNAME] [-- [ARGS]...]
-
-For more information, try '--help'.
-

@@ -1,9 +1,0 @@
-{
-  "command": "cargo test --locked -p xtask native_retention_ -- --nocapture",
-  "exit_code": 0,
-  "running": false,
-  "capture": "BashResult.output combined stdout/stderr; not split by harness",
-  "note": "two actual selector tests final focused pass",
-  "output_file": "13_retention_focus_pass.combined-output.txt",
-  "output_sha256": "09ba38c02d89eea64636c16816d628d429da81de8eca675a6a8d120ed906d4cc"
-}

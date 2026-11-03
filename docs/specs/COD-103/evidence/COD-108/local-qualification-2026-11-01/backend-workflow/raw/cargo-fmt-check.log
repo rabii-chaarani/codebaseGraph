@@ -1,4 +1,0 @@
-COMMAND: cd "/private/tmp/codebasegraph-cod108-20261101" && cargo fmt --check
-EXIT: 0
-OUTPUT:
-

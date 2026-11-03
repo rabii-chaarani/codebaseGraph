@@ -1,9 +1,0 @@
-{
-  "command": "cargo test --locked -p xtask native_retention_actual_body_is_cod107_only -- --nocapture",
-  "exit_code": 101,
-  "running": false,
-  "capture": "BashResult.output combined stdout/stderr; not split by harness",
-  "note": "fixture mislabeled missing GITHUB_EVENT_NAME while providing push",
-  "output_file": "12_missing_event_name_fixture_incorrect.combined-output.txt",
-  "output_sha256": "be0a312d2b353b77f3de6f1ecc7616026c5469953f1974df35d68898aa8cbeca"
-}

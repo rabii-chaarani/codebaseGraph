@@ -1,6 +1,0 @@
-COMMAND: cd "/private/tmp/codebasegraph-cod108-20261101" && cargo clippy -p xtask --all-targets --all-features --locked -- -D warnings
-EXIT: 0
-OUTPUT:
-    Checking xtask v4.0.5 (/private/tmp/codebasegraph-cod108-20261101/crates/xtask)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.41s
-

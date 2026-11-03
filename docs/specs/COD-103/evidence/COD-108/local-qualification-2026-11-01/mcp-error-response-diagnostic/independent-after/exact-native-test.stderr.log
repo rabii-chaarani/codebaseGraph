@@ -1,7 +1,0 @@
-   Compiling codebase-graph v4.0.5 (/private/tmp/codebasegraph-cod108-20261101)
-    Finished `native-tests` profile [optimized] target(s) in 57.93s
-     Running unittests src/lib.rs (target/native-tests/deps/codebase_graph-51c13b6bd229e743)
-     Running unittests src/bin/codebase-graph.rs (target/native-tests/deps/codebase_graph-4cf0338530b70a2d)
-     Running unittests src/lib.rs (target/native-tests/deps/k_wiki-83f509984641ebfc)
-     Running unittests src/bin/k-wiki.rs (target/native-tests/deps/k_wiki-0f15c9f6754ce401)
-     Running unittests src/main.rs (target/native-tests/deps/xtask-f988896c0fd261c9)

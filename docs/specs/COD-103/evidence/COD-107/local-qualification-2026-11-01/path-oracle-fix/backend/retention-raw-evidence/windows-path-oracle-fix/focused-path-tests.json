@@ -1,6 +1,0 @@
-{
-  "command": "cargo test --locked -p xtask docs_python_gate_rejects_neighbors_root_tooling_and_workflow_python -- --nocapture && cargo test --locked -p xtask docs_python_exception_rejects_component_aliases_and_symlinks -- --nocapture",
-  "exit_code": 0,
-  "streams": "BashResult combined stdout/stderr; not split",
-  "output_sha256": "664f50d5df690c586573c08a727bb330934b27b6d4b4baf2e70680b7af01d33a"
-}

@@ -1,7 +1,0 @@
-{
-  "raw_Git_diff_limit_bytes": 2097152,
-  "individual_blob_limit_bytes": 2097152,
-  "source_lines": "ci.rs15-16; git boundedreadmax+1/read_blob andacquire failurefull",
-  "this_verifier_changed_constants": false,
-  "resource_policy": "Existingassignedimplementationguardsdisclosed, not disabled/waived/raised; nativeprofile/jobs2/serialretries0unchanged."
-}

@@ -1,9 +1,0 @@
-{
-  "command": "cargo fmt --package xtask -- --check",
-  "exit_code": 1,
-  "running": false,
-  "capture": "BashResult.output combined stdout/stderr; not split by harness",
-  "note": "initial format check; proposed/inserted duplicate policy helper state",
-  "output_file": "01_fmt_after_helpers.combined-output.txt",
-  "output_sha256": "2b9b23d49d61a0536bac08cc1fa15eca433927bb64b8f37bd22af6974547c470"
-}

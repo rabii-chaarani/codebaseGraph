@@ -1,7 +1,0 @@
-diff --git a/crates/xtask/src/main.rs b/crates/xtask/src/main.rs
---- a/crates/xtask/src/main.rs
-+++ b/crates/xtask/src/main.rs
-@@
--    fn retention_pr_event(
-+    #[cfg(unix)]
-+    fn retention_pr_event(
