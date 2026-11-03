@@ -120,6 +120,14 @@ jobs:
             if [[ "$(jq -r .object.type <<<"$ref")" == 'tag' ]]; then
               source_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$source_sha" --jq '.object.sha')"
             fi
+            [[ "$source_sha" =~ ^[0-9a-f]{40}$ ]] || { echo 'Invalid source SHA.' >&2; exit 1; }
+            main_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
+            [[ "$main_sha" =~ ^[0-9a-f]{40}$ ]] || { echo 'Invalid current main SHA.' >&2; exit 1; }
+            ancestry="$(gh api "repos/$GITHUB_REPOSITORY/compare/$source_sha...$main_sha" --jq '.status')"
+            case "$ancestry" in
+              identical|ahead) ;;
+              *) echo 'Release source is not in current main history.' >&2; exit 1 ;;
+            esac
             ci_run_id=''
             should_publish=true
             artifact_source="$MANUAL_SOURCE"
@@ -246,6 +254,64 @@ jobs:
           done
           echo "Timed out waiting for successful CI for $SOURCE_SHA." >&2
           exit 1
+
+  crate-preflight:
+    name: verify selected crate before publication
+    needs: [release-target, ci-gate]
+    if: needs.release-target.outputs.should-publish == 'true' && needs.release-target.outputs.automatic == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      artifact-name: ${{ steps.preflight.outputs.artifact-name }}
+      run-id: ${{ steps.preflight.outputs.run-id }}
+      run-attempt: ${{ steps.preflight.outputs.run-attempt }}
+    steps:
+      - name: Check out immutable workflow helper
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: workflow-helper
+          persist-credentials: false
+      - name: Check out selected package source
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: main
+          fetch-depth: 0
+          path: selected-source
+          persist-credentials: false
+      - name: Verify exact-source package and size
+        id: preflight
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ needs.release-target.outputs.source-sha }}
+          RELEASE_TAG: ${{ needs.release-target.outputs.tag-name }}
+        run: |
+          set -euo pipefail
+          : "${GITHUB_WORKSPACE:?}" "${RUNNER_TEMP:?}" "${GITHUB_RUN_ID:?}" "${GITHUB_RUN_ATTEMPT:?}" "${GITHUB_OUTPUT:?}" "${SOURCE_SHA:?}" "${RELEASE_TAG:?}"
+          [[ "$GITHUB_RUN_ID" =~ ^[1-9][0-9]*$ && "$GITHUB_RUN_ATTEMPT" =~ ^[1-9][0-9]*$ ]] || {
+            echo 'Invalid crate preflight run identity.' >&2; exit 1;
+          }
+          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo 'Invalid selected source SHA.' >&2; exit 1; }
+          git -C "$GITHUB_WORKSPACE/selected-source" merge-base --is-ancestor "$SOURCE_SHA" HEAD
+          git -C "$GITHUB_WORKSPACE/selected-source" checkout --detach "$SOURCE_SHA"
+          report_dir="$RUNNER_TEMP/crate-preflight-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          mkdir "$report_dir"
+          cargo run --manifest-path "$GITHUB_WORKSPACE/workflow-helper/crates/xtask/Cargo.toml" --locked -- \
+            release-package-preflight --source-dir "$GITHUB_WORKSPACE/selected-source" \
+            --source-sha "$SOURCE_SHA" --tag "$RELEASE_TAG" --output "$report_dir/crate-preflight.json"
+          {
+            echo "artifact-name=crate-preflight-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+            echo "run-id=$GITHUB_RUN_ID"
+            echo "run-attempt=$GITHUB_RUN_ATTEMPT"
+          } >> "$GITHUB_OUTPUT"
+      - name: Retain successful crate preflight report
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ steps.preflight.outputs.artifact-name }}
+          path: ${{ runner.temp }}/${{ steps.preflight.outputs.artifact-name }}/crate-preflight.json
+          if-no-files-found: error
+          retention-days: 7
 
   production-gate:
     name: production release gate
@@ -389,6 +455,7 @@ jobs:
     needs:
       - release-target
       - validate-artifacts
+      - crate-preflight
     # Artifact promotion intentionally skips rebuild-artifacts. Override that skipped
     # ancestor only after every direct publication prerequisite succeeds.
     if: >-
@@ -396,6 +463,8 @@ jobs:
         always()
         && needs.release-target.result == 'success'
         && needs.validate-artifacts.result == 'success'
+        && ((needs.release-target.outputs.automatic == 'true' && needs.crate-preflight.result == 'success')
+            || (needs.release-target.outputs.automatic == 'false' && needs.crate-preflight.result == 'skipped'))
         && needs.release-target.outputs.publish_assets == 'true'
       }}
     runs-on: ubuntu-latest
@@ -421,6 +490,12 @@ jobs:
           ci-run-id: ${{ needs.release-target.outputs.ci-run-id }}
           expected-sha: ${{ needs.release-target.outputs.source-sha }}
           require-release: 'true'
+      - name: Download exact crate preflight report
+        if: needs.release-target.outputs.automatic == 'true'
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ needs.crate-preflight.outputs.artifact-name }}
+          path: dist/crate-preflight
       - name: Download immutable release metadata
         if: needs.release-target.outputs.automatic == 'true'
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -441,11 +516,33 @@ jobs:
           RELEASE_TAG: ${{ needs.release-target.outputs.tag-name }}
           RELEASE_PR: ${{ needs.release-target.outputs.release-pr }}
           VERIFIED_PR: ${{ steps.verified.outputs.release-pr }}
+          RELEASE_VERSION: ${{ needs.release-target.outputs.version }}
+          PREFLIGHT_RESULT: ${{ needs.crate-preflight.result }}
+          PREFLIGHT_ARTIFACT: ${{ needs.crate-preflight.outputs.artifact-name }}
+          PREFLIGHT_RUN_ID: ${{ needs.crate-preflight.outputs.run-id }}
+          PREFLIGHT_ATTEMPT: ${{ needs.crate-preflight.outputs.run-attempt }}
         run: |
           set -euo pipefail
           if [[ "$AUTOMATIC" == 'true' ]]; then
+            [[ "$PREFLIGHT_RESULT" == success && "$PREFLIGHT_RUN_ID" == "$GITHUB_RUN_ID" &&
+               "$PREFLIGHT_ATTEMPT" =~ ^[1-9][0-9]*$ && "$GITHUB_RUN_ATTEMPT" =~ ^[1-9][0-9]*$ &&
+               "$PREFLIGHT_ARTIFACT" == "crate-preflight-$GITHUB_RUN_ID-$PREFLIGHT_ATTEMPT" ]] || {
+              echo 'Missing or mismatched successful crate preflight producer.' >&2; exit 1;
+            }
+            (( PREFLIGHT_ATTEMPT <= GITHUB_RUN_ATTEMPT )) || { echo 'Invalid crate preflight attempt.' >&2; exit 1; }
+            [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ && "$RELEASE_VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ &&
+               "$RELEASE_TAG" == "v$RELEASE_VERSION" ]] || { echo 'Invalid crate preflight target.' >&2; exit 1; }
+            jq -se --arg sha "$SOURCE_SHA" --arg version "$RELEASE_VERSION" --arg tag "$RELEASE_TAG" '
+              length == 1 and (.[0] | type == "object" and .schema_version == 1 and
+              .source_sha == $sha and .version == $version and .tag_name == $tag and
+              (.verification == "publish-dry-run" or .verification == "package-already-published") and
+              (.crate_bytes | type == "number" and floor == . and . > 0 and . <= 10485760) and
+              (.crate_sha256 | type == "string" and test("^[0-9a-f]{64}$")))' dist/crate-preflight/crate-preflight.json >/dev/null
             [[ "$VERIFIED_PR" == "$RELEASE_PR" ]] || { echo 'Release PR identity changed.' >&2; exit 1; }
             jq -e --arg sha "$SOURCE_SHA" --arg tag "$RELEASE_TAG" '.source_sha == $sha and .tag_name == $tag' dist/metadata/release-metadata.json >/dev/null
+          elif [[ "$AUTOMATIC" != 'false' || "$PREFLIGHT_RESULT" != skipped ]]; then
+            echo 'Invalid legacy crate preflight state.' >&2
+            exit 1
           fi
           optional_get() {
             local response
@@ -507,6 +604,22 @@ jobs:
             # Preserve mutable published-release recovery, but skip matching assets.
             if verify_assets; then exit 0; fi
           fi
+          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo 'Invalid source SHA.' >&2; exit 1; }
+          if [[ "$AUTOMATIC" == 'false' ]]; then
+            current_ref="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$RELEASE_TAG")"
+            current_tag_sha="$(jq -r .object.sha <<<"$current_ref")"
+            if [[ "$(jq -r .object.type <<<"$current_ref")" == 'tag' ]]; then
+              current_tag_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$current_tag_sha" --jq '.object.sha')"
+            fi
+            [[ "$current_tag_sha" =~ ^[0-9a-f]{40}$ && "$current_tag_sha" == "$SOURCE_SHA" ]] || { echo 'Existing release tag points to a different commit.' >&2; exit 1; }
+          fi
+          main_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
+          [[ "$main_sha" =~ ^[0-9a-f]{40}$ ]] || { echo 'Invalid current main SHA.' >&2; exit 1; }
+          ancestry="$(gh api "repos/$GITHUB_REPOSITORY/compare/$SOURCE_SHA...$main_sha" --jq '.status')"
+          case "$ancestry" in
+            identical|ahead) ;;
+            *) echo 'Release source is not in current main history.' >&2; exit 1 ;;
+          esac
           gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber --repo "$GITHUB_REPOSITORY"
           verify_assets || { echo 'Remote asset verification failed; release was not published.' >&2; exit 1; }
           if [[ "$AUTOMATIC" == 'true' && "$(jq -r .draft <<<"$release")" == 'true' ]]; then
@@ -527,6 +640,7 @@ jobs:
     needs:
       - release-target
       - publish-release-assets
+      - crate-preflight
     # Keep the explicit status override through the final job so the intentionally
     # skipped rebuild ancestor cannot suppress crate publication either.
     if: >-
@@ -534,6 +648,7 @@ jobs:
         always()
         && needs.release-target.result == 'success'
         && needs.publish-release-assets.result == 'success'
+        && needs.crate-preflight.result == 'success'
         && needs.release-target.outputs.automatic == 'true'
         && needs.release-target.outputs.publish_assets == 'true'
       }}
@@ -548,24 +663,43 @@ jobs:
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: ${{ needs.release-target.outputs.source-sha }}
-      - name: Verify crates.io package
-        run: cargo publish --dry-run --locked
-      - name: Enforce crates.io package size limit
-        shell: bash
-        run: |
-          set -euo pipefail
-          cargo package --locked --no-verify
-          crate_path="$(find target/package -maxdepth 1 -type f -name 'codebase-graph-*.crate' -print -quit)"
-          test -n "$crate_path"
-          cargo run -p xtask -- verify-crate-size "$crate_path"
+      - name: Download exact crate preflight report
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ needs.crate-preflight.outputs.artifact-name }}
+          path: dist/crate-preflight
       - name: Publish crates.io package
         shell: bash
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
           CRATE_NAME: codebase-graph
           CRATE_VERSION: ${{ needs.release-target.outputs.version }}
+          SOURCE_SHA: ${{ needs.release-target.outputs.source-sha }}
+          RELEASE_TAG: ${{ needs.release-target.outputs.tag-name }}
+          RELEASE_VERSION: ${{ needs.release-target.outputs.version }}
+          PREFLIGHT_RESULT: ${{ needs.crate-preflight.result }}
+          PREFLIGHT_ARTIFACT: ${{ needs.crate-preflight.outputs.artifact-name }}
+          PREFLIGHT_RUN_ID: ${{ needs.crate-preflight.outputs.run-id }}
+          PREFLIGHT_ATTEMPT: ${{ needs.crate-preflight.outputs.run-attempt }}
         run: |
           set -euo pipefail
+          [[ "$PREFLIGHT_RESULT" == success && "$PREFLIGHT_RUN_ID" == "$GITHUB_RUN_ID" &&
+             "$PREFLIGHT_ATTEMPT" =~ ^[1-9][0-9]*$ && "$GITHUB_RUN_ATTEMPT" =~ ^[1-9][0-9]*$ &&
+             "$PREFLIGHT_ARTIFACT" == "crate-preflight-$GITHUB_RUN_ID-$PREFLIGHT_ATTEMPT" ]] || {
+            echo 'Missing or mismatched successful crate preflight producer.' >&2; exit 1;
+          }
+          (( PREFLIGHT_ATTEMPT <= GITHUB_RUN_ATTEMPT )) || { echo 'Invalid crate preflight attempt.' >&2; exit 1; }
+          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ && "$RELEASE_VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ &&
+             "$RELEASE_TAG" == "v$RELEASE_VERSION" ]] || { echo 'Invalid crate preflight target.' >&2; exit 1; }
+          jq -se --arg sha "$SOURCE_SHA" --arg version "$RELEASE_VERSION" --arg tag "$RELEASE_TAG" '
+            length == 1 and (.[0] | type == "object" and .schema_version == 1 and
+            .source_sha == $sha and .version == $version and .tag_name == $tag and
+            (.verification == "publish-dry-run" or .verification == "package-already-published") and
+            (.crate_bytes | type == "number" and floor == . and . > 0 and . <= 10485760) and
+            (.crate_sha256 | type == "string" and test("^[0-9a-f]{64}$")))' dist/crate-preflight/crate-preflight.json >/dev/null
+          [[ "$(git rev-parse HEAD)" == "$SOURCE_SHA" && "$CRATE_VERSION" == "$RELEASE_VERSION" ]] || {
+            echo 'Crate checkout or version differs from the successful preflight.' >&2; exit 1;
+          }
 
           version_is_published() {
             curl --fail --silent --show-error \

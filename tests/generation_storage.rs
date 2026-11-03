@@ -424,6 +424,7 @@ fn materialize_ok(
         .payload
 }
 
+#[cfg(unix)]
 fn materialize_err(
     repo_root: &Path,
     db_path: Option<PathBuf>,
