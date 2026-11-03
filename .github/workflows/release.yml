@@ -276,7 +276,8 @@ jobs:
       - name: Check out selected package source
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
-          ref: ${{ needs.release-target.outputs.source-sha }}
+          ref: main
+          fetch-depth: 0
           path: selected-source
           persist-credentials: false
       - name: Verify exact-source package and size
@@ -291,6 +292,9 @@ jobs:
           [[ "$GITHUB_RUN_ID" =~ ^[1-9][0-9]*$ && "$GITHUB_RUN_ATTEMPT" =~ ^[1-9][0-9]*$ ]] || {
             echo 'Invalid crate preflight run identity.' >&2; exit 1;
           }
+          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo 'Invalid selected source SHA.' >&2; exit 1; }
+          git -C "$GITHUB_WORKSPACE/selected-source" merge-base --is-ancestor "$SOURCE_SHA" HEAD
+          git -C "$GITHUB_WORKSPACE/selected-source" checkout --detach "$SOURCE_SHA"
           report_dir="$RUNNER_TEMP/crate-preflight-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
           mkdir "$report_dir"
           cargo run --manifest-path "$GITHUB_WORKSPACE/workflow-helper/crates/xtask/Cargo.toml" --locked -- \

@@ -324,6 +324,9 @@ case "${1:-}" in
       echo "Unexpected crate preflight invocation: $*" >&2
       exit 96
     }
+    if [[ "${REAL_PREFLIGHT_GIT:-false}" == true ]]; then
+      [[ "$("$REAL_GIT" -C "$GITHUB_WORKSPACE/selected-source" rev-parse HEAD)" == "$SOURCE_SHA" ]] || exit 98
+    fi
     case "$MOCK_PREFLIGHT_FAILURE" in
       dry-run) echo 'mock cargo dry-run failed' >&2; exit 41 ;;
       size) echo 'mock exact-size check failed' >&2; exit 42 ;;
@@ -378,6 +381,14 @@ esac
 set -euo pipefail
 printf '%s\0%s\0%s\0' "git" "$PWD" "$#" >> "$RUNNER_TEMP/process-calls"
 printf '%s\0' "$@" >> "$RUNNER_TEMP/process-calls"
+if [[ "$#" -ge 3 && "$1" == -C && "$2" == "$GITHUB_WORKSPACE/selected-source" ]]; then
+  if [[ "$#" -eq 6 && "$3" == merge-base && "$4" == --is-ancestor && "$5" == "$SOURCE_SHA" && "$6" == HEAD ]] ||
+     [[ "$#" -eq 5 && "$3" == checkout && "$4" == --detach && "$5" == "$SOURCE_SHA" ]]; then
+    [[ "${MOCK_GIT_ERROR:-false}" != true ]] || exit 73
+    if [[ "${REAL_PREFLIGHT_GIT:-false}" == true ]]; then exec "$REAL_GIT" "$@"; fi
+    exit 0
+  fi
+fi
 [[ "$#" -eq 2 && "$1" == rev-parse && "$2" == HEAD ]] || {
   echo "Unexpected Git invocation: $*" >&2
   exit 96
@@ -433,6 +444,7 @@ case "$1" in 15|30|45) exit 0 ;; *) echo "Unexpected sleep duration: $1" >&2; ex
             .env_clear()
             .envs([
                 ("PATH", path),
+                ("REAL_GIT", real_git().display().to_string()),
                 ("GITHUB_REPOSITORY", "owner/repo".into()),
                 ("GITHUB_SERVER_URL", "https://github.com".into()),
                 ("GITHUB_WORKSPACE", self.root.display().to_string()),
@@ -633,6 +645,13 @@ impl Drop for Fixture {
     }
 }
 
+fn real_git() -> PathBuf {
+    std::env::split_paths(&std::env::var_os("PATH").unwrap())
+        .map(|path| path.join("git"))
+        .find(|path| path.is_file())
+        .expect("Git is required by workflow tests")
+}
+
 fn guard() -> String {
     let action: yaml_serde::Value = yaml_serde::from_str(include_str!(
         "../../../../.github/actions/verified-release/action.yml"
@@ -712,11 +731,13 @@ fn crate_preflight_executes_the_selected_source_helper_and_names_the_current_att
     assert_success(&output);
 
     let calls = f.process_calls();
-    assert_eq!(calls.len(), 1, "{calls:?}");
-    assert_eq!(calls[0].program, "cargo");
-    assert_eq!(calls[0].cwd, f.root.display().to_string());
+    assert_eq!(calls.len(), 3, "{calls:?}");
+    assert_eq!(calls[0].program, "git");
+    assert_eq!(calls[1].program, "git");
+    assert_eq!(calls[2].program, "cargo");
+    assert_eq!(calls[2].cwd, f.root.display().to_string());
     assert_eq!(
-        calls[0].args,
+        calls[2].args,
         [
             "run",
             "--manifest-path",
@@ -751,6 +772,89 @@ fn crate_preflight_executes_the_selected_source_helper_and_names_the_current_att
 }
 
 #[test]
+fn crate_preflight_admits_only_exact_main_history_before_package_execution() {
+    for case in [
+        "tip",
+        "ancestor",
+        "sibling",
+        "missing",
+        "malformed",
+        "git-error",
+    ] {
+        let f = Fixture::new();
+        let repo = f.root.join("selected-source");
+        fs::create_dir_all(&repo).unwrap();
+        let git = |args: &[&str]| {
+            let output = Command::new(real_git())
+                .arg("-C")
+                .arg(&repo)
+                .args(args)
+                .env("GIT_AUTHOR_NAME", "Fixture")
+                .env("GIT_AUTHOR_EMAIL", "fixture@example.invalid")
+                .env("GIT_COMMITTER_NAME", "Fixture")
+                .env("GIT_COMMITTER_EMAIL", "fixture@example.invalid")
+                .output()
+                .unwrap();
+            assert_success(&output);
+            String::from_utf8(output.stdout).unwrap().trim().to_string()
+        };
+        git(&["init", "-b", "main"]);
+        git(&["commit", "--allow-empty", "-m", "base"]);
+        let ancestor = git(&["rev-parse", "HEAD"]);
+        git(&["commit", "--allow-empty", "-m", "tip"]);
+        let tip = git(&["rev-parse", "HEAD"]);
+        git(&["checkout", "--detach", &ancestor]);
+        git(&["commit", "--allow-empty", "-m", "sibling"]);
+        let sibling = git(&["rev-parse", "HEAD"]);
+        git(&["checkout", "main"]);
+        let source = match case {
+            "ancestor" => ancestor.as_str(),
+            "sibling" => sibling.as_str(),
+            "missing" => SHA,
+            "malformed" => "--help",
+            _ => tip.as_str(),
+        };
+        let output = f.execute(
+            &crate_preflight(),
+            &[
+                ("SOURCE_SHA", source),
+                ("REAL_PREFLIGHT_GIT", "true"),
+                (
+                    "MOCK_GIT_ERROR",
+                    if case == "git-error" { "true" } else { "false" },
+                ),
+            ],
+        );
+        let calls = f.process_calls();
+        if matches!(case, "tip" | "ancestor") {
+            assert_success(&output);
+            assert_eq!(git(&["rev-parse", "HEAD"]), source);
+            assert_eq!(
+                calls.iter().filter(|call| call.program == "cargo").count(),
+                1
+            );
+            assert!(f
+                .root
+                .join("crate-preflight-42-3/crate-preflight.json")
+                .is_file());
+        } else {
+            assert!(!output.status.success(), "accepted {case}");
+            assert_eq!(git(&["rev-parse", "HEAD"]), tip, "{case} changed checkout");
+            assert!(
+                calls.iter().all(|call| call.program != "cargo"),
+                "{case}: {calls:?}"
+            );
+            assert!(
+                !f.root.join("crate-preflight-42-3").exists(),
+                "{case} created report directory"
+            );
+            assert!(f.output().is_empty(), "{case} emitted outputs");
+        }
+        assert!(f.calls().is_empty(), "{case} made a GitHub request");
+    }
+}
+
+#[test]
 fn crate_preflight_child_failures_never_emit_a_report_or_job_outputs() {
     for (failure, status) in [("dry-run", 41), ("size", 42)] {
         let f = Fixture::new();
@@ -764,8 +868,8 @@ fn crate_preflight_child_failures_never_emit_a_report_or_job_outputs() {
             "{failure} emitted a successful report"
         );
         let calls = f.process_calls();
-        assert_eq!(calls.len(), 1, "{failure}: {calls:?}");
-        assert_eq!(calls[0].program, "cargo");
+        assert_eq!(calls.len(), 3, "{failure}: {calls:?}");
+        assert_eq!(calls[2].program, "cargo");
         assert!(f.calls().is_empty());
     }
 }

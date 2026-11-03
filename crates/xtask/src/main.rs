@@ -1653,8 +1653,9 @@ fn crate_preflight_policy_valid(release: &YamlValue) -> bool {
             == Some(false)
         && yaml_path(source_checkout, &["uses"]).and_then(YamlValue::as_str)
             == Some("actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10")
-        && yaml_path(source_checkout, &["with", "ref"]).and_then(YamlValue::as_str)
-            == Some("${{ needs.release-target.outputs.source-sha }}")
+        && yaml_path(source_checkout, &["with", "ref"]).and_then(YamlValue::as_str) == Some("main")
+        && yaml_path(source_checkout, &["with", "fetch-depth"]).and_then(YamlValue::as_i64)
+            == Some(0)
         && yaml_path(source_checkout, &["with", "path"]).and_then(YamlValue::as_str)
             == Some("selected-source")
         && yaml_path(source_checkout, &["with", "persist-credentials"])
@@ -1667,6 +1668,11 @@ fn crate_preflight_policy_valid(release: &YamlValue) -> bool {
             == Some("${{ needs.release-target.outputs.source-sha }}")
         && yaml_path(preflight, &["env", "RELEASE_TAG"]).and_then(YamlValue::as_str)
             == Some("${{ needs.release-target.outputs.tag-name }}")
+        && run.contains("[[ \"$SOURCE_SHA\" =~ ^[0-9a-f]{40}$ ]]")
+        && run.find("merge-base --is-ancestor \"$SOURCE_SHA\" HEAD")
+            .zip(run.find("checkout --detach \"$SOURCE_SHA\""))
+            .zip(run.find("cargo run --manifest-path"))
+            .is_some_and(|((admit, checkout), cargo)| admit < checkout && checkout < cargo)
         && run.contains("cargo run --manifest-path \"$GITHUB_WORKSPACE/workflow-helper/crates/xtask/Cargo.toml\"")
         && run.contains("release-package-preflight --source-dir \"$GITHUB_WORKSPACE/selected-source\"")
         && run.contains("--source-sha \"$SOURCE_SHA\" --tag \"$RELEASE_TAG\"")
@@ -6865,6 +6871,37 @@ mod tests {
             }),
             "missing current repository-policy rejection: {issues:?}"
         );
+    }
+
+    #[test]
+    fn workflow_policy_requires_protected_main_preflight_admission() {
+        let release: YamlValue = yaml_serde::from_str(&valid_release_workflow_text()).unwrap();
+        assert!(crate_preflight_policy_valid(&release));
+        for (field, value) in [
+            (
+                "ref",
+                YamlValue::String("${{ needs.release-target.outputs.source-sha }}".into()),
+            ),
+            ("fetch-depth", YamlValue::Number(1.into())),
+        ] {
+            let mut broken = release.clone();
+            broken["jobs"]["crate-preflight"]["steps"][1]["with"][field] = value;
+            assert!(
+                !crate_preflight_policy_valid(&broken),
+                "accepted checkout {field}"
+            );
+        }
+        let run = release["jobs"]["crate-preflight"]["steps"][2]["run"]
+            .as_str()
+            .unwrap();
+        for removed in [
+            "git -C \"$GITHUB_WORKSPACE/selected-source\" merge-base --is-ancestor \"$SOURCE_SHA\" HEAD",
+            "[[ \"$SOURCE_SHA\" =~ ^[0-9a-f]{40}$ ]]",
+        ] {
+            let mut broken = release.clone();
+            broken["jobs"]["crate-preflight"]["steps"][2]["run"] = YamlValue::String(run.replace(removed, "true"));
+            assert!(!crate_preflight_policy_valid(&broken), "accepted missing admission {removed}");
+        }
     }
 
     #[test]
