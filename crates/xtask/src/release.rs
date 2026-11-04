@@ -75,14 +75,29 @@ fn package_preflight_with(
                 String::from_utf8_lossy(&output.stderr)
             ));
         }
-        let archive = target_dir
-            .join("package")
-            .join(format!("codebase-graph-{version}.crate"));
+        let package_dir = target_dir.join("package");
+        let archive_name = format!("codebase-graph-{version}.crate");
+        let archive = package_dir.join(&archive_name);
+        if !registry {
+            let staged = package_dir.join("tmp-crate").join(&archive_name);
+            fs::rename(&staged, &archive).map_err(|error| {
+                format!(
+                    "could not normalize verified Cargo archive {}: {error}; status {}\nstdout:\n{}\nstderr:\n{}",
+                    staged.display(),
+                    output.status,
+                    String::from_utf8_lossy(&output.stdout),
+                    String::from_utf8_lossy(&output.stderr)
+                )
+            })?;
+        }
         let bytes = fs::metadata(&archive)
             .map_err(|error| {
                 format!(
-                    "expected Cargo archive {} is unavailable: {error}",
-                    archive.display()
+                    "expected Cargo archive {} is unavailable: {error}; status {}\nstdout:\n{}\nstderr:\n{}",
+                    archive.display(),
+                    output.status,
+                    String::from_utf8_lossy(&output.stdout),
+                    String::from_utf8_lossy(&output.stderr)
                 )
             })?
             .len();
@@ -279,7 +294,7 @@ mod tests {
             ),
         );
         fake_executable(&cargo, &format!(
-            "#!/bin/sh\nprintf 'cargo cwd=%s\\n' \"$PWD\" >> {}\nprintf 'cargo argv=%s\\n' \"$*\" >> {}\ntarget=\"\"\nwhile [ $# -gt 0 ]; do if [ \"$1\" = --target-dir ]; then shift; target=\"$1\"; fi; shift; done\nmkdir -p \"$target/package\"\nprintf 'crate fixture' > \"$target/package/codebase-graph-4.0.5.crate\"\n",
+            "#!/bin/sh\nprintf 'cargo cwd=%s\\n' \"$PWD\" >> {}\nprintf 'cargo argv=%s\\n' \"$*\" >> {}\ntarget=\"\"\nwhile [ $# -gt 0 ]; do if [ \"$1\" = --target-dir ]; then shift; target=\"$1\"; fi; shift; done\nmkdir -p \"$target/package/tmp-crate\"\nprintf 'crate fixture' > \"$target/package/tmp-crate/codebase-graph-4.0.5.crate\"\n",
             log.display(),
             log.display()
         ));
@@ -344,7 +359,7 @@ mod tests {
         let curl = commands.join("curl");
         let cargo = commands.join("cargo");
         fake_executable(&curl, "#!/bin/sh\nprintf '\n404'");
-        fake_executable(&cargo, "#!/bin/sh\ntarget=\"\"\nwhile [ $# -gt 0 ]; do if [ \"$1\" = --target-dir ]; then shift; target=\"$1\"; fi; shift; done\nmkdir -p \"$target/package\"\nhead -c 10485760 /dev/zero > \"$target/package/codebase-graph-4.0.5.crate\"\n");
+        fake_executable(&cargo, "#!/bin/sh\ntarget=\"\"\nwhile [ $# -gt 0 ]; do if [ \"$1\" = --target-dir ]; then shift; target=\"$1\"; fi; shift; done\nmkdir -p \"$target/package/tmp-crate\"\nhead -c 10485760 /dev/zero > \"$target/package/tmp-crate/codebase-graph-4.0.5.crate\"\n");
         let report = commands.join("report.json");
         let result = package_preflight_with(
             &preflight_args(&fixture.root, &fixture.sha, &report),
@@ -373,6 +388,8 @@ printf '{"version":{"crate":"codebase-graph","num":"4.0.4"}}\n200'"###,
             ("curl", "#!/bin/sh\nexit 6", "curl-transport"),
             ("curl", "#!/bin/sh\nprintf '\n404'", "cargo-failure"),
             ("curl", "#!/bin/sh\nprintf '\n404'", "missing-archive"),
+            ("curl", "#!/bin/sh\nprintf '\n404'", "wrong-final"),
+            ("curl", "#!/bin/sh\nprintf '\n404'", "wrong-name"),
             ("curl", "#!/bin/sh\nprintf '\n404'", "oversize"),
             ("curl", "#!/bin/sh\nprintf '\n404'", "source-mutated"),
         ];
@@ -384,9 +401,17 @@ printf '{"version":{"crate":"codebase-graph","num":"4.0.4"}}\n200'"###,
             fake_executable(&curl, curl_body);
             let cargo_body = match kind {
                 "cargo-failure" => "#!/bin/sh\necho fake-cargo-failed >&2\nexit 7\n".to_string(),
-                "missing-archive" => "#!/bin/sh\ntarget=\"\"\nwhile [ $# -gt 0 ]; do if [ \"$1\" = --target-dir ]; then shift; target=\"$1\"; fi; shift; done\nmkdir -p \"$target/package\"\n".to_string(),
-                "oversize" => "#!/bin/sh\ntarget=\"\"\nwhile [ $# -gt 0 ]; do if [ \"$1\" = --target-dir ]; then shift; target=\"$1\"; fi; shift; done\nmkdir -p \"$target/package\"\nhead -c 10485761 /dev/zero > \"$target/package/codebase-graph-4.0.5.crate\"\n".to_string(),
-                "source-mutated" => format!("#!/bin/sh\ntarget=\"\"\nwhile [ $# -gt 0 ]; do if [ \"$1\" = --target-dir ]; then shift; target=\"$1\"; fi; shift; done\nmkdir -p \"$target/package\"\nprintf 'crate fixture' > \"$target/package/codebase-graph-4.0.5.crate\"\nprintf 'tampered\n' >> \"{}\"\n", fixture.root.join("Cargo.toml").display()),
+                "missing-archive" => "#!/bin/sh\ntarget=\"\"\nwhile [ $# -gt 0 ]; do if [ \"$1\" = --target-dir ]; then shift; target=\"$1\"; fi; shift; done\nmkdir -p \"$target/package/tmp-crate\"\n".to_string(),
+                "wrong-final" | "wrong-name" => {
+                    let relative = if kind == "wrong-final" {
+                        "package/codebase-graph-4.0.5.crate"
+                    } else {
+                        "package/tmp-crate/another-4.0.5.crate"
+                    };
+                    format!("#!/bin/sh\ntarget=\"\"\nwhile [ $# -gt 0 ]; do if [ \"$1\" = --target-dir ]; then shift; target=\"$1\"; fi; shift; done\nmkdir -p \"$target/package/tmp-crate\"\nprintf 'unrelated archive' > \"$target/{relative}\"\necho successful-cargo-output\necho successful-cargo-diagnostic >&2\n")
+                }
+                "oversize" => "#!/bin/sh\ntarget=\"\"\nwhile [ $# -gt 0 ]; do if [ \"$1\" = --target-dir ]; then shift; target=\"$1\"; fi; shift; done\nmkdir -p \"$target/package/tmp-crate\"\nhead -c 10485761 /dev/zero > \"$target/package/tmp-crate/codebase-graph-4.0.5.crate\"\n".to_string(),
+                "source-mutated" => format!("#!/bin/sh\ntarget=\"\"\nwhile [ $# -gt 0 ]; do if [ \"$1\" = --target-dir ]; then shift; target=\"$1\"; fi; shift; done\nmkdir -p \"$target/package/tmp-crate\"\nprintf 'crate fixture' > \"$target/package/tmp-crate/codebase-graph-4.0.5.crate\"\nprintf 'tampered\n' >> \"{}\"\n", fixture.root.join("Cargo.toml").display()),
                 _ => "#!/bin/sh\nexit 7\n".to_string(),
             };
             fake_executable(&cargo, &cargo_body);
@@ -394,6 +419,11 @@ printf '{"version":{"crate":"codebase-graph","num":"4.0.4"}}\n200'"###,
             let args = preflight_args(&fixture.root, &fixture.sha, &report);
             let result = package_preflight_with(&args, &curl, &cargo);
             assert!(result.is_err(), "{kind}: {result:?}");
+            if matches!(kind, "wrong-final" | "wrong-name") {
+                let error = result.unwrap_err();
+                assert!(error.contains("successful-cargo-output"), "{error}");
+                assert!(error.contains("successful-cargo-diagnostic"), "{error}");
+            }
             assert!(!report.exists(), "{kind}");
             fs::remove_dir_all(commands).unwrap();
         }
