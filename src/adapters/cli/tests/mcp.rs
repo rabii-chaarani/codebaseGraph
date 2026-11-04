@@ -323,9 +323,10 @@ fn mcp_stdio_serves_tools_and_tool_errors() {
         .is_some()));
 
     assert_eq!(
-        responses[2]["result"]["isError"], false,
-        "graph_health response: {}",
-        responses[2]
+        responses[2]["result"]["isError"],
+        false,
+        "unexpected graph_health MCP response: {}",
+        serde_json::to_string_pretty(&responses[2]).unwrap()
     );
     assert_eq!(responses[2]["result"]["structuredContent"]["ok"], true);
     assert_eq!(

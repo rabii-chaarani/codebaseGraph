@@ -1,5 +1,29 @@
 # Changelog
 
+## [4.2.0](https://github.com/rabii-chaarani/codebaseGraph/compare/v4.1.0...v4.2.0) (2026-11-04)
+
+
+### Features
+
+* **release:** consolidate approved COD-103 production gates ([053ef0e](https://github.com/rabii-chaarani/codebaseGraph/commit/053ef0e6b85259056a5766e637a0edd94a682b4e))
+
+
+### Bug Fixes
+
+* **ci:** archive historical Python evidence helpers ([#159](https://github.com/rabii-chaarani/codebaseGraph/issues/159)) ([34eac4f](https://github.com/rabii-chaarani/codebaseGraph/commit/34eac4f8644adc046093babd84ee1fdbffdae853))
+* **extensions:** enable default Windows bundled bytes (COD-53 subset) ([#158](https://github.com/rabii-chaarani/codebaseGraph/issues/158)) ([c4e9767](https://github.com/rabii-chaarani/codebaseGraph/commit/c4e9767d8f3ec92c40dd2f809b8421b8f9c78742))
+* **release:** bundle relocatable macOS OpenSSL runtimes (COD-54) ([#163](https://github.com/rabii-chaarani/codebaseGraph/issues/163)) ([c60a00c](https://github.com/rabii-chaarani/codebaseGraph/commit/c60a00c1d747b73789cd6edc7ee20601182a35ca))
+* **release:** normalize verified dry-run crate archive ([#181](https://github.com/rabii-chaarani/codebaseGraph/issues/181)) ([c04c8a5](https://github.com/rabii-chaarani/codebaseGraph/commit/c04c8a53d33a7f8107e965e503fc4f700880bde3))
+* **release:** upload verified assets before immutable publication ([#169](https://github.com/rabii-chaarani/codebaseGraph/issues/169)) ([a07e6d1](https://github.com/rabii-chaarani/codebaseGraph/commit/a07e6d1e322622b7cee5b5358816cb3d54c17647))
+* **storage:** isolate macOS nested directory scan cursors (COD-52) ([#157](https://github.com/rabii-chaarani/codebaseGraph/issues/157)) ([62dcb10](https://github.com/rabii-chaarani/codebaseGraph/commit/62dcb10305af07e24be7b1a960407f47135bf93c))
+
+## [4.1.0](https://github.com/rabii-chaarani/codebaseGraph/compare/v4.0.5...v4.1.0) (2026-11-03)
+
+
+### Features
+
+* **release:** consolidate approved COD-103 production gates ([053ef0e](https://github.com/rabii-chaarani/codebaseGraph/commit/053ef0e6b85259056a5766e637a0edd94a682b4e))
+
 ## [4.0.5](https://github.com/rabii-chaarani/codebaseGraph/compare/v4.0.4...v4.0.5) (2026-10-31)
 
 

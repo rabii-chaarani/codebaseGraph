@@ -44,6 +44,10 @@ function Assert-Binary {
         throw "SHA256 mismatch for $Name"
     }
     & $binaryPath $ProbeArgument | Out-Null
+    $probeExitCode = $LASTEXITCODE
+    if ($probeExitCode -ne 0) {
+        throw "Native probe failed for $Name ($ProbeArgument): exit code $probeExitCode"
+    }
 }
 
 function Install-Binary {
