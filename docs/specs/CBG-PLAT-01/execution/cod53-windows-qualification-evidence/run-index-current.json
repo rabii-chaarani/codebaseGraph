@@ -1,0 +1,362 @@
+[
+  {
+    "label": "probe-build",
+    "command": "cargo build --offline --release --manifest-path \"C:/Users/rcha0053/pr158-qualification/probe/Cargo.toml\"",
+    "cwd": "C:\\Users\\rcha0053\\pr158-qualification\\probe",
+    "overrides": {},
+    "pid": 32276,
+    "exit_code": 1,
+    "duration": 140.625
+  },
+  {
+    "label": "default-extension-tests-source",
+    "command": "cargo test --locked --offline --release --lib db_writer::extensions::tests:: -- --nocapture --test-threads 1",
+    "cwd": "C:\\Users\\rcha0053\\Repositories\\cbg-pr158",
+    "overrides": {},
+    "pid": 35100,
+    "exit_code": 1,
+    "duration": 37.48399999999856
+  },
+  {
+    "label": "default-extension-tests-source-fresh",
+    "command": "cargo test --locked --offline --release --lib db_writer::extensions::tests:: -- --nocapture --test-threads 1",
+    "cwd": "C:\\Users\\rcha0053\\Repositories\\cbg-pr158",
+    "overrides": {},
+    "pid": 20536,
+    "exit_code": 1,
+    "duration": 50.5
+  },
+  {
+    "label": "default-extension-tests-shared",
+    "command": "cargo test --locked --offline --release --lib db_writer::extensions::tests:: -- --nocapture --test-threads 1",
+    "cwd": "C:\\Users\\rcha0053\\Repositories\\cbg-pr158",
+    "overrides": {},
+    "pid": 23804,
+    "exit_code": 0,
+    "duration": 188.15600000000086
+  },
+  {
+    "label": "probe-build-shared",
+    "command": "cargo build --offline --release --manifest-path \"C:/Users/rcha0053/pr158-qualification/probe/Cargo.toml\"",
+    "cwd": "C:\\Users\\rcha0053\\pr158-qualification\\probe",
+    "overrides": {},
+    "pid": 32272,
+    "exit_code": 0,
+    "duration": 256.9529999999995
+  },
+  {
+    "label": "ladybug-shared-imports",
+    "command": "\"C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.39.33519/bin/Hostx64/x64/dumpbin.exe\" /dependents \"C:/Users/rcha0053/pr158-qualification/ladybug-shared-0.19.0/lbug_shared.dll\"",
+    "cwd": "C:\\Users\\rcha0053\\Repositories\\cbg-pr158",
+    "overrides": {},
+    "pid": 35220,
+    "exit_code": 157,
+    "duration": 1.2340000000003783
+  },
+  {
+    "label": "cargo-package",
+    "command": "cargo package --locked --offline --no-verify --target-dir \"C:/Users/rcha0053/pr158-qualification/package-target\"",
+    "cwd": "C:\\Users\\rcha0053\\Repositories\\cbg-pr158",
+    "overrides": {},
+    "pid": 5756,
+    "exit_code": 0,
+    "duration": 2.57799999999952
+  },
+  {
+    "label": "default-feature-tree",
+    "command": "cargo tree --offline --locked -p codebase-graph -e features -i codebase-graph",
+    "cwd": "C:\\Users\\rcha0053\\Repositories\\cbg-pr158",
+    "overrides": {},
+    "pid": 31284,
+    "exit_code": 0,
+    "duration": 1.734999999998763
+  },
+  {
+    "label": "optout-feature-tree",
+    "command": "cargo tree --offline --locked -p codebase-graph --no-default-features -e features -i codebase-graph",
+    "cwd": "C:\\Users\\rcha0053\\Repositories\\cbg-pr158",
+    "overrides": {},
+    "pid": 20536,
+    "exit_code": 0,
+    "duration": 1.6560000000008586
+  },
+  {
+    "label": "cargo-install-shared",
+    "command": "cargo install --path \"C:/Users/rcha0053/Repositories/cbg-pr158\" --locked --offline --root \"C:/Users/rcha0053/pr158-qualification/installed\" --bin codebase-graph",
+    "cwd": "C:\\Users\\rcha0053\\Repositories\\cbg-pr158",
+    "overrides": {},
+    "pid": 35196,
+    "exit_code": 1,
+    "duration": 189.23500000000058
+  },
+  {
+    "label": "ladybug-shared-imports",
+    "command": "MSYS2_ARG_CONV_EXCL='*' \"C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.39.33519/bin/Hostx64/x64/dumpbin.exe\" /dependents \"C:/Users/rcha0053/pr158-qualification/ladybug-shared-0.19.0/lbug_shared.dll\"",
+    "cwd": "C:\\Users\\rcha0053\\Repositories\\cbg-pr158",
+    "overrides": {},
+    "pid": 30584,
+    "exit_code": 0,
+    "duration": 1.0939999999991414
+  },
+  {
+    "label": "native-versions",
+    "command": "rustc -Vv; cargo -V; cmake --version; ninja --version; powershell -NoProfile -NonInteractive -Command '$PSVersionTable | ConvertTo-Json -Compress'; openssl version -a",
+    "cwd": "C:\\Users\\rcha0053\\Repositories\\cbg-pr158",
+    "overrides": {},
+    "pid": 24356,
+    "exit_code": 0,
+    "duration": 4.406999999999243
+  },
+  {
+    "label": "default-extension-tests-shared-wrapped",
+    "command": "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"C:/Users/rcha0053/pr158-qualification/run-native.ps1\" \"C:/Users/rcha0053/pr158-qualification/target/release/deps/codebase_graph-3cda96f058e84b64.exe\" db_writer::extensions::tests:: --nocapture --test-threads 1",
+    "cwd": "C:\\Users\\rcha0053\\pr158-qualification",
+    "overrides": {},
+    "pid": 22436,
+    "exit_code": 0,
+    "duration": 3.563000000000102
+  },
+  {
+    "label": "test-inventory",
+    "command": "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"C:/Users/rcha0053/pr158-qualification/run-native.ps1\" \"C:/Users/rcha0053/pr158-qualification/target/release/deps/codebase_graph-3cda96f058e84b64.exe\" --list",
+    "cwd": "C:\\Users\\rcha0053\\pr158-qualification",
+    "overrides": {},
+    "pid": 33168,
+    "exit_code": 0,
+    "duration": 3.0
+  },
+  {
+    "label": "cargo-install-shared-resumed",
+    "command": "cargo install --path \"C:/Users/rcha0053/Repositories/cbg-pr158\" --locked --offline --root \"C:/Users/rcha0053/pr158-qualification/installed\" --bin codebase-graph",
+    "cwd": "C:\\Users\\rcha0053\\Repositories\\cbg-pr158",
+    "overrides": {},
+    "pid": 25932,
+    "exit_code": 0,
+    "duration": 662.844000000001
+  },
+  {
+    "label": "probe-build-resumed",
+    "command": "cargo build --offline --release --manifest-path \"C:/Users/rcha0053/pr158-qualification/probe/Cargo.toml\"",
+    "cwd": "C:\\Users\\rcha0053\\pr158-qualification\\probe",
+    "overrides": {},
+    "pid": 30236,
+    "exit_code": 0,
+    "duration": 659.155999999999
+  },
+  {
+    "label": "download-negative",
+    "command": "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"C:/Users/rcha0053/pr158-qualification/run-native.ps1\" \"C:/Users/rcha0053/pr158-qualification/target/release/pr158-windows-probe.exe\" download-negative \"C:/Users/rcha0053/pr158-qualification/negative-db\"",
+    "cwd": "C:\\Users\\rcha0053\\pr158-qualification",
+    "overrides": {
+      "LADYBUG_HTTPS_PROXY": "http://127.0.0.1:56554",
+      "LADYBUG_HTTP_PROXY": "http://127.0.0.1:56554",
+      "LADYBUG_ALL_PROXY": "http://127.0.0.1:56554",
+      "HTTPS_PROXY": "http://127.0.0.1:56554",
+      "HTTP_PROXY": "http://127.0.0.1:56554",
+      "ALL_PROXY": "http://127.0.0.1:56554",
+      "LADYBUG_NO_PROXY": null,
+      "no_proxy": null,
+      "NO_PROXY": null,
+      "QUALIFICATION_NATIVE_PATH": "C:\\Users\\rcha0053\\pr158-qualification\\ladybug-shared-0.19.0;C:\\Users\\rcha0053\\AppData\\Local\\anaconda3\\Library\\bin;C:\\Windows\\System32;C:\\Windows;C:\\Windows\\System32\\WindowsPowerShell\\v1.0",
+      "USERPROFILE": "C:\\Users\\rcha0053\\pr158-qualification\\profile-download-negative",
+      "HOME": "C:\\Users\\rcha0053\\pr158-qualification\\profile-download-negative"
+    },
+    "pid": 34216,
+    "exit_code": 1,
+    "duration": 10.625
+  },
+  {
+    "label": "probe-build-proxy-guard",
+    "command": "cargo build --offline --release --manifest-path \"C:/Users/rcha0053/pr158-qualification/probe/Cargo.toml\"",
+    "cwd": "C:\\Users\\rcha0053\\pr158-qualification\\probe",
+    "overrides": {},
+    "pid": 23164,
+    "exit_code": 0,
+    "duration": 594.75
+  },
+  {
+    "label": "download-negative-observed",
+    "command": "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"C:/Users/rcha0053/pr158-qualification/run-native.ps1\" \"C:/Users/rcha0053/pr158-qualification/target/release/pr158-windows-probe.exe\" download-negative \"C:/Users/rcha0053/pr158-qualification/negative-observed-db\"",
+    "cwd": "C:\\Users\\rcha0053\\pr158-qualification",
+    "overrides": {
+      "LADYBUG_HTTPS_PROXY": "http://127.0.0.1:59741",
+      "LADYBUG_HTTP_PROXY": "http://127.0.0.1:59741",
+      "LADYBUG_ALL_PROXY": "http://127.0.0.1:59741",
+      "HTTPS_PROXY": "http://127.0.0.1:59741",
+      "HTTP_PROXY": "http://127.0.0.1:59741",
+      "ALL_PROXY": "http://127.0.0.1:59741",
+      "LADYBUG_NO_PROXY": null,
+      "no_proxy": null,
+      "NO_PROXY": null,
+      "QUALIFICATION_NATIVE_PATH": "C:\\Users\\rcha0053\\pr158-qualification\\ladybug-shared-0.19.0;C:\\Users\\rcha0053\\AppData\\Local\\anaconda3\\Library\\bin;C:\\Windows\\System32;C:\\Windows;C:\\Windows\\System32\\WindowsPowerShell\\v1.0",
+      "USERPROFILE": "C:\\Users\\rcha0053\\pr158-qualification\\profile-download-negative",
+      "HOME": "C:\\Users\\rcha0053\\pr158-qualification\\profile-download-negative"
+    },
+    "pid": 39048,
+    "exit_code": 1,
+    "duration": 8.81300000000192
+  },
+  {
+    "label": "probe-build-final",
+    "command": "cargo build --offline --release --manifest-path \"C:/Users/rcha0053/pr158-qualification/probe/Cargo.toml\"",
+    "cwd": "C:\\Users\\rcha0053\\pr158-qualification\\probe",
+    "overrides": {},
+    "pid": 31496,
+    "exit_code": 0,
+    "duration": 17.04699999999866
+  },
+  {
+    "label": "installed-help",
+    "command": "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"C:/Users/rcha0053/pr158-qualification/run-native.ps1\" \"C:/Users/rcha0053/pr158-qualification/installed/bin/codebase-graph.exe\" --help",
+    "cwd": "C:\\Users\\rcha0053\\pr158-qualification",
+    "overrides": {
+      "LADYBUG_HTTPS_PROXY": "http://127.0.0.1:59741",
+      "LADYBUG_HTTP_PROXY": "http://127.0.0.1:59741",
+      "LADYBUG_ALL_PROXY": "http://127.0.0.1:59741",
+      "HTTPS_PROXY": "http://127.0.0.1:59741",
+      "HTTP_PROXY": "http://127.0.0.1:59741",
+      "ALL_PROXY": "http://127.0.0.1:59741",
+      "LADYBUG_NO_PROXY": null,
+      "no_proxy": null,
+      "NO_PROXY": null,
+      "QUALIFICATION_NATIVE_PATH": "C:\\Users\\rcha0053\\pr158-qualification\\ladybug-shared-0.19.0;C:\\Users\\rcha0053\\AppData\\Local\\anaconda3\\Library\\bin;C:\\Windows\\System32;C:\\Windows;C:\\Windows\\System32\\WindowsPowerShell\\v1.0",
+      "USERPROFILE": "C:\\Users\\rcha0053\\pr158-qualification\\profile-installed",
+      "HOME": "C:\\Users\\rcha0053\\pr158-qualification\\profile-installed"
+    },
+    "pid": 38180,
+    "exit_code": 0,
+    "duration": 8.671999999998661
+  },
+  {
+    "label": "installed-build-help",
+    "command": "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"C:/Users/rcha0053/pr158-qualification/run-native.ps1\" \"C:/Users/rcha0053/pr158-qualification/installed/bin/codebase-graph.exe\" build --help",
+    "cwd": "C:\\Users\\rcha0053\\pr158-qualification",
+    "overrides": {
+      "LADYBUG_HTTPS_PROXY": "http://127.0.0.1:59741",
+      "LADYBUG_HTTP_PROXY": "http://127.0.0.1:59741",
+      "LADYBUG_ALL_PROXY": "http://127.0.0.1:59741",
+      "HTTPS_PROXY": "http://127.0.0.1:59741",
+      "HTTP_PROXY": "http://127.0.0.1:59741",
+      "ALL_PROXY": "http://127.0.0.1:59741",
+      "LADYBUG_NO_PROXY": null,
+      "no_proxy": null,
+      "NO_PROXY": null,
+      "QUALIFICATION_NATIVE_PATH": "C:\\Users\\rcha0053\\pr158-qualification\\ladybug-shared-0.19.0;C:\\Users\\rcha0053\\AppData\\Local\\anaconda3\\Library\\bin;C:\\Windows\\System32;C:\\Windows;C:\\Windows\\System32\\WindowsPowerShell\\v1.0",
+      "USERPROFILE": "C:\\Users\\rcha0053\\pr158-qualification\\profile-installed",
+      "HOME": "C:\\Users\\rcha0053\\pr158-qualification\\profile-installed"
+    },
+    "pid": 25096,
+    "exit_code": 0,
+    "duration": 7.875
+  },
+  {
+    "label": "missing-native-runtime",
+    "command": "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"C:/Users/rcha0053/pr158-qualification/run-native.ps1\" \"C:/Users/rcha0053/pr158-qualification/installed/bin/codebase-graph.exe\" --help",
+    "cwd": "C:\\Users\\rcha0053\\pr158-qualification",
+    "overrides": {
+      "LADYBUG_HTTPS_PROXY": "http://127.0.0.1:59741",
+      "LADYBUG_HTTP_PROXY": "http://127.0.0.1:59741",
+      "LADYBUG_ALL_PROXY": "http://127.0.0.1:59741",
+      "HTTPS_PROXY": "http://127.0.0.1:59741",
+      "HTTP_PROXY": "http://127.0.0.1:59741",
+      "ALL_PROXY": "http://127.0.0.1:59741",
+      "LADYBUG_NO_PROXY": null,
+      "no_proxy": null,
+      "NO_PROXY": null,
+      "QUALIFICATION_NATIVE_PATH": "C:\\Windows\\System32;C:\\Windows;C:\\Windows\\System32\\WindowsPowerShell\\v1.0",
+      "USERPROFILE": "C:\\Users\\rcha0053\\pr158-qualification\\profile-missing-dll",
+      "HOME": "C:\\Users\\rcha0053\\pr158-qualification\\profile-missing-dll"
+    },
+    "pid": 28948,
+    "exit_code": 127,
+    "duration": 8.375
+  },
+  {
+    "label": "download-negative-final",
+    "command": "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"C:/Users/rcha0053/pr158-qualification/run-native.ps1\" \"C:/Users/rcha0053/pr158-qualification/target/release/pr158-windows-probe.exe\" download-negative \"C:/Users/rcha0053/pr158-qualification/negative-final-db\"",
+    "cwd": "C:\\Users\\rcha0053\\pr158-qualification",
+    "overrides": {
+      "LADYBUG_HTTPS_PROXY": "http://127.0.0.1:59741",
+      "LADYBUG_HTTP_PROXY": "http://127.0.0.1:59741",
+      "LADYBUG_ALL_PROXY": "http://127.0.0.1:59741",
+      "HTTPS_PROXY": "http://127.0.0.1:59741",
+      "HTTP_PROXY": "http://127.0.0.1:59741",
+      "ALL_PROXY": "http://127.0.0.1:59741",
+      "LADYBUG_NO_PROXY": null,
+      "no_proxy": null,
+      "NO_PROXY": null,
+      "QUALIFICATION_NATIVE_PATH": "C:\\Users\\rcha0053\\pr158-qualification\\ladybug-shared-0.19.0;C:\\Users\\rcha0053\\AppData\\Local\\anaconda3\\Library\\bin;C:\\Windows\\System32;C:\\Windows;C:\\Windows\\System32\\WindowsPowerShell\\v1.0",
+      "USERPROFILE": "C:\\Users\\rcha0053\\pr158-qualification\\profile-download-negative-final",
+      "HOME": "C:\\Users\\rcha0053\\pr158-qualification\\profile-download-negative-final"
+    },
+    "pid": 36432,
+    "exit_code": 0,
+    "duration": 9.437000000001717
+  },
+  {
+    "label": "native-json-fts-create",
+    "command": "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"C:/Users/rcha0053/pr158-qualification/run-native.ps1\" \"C:/Users/rcha0053/pr158-qualification/target/release/pr158-windows-probe.exe\" create \"C:/Users/rcha0053/pr158-qualification/native-positive-db\"",
+    "cwd": "C:\\Users\\rcha0053\\pr158-qualification",
+    "overrides": {
+      "LADYBUG_HTTPS_PROXY": "http://127.0.0.1:59741",
+      "LADYBUG_HTTP_PROXY": "http://127.0.0.1:59741",
+      "LADYBUG_ALL_PROXY": "http://127.0.0.1:59741",
+      "HTTPS_PROXY": "http://127.0.0.1:59741",
+      "HTTP_PROXY": "http://127.0.0.1:59741",
+      "ALL_PROXY": "http://127.0.0.1:59741",
+      "LADYBUG_NO_PROXY": null,
+      "no_proxy": null,
+      "NO_PROXY": null,
+      "QUALIFICATION_NATIVE_PATH": "C:\\Users\\rcha0053\\pr158-qualification\\ladybug-shared-0.19.0;C:\\Users\\rcha0053\\AppData\\Local\\anaconda3\\Library\\bin;C:\\Windows\\System32;C:\\Windows;C:\\Windows\\System32\\WindowsPowerShell\\v1.0",
+      "USERPROFILE": "C:\\Users\\rcha0053\\pr158-qualification\\profile-native-positive",
+      "HOME": "C:\\Users\\rcha0053\\pr158-qualification\\profile-native-positive"
+    },
+    "pid": 37404,
+    "exit_code": 0,
+    "duration": 10.562999999998283
+  },
+  {
+    "label": "installed-graph-build",
+    "command": "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"C:/Users/rcha0053/pr158-qualification/run-native.ps1\" \"C:/Users/rcha0053/pr158-qualification/installed/bin/codebase-graph.exe\" build --repo-root \"C:/Users/rcha0053/pr158-qualification/smoke-repo\" --mode full --no-git --single-thread --max-parallelism 1 --json",
+    "cwd": "C:\\Users\\rcha0053\\pr158-qualification\\smoke-repo",
+    "overrides": {
+      "LADYBUG_HTTPS_PROXY": "http://127.0.0.1:59741",
+      "LADYBUG_HTTP_PROXY": "http://127.0.0.1:59741",
+      "LADYBUG_ALL_PROXY": "http://127.0.0.1:59741",
+      "HTTPS_PROXY": "http://127.0.0.1:59741",
+      "HTTP_PROXY": "http://127.0.0.1:59741",
+      "ALL_PROXY": "http://127.0.0.1:59741",
+      "LADYBUG_NO_PROXY": null,
+      "no_proxy": null,
+      "NO_PROXY": null,
+      "QUALIFICATION_NATIVE_PATH": "C:\\Users\\rcha0053\\pr158-qualification\\ladybug-shared-0.19.0;C:\\Users\\rcha0053\\AppData\\Local\\anaconda3\\Library\\bin;C:\\Windows\\System32;C:\\Windows;C:\\Windows\\System32\\WindowsPowerShell\\v1.0",
+      "USERPROFILE": "C:\\Users\\rcha0053\\pr158-qualification\\profile-installed",
+      "HOME": "C:\\Users\\rcha0053\\pr158-qualification\\profile-installed"
+    },
+    "pid": 35064,
+    "exit_code": 1,
+    "duration": 1448.5
+  },
+  {
+    "label": "native-json-fts-reopen",
+    "command": "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"C:/Users/rcha0053/pr158-qualification/run-native.ps1\" \"C:/Users/rcha0053/pr158-qualification/target/release/pr158-windows-probe.exe\" reopen \"C:/Users/rcha0053/pr158-qualification/native-positive-db\"",
+    "cwd": "C:\\Users\\rcha0053\\pr158-qualification",
+    "overrides": {
+      "LADYBUG_HTTPS_PROXY": "http://127.0.0.1:59741",
+      "LADYBUG_HTTP_PROXY": "http://127.0.0.1:59741",
+      "LADYBUG_ALL_PROXY": "http://127.0.0.1:59741",
+      "HTTPS_PROXY": "http://127.0.0.1:59741",
+      "HTTP_PROXY": "http://127.0.0.1:59741",
+      "ALL_PROXY": "http://127.0.0.1:59741",
+      "LADYBUG_NO_PROXY": null,
+      "no_proxy": null,
+      "NO_PROXY": null,
+      "QUALIFICATION_NATIVE_PATH": "C:\\Users\\rcha0053\\pr158-qualification\\ladybug-shared-0.19.0;C:\\Users\\rcha0053\\AppData\\Local\\anaconda3\\Library\\bin;C:\\Windows\\System32;C:\\Windows;C:\\Windows\\System32\\WindowsPowerShell\\v1.0",
+      "USERPROFILE": "C:\\Users\\rcha0053\\pr158-qualification\\profile-native-positive",
+      "HOME": "C:\\Users\\rcha0053\\pr158-qualification\\profile-native-positive"
+    },
+    "pid": 39492,
+    "exit_code": 0,
+    "duration": 8.985000000000582
+  }
+]

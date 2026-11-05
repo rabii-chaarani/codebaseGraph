@@ -1,0 +1,17 @@
+{
+  "scope": "Historical tested and reviewed foundation checkpoints only; automatic cleanup remains under implementation.",
+  "last_code_commit": "61c9d26d52547bb52730fca3305b7e11863044d5",
+  "archive": "continuation-foundations-61c9d26.tar.gz",
+  "archive_sha256": "b8deceb0c639b55663298996d7aaeeedc2be74aae8e4181a45de8eb53d677f5b",
+  "archive_bytes": 5156327,
+  "raw_members": 1237,
+  "raw_bytes": 20175645,
+  "member_identity_manifest": "archive-members.json inside archive",
+  "verification": "Every archived member compared byte-for-byte by SHA-256 before original duplicate working copies were removed.",
+  "usage": "Extract into this evidence directory to resolve the original manifest-relative paths. Archive paths are relative to this directory.",
+  "limitations": [
+    "Contains historical failed attempts and review inputs, not additional implementation approvals.",
+    "Current execution briefs and file ownership remain solely in Scryer.",
+    "Does not qualify a full collector, final native platforms, live rollout, or aggregate closure."
+  ]
+}

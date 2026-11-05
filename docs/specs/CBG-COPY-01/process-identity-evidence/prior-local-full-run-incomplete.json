@@ -1,0 +1,10 @@
+{
+  "command": "cd /private/tmp/codebasegraph-cod52-macos-scans && cargo nextest run --locked -p codebase-graph --lib --test storage_foundation --config-file /private/tmp/codebasegraph-cod52-evidence/nextest.toml --profile cod52 --no-fail-fast > /private/tmp/codebasegraph-cod52-evidence/final-library-and-foundation.log 2>&1",
+  "state": "terminated incomplete before separate approved COPY instrumentation builds",
+  "completed_pass_records": 606,
+  "fail_records": [
+    "        FAIL [  10.410s] ( 596/1110) codebase-graph storage::maintenance_collector_tests::dc_s5_real_containment_fifo_retires_with_pin_receipt_and_terminal_root"
+  ],
+  "last_output": "        SLOW [>2160.000s] (\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500) codebase-graph storage::maintenance_collector_tests::dc_s5_twenty_updates_collect_without_source_edits_and_match_clean_control",
+  "evidence_basis": "hosted exact-tree Mac unit843pass/2ignored + native generation/integration/artifact passed; local full debug run not claimed pass"
+}

@@ -1,0 +1,91 @@
+{
+  "reviewer": {
+    "model": "gpt-6.1-sol",
+    "reasoning_effort": "max",
+    "fresh_independent": true,
+    "settings_source": "coordinator dispatch"
+  },
+  "snapshot": {
+    "base": "88a369f5820c7c21e05a4336f061887cc5f5d52f",
+    "author_source": "/private/tmp/dc-s3-facts-final-lm75n3xh/repo",
+    "review_source": "/private/tmp/cleanup-v2-s3-review-_098ctam/repo",
+    "input_count": 427,
+    "all_input_hashes_match_after_checks": true,
+    "overlay": [
+      {
+        "path": "src/storage/maintenance_budget.rs",
+        "sha256": "3288f29d3133f7f403afcf275d35e8c55fb53cc487b0251b245070e19daa27e0",
+        "bytes": 12186
+      },
+      {
+        "path": "src/storage/maintenance_json.rs",
+        "sha256": "d6c2162b2aa37d77667900f5491a5e09fb6a66e1c4ff7ba9d93d056794e45d9e",
+        "bytes": 19665
+      },
+      {
+        "path": "src/storage/maintenance.rs",
+        "sha256": "c5d94f0ac68d9ed81f8dfb060928887f1c2641798236ba60ecb15f9cc9c970a7",
+        "bytes": 7896
+      },
+      {
+        "path": "src/storage/mod.rs",
+        "sha256": "9ac2905364228f9376c69fbc6347fe84b043b5ca6e63e27046bb5eeedaac6081",
+        "bytes": 333
+      }
+    ],
+    "diff_sha256": "016bac264996d0e6e1c210b75327b899a4166ce0d44c1805caf35427f9603676"
+  },
+  "environment": {
+    "platform": "macOS-26.6.2-arm64-arm-64bit",
+    "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)"
+  },
+  "nextest": {
+    "command": "cargo nextest run --lib --locked --offline --config 'profile.test.package.codebase-graph.codegen-units=147' --target-dir /Users/rabii/Projects/Repositories/codebaseGraph/target --config-file /private/tmp/codebasegraph-disk-cleanup-7t9af0a6/nextest.toml --profile cleanup-s3 --filterset 'test(storage::maintenance)'",
+    "build_seconds": 17.95,
+    "selected": 66,
+    "foundation_tests": 14,
+    "baseline_ownership_tests": 52,
+    "skipped": 474,
+    "retries": 0,
+    "junit": {
+      "name": "nextest-run",
+      "tests": "66",
+      "failures": "0",
+      "errors": "0",
+      "uuid": "06c3bb2f-6268-4a68-b0a6-342ade4215a9",
+      "timestamp": "2026-10-21T10:48:52.467+09:30",
+      "time": "2.350"
+    },
+    "junit_sha256": "e25b7e41502e1a46fabfa82fa8c04edd67802310dbf393e9ee0298e517d1b8d8",
+    "binary": {
+      "suite": "codebase-graph",
+      "binary": "/Users/rabii/Projects/Repositories/codebaseGraph/target/debug/deps/codebase_graph-880b2cd34b390f45",
+      "sha256": "0bb7caad579500d38248ce8b0307b3c4d25407deb9d1ea645959dc2e22c71c61",
+      "total": 540
+    }
+  },
+  "probe": {
+    "allocation_failure_and_lifetime": "passed",
+    "exclusive_ceiling_races": 16,
+    "json_mutation_differentials": 7559,
+    "json_boundaries": 428,
+    "cursor_restart_selections": 32,
+    "cursor_bit_corruptions": 593,
+    "entry_101": "rejected"
+  },
+  "negative_traits": {
+    "command": "rustc --edition=2021 negative-traits.rs",
+    "expected_exit": 1,
+    "E0277_count": 2
+  },
+  "msrv_budget_only": {
+    "rustc": "1.82.0",
+    "passed": 5,
+    "full_crate_msrv_claim": false
+  },
+  "format": {
+    "four_owned_files": "passed"
+  },
+  "confirmed_findings": [],
+  "cargo_reservation": "released to coordinator after shared-target work"
+}

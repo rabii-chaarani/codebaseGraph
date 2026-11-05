@@ -19,9 +19,9 @@ dependencies = [
 
 [[package]]
 name = "ammonia"
-version = "4.1.7"
+version = "4.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "36322ccf536de7b7afd259098615203e4cc5caca1b78482b58334a720c66e40a"
+checksum = "2f6660fb4ff692ef4937b1b4e74ab3d378653d8588389587d91f96a296907ea0"
 dependencies = [
  "cssparser",
  "html5ever",
@@ -187,7 +187,7 @@ dependencies = [
 
 [[package]]
 name = "codebase-graph"
-version = "3.0.3"
+version = "4.2.1"
 dependencies = [
  "cc",
  "fs2",
@@ -777,7 +777,7 @@ dependencies = [
 
 [[package]]
 name = "k-wiki"
-version = "3.0.3"
+version = "4.2.1"
 dependencies = [
  "ammonia",
  "axum",
@@ -1118,9 +1118,9 @@ dependencies = [
 
 [[package]]
 name = "pulldown-cmark"
-version = "0.13.4"
+version = "0.13.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e9f068eba8e7071c5f9511831b44f32c740d5adf574e990f946ddb53db2f314e"
+checksum = "3db2be46835f013dd3f4fa7f5f7402c537787b54ebb6fe2b94bbdd7e2669bb7b"
 dependencies = [
  "bitflags",
  "memchr",
@@ -1956,7 +1956,7 @@ dependencies = [
 
 [[package]]
 name = "xtask"
-version = "3.0.3"
+version = "4.2.1"
 dependencies = [
  "flate2",
  "serde",

@@ -1,0 +1,22 @@
+{
+  "command": [
+    "python3",
+    "-B",
+    "docs/testing/graph-disk-cleanup-evidence/test_audit.py",
+    "-v"
+  ],
+  "executed_utc": "2026-10-20T18:02:15.736094+00:00",
+  "actual_exit_code": 0,
+  "actual_result": "10 unittestcases passed: originalreportcontrol,7semanticmutations,losslessgziphistorycheck,validgzipdecodedtamperrejection",
+  "stdout": "audit-regressions.stdout",
+  "stderr": "audit-regressions.stderr",
+  "sha256": {
+    "audit.py": "316630c38e1638370b8c1873174d4311cc32ae4d0d9bcbbf0045e1083ccfb518",
+    "test_audit.py": "b317ac2a5f4ab7ec3c52e98169e37090d65c9a7a92d397bd898962516f6f545c",
+    "audit-regressions.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "audit-regressions.stderr": "37deacba5b2b624d0962949aa5cb60ce368a873c072cfff764cf836bb098a66b"
+  },
+  "historical_eight_regression_execution": "historical-eight-audit-regression-execution.json",
+  "historical_eight_source_commit": "9eaa8dedf4f626ebf0974f327f81d0a3c0315e57",
+  "limitations": "Auditcorrectnessregressions, not productioncollectorqualification andnotJUnit."
+}

@@ -1,0 +1,52 @@
+/private/tmp/codebasegraph-pr163-ci-repair-20261030
+84f860cbee741dbcbd0b66eb78c6640e924a6fef
+7227569d6b58da7c65011a2b0fffbd28c339bd84
+
+ M src/process_lifecycle/mod.rs
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/README.md
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/diagnosis/authenticated_delayed_ack.rs
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/diagnosis/authenticated_delayed_ack.txt
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/diagnosis/darwin_socket_timeout.rs
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/diagnosis/darwin_socket_timeout.txt
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/diagnosis/diagnosis.md
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/diagnosis/recommendation.md
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/implementation/backend-handoff.md
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/implementation/final-test-logs.txt
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/implementation/native-test-provenance.json
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/implementation/source-diff.patch
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/implementation/source-sha256.txt
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/implementation/start-ack-baseline-failure.txt
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/inventory.json
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/original-ci/failure-tail.log
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/original-ci/job-123951179128.json
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/original-ci/run-41013561222.json
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/core/candidate-source.diff
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/core/clippy-final.exit
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/core/clippy-final.log
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/core/core-commands.json
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/core/core-verification-report.md
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/core/core-verification-state.json
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/core/fmt-final.txt
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/core/focused-process-lifecycle.junit.xml
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/core/focused-process-lifecycle.log
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/core/junit-audit-core.json
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/core/nextest-verification.toml
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/core/xtask-final.exit
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/core/xtask-final.junit.xml
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/core/xtask-final.log
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/preparation/candidate-start-identity.txt
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/preparation/cargo.txt
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/preparation/clang.txt
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/preparation/host-arch.txt
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/preparation/host-os.txt
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/preparation/ladybug-official-release-api.json
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/preparation/native-cache-direct-checks.txt
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/preparation/native-environment-identity.json
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/preparation/native-environment-readiness.md
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/preparation/nextest.txt
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/preparation/rust.txt
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/preparation/sdk.txt
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/preparation/verification-preparation.md
+?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/preparation/xcode.txt
+
+SHA256 src/process_lifecycle/mod.rs 59c66cb5906eeb13e32c4daa0ca08d26fb416b3e86c14a1b004b930959284fc3

@@ -1,0 +1,8 @@
+Python source probe (expected exit 1):
+FAIL: python-file-present: docs/testing/graph-disk-cleanup-evidence/cod99-policy-probe.py must not be maintained source.
+release gate failed
+
+Missing production confirmations (expected exit 1):
+FAIL: external-confirmation-missing: production release requires --confirm release-environment.
+FAIL: external-confirmation-missing: production release requires --confirm private-vulnerability-reporting.
+release gate failed

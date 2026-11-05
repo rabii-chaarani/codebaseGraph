@@ -11,8 +11,6 @@ pub(in crate::adapters) fn start_configured_api(
         GraphRefreshPolicy::Leader => Some(RefreshServiceConfig {
             policy: settings.refresh_policy,
             include_fts: settings.include_fts,
-            worker_memory_mib: settings.worker_memory_mib,
-            rust_memory_mib: settings.rust_memory_mib,
             spill_chunk_mib: settings.spill_chunk_mib,
             max_parallelism: settings.max_parallelism,
             backend: settings.refresh_backend,

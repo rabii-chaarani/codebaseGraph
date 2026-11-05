@@ -1,0 +1,23 @@
+[
+  {
+    "path": ".github/workflows/release.yml",
+    "bytes": 31741,
+    "sha256": "aca94a20d46b2ecca85a9c112bb21daa7df1fb418e84f44d28bd35037c706bf3"
+  },
+  {
+    "path": "crates/xtask/src/release/workflow_tests.rs",
+    "bytes": 24537,
+    "sha256": "e567ddb0bb1679c81566497607dc14e54207de8e341c5ab18116f93f23f53de7"
+  },
+  {
+    "path": "docs/release.md",
+    "bytes": 15526,
+    "sha256": "abe55daa1bd234badd8707e0b1f47a77dd90e37b632a3bdf3cd42e28d97ed948"
+  },
+  {
+    "path": "crates/xtask/src/main.rs",
+    "bytes": 105700,
+    "sha256": "70507a624361a97a7bcdb28412b31112258fcb023fa8e80dccd943b113b335ad",
+    "changed": false
+  }
+]

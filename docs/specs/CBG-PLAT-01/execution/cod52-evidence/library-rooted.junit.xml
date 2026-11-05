@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="nextest-run" tests="14" failures="0" errors="0" uuid="360d44c3-e9c4-4076-ab83-ab7e7eef2ebc" timestamp="2026-10-27T13:34:31.335+09:30" time="0.542">
+    <testsuite name="codebase-graph" tests="14" disabled="0" errors="0" failures="0">
+        <testcase name="storage::locks::rooted_directory_tests::dc_directory_hints_keep_verified_directories_and_reject_file_aliases" classname="codebase-graph" timestamp="2026-10-27T13:34:31.336+09:30" time="0.034">
+            <system-out>
+running 1 test
+test storage::locks::rooted_directory_tests::dc_directory_hints_keep_verified_directories_and_reject_file_aliases ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 843 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::locks::rooted_directory_tests::dc_fifo_creation_pin_blocks_inode_aba_and_rejects_aliases" classname="codebase-graph" timestamp="2026-10-27T13:34:31.371+09:30" time="0.030">
+            <system-out>
+running 1 test
+test storage::locks::rooted_directory_tests::dc_fifo_creation_pin_blocks_inode_aba_and_rejects_aliases ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 843 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::locks::rooted_directory_tests::dc_fifo_creation_pin_never_adopts_pin_collision_or_regular_file" classname="codebase-graph" timestamp="2026-10-27T13:34:31.401+09:30" time="0.021">
+            <system-out>
+running 1 test
+test storage::locks::rooted_directory_tests::dc_fifo_creation_pin_never_adopts_pin_collision_or_regular_file ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 843 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::locks::rooted_directory_tests::dc_nonce_promotion_requires_the_exact_existing_creation_tag" classname="codebase-graph" timestamp="2026-10-27T13:34:31.422+09:30" time="0.027">
+            <system-out>
+running 1 test
+test storage::locks::rooted_directory_tests::dc_nonce_promotion_requires_the_exact_existing_creation_tag ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 843 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::locks::rooted_directory_tests::dc_rooted_component_validation_is_noncreating_and_accepts_exact_key64" classname="codebase-graph" timestamp="2026-10-27T13:34:31.450+09:30" time="0.018">
+            <system-out>
+running 1 test
+test storage::locks::rooted_directory_tests::dc_rooted_component_validation_is_noncreating_and_accepts_exact_key64 ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 843 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::locks::rooted_directory_tests::dc_rooted_file_rename_is_no_replace_and_checks_exact_source_identity" classname="codebase-graph" timestamp="2026-10-27T13:34:31.468+09:30" time="0.018">
+            <system-out>
+running 1 test
+test storage::locks::rooted_directory_tests::dc_rooted_file_rename_is_no_replace_and_checks_exact_source_identity ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 843 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::locks::rooted_directory_tests::dc_rooted_namespace_no_replace_and_exact_empty_removal_preserve_foreign_entries" classname="codebase-graph" timestamp="2026-10-27T13:34:31.486+09:30" time="0.027">
+            <system-out>
+running 1 test
+test storage::locks::rooted_directory_tests::dc_rooted_namespace_no_replace_and_exact_empty_removal_preserve_foreign_entries ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 843 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::locks::rooted_directory_tests::dc_rooted_nonfollowing_open_rejects_symlinks_and_hardlinked_controls" classname="codebase-graph" timestamp="2026-10-27T13:34:31.514+09:30" time="0.018">
+            <system-out>
+running 1 test
+test storage::locks::rooted_directory_tests::dc_rooted_nonfollowing_open_rejects_symlinks_and_hardlinked_controls ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 843 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::locks::rooted_directory_tests::dc_rooted_operations_remain_on_actual_parent_after_public_name_substitution" classname="codebase-graph" timestamp="2026-10-27T13:34:31.532+09:30" time="0.018">
+            <system-out>
+running 1 test
+test storage::locks::rooted_directory_tests::dc_rooted_operations_remain_on_actual_parent_after_public_name_substitution ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 843 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::locks::rooted_directory_tests::dc_rooted_readonly_payload_access_needs_no_payload_write_permission" classname="codebase-graph" timestamp="2026-10-27T13:34:31.549+09:30" time="0.017">
+            <system-out>
+running 1 test
+test storage::locks::rooted_directory_tests::dc_rooted_readonly_payload_access_needs_no_payload_write_permission ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 843 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::locks::rooted_directory_tests::interrupted_directory_scan_restarts_on_the_pinned_root_after_name_replacement" classname="codebase-graph" timestamp="2026-10-27T13:34:31.567+09:30" time="0.040">
+            <system-out>
+running 1 test
+test storage::locks::rooted_directory_tests::interrupted_directory_scan_restarts_on_the_pinned_root_after_name_replacement ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 843 filtered out; finished in 0.02s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::locks::rooted_directory_tests::metadata_validation_preserves_private_creator_sharing_and_identity" classname="codebase-graph" timestamp="2026-10-27T13:34:31.607+09:30" time="0.017">
+            <system-out>
+running 1 test
+test storage::locks::rooted_directory_tests::metadata_validation_preserves_private_creator_sharing_and_identity ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 843 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::locks::rooted_directory_tests::namespace_flush_accepts_an_existing_readonly_directory_anchor" classname="codebase-graph" timestamp="2026-10-27T13:34:31.625+09:30" time="0.025">
+            <system-out>
+running 1 test
+test storage::locks::rooted_directory_tests::namespace_flush_accepts_an_existing_readonly_directory_anchor ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 843 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::locks::rooted_directory_tests::nested_directory_scans_do_not_consume_the_outer_cursor" classname="codebase-graph" timestamp="2026-10-27T13:34:31.650+09:30" time="0.227">
+            <system-out>
+running 1 test
+test storage::locks::rooted_directory_tests::nested_directory_scans_do_not_consume_the_outer_cursor ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 843 filtered out; finished in 0.21s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+    </testsuite>
+</testsuites>

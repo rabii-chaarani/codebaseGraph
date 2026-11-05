@@ -245,6 +245,58 @@ fn find_json(root: &Path, name: &str) -> Option<(PathBuf, Value)> {
     None
 }
 
+fn hold_finished_leases(root: &Path, leases: &mut Vec<fs::File>) -> std::io::Result<bool> {
+    use fs2::FileExt;
+
+    for entry in fs::read_dir(root)? {
+        let entry = entry?;
+        if !entry.file_type()?.is_dir() {
+            continue;
+        }
+        let path = entry.path();
+        if entry
+            .file_name()
+            .to_string_lossy()
+            .starts_with(".lifecycle-")
+        {
+            let lease = fs::OpenOptions::new()
+                .read(true)
+                .write(true)
+                .open(path.join("lease"))?;
+            if lease.try_lock_exclusive().is_err() {
+                return Ok(false);
+            }
+            // Recovery can retire a gated startup before any guardian writes
+            // a terminal receipt. Inspect either proof while holding its lease.
+            let empty_receipt = read_json_when_present(&path.join("receipt.json"))
+                .is_some_and(|receipt| receipt["containment_empty"] == true);
+            let retired =
+                fs::read(path.join("retired")).is_ok_and(|marker| marker == b"retired-v2\n");
+            // The owner can die after lease creation but before publishing any
+            // launch/descriptor. Exclusive ownership plus an exact lease-only
+            // namespace proves that pre-execution seam empty. Unknown files,
+            // launch evidence and live leases remain protected.
+            let lease_only = fs::read_dir(&path)?.try_fold(true, |only, entry| {
+                let entry = entry?;
+                let metadata = fs::symlink_metadata(entry.path())?;
+                Ok::<_, std::io::Error>(
+                    only && entry.file_name() == "lease"
+                        && metadata.is_file()
+                        && !metadata.file_type().is_symlink()
+                        && metadata.len() == 0,
+                )
+            })?;
+            if !empty_receipt && !retired && !lease_only {
+                return Ok(false);
+            }
+            leases.push(lease);
+        } else if !hold_finished_leases(&path, leases)? {
+            return Ok(false);
+        }
+    }
+    Ok(true)
+}
+
 fn remove_quiescent_repo(root: &Path) {
     fn directory_not_empty(error: &std::io::Error) -> bool {
         #[cfg(unix)]
@@ -252,38 +304,6 @@ fn remove_quiescent_repo(root: &Path) {
         #[cfg(windows)]
         let code = windows_sys::Win32::Foundation::ERROR_DIR_NOT_EMPTY as i32;
         error.raw_os_error() == Some(code)
-    }
-
-    fn hold_finished_leases(root: &Path, leases: &mut Vec<fs::File>) -> std::io::Result<bool> {
-        use fs2::FileExt;
-
-        for entry in fs::read_dir(root)? {
-            let entry = entry?;
-            if !entry.file_type()?.is_dir() {
-                continue;
-            }
-            let path = entry.path();
-            if entry
-                .file_name()
-                .to_string_lossy()
-                .starts_with(".lifecycle-")
-            {
-                let lease = fs::OpenOptions::new()
-                    .read(true)
-                    .write(true)
-                    .open(path.join("lease"))?;
-                if lease.try_lock_exclusive().is_err()
-                    || !read_json_when_present(&path.join("receipt.json"))
-                        .is_some_and(|receipt| receipt["containment_empty"] == true)
-                {
-                    return Ok(false);
-                }
-                leases.push(lease);
-            } else if !hold_finished_leases(&path, leases)? {
-                return Ok(false);
-            }
-        }
-        Ok(true)
     }
 
     // Killing the owner is synchronous, but its independent guardian still
@@ -309,6 +329,85 @@ fn remove_quiescent_repo(root: &Path) {
     );
 }
 
+#[test]
+fn fixture_cleanup_accepts_retired_startup_without_terminal_receipt() {
+    let root = temp_repo();
+    let lifecycle = root.join(".lifecycle-retired-startup");
+    fs::create_dir(&lifecycle).unwrap();
+    fs::write(lifecycle.join("lease"), b"").unwrap();
+    fs::write(lifecycle.join("retired"), b"retired-v2\n").unwrap();
+    let mut leases = Vec::new();
+    assert!(
+        hold_finished_leases(&root, &mut leases).unwrap(),
+        "retired startup has proven empty containment without a guardian receipt"
+    );
+    drop(leases);
+    remove_quiescent_repo(&root);
+}
+
+#[test]
+fn fixture_cleanup_accepts_only_unlocked_empty_preexecution_lease() {
+    use fs2::FileExt;
+    let root = temp_repo();
+    let lifecycle = root.join(".lifecycle-empty-startup");
+    fs::create_dir(&lifecycle).unwrap();
+    fs::write(lifecycle.join("lease"), b"").unwrap();
+    let live = fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(lifecycle.join("lease"))
+        .unwrap();
+    live.lock_exclusive().unwrap();
+    assert!(!hold_finished_leases(&root, &mut Vec::new()).unwrap());
+    drop(live);
+    let foreign = lifecycle.join("foreign");
+    fs::write(&foreign, b"must retain unknown startup evidence").unwrap();
+    assert!(!hold_finished_leases(&root, &mut Vec::new()).unwrap());
+    assert_eq!(
+        fs::read(&foreign).unwrap(),
+        b"must retain unknown startup evidence"
+    );
+    fs::remove_file(foreign).unwrap(); // This fixture created the negative sentinel.
+    let mut leases = Vec::new();
+    assert!(hold_finished_leases(&root, &mut leases).unwrap());
+    assert_eq!(leases.len(), 1);
+    assert!(
+        fs::File::open(lifecycle.join("lease"))
+            .unwrap()
+            .try_lock_exclusive()
+            .is_err(),
+        "positive proof must retain its actual lease until fixture deletion"
+    );
+    drop(leases);
+    remove_quiescent_repo(&root);
+}
+
+#[test]
+fn fixture_cleanup_keeps_unproven_or_locked_containment() {
+    use fs2::FileExt;
+    let root = temp_repo();
+    let lifecycle = root.join(".lifecycle-unproven");
+    fs::create_dir(&lifecycle).unwrap();
+    fs::write(lifecycle.join("lease"), b"").unwrap();
+    fs::write(lifecycle.join("launch.json"), b"unverified launch evidence").unwrap();
+    assert!(!hold_finished_leases(&root, &mut Vec::new()).unwrap());
+    fs::write(lifecycle.join("retired"), b"invalid").unwrap();
+    assert!(!hold_finished_leases(&root, &mut Vec::new()).unwrap());
+    fs::write(lifecycle.join("retired"), b"retired-v2\n").unwrap();
+    let live = fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(lifecycle.join("lease"))
+        .unwrap();
+    live.lock_exclusive().unwrap();
+    assert!(!hold_finished_leases(&root, &mut Vec::new()).unwrap());
+    drop(live);
+    let mut leases = Vec::new();
+    assert!(hold_finished_leases(&root, &mut leases).unwrap());
+    drop(leases);
+    remove_quiescent_repo(&root);
+}
+
 fn configured_repo() -> (PathBuf, PathBuf, Value) {
     let root = temp_repo();
     fs::write(
@@ -322,9 +421,8 @@ fn configured_repo() -> (PathBuf, PathBuf, Value) {
         ConfigSettings {
             policy: "leader",
             backend: "poll",
-            interval_ms: RECONCILE_INTERVAL_MS,
-            worker_memory_mib: 512,
-            rust_memory_mib: 384,
+            // Leave an observable quiescent window after completed recovery.
+            interval_ms: 5_000,
             spill_chunk_mib: 32,
             max_parallelism: 1,
             exclude: &[],
@@ -373,7 +471,7 @@ fn verified_abandoned_guardian_is_terminated_before_automatic_refresh() {
         serde_json::to_vec(&json!({"descriptor":descriptor,"spec":{
         "program":binary(),"args":vec![std::ffi::OsString::from("__codebase_graph_internal"),std::ffi::OsString::from("not-started")],
             "workspace":workspace,"stderr_path":workspace.join("stderr.log"),"stdout":"Null",
-            "memory_limit_bytes":null,"parent_rss_pid":null
+            "parent_rss_pid":null
         }}))
         .unwrap(),
     )
@@ -650,9 +748,7 @@ impl Fixture {
             ConfigSettings {
                 policy: "leader",
                 backend: "poll",
-                interval_ms: RECONCILE_INTERVAL_MS,
-                worker_memory_mib: 512,
-                rust_memory_mib: 384,
+                interval_ms: 100,
                 spill_chunk_mib: 32,
                 max_parallelism: 1,
                 exclude: &[],
@@ -744,13 +840,16 @@ impl Fixture {
     }
     fn verify_recovery(&mut self) {
         self.release();
-        wait_for_current_symbol(&mut self.session, "pending_symbol", "pending.py");
+        let recovered = wait_for_current_symbol(&mut self.session, "pending_symbol", "pending.py");
+        assert_recovered_refresh(&recovered);
         fs::write(
             self.root.join("follow_up.py"),
             "def following_symbol():\n    return 3\n",
         )
         .unwrap();
-        wait_for_current_symbol(&mut self.session, "following_symbol", "follow_up.py");
+        let followed =
+            wait_for_current_symbol(&mut self.session, "following_symbol", "follow_up.py");
+        assert_recovered_refresh(&followed);
     }
 }
 
@@ -761,7 +860,17 @@ impl Drop for Fixture {
         for pid in self.paused.drain(..) {
             resume(pid);
         }
-        self.daemon.take();
+        if let Some(mut daemon) = self.daemon.take() {
+            if thread::panicking() {
+                let _ = daemon.0.kill();
+                let _ = daemon.0.wait();
+                if let Some(stderr) = daemon.0.stderr.take() {
+                    let mut diagnostics = String::new();
+                    let _ = stderr.take(64 * 1024).read_to_string(&mut diagnostics);
+                    eprintln!("failed lifecycle fixture HTTP stderr:\n{diagnostics}");
+                }
+            }
+        }
         let deadline = Instant::now() + Duration::from_secs(6);
         while alive(self.phase_pid) && Instant::now() < deadline {
             thread::sleep(Duration::from_millis(25));
@@ -788,6 +897,62 @@ fn paused_database_loader_exits_after_outer_worker_failure_and_refresh_recovers(
 }
 
 #[test]
+fn manual_publication_waits_for_failed_phase_tree_to_exit() {
+    let mut fixture = Fixture::new(false);
+    fixture.pause(fixture.phase_pid);
+    fixture.unchanged();
+    assert!(fixture
+        .session
+        .search_paths("initial_symbol")
+        .iter()
+        .any(|path| path == "initial.py"));
+    let worker = fixture.worker();
+    let mut manual = ManualBuild::start(&fixture.root);
+    terminate(worker);
+
+    let deadline = Instant::now() + publication_wait_timeout();
+    let mut released = false;
+    let mut published = false;
+    let mut manual_finished = false;
+    let mut last_active = Value::Null;
+    while Instant::now() < deadline {
+        if !released && !alive(fixture.phase_pid) {
+            fixture.paused.clear();
+            // A competing automatic retry may own the writer next. Once the
+            // original phase has exited, let that retry pass its own barrier.
+            fixture.release();
+            released = true;
+        }
+        if let Some(active) =
+            read_json_when_present(&fixture.root.join(".codebaseGraph/storage/active.json"))
+        {
+            last_active = active;
+            if last_active["generation_id"] != fixture.previous_generation["generation_id"] {
+                assert!(!alive(fixture.phase_pid),
+                    "publication preceded failed phase exit; phase_pid={}, active={last_active}, {}",
+                    fixture.phase_pid, manual.diagnostics());
+                published = true;
+            }
+        }
+        if !manual_finished {
+            if let Some(status) = manual.poll() {
+                manual.assert_success(status);
+                manual_finished = true;
+            }
+        }
+        if released && published && manual_finished {
+            break;
+        }
+        thread::sleep(Duration::from_millis(25));
+    }
+    assert!(released && published && manual_finished,
+        "manual publication recovery timed out; phase_pid={}, worker_pid={worker}, phase_exited={released}, published={published}, manual_finished={manual_finished}, active={last_active}, {}",
+        fixture.phase_pid, manual.diagnostics());
+    assert!(!alive(worker), "failed worker survived manual publication");
+    fixture.verify_recovery();
+}
+
+#[test]
 fn authenticated_cancellation_cleans_loader_and_retries_pending_edit() {
     let mut fixture = Fixture::new(false);
     fixture.pause(fixture.phase_pid);
@@ -810,31 +975,27 @@ fn authenticated_cancellation_cleans_loader_and_retries_pending_edit() {
 }
 
 #[test]
-fn real_loader_memory_failure_cleans_containment_and_retries_pending_edit() {
+fn loader_allocation_is_observed_without_resource_budget_cancellation() {
     let mut fixture = Fixture::new(false);
-    // The native loader owns the allocation. Its ordinary RSS sampler must
-    // detect this while the loader remains inside its ready barrier.
-    fs::write(
-        fixture.barrier.join("ALLOCATE_BYTES"),
-        (512_u64 * 1024 * 1024).to_string(),
-    )
-    .unwrap();
-    let mut last_health = Value::Null;
+    let allocation = fixture
+        .barrier
+        .join(format!("ALLOCATE_BYTES-{}", fixture.phase_pid));
+    fs::write(&allocation, (8_u64 * 1024 * 1024).to_string()).unwrap();
+    let ready = fixture
+        .barrier
+        .join(format!("phase-{}.memory.json", fixture.phase_pid));
     wait_until(
-        "native loader allocation did not report a memory budget failure",
-        || {
-            last_health = fixture.session.health();
-            last_health["refresh"]["pending"] == true
-                && last_health["refresh"]["last_error"]
-                    .as_str()
-                    .is_some_and(|error| error.contains("memory_budget_exceeded"))
-        },
+        "native loader did not acknowledge its fixture-owned allocation",
+        || ready.is_file(),
     );
-    wait_until("memory failure left the loader alive", || {
-        !alive(fixture.phase_pid)
-    });
+    assert!(alive(fixture.phase_pid));
     fixture.unchanged();
-    fs::remove_file(fixture.barrier.join("ALLOCATE_BYTES")).unwrap();
+    let health = fixture.session.health();
+    assert!(!health["refresh"]["last_error"]
+        .as_str()
+        .unwrap_or("")
+        .contains("memory_budget_exceeded"));
+    fs::remove_file(allocation).unwrap();
     fixture.verify_recovery();
 }
 

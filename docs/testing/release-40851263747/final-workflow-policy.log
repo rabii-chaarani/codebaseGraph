@@ -1,0 +1,3 @@
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.07s
+     Running `/private/tmp/codebasegraph-immutable-release-evidence-20261029/cargo-target/debug/xtask check-workflows`
+workflow policy passed

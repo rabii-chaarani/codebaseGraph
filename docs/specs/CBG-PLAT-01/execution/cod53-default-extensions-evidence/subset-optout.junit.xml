@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="nextest-run" tests="2" failures="0" errors="0" uuid="6b2274ab-c61d-4796-a352-a52cb554289a" timestamp="2026-10-27T14:59:39.690+09:30" time="0.340">
+    <testsuite name="codebase-graph" tests="2" disabled="0" errors="0" failures="0">
+        <testcase name="db_writer::extensions::tests::bundled_extension_archives_decompress_before_cache_seed" classname="codebase-graph" timestamp="2026-10-27T14:59:39.691+09:30" time="0.319">
+        </testcase>
+        <testcase name="db_writer::extensions::tests::supports_prebuilt_and_source_built_ladybug_extension_cache_versions" classname="codebase-graph" timestamp="2026-10-27T14:59:40.010+09:30" time="0.020">
+        </testcase>
+    </testsuite>
+</testsuites>

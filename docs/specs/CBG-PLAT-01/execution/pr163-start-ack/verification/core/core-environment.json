@@ -1,0 +1,20 @@
+{
+  "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+  "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+  "LBUG_VERSION": "0.19.0",
+  "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+  "MACOSX_DEPLOYMENT_TARGET": "13.3",
+  "CARGO_BUILD_JOBS": "2",
+  "LBUG_SHARED": null,
+  "CARGO_TARGET_DIR": null,
+  "RUSTFLAGS": null,
+  "CARGO_ENCODED_RUSTFLAGS": null,
+  "CARGO_BIN_EXE_codebase-graph": "/private/tmp/codebasegraph-pr163-ci-repair-20261030/target/native-tests/codebase-graph",
+  "working_directory": "/private/tmp/codebasegraph-pr163-ci-repair-20261030",
+  "effective_cargo_HOME": "/private/tmp/codebasegraph-pr163-ci-repair-20261030/target/test-home",
+  "RUST_TEST_THREADS": "1 (.cargo/config.toml)",
+  "cargo_profile": "native-tests (opt-level3, debug_assertions=true, overflow_checks=true)",
+  "os": "ProductName:\t\tmacOS\nProductVersion:\t\t26.6.2\nBuildVersion:\t\t25G83\n",
+  "native_library_sha256": "d2e9a5c37617b0affb01f18f6ef48bb1531f5744f5ba06c849226842617ad142",
+  "native_header_sha256": "7da5b7e36d6610e43a1512e4997ac123ba0886cf5598ae44aca5449aa02a8aa3"
+}

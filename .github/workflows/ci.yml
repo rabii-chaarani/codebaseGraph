@@ -2,8 +2,20 @@ name: CI
 
 on:
   pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - edited
+      - labeled
+      - unlabeled
     branches:
       - main
+      - cod103-stack/cod-105
+      - cod103-stack/cod-106
+      - cod103-stack/cod-56
+      - cod103-stack/cod-107
+      - cod103-stack/cod-108
   push:
     branches:
       - main
@@ -20,6 +32,236 @@ env:
   CARGO_NET_RETRY: "10"
 
 jobs:
+  classify:
+    name: classify CI mode
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      mode: ${{ steps.decision.outputs.mode }}
+      decision: ${{ steps.decision.outputs.decision }}
+    steps:
+      - name: Read current CI identity
+        id: identity
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY_ID: ${{ github.repository_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${GITHUB_EVENT_NAME:?}" "${GITHUB_REPOSITORY:?}" "${GITHUB_SHA:?}" "${GITHUB_REF:?}" "${GITHUB_EVENT_PATH:?}" "${GITHUB_OUTPUT:?}" "${RUNNER_TEMP:?}" "${REPOSITORY_ID:?}"
+          [[ "$GITHUB_REPOSITORY" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]
+          mkdir -p "$RUNNER_TEMP/cod108"
+          event="$GITHUB_EVENT_PATH"
+          jq -se --arg repository "$GITHUB_REPOSITORY" --arg id "$REPOSITORY_ID" '
+            length == 1 and (.[0] | type == "object" and .repository.full_name == $repository and
+            (.repository.id | tostring) == $id)' "$event" >/dev/null
+          candidate=false
+          reason=ordinary-event
+          number=0
+          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
+            read -r base head number < <(jq -er '
+              [.pull_request.base.sha, .pull_request.head.sha, (.number | tostring)] |
+              if all(.[]; type == "string") then @tsv else error("Incomplete PR event") end' "$event")
+            [[ "$number" =~ ^[1-9][0-9]*$ ]]
+            if gh api "repos/$GITHUB_REPOSITORY/pulls/$number" > "$RUNNER_TEMP/cod108/pr.json" &&
+               gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" > "$RUNNER_TEMP/cod108/main.json"; then
+              if jq -se --slurpfile event "$event" --slurpfile main "$RUNNER_TEMP/cod108/main.json" \
+                --arg repository "$GITHUB_REPOSITORY" --arg id "$REPOSITORY_ID" '
+                def trusted:
+                  .state == "open" and .draft == false and
+                  .user.id == 41898282 and .user.login == "github-actions[bot]" and .user.type == "Bot" and
+                  .base.ref == "main" and .head.ref == "release-please--branches--main--components--codebase-graph" and
+                  .base.repo.full_name == $repository and .head.repo.full_name == $repository and
+                  (.base.repo.id | tostring) == $id and (.head.repo.id | tostring) == $id and
+                  (.labels | type == "array" and any(.[]; .name == "autorelease: pending"));
+                length == 1 and (.[0] | ($event | length) == 1 and ($main | length) == 1 and
+                ($event[0].action | IN("opened", "synchronize", "reopened", "edited", "labeled", "unlabeled")) and
+                ($event[0].pull_request | trusted) and trusted and
+                .number == $event[0].number and
+                .base.sha == $event[0].pull_request.base.sha and .head.sha == $event[0].pull_request.head.sha and
+                $main[0].ref == "refs/heads/main" and $main[0].object.type == "commit" and
+                .base.sha == $main[0].object.sha)' "$RUNNER_TEMP/cod108/pr.json" >/dev/null; then
+                candidate=true
+                reason=eligibility-pending
+              else
+                reason=untrusted-or-stale-pr
+              fi
+            else
+              reason=identity-acquisition-failed
+            fi
+          elif [[ "$GITHUB_EVENT_NAME" == push && "$GITHUB_REF" == refs/heads/main ]]; then
+            read -r base head < <(jq -er '[.before, .after] | if all(.[]; type == "string") then @tsv else error("Incomplete push") end' "$event")
+            [[ "$head" == "$GITHUB_SHA" ]]
+            reason=main-push
+          else
+            echo 'Unsupported CI event' >&2
+            exit 1
+          fi
+          [[ "$base" =~ ^[0-9a-f]{40}$ && "$head" =~ ^[0-9a-f]{40}$ && "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
+          jq -cn --arg repository "$GITHUB_REPOSITORY" --arg repository_id "$REPOSITORY_ID" \
+            --arg event_name "$GITHUB_EVENT_NAME" --arg run_sha "$GITHUB_SHA" \
+            --arg base_sha "$base" --arg head_sha "$head" --arg reason_code "$reason" \
+            --argjson pr_number "$number" \
+            '{schema_version:1,mode:"full",reason_code:$reason_code,base_sha:$base_sha,head_sha:$head_sha,
+              repository:$repository,repository_id:$repository_id,event_name:$event_name,run_sha:$run_sha,
+              pr_number:$pr_number,positive_metadata:false}' > "$RUNNER_TEMP/cod108/decision.json"
+          printf 'candidate=%s\nbase_sha=%s\nhead_sha=%s\n' "$candidate" "$base" "$head" >> "$GITHUB_OUTPUT"
+      - name: Check out immutable protected base
+        id: trusted-base
+        if: steps.identity.outputs.candidate == 'true'
+        continue-on-error: true
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ steps.identity.outputs.base_sha }}
+          path: trusted-base
+          persist-credentials: false
+      - name: Check out separate Git object store
+        id: git-objects
+        if: steps.identity.outputs.candidate == 'true'
+        continue-on-error: true
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ steps.identity.outputs.base_sha }}
+          path: git-objects
+          persist-credentials: false
+      - name: Select verified CI mode
+        id: decision
+        env:
+          CANDIDATE: ${{ steps.identity.outputs.candidate }}
+          TRUSTED_BASE_OUTCOME: ${{ steps.trusted-base.outcome }}
+          OBJECT_STORE_OUTCOME: ${{ steps.git-objects.outcome }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${RUNNER_TEMP:?}" "${GITHUB_OUTPUT:?}" "${GITHUB_STEP_SUMMARY:?}" "${GITHUB_WORKSPACE:?}" "${CANDIDATE:?}"
+          decision="$RUNNER_TEMP/cod108/decision.json"
+          if [[ "$CANDIDATE" == true ]]; then
+            base="$(jq -er '.base_sha' "$decision")"
+            head="$(jq -er '.head_sha' "$decision")"
+            reason=classifier-unavailable
+            # Only protected B supplies executable code, manifests, lockfile and build context.
+            if [[ "$TRUSTED_BASE_OUTCOME" == success && "$OBJECT_STORE_OUTCOME" == success &&
+                  -f "$GITHUB_WORKSPACE/trusted-base/crates/xtask/src/ci.rs" ]]; then
+              if git -C "$GITHUB_WORKSPACE/git-objects" -c protocol.file.allow=never fetch --no-tags --no-recurse-submodules \
+                   "https://github.com/$GITHUB_REPOSITORY.git" "$head" &&
+                 (cd "$GITHUB_WORKSPACE/trusted-base" &&
+                  CARGO_TARGET_DIR="$RUNNER_TEMP/cod108/trusted-target" cargo run -p xtask --locked -- \
+                    ci-mode --repo "$GITHUB_WORKSPACE/git-objects" --base-sha "$base" --head-sha "$head") \
+                   > "$RUNNER_TEMP/cod108/classifier.json"; then
+                if jq -se --arg base "$base" --arg head "$head" '
+                  length == 1 and (.[0] |
+                    type == "object" and .schema_version == 1 and
+                    (.mode == "full" or .mode == "lightweight") and
+                    (.reason_code | type == "string" and test("^[a-z0-9-]{1,64}$")) and
+                    .base_sha == $base and .head_sha == $head and
+                    (.mode != "lightweight" or .reason_code == "metadata-only-version-bump"))' \
+                  "$RUNNER_TEMP/cod108/classifier.json" >/dev/null; then
+                  jq --slurpfile classified "$RUNNER_TEMP/cod108/classifier.json" '
+                    .mode = $classified[0].mode | .reason_code = $classified[0].reason_code |
+                    .positive_metadata = (.mode == "lightweight")' "$decision" > "$decision.next"
+                  mv "$decision.next" "$decision"
+                  reason=
+                else
+                  reason=classifier-invalid-output
+                fi
+              else
+                reason=classifier-acquisition-failed
+              fi
+            fi
+            if [[ -n "$reason" ]]; then
+              jq --arg reason "$reason" '.mode="full" | .positive_metadata=false | .reason_code=$reason' \
+                "$decision" > "$decision.next"
+              mv "$decision.next" "$decision"
+            fi
+          fi
+          jq -e '.schema_version == 1 and (.mode == "full" or .mode == "lightweight")' "$decision" >/dev/null
+          printf 'mode=%s\ndecision=%s\n' "$(jq -r '.mode' "$decision")" "$(jq -c . "$decision")" >> "$GITHUB_OUTPUT"
+          jq -r '"CI mode: \(.mode)\nBase: \(.base_sha)\nHead: \(.head_sha)\nReason: \(.reason_code)"' "$decision" >> "$GITHUB_STEP_SUMMARY"
+
+  repository-policy:
+    name: repository policy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Read current policy purpose
+        id: purpose
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY_ID: ${{ github.repository_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${GITHUB_EVENT_NAME:?}" "${GITHUB_REPOSITORY:?}" "${GITHUB_SHA:?}" "${GITHUB_REF:?}" "${GITHUB_EVENT_PATH:?}" "${GITHUB_OUTPUT:?}" "${RUNNER_TEMP:?}" "${REPOSITORY_ID:?}"
+          [[ "$GITHUB_REPOSITORY" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ && "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
+          candidate=false
+          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
+            number="$(jq -er '.number | select(type == "number" and . > 0 and floor == .)' "$GITHUB_EVENT_PATH")"
+            [[ "$number" =~ ^[1-9][0-9]*$ && "$GITHUB_REF" == "refs/pull/$number/merge" ]]
+            mkdir -p "$RUNNER_TEMP/cod110-policy"
+            current="$RUNNER_TEMP/cod110-policy/pr.json"
+            gh api "repos/$GITHUB_REPOSITORY/pulls/$number" > "$current"
+            jq -se --slurpfile event "$GITHUB_EVENT_PATH" \
+              --arg repository "$GITHUB_REPOSITORY" --arg id "$REPOSITORY_ID" --argjson number "$number" '
+              def identity:
+                (.base.sha | type == "string" and test("^[0-9a-f]{40}$")) and
+                (.head.sha | type == "string" and test("^[0-9a-f]{40}$")) and
+                (.base.ref | type == "string" and length > 0) and
+                (.head.ref | type == "string" and length > 0) and
+                .base.repo.full_name == $repository and (.base.repo.id | tostring) == $id and
+                (.base.repo.id | type == "number" and . > 0 and floor == .) and
+                (.head.repo.full_name | type == "string" and test("^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")) and
+                (.head.repo.id | type == "number" and . > 0 and floor == .);
+              length == 1 and ($event | length) == 1 and (.[0] |
+                type == "object" and identity and .state == "open" and .number == $number and
+                $event[0].repository.full_name == $repository and ($event[0].repository.id | tostring) == $id and
+                $event[0].number == $number and $event[0].pull_request.number == $number and
+                ($event[0].action | IN("opened", "synchronize", "reopened", "edited", "labeled", "unlabeled")) and
+                ($event[0].pull_request | identity) and
+                .base.sha == $event[0].pull_request.base.sha and .head.sha == $event[0].pull_request.head.sha and
+                .base.ref == $event[0].pull_request.base.ref and .head.ref == $event[0].pull_request.head.ref and
+                .base.repo.full_name == $event[0].pull_request.base.repo.full_name and
+                .base.repo.id == $event[0].pull_request.base.repo.id and
+                .head.repo.full_name == $event[0].pull_request.head.repo.full_name and
+                .head.repo.id == $event[0].pull_request.head.repo.id)' "$current" >/dev/null
+            candidate="$(jq -er --arg repository "$GITHUB_REPOSITORY" --arg id "$REPOSITORY_ID" '
+              (.head.ref == "release-please--branches--main--components--codebase-graph" and
+               .head.repo.full_name == $repository and (.head.repo.id | tostring) == $id) | tostring' "$current")"
+          elif [[ "$GITHUB_EVENT_NAME" == push && "$GITHUB_REF" == refs/heads/main ]]; then
+            jq -se --arg repository "$GITHUB_REPOSITORY" --arg id "$REPOSITORY_ID" --arg sha "$GITHUB_SHA" '
+              length == 1 and (.[0] | type == "object" and .repository.full_name == $repository and
+              (.repository.id | tostring) == $id and .ref == "refs/heads/main" and .after == $sha)' "$GITHUB_EVENT_PATH" >/dev/null
+          else
+            echo 'Unsupported repository-policy event' >&2
+            exit 1
+          fi
+          printf 'release-candidate=%s\n' "$candidate" >> "$GITHUB_OUTPUT"
+      - name: Check out tested source
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Check repository release policy
+        env:
+          TESTED_SHA: ${{ github.sha }}
+          RELEASE_CANDIDATE: ${{ steps.purpose.outputs.release-candidate }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${TESTED_SHA:?}" "${RELEASE_CANDIDATE:?}"
+          args=(release-gate --source-sha "$TESTED_SHA")
+          case "$RELEASE_CANDIDATE" in
+            true) args+=(--release-candidate) ;;
+            false) ;;
+            *) echo 'Invalid repository-policy purpose' >&2; exit 1 ;;
+          esac
+          cargo run -p xtask --locked -- "${args[@]}"
+      - name: Check classifier and workflow regressions
+        run: cargo test -p xtask --locked
+
   fmt:
     name: cargo fmt
     runs-on: ubuntu-latest
@@ -31,6 +273,8 @@ jobs:
         run: cargo fmt --check
 
   clippy:
+    needs: [classify]
+    if: needs.classify.outputs.mode == 'full'
     name: cargo clippy
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -69,6 +313,8 @@ jobs:
           cargo audit --ignore RUSTSEC-2026-0009
 
   publish-dry-run:
+    needs: [classify]
+    if: needs.classify.outputs.mode == 'full'
     name: cargo publish dry-run
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -88,18 +334,49 @@ jobs:
       - name: Verify Knowledge Wiki package archive
         run: cargo package -p k-wiki --locked --no-verify --config 'patch.crates-io.codebase-graph.path="."'
 
+  native_retention:
+    name: native artifact retention
+    runs-on: ubuntu-latest
+    outputs:
+      retain: ${{ steps.decision.outputs.retain }}
+    steps:
+      - name: Select native artifact retention
+        id: decision
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${GITHUB_EVENT_NAME:?}" "${GITHUB_REF:?}" "${GITHUB_REPOSITORY:?}" "${GITHUB_EVENT_PATH:?}" "${GITHUB_OUTPUT:?}"
+          retain="$(jq -r \
+            --arg event "$GITHUB_EVENT_NAME" \
+            --arg ref "$GITHUB_REF" \
+            --arg repository "$GITHUB_REPOSITORY" '
+            if type != "object" then error("Expected an event object")
+            elif $event == "push" then $ref == "refs/heads/main"
+            elif $event == "pull_request" then
+              ((.action == "opened" or .action == "synchronize" or
+                .action == "reopened" or .action == "edited") and
+               .pull_request.head.repo.full_name == $repository and
+               .pull_request.base.repo.full_name == $repository and
+               .pull_request.head.ref == "cod103-stack/cod-107" and
+               (.pull_request.base.ref == "cod103-stack/cod-56" or
+                .pull_request.base.ref == "main"))
+            else false
+            end' "$GITHUB_EVENT_PATH")"
+          case "$retain" in
+            true|false) printf 'retain=%s\n' "$retain" >> "$GITHUB_OUTPUT" ;;
+            *) echo 'Invalid native retention result' >&2; exit 1 ;;
+          esac
+
   native:
     name: native (${{ matrix.target }})
+    needs: [classify, native_retention]
+    if: needs.classify.outputs.mode == 'full'
     strategy:
       fail-fast: false
       matrix:
         include:
-          - target: linux-x86_64
-            run-tests: true
           - target: macos-arm64
             run-tests: true
-          - target: macos-x86_64
-            run-tests: false
           - target: windows-x86_64
             run-tests: true
     uses: ./.github/workflows/native.yml
@@ -107,28 +384,106 @@ jobs:
       target: ${{ matrix.target }}
       source-sha: ${{ github.sha }}
       run-tests: ${{ matrix.run-tests }}
-      upload-artifact: ${{ github.event_name == 'push' }}
+      upload-artifact: ${{ fromJSON(needs.native_retention.outputs.retain) }}
       artifact-retention-days: 90
 
   required:
     name: required
     if: ${{ always() }}
     needs:
+      - classify
       - fmt
-      - clippy
       - supply-chain
+      - repository-policy
+      - clippy
       - publish-dry-run
       - native
+      - native_retention
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
-      - name: Require every mandatory job
+      - name: Require current mode and mandatory jobs
+        id: aggregate
         env:
           RESULTS: ${{ toJSON(needs) }}
+          DECISION: ${{ needs.classify.outputs.decision }}
+          REPOSITORY_ID: ${{ github.repository_id }}
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          if jq -e 'to_entries | any(.value.result != "success")' <<<"$RESULTS" >/dev/null; then
-            echo "$RESULTS"
+          : "${RESULTS:?}" "${DECISION:?}" "${GITHUB_EVENT_NAME:?}" "${GITHUB_REPOSITORY:?}" "${GITHUB_SHA:?}" "${GITHUB_REF:?}" "${GITHUB_EVENT_PATH:?}" "${REPOSITORY_ID:?}" "${RUNNER_TEMP:?}" "${GITHUB_STEP_SUMMARY:?}"
+          [[ "$GITHUB_REPOSITORY" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]
+          jq -en --argjson jobs "$RESULTS" --argjson decision "$DECISION" \
+            --arg repository "$GITHUB_REPOSITORY" --arg repository_id "$REPOSITORY_ID" \
+            --arg event "$GITHUB_EVENT_NAME" --arg run_sha "$GITHUB_SHA" '
+            ($jobs | keys | sort) == (["classify","fmt","supply-chain","repository-policy","clippy","publish-dry-run","native","native_retention"] | sort) and
+            ($decision | type == "object" and .schema_version == 1 and
+              (.mode == "full" or .mode == "lightweight") and
+              (.reason_code | type == "string" and test("^[a-z0-9-]{1,64}$")) and
+              (.base_sha | type == "string" and test("^[0-9a-f]{40}$")) and
+              (.head_sha | type == "string" and test("^[0-9a-f]{40}$")) and
+              .repository == $repository and .repository_id == $repository_id and
+              .event_name == $event and .run_sha == $run_sha and
+              (.pr_number | type == "number" and . >= 0 and floor == .) and
+              (.positive_metadata | type == "boolean")) and
+            (["classify","fmt","supply-chain","repository-policy","native_retention"] | all(.[]; $jobs[.].result == "success")) and
+            (if $decision.mode == "full" then
+               $decision.positive_metadata == false and
+               (["clippy","publish-dry-run","native"] | all(.[]; $jobs[.].result == "success"))
+             else
+               $decision.positive_metadata == true and $decision.reason_code == "metadata-only-version-bump" and
+               $event == "pull_request" and
+               (["clippy","publish-dry-run","native"] | all(.[]; $jobs[.].result == "skipped"))
+             end)' >/dev/null
+          mkdir -p "$RUNNER_TEMP/cod108-required"
+          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
+            number="$(jq -er '.number | select(type == "number" and . > 0 and floor == .)' "$GITHUB_EVENT_PATH")"
+            [[ "$number" =~ ^[1-9][0-9]*$ ]]
+            gh api "repos/$GITHUB_REPOSITORY/pulls/$number" > "$RUNNER_TEMP/cod108-required/pr.json"
+            gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" > "$RUNNER_TEMP/cod108-required/main.json"
+            jq -se --argjson decision "$DECISION" --slurpfile event "$GITHUB_EVENT_PATH" \
+              --slurpfile main "$RUNNER_TEMP/cod108-required/main.json" \
+              --arg repository "$GITHUB_REPOSITORY" --arg id "$REPOSITORY_ID" '
+              def trusted:
+                .state == "open" and .draft == false and
+                .user.id == 41898282 and .user.login == "github-actions[bot]" and .user.type == "Bot" and
+                .base.ref == "main" and .head.ref == "release-please--branches--main--components--codebase-graph" and
+                .base.repo.full_name == $repository and .head.repo.full_name == $repository and
+                (.base.repo.id | tostring) == $id and (.head.repo.id | tostring) == $id and
+                (.labels | type == "array" and any(.[]; .name == "autorelease: pending"));
+              length == 1 and (.[0] | ($event | length) == 1 and ($main | length) == 1 and
+              $event[0].repository.full_name == $repository and ($event[0].repository.id | tostring) == $id and
+              ($event[0].action | IN("opened", "synchronize", "reopened", "edited", "labeled", "unlabeled")) and
+              .state == "open" and .number == $event[0].number and .number == $decision.pr_number and
+              .base.repo.full_name == $repository and (.base.repo.id | tostring) == $id and
+              .base.repo.full_name == $event[0].pull_request.base.repo.full_name and
+              .base.repo.id == $event[0].pull_request.base.repo.id and
+              .base.ref == $event[0].pull_request.base.ref and
+              .head.repo.full_name == $event[0].pull_request.head.repo.full_name and
+              .head.repo.id == $event[0].pull_request.head.repo.id and
+              (.head.repo.full_name | type == "string" and length > 0) and (.head.repo.id | type == "number" and . > 0) and
+              .head.ref == $event[0].pull_request.head.ref and
+              .base.sha == $event[0].pull_request.base.sha and .base.sha == $decision.base_sha and
+              .head.sha == $event[0].pull_request.head.sha and .head.sha == $decision.head_sha and
+              $main[0].ref == "refs/heads/main" and $main[0].object.type == "commit" and
+              ($main[0].object.sha | type == "string" and test("^[0-9a-f]{40}$")) and
+              (if $decision.mode == "lightweight" then
+                 trusted and ($event[0].pull_request | trusted) and .base.sha == $main[0].object.sha
+               else true end))' "$RUNNER_TEMP/cod108-required/pr.json" >/dev/null
+          elif [[ "$GITHUB_EVENT_NAME" == push && "$GITHUB_REF" == refs/heads/main ]]; then
+            jq -se --argjson decision "$DECISION" --arg repository "$GITHUB_REPOSITORY" --arg id "$REPOSITORY_ID" \
+              --arg sha "$GITHUB_SHA" '
+              length == 1 and (.[0] | .repository.full_name == $repository and (.repository.id | tostring) == $id and
+              .ref == "refs/heads/main" and .before == $decision.base_sha and .after == $decision.head_sha and
+              .after == $sha and $decision.pr_number == 0 and $decision.mode == "full" and
+              $decision.positive_metadata == false)' "$GITHUB_EVENT_PATH" >/dev/null
+          else
+            echo 'Unsupported required-check event' >&2
             exit 1
           fi
+          jq -nr --argjson decision "$DECISION" --argjson jobs "$RESULTS" '
+            "Required CI: \($decision.mode)\nBase: \($decision.base_sha)\nHead: \($decision.head_sha)\nReason: \($decision.reason_code)\nIntentional skips: \([$jobs | to_entries[] | select(.value.result == "skipped") | .key] | join(", "))"' >> "$GITHUB_STEP_SUMMARY"

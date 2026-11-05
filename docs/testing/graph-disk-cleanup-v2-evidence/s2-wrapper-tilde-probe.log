@@ -1,0 +1,544 @@
+warning: method `delete_key` is never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/artifact_store.rs:324:19
+    |
+107 | impl ArtifactStore {
+    | ------------------ method in this implementation
+...
+324 |     pub(crate) fn delete_key(&self, artifact_key: &str) -> Result<bool, NativeError> {
+    |                   ^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: struct `MaintenanceExecutionPermit` is never constructed
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/coordinator.rs:178:8
+    |
+178 | struct MaintenanceExecutionPermit {
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `try_acquire_maintenance` is never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/coordinator.rs:189:8
+    |
+188 | impl ExecutionDispatcher {
+    | ------------------------ method in this implementation
+189 |     fn try_acquire_maintenance(self: &Arc<Self>) -> Option<MaintenanceExecutionPermit> {
+    |        ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `lifecycle_empty_with_owned` is never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/containment.rs:178:15
+    |
+178 | pub(crate) fn lifecycle_empty_with_owned(
+    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `writer_lease` is never used
+  --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/direct.rs:48:19
+   |
+47 | impl DirectWriteSession {
+   | ----------------------- method in this implementation
+48 |     pub(crate) fn writer_lease(&self) -> Result<&WriterLease, NativeError> {
+   |                   ^^^^^^^^^^^^
+
+warning: struct `MaintenanceTarget` is never constructed
+  --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:11:19
+   |
+11 | pub(crate) struct MaintenanceTarget {
+   |                   ^^^^^^^^^^^^^^^^^
+
+warning: struct `DirectPair` is never constructed
+  --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:20:19
+   |
+20 | pub(crate) struct DirectPair {
+   |                   ^^^^^^^^^^
+
+warning: enum `InventoryStatus` is never used
+  --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:26:17
+   |
+26 | pub(crate) enum InventoryStatus {
+   |                 ^^^^^^^^^^^^^^^
+
+warning: enum `InventoryCategory` is never used
+  --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:35:17
+   |
+35 | pub(crate) enum InventoryCategory {
+   |                 ^^^^^^^^^^^^^^^^^
+
+warning: enum `Disposition` is never used
+  --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:49:17
+   |
+49 | pub(crate) enum Disposition {
+   |                 ^^^^^^^^^^^
+
+warning: struct `InventoryEntry` is never constructed
+  --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:56:19
+   |
+56 | pub(crate) struct InventoryEntry {
+   |                   ^^^^^^^^^^^^^^
+
+warning: struct `InventoryTotals` is never constructed
+  --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:69:19
+   |
+69 | pub(crate) struct InventoryTotals {
+   |                   ^^^^^^^^^^^^^^^
+
+warning: struct `StorageInventory` is never constructed
+  --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:81:19
+   |
+81 | pub(crate) struct StorageInventory {
+   |                   ^^^^^^^^^^^^^^^^
+
+warning: struct `Stamp` is never constructed
+  --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:92:8
+   |
+92 | struct Stamp {
+   |        ^^^^^
+
+warning: function `stamp` is never used
+  --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:99:4
+   |
+99 | fn stamp(m: &Metadata) -> Stamp {
+   |    ^^^^^
+
+warning: function `changed` is never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:115:4
+    |
+115 | fn changed(m: &Metadata) -> Option<(i64, i64)> {
+    |    ^^^^^^^
+
+warning: function `allocation` is never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:133:4
+    |
+133 | fn allocation(m: &Metadata) -> Option<u64> {
+    |    ^^^^^^^^^^
+
+warning: function `real_path` is never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:143:15
+    |
+143 | pub(crate) fn real_path(path: &Path) -> bool {
+    |               ^^^^^^^^^
+
+warning: function `read_observed` is never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:165:4
+    |
+165 | fn read_observed<T: serde::de::DeserializeOwned>(path: &Path) -> Option<T> {
+    |    ^^^^^^^^^^^^^
+
+warning: function `read_json` is never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:184:4
+    |
+184 | fn read_json(path: &Path) -> Option<serde_json::Value> {
+    |    ^^^^^^^^^
+
+warning: struct `ManifestKeyView` is never constructed
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:188:8
+    |
+188 | struct ManifestKeyView {
+    |        ^^^^^^^^^^^^^^^
+
+warning: struct `ArtifactKeyView` is never constructed
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:192:8
+    |
+192 | struct ArtifactKeyView {
+    |        ^^^^^^^^^^^^^^^
+
+warning: function `read_manifest_keys` is never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:196:4
+    |
+196 | fn read_manifest_keys(path: &Path) -> Option<BTreeSet<String>> {
+    |    ^^^^^^^^^^^^^^^^^^
+
+warning: struct `ObservedBinding` is never constructed
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:210:19
+    |
+210 | pub(crate) struct ObservedBinding {
+    |                   ^^^^^^^^^^^^^^^
+
+warning: function `default_direct` is never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:215:15
+    |
+215 | pub(crate) fn default_direct(target: &MaintenanceTarget) -> DirectPair {
+    |               ^^^^^^^^^^^^^^
+
+warning: function `physically_within` is never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:233:4
+    |
+233 | fn physically_within(path: &Path, root: &Path) -> bool {
+    |    ^^^^^^^^^^^^^^^^^
+
+warning: function `reconcile_observation_roots` is never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:237:4
+    |
+237 | fn reconcile_observation_roots(mut roots: Vec<PathBuf>) -> Vec<PathBuf> {
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `managed_direct_roles_overlap` is never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:253:4
+    |
+253 | fn managed_direct_roles_overlap(
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `bound_roles_overlap` is never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:265:15
+    |
+265 | pub(crate) fn bound_roles_overlap(target: &MaintenanceTarget, binding: &ObservedBinding) -> bool {
+    |               ^^^^^^^^^^^^^^^^^^^
+
+warning: function `observed_relative` is never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:277:4
+    |
+277 | fn observed_relative(path: &Path, root: &Path) -> Option<PathBuf> {
+    |    ^^^^^^^^^^^^^^^^^
+
+warning: function `config_raw_path` is never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:286:4
+    |
+286 | fn config_raw_path(
+    |    ^^^^^^^^^^^^^^^
+
+warning: function `config_value_path` is never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:311:4
+    |
+311 | fn config_value_path(
+    |    ^^^^^^^^^^^^^^^^^
+
+warning: function `observe_binding` is never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:331:15
+    |
+331 | pub(crate) fn observe_binding(target: &MaintenanceTarget) -> Result<ObservedBinding, String> {
+    |               ^^^^^^^^^^^^^^^
+
+warning: function `classify_artifact` is never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:422:4
+    |
+422 | fn classify_artifact(
+    |    ^^^^^^^^^^^^^^^^^
+
+warning: struct `Scan` is never constructed
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:465:8
+    |
+465 | struct Scan {
+    |        ^^^^
+
+warning: associated items `new` and `walk` are never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:473:8
+    |
+472 | impl Scan {
+    | --------- associated items in this implementation
+473 |     fn new() -> Self {
+    |        ^^^
+...
+482 |     fn walk(&mut self, path: &Path) {
+    |        ^^^^
+
+warning: function `unknown` is never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:552:4
+    |
+552 | fn unknown(path: &Path, reason: &str) -> InventoryEntry {
+    |    ^^^^^^^
+
+warning: function `inspect_storage` is never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:567:15
+    |
+567 | pub(crate) fn inspect_storage(target: &MaintenanceTarget) -> StorageInventory {
+    |               ^^^^^^^^^^^^^^^
+
+warning: function `inspect_with_hook` is never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:570:4
+    |
+570 | fn inspect_with_hook(target: &MaintenanceTarget, between_scans: impl FnOnce()) -> StorageInventory {
+    |    ^^^^^^^^^^^^^^^^^
+
+warning: function `identity_supported` is never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:894:4
+    |
+894 | fn identity_supported() -> bool {
+    |    ^^^^^^^^^^^^^^^^^^
+
+warning: enum `LeaseObservation` is never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:897:6
+    |
+897 | enum LeaseObservation {
+    |      ^^^^^^^^^^^^^^^^
+
+warning: function `lease_observation` is never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:902:4
+    |
+902 | fn lease_observation(path: &Path) -> LeaseObservation {
+    |    ^^^^^^^^^^^^^^^^^
+
+warning: function `existing_shared_lock` is never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:937:4
+    |
+937 | fn existing_shared_lock(path: &Path) -> std::io::Result<File> {
+    |    ^^^^^^^^^^^^^^^^^^^^
+
+warning: function `ambiguous_file_identity` is never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:965:4
+    |
+965 | fn ambiguous_file_identity(metadata: &Metadata) -> bool {
+    |    ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `repository_name` is never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:973:4
+    |
+973 | fn repository_name(root: &Path) -> String {
+    |    ^^^^^^^^^^^^^^^
+
+warning: function `valid_key` is never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:994:4
+    |
+994 | fn valid_key(key: &str) -> bool {
+    |    ^^^^^^^^^
+
+warning: function `classify` is never used
+    --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/inventory.rs:1000:4
+     |
+1000 | fn classify<'a>(
+     |    ^^^^^^^^
+
+warning: method `path` is never used
+  --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/locks.rs:34:19
+   |
+20 | impl LockedFile {
+   | --------------- method in this implementation
+...
+34 |     pub(crate) fn path(&self) -> &Path {
+   |                   ^^^^
+
+warning: method `artifact_root` is never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/maintenance_ownership.rs:173:19
+    |
+ 51 | impl ReferenceDomain {
+    | -------------------- method in this implementation
+...
+173 |     pub(crate) fn artifact_root(&self) -> &Path {
+    |                   ^^^^^^^^^^^^^
+
+warning: method `counter` is never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/maintenance_ownership.rs:197:19
+    |
+196 | impl ReferenceEpoch {
+    | ------------------- method in this implementation
+197 |     pub(crate) fn counter(&self) -> u64 {
+    |                   ^^^^^^^
+
+warning: enum `EpochObservation` is never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/maintenance_ownership.rs:202:17
+    |
+202 | pub(crate) enum EpochObservation {
+    |                 ^^^^^^^^^^^^^^^^
+
+warning: function `observe_reference_epoch` is never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/maintenance_ownership.rs:341:15
+    |
+341 | pub(crate) fn observe_reference_epoch(
+    |               ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: field `reason` is never read
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/maintenance_ownership.rs:385:5
+    |
+383 | struct ReferenceActivity {
+    |        ----------------- field in this struct
+384 |     guard: Option<LockedFile>,
+385 |     reason: Option<String>,
+    |     ^^^^^^
+    |
+    = note: `ReferenceActivity` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: methods `tracked` and `pending_reason` are never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/maintenance_ownership.rs:565:19
+    |
+564 | impl ReferenceMutation<'_> {
+    | -------------------------- methods in this implementation
+565 |     pub(crate) fn tracked(&self) -> bool {
+    |                   ^^^^^^^
+...
+568 |     pub(crate) fn pending_reason(&self) -> Option<&str> {
+    |                   ^^^^^^^^^^^^^^
+
+warning: enum `MaintenanceAdmission` is never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/maintenance_ownership.rs:574:17
+    |
+574 | pub(crate) enum MaintenanceAdmission<'a> {
+    |                 ^^^^^^^^^^^^^^^^^^^^
+
+warning: enum `DestinationWriter` is never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/maintenance_ownership.rs:581:6
+    |
+581 | enum DestinationWriter<'a> {
+    |      ^^^^^^^^^^^^^^^^^
+
+warning: method `lease` is never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/maintenance_ownership.rs:586:8
+    |
+585 | impl DestinationWriter<'_> {
+    | -------------------------- method in this implementation
+586 |     fn lease(&self) -> &WriterLease {
+    |        ^^^^^
+
+warning: struct `MaintenanceLease` is never constructed
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/maintenance_ownership.rs:599:19
+    |
+599 | pub(crate) struct MaintenanceLease<'a> {
+    |                   ^^^^^^^^^^^^^^^^
+
+warning: multiple methods are never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/maintenance_ownership.rs:613:19
+    |
+610 | impl MaintenanceLease<'_> {
+    | ------------------------- methods in this implementation
+...
+613 |     pub(crate) fn begin_reference_mutation(&self) -> Result<ReferenceMutation<'_>, NativeError> {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^
+...
+624 |     pub(crate) fn target(&self) -> &MaintenanceTarget {
+    |                   ^^^^^^
+...
+628 |     pub(crate) fn revalidate(&self) -> Result<(), NativeError> {
+    |                   ^^^^^^^^^^
+...
+654 |     pub(crate) fn artifact_cohort_verified(&self) -> Result<bool, NativeError> {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^
+...
+659 |     pub(crate) fn cohort_verified(&self) -> Result<bool, NativeError> {
+    |                   ^^^^^^^^^^^^^^^
+...
+681 |     pub(crate) fn with_state_lock<T>(
+    |                   ^^^^^^^^^^^^^^^
+...
+699 |     pub(crate) fn cohort_record(&self) -> Result<DestinationCohortRecord, NativeError> {
+    |                   ^^^^^^^^^^^^^
+...
+740 |     pub(crate) fn publication_cohort_record(
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+806 |     pub(crate) fn direct_publication_cohort_record(
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+820 |     pub(crate) fn publication_cohort_verified(
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+829 |     pub(crate) fn direct_publication_cohort_verified(
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+836 |     pub(crate) fn cohort_record_path(&self) -> PathBuf {
+    |                   ^^^^^^^^^^^^^^^^^^
+
+warning: struct `PublicationCohortRecord` is never constructed
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/maintenance_ownership.rs:842:19
+    |
+842 | pub(crate) struct PublicationCohortRecord {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: enum `PublicationCohortOrigin` is never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/maintenance_ownership.rs:856:6
+    |
+856 | enum PublicationCohortOrigin {
+    |      ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: enum `PublicationScope` is never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/maintenance_ownership.rs:861:6
+    |
+861 | enum PublicationScope {
+    |      ^^^^^^^^^^^^^^^^
+
+warning: struct `DestinationCohortRecord` is never constructed
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/maintenance_ownership.rs:874:19
+    |
+874 | pub(crate) struct DestinationCohortRecord {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: enum `DestinationCohortOrigin` is never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/maintenance_ownership.rs:890:6
+    |
+890 | enum DestinationCohortOrigin {
+    |      ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `cohort_verified` is never used
+    --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/maintenance_ownership.rs:1063:8
+     |
+ 930 | impl ArtifactUseLease {
+     | --------------------- method in this implementation
+...
+1063 |     fn cohort_verified(&self) -> Result<bool, NativeError> {
+     |        ^^^^^^^^^^^^^^^
+
+warning: associated items `try_exclusive`, `try_exclusive_many`, and `exclusive_proof` are never used
+    --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/maintenance_ownership.rs:1126:19
+     |
+1107 | impl DatabaseUseLease {
+     | --------------------- associated items in this implementation
+...
+1126 |     pub(crate) fn try_exclusive(database: &Path) -> Result<Option<Self>, NativeError> {
+     |                   ^^^^^^^^^^^^^
+...
+1133 |     pub(crate) fn try_exclusive_many(
+     |                   ^^^^^^^^^^^^^^^^^^
+...
+1208 |     pub(crate) fn exclusive_proof(&self) -> Result<DatabaseUseProof, NativeError> {
+     |                   ^^^^^^^^^^^^^^^
+
+warning: struct `DatabaseUseProof` is never constructed
+    --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/maintenance_ownership.rs:1237:19
+     |
+1237 | pub(crate) struct DatabaseUseProof {
+     |                   ^^^^^^^^^^^^^^^^
+
+warning: function `observe_artifact_cohort` is never used
+    --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/maintenance_ownership.rs:1307:15
+     |
+1307 | pub(crate) fn observe_artifact_cohort(
+     |               ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `claim_maintenance` is never used
+    --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/maintenance_ownership.rs:1328:15
+     |
+1328 | pub(crate) fn claim_maintenance(
+     |               ^^^^^^^^^^^^^^^^^
+
+warning: function `claim_maintenance_with_owned` is never used
+    --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/maintenance_ownership.rs:1333:15
+     |
+1333 | pub(crate) fn claim_maintenance_with_owned<'a>(
+     |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `claim` is never used
+    --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/maintenance_ownership.rs:1340:4
+     |
+1340 | fn claim<'a>(
+     |    ^^^^^
+
+warning: function `guard_registry` is never used
+    --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/maintenance_ownership.rs:1525:4
+     |
+1525 | fn guard_registry(root: &Path, guards: &mut Vec<LockedFile>) -> Result<(), String> {
+     |    ^^^^^^^^^^^^^^
+
+warning: function `overlapping_pairs` is never used
+    --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/maintenance_ownership.rs:1609:4
+     |
+1609 | fn overlapping_pairs(
+     |    ^^^^^^^^^^^^^^^^^
+
+warning: function `resources_overlap` is never used
+    --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/maintenance_ownership.rs:1654:4
+     |
+1654 | fn resources_overlap(a: &Path, b: &Path) -> bool {
+     |    ^^^^^^^^^^^^^^^^^
+
+warning: method `writer_lease` is never used
+   --> /private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo/src/storage/managed.rs:155:19
+    |
+154 | impl ManagedWriteSession {
+    | ------------------------ method in this implementation
+155 |     pub(crate) fn writer_lease(&self) -> Result<&WriterLease, NativeError> {
+    |                   ^^^^^^^^^^^^
+
+warning: `codebase-graph` (lib) generated 75 warnings
+   Compiling guarded-wrapper-review-probe v0.0.0 (/private/tmp/cleanup-s2-wrapper-review-ccjn2do9/probe)
+    Finished `dev` profile [unoptimized] target(s) in 1.80s
+     Running `/Users/rabii/Projects/Repositories/codebaseGraph/target/debug/guarded-wrapper-review-probe`
+addressed=~/../../private/tmp/cleanup-s2-wrapper-review-ccjn2do9/tilde-native/graph.lbug
+guarded_parent=/private/tmp/cleanup-s2-wrapper-review-ccjn2do9/tilde-probe-cwd/private/tmp/cleanup-s2-wrapper-review-ccjn2do9/tilde-native
+native_parent=/private/tmp/cleanup-s2-wrapper-review-ccjn2do9/tilde-native
+addressed_database_exists=false
+native_database_exists=true
+actual_native_family_exclusive_available=true

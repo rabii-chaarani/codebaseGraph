@@ -9,7 +9,7 @@ use super::model::{
     LEXICON_MAGIC, LEXICON_SUFFIX, METADATA_SUFFIX, OCCURRENCES_MAGIC, POSTINGS_MAGIC,
     POSTINGS_SUFFIX, SIDECAR_SUFFIXES,
 };
-use super::{memory_budget_error, sidecar_path};
+use super::sidecar_path;
 use crate::error::NativeError;
 use crate::protocol::SearchBackendMetadata;
 use serde::de::{DeserializeSeed, Error as DeError, SeqAccess, Visitor};
@@ -23,7 +23,6 @@ use std::path::{Path, PathBuf};
 
 const MAX_TERM_BYTES: usize = 256;
 const MAX_MERGE_FAN_IN: usize = 32;
-const MIN_CHUNK_BYTES: usize = 4096;
 const MERGE_READER_ACCOUNTED_BYTES: usize = 768;
 const MERGE_READER_BUFFER_BYTES: usize = 256;
 
@@ -44,11 +43,9 @@ pub(crate) struct SearchIndexBuildResult {
 pub(crate) fn build(
     request: SearchIndexBuildRequest<'_>,
 ) -> Result<SearchIndexBuildResult, NativeError> {
-    if request.chunk_bytes < MIN_CHUNK_BYTES {
-        return Err(memory_budget_error(
-            "search_index_build",
-            request.chunk_bytes,
-            MIN_CHUNK_BYTES,
+    if request.chunk_bytes == 0 {
+        return Err(NativeError::InvalidInput(
+            "search chunk target must be positive".into(),
         ));
     }
     ensure_targets_absent(request.db_path)?;
@@ -120,7 +117,6 @@ fn build_inner(
                             index_order,
                             layer,
                         },
-                        request.chunk_bytes,
                     )?;
                     write_u64(&mut document_offsets, offset)?;
                     write_document_stat(
@@ -519,7 +515,9 @@ struct OccurrenceSorter {
 impl OccurrenceSorter {
     fn new(root: &Path, chunk_limit: usize) -> Result<Self, NativeError> {
         if chunk_limit == 0 {
-            return Err(memory_budget_error("search_occurrences", 0, 1));
+            return Err(NativeError::InvalidInput(
+                "search chunk target must be positive".into(),
+            ));
         }
         Ok(Self {
             root: root.to_path_buf(),
@@ -536,60 +534,33 @@ impl OccurrenceSorter {
 
     fn push(&mut self, occurrence: Occurrence) -> Result<(), NativeError> {
         let term_bytes = occurrence.term.capacity();
-        let record_bytes = term_bytes
+        let projected_bytes = self
+            .buffered_bytes
             .checked_add(std::mem::size_of::<Occurrence>())
-            .ok_or_else(|| {
-                memory_budget_error("search_occurrences", self.chunk_limit, usize::MAX)
-            })?;
-        if record_bytes > self.chunk_limit {
-            return Err(memory_budget_error(
-                "search_occurrences",
-                self.chunk_limit,
-                record_bytes,
-            ));
-        }
-        let required_len = self.buffered.len().checked_add(1).ok_or_else(|| {
-            memory_budget_error("search_occurrences", self.chunk_limit, usize::MAX)
-        })?;
-        let projected_capacity = self.buffered.capacity().max(required_len);
-        let projected_bytes = projected_capacity
-            .checked_mul(std::mem::size_of::<Occurrence>())
-            .and_then(|bytes| bytes.checked_add(self.buffered_term_bytes))
             .and_then(|bytes| bytes.checked_add(term_bytes))
-            .ok_or_else(|| {
-                memory_budget_error("search_occurrences", self.chunk_limit, usize::MAX)
-            })?;
+            .ok_or_else(|| NativeError::InvalidInput("search occurrence size overflow".into()))?;
         if !self.buffered.is_empty() && projected_bytes > self.chunk_limit {
             self.flush()?;
         }
-        self.buffered.try_reserve_exact(1).map_err(|_| {
-            memory_budget_error("search_occurrences", self.chunk_limit, projected_bytes)
+        self.buffered.try_reserve_exact(1).map_err(|error| {
+            NativeError::Io(std::io::Error::other(format!(
+                "search occurrence allocation failed: {error}"
+            )))
         })?;
-        let accounted_bytes = self
-            .buffered
-            .capacity()
-            .checked_mul(std::mem::size_of::<Occurrence>())
-            .and_then(|bytes| bytes.checked_add(self.buffered_term_bytes))
-            .and_then(|bytes| bytes.checked_add(term_bytes))
-            .ok_or_else(|| {
-                memory_budget_error("search_occurrences", self.chunk_limit, usize::MAX)
-            })?;
-        if accounted_bytes > self.chunk_limit {
-            return Err(memory_budget_error(
-                "search_occurrences",
-                self.chunk_limit,
-                accounted_bytes,
-            ));
-        }
-        self.buffered.push(occurrence);
         self.buffered_term_bytes = self
             .buffered_term_bytes
             .checked_add(term_bytes)
-            .ok_or_else(|| {
-                memory_budget_error("search_occurrences", self.chunk_limit, usize::MAX)
-            })?;
-        self.buffered_bytes = accounted_bytes;
+            .ok_or_else(|| NativeError::InvalidInput("search occurrence size overflow".into()))?;
+        self.buffered.push(occurrence);
+        self.buffered_bytes = self
+            .buffered
+            .capacity()
+            .saturating_mul(std::mem::size_of::<Occurrence>())
+            .saturating_add(self.buffered_term_bytes);
         self.high_water_bytes = self.high_water_bytes.max(self.buffered_bytes);
+        if self.buffered_bytes >= self.chunk_limit {
+            self.flush()?;
+        }
         Ok(())
     }
 
@@ -723,9 +694,11 @@ impl OccurrenceReader {
             )));
         }
         let mut bytes = Vec::new();
-        bytes
-            .try_reserve_exact(length)
-            .map_err(|_| memory_budget_error("search_occurrence_read", MAX_TERM_BYTES, length))?;
+        bytes.try_reserve_exact(length).map_err(|error| {
+            NativeError::Io(std::io::Error::other(format!(
+                "search occurrence allocation failed: {error}"
+            )))
+        })?;
         bytes.resize(length, 0);
         self.reader.read_exact(&mut bytes)?;
         let term = String::from_utf8(bytes).map_err(|error| {

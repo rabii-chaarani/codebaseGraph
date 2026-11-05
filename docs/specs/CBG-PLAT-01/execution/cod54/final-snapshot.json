@@ -1,0 +1,28 @@
+{
+  "source_sha": "855c7e282a27de4afbad2d4252d7692de4b42ecb",
+  "source_files": {
+    "crates/xtask/src/main.rs": "6610d3c571b2a39af7f50cc2703cb9a5cb5431573c0dd46af43dcb9669bd35dd",
+    "crates/xtask/src/macos.rs": "810255a2714e8aed31b77b26ac5260747fb68d5c6c5f85bc3e17757a97c1f0cf",
+    "crates/xtask/src/macos_installer_tests.rs": "10646723ce3db83a5a70e51769957214801d4ef7533362eab1035c31ce7fab17",
+    "release/install/install.sh": "7ae5c7c5e08fa4c025b0fe5f5b2da605caccdde1a0aefcec148a272530c260e9",
+    "src/materialization_worker.rs": "5124af6f9df654761bfd09cd46fbf68f9dacb4efc7d0dfc11b9b9ddcb9bc386e"
+  },
+  "archive_sha256": "e5f32abbf8124584d5f6f2df403091c3323d16a1359a70f387fc99eeeb6e4282",
+  "approved_spec_sha": "1a9db7b558b60248888408daa6268a3b45f2f0df",
+  "native_host": {
+    "os": "macOS26.6.2",
+    "build": "25G83",
+    "arch": "arm64"
+  },
+  "xtask": {
+    "pass": 55,
+    "skip": 0,
+    "exit": 0
+  },
+  "fmt": 0,
+  "clippy": 0,
+  "native_archive": 0,
+  "native_full_suite": "running",
+  "hosted_ci": "queued",
+  "clean_consumer_minimum_current": "notexecuted"
+}

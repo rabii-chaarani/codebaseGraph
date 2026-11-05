@@ -1,0 +1,23 @@
+{
+  "source_commit": "c1faa03f5cab17a9f9512c0b9a6b0f3e27c7e5b7",
+  "run_id": 40183244906,
+  "windows": "all twelve native test groups passed; release artifact build still running at snapshot",
+  "macos": {
+    "unit": "passed",
+    "generation": "passed",
+    "integration": "21 passed, 1 failed, 1 ignored; pre-injection initial build START exchange returned EAGAIN; authenticated cleanup reported containment_empty=true"
+  },
+  "local_same_source_repeat": {
+    "unit": "passed",
+    "generation": "5 passed; 971.425 test-command seconds",
+    "integration": "not started; source guard stopped after fixture edit"
+  },
+  "repair": "Setup retries at most twice only for the exact guarded-phase START EAGAIN plus successful containment-empty cleanup with no supervision error. All other errors, unknown containment and injected faults remain failures. Production timeouts unchanged.",
+  "validation": {
+    "classifier": "passed positive and negative cleanup/error cases",
+    "native_manual_publication_lifecycle": "passed; 192.28 seconds for both selected tests",
+    "clippy_workspace_all_targets_all_features_warnings_denied": "passed",
+    "format": "passed"
+  },
+  "qualification": "pending on fixture-repair commit"
+}

@@ -21,7 +21,7 @@ use std::path::Path;
 
 const MAX_TERM_BYTES: usize = 256;
 const MAX_QUERY_TERMS: usize = 32;
-const MAX_DOCUMENT_RECORD_BYTES: usize = 1024 * 1024;
+use super::model::MAX_DOCUMENT_RECORD_BYTES;
 const MAX_METADATA_BYTES: u64 = 64 * 1024;
 
 pub(crate) fn validate(
@@ -190,13 +190,10 @@ pub(crate) fn search(
     read_magic(&mut offsets, DOCUMENT_OFFSETS_MAGIC)?;
     read_magic(&mut documents, DOCUMENTS_MAGIC)?;
     let mut results = Vec::new();
-    results.try_reserve_exact(best.len()).map_err(|_| {
-        super::memory_budget_error(
-            "search_results",
-            limit.saturating_mul(std::mem::size_of::<RankedDocument>()),
-            best.len()
-                .saturating_mul(std::mem::size_of::<RankedDocument>()),
-        )
+    results.try_reserve_exact(best.len()).map_err(|error| {
+        NativeError::Io(std::io::Error::other(format!(
+            "search result allocation failed: {error}"
+        )))
     })?;
     for candidate in best {
         let offset_position = (DOCUMENT_OFFSETS_MAGIC.len() as u64)

@@ -22,7 +22,6 @@ use std::collections::BTreeMap;
 use std::env;
 use std::fs;
 use std::path::{Component, Path, PathBuf};
-use std::process::Command;
 
 pub(crate) fn is_retryable_refresh_failure(error: &str) -> bool {
     let normalized = error.to_ascii_lowercase();
@@ -2869,10 +2868,37 @@ fn install_mcp_client_configuration(
         options.client_config_path.clone(),
     )?;
     let native_command = native_client_command(client, descriptor, &target.scope);
-    let native_available = native_command
+    let can_use_native = matches!(options.install_method, McpInstallMode::Auto)
+        && options.client_config_path.is_none()
+        && options.legacy_server_names.is_empty()
+        && target.locality == McpTargetLocality::Shared;
+
+    let native_executable = native_command
         .as_ref()
+        .filter(|_| can_use_native)
         .and_then(|command| command.first())
-        .is_some_and(|executable| executable_in_path(executable));
+        .map(|program| crate::client_process::ClientExecutable::discover(program))
+        .transpose()?
+        .flatten();
+    // Construct and validate the invocation before reporting a dry run or
+    // falling back to a file write. Encoding failures must not select a
+    // different installation path.
+    let mut native_process = match (&native_executable, &native_command, &target.path) {
+        (Some(executable), Some(command), Some(path)) => {
+            let mut process = executable.command(&command[1..])?;
+            if crate::client_config::configure_command(&mut process, client, path)? {
+                #[cfg(windows)]
+                if process.get_current_dir().is_none() {
+                    process.current_dir(&descriptor.repo_root);
+                }
+                Some(process)
+            } else {
+                None
+            }
+        }
+        _ => None,
+    };
+    let native_available = native_process.is_some();
     if target.locality == McpTargetLocality::Manual {
         let metadata = copilot_studio_metadata(descriptor);
         return Ok(json!({
@@ -2890,11 +2916,6 @@ fn install_mcp_client_configuration(
             "legacy_cleanup": manual_legacy_cleanup_payload(client, &options.legacy_server_names),
         }));
     }
-
-    let can_use_native = matches!(options.install_method, McpInstallMode::Auto)
-        && options.client_config_path.is_none()
-        && options.legacy_server_names.is_empty()
-        && target.locality == McpTargetLocality::Shared;
 
     if can_use_native && options.dry_run && native_available {
         return Ok(json!({
@@ -2921,8 +2942,9 @@ fn install_mcp_client_configuration(
                 &options.legacy_server_names,
             );
         };
-        let completed = Command::new(&command[0])
-            .args(&command[1..])
+        let completed = native_process
+            .as_mut()
+            .ok_or_else(|| "native client invocation is unavailable".to_string())?
             .output()
             .map_err(|error| format!("failed to run native client installer: {error}"))?;
         if completed.status.success() {
@@ -2953,15 +2975,18 @@ fn install_mcp_client_configuration(
         return Ok(payload);
     }
 
-    let native_error = native_command.as_ref().and_then(|command| {
-        command.first().and_then(|executable| {
-            if executable_in_path(executable) {
-                None
-            } else {
-                Some(format!("{executable} executable not found"))
-            }
-        })
-    });
+    let native_error = native_command
+        .as_ref()
+        .filter(|_| can_use_native)
+        .and_then(|command| {
+            command.first().and_then(|executable| {
+                if native_executable.is_some() {
+                    None
+                } else {
+                    Some(format!("{executable} executable not found"))
+                }
+            })
+        });
     let mut payload = file_adapter_result(
         &target,
         descriptor,
@@ -3050,13 +3075,14 @@ pub fn resolve_mcp_target(
     )?;
     let path = match locality {
         McpTargetLocality::Manual => None,
-        _ => Some(
-            client_config_path
-                .map(|path| absolutize_path(&path))
-                .unwrap_or_else(|| {
-                    default_client_config_path(&adapter, &scope, &descriptor.repo_root)
-                }),
-        ),
+        _ => Some(match client_config_path {
+            Some(path) => absolutize_path(&path),
+            None => crate::client_config::default_client_config_path(
+                &adapter,
+                &scope,
+                &descriptor.repo_root,
+            )?,
+        }),
     };
     Ok(ResolvedMcpTarget {
         client,
@@ -3307,45 +3333,6 @@ fn normalize_path_components(path: &Path) -> PathBuf {
         }
     }
     normalized
-}
-
-fn default_client_config_path(adapter: &str, scope: &str, repo_root: &Path) -> PathBuf {
-    let home = home_dir();
-    match adapter {
-        "codex" => {
-            if scope == "user" {
-                env::var_os("CODEX_HOME")
-                    .map(PathBuf::from)
-                    .unwrap_or_else(|| home.join(".codex"))
-                    .join("config.toml")
-            } else {
-                repo_root.join(".codex/config.toml")
-            }
-        }
-        "claude" => {
-            if scope == "project" {
-                repo_root.join(".mcp.json")
-            } else {
-                home.join(".claude.json")
-            }
-        }
-        "claude-project" => repo_root.join(".mcp.json"),
-        "lmstudio" => home.join(".lmstudio/mcp.json"),
-        "github-copilot" => repo_root.join(".vscode/mcp.json"),
-        "hermes" => home.join(".hermes/config.yaml"),
-        "openclaw" => env::var_os("OPENCLAW_HOME")
-            .map(PathBuf::from)
-            .unwrap_or_else(|| home.join(".openclaw"))
-            .join("mcp.json5"),
-        "generic" => {
-            if scope == "project" {
-                repo_root.join(".mcp.json")
-            } else {
-                home.join(".config/mcp/mcp.json")
-            }
-        }
-        _ => home.join(".config/mcp/mcp.json"),
-    }
 }
 
 pub fn supported_mcp_clients() -> &'static [&'static str] {
@@ -5063,16 +5050,6 @@ fn home_dir() -> PathBuf {
         .unwrap_or_else(|| PathBuf::from("."))
 }
 
-fn executable_in_path(executable: &str) -> bool {
-    let path = Path::new(executable);
-    if path.components().count() > 1 {
-        return path.is_file();
-    }
-    env::var_os("PATH")
-        .map(|paths| env::split_paths(&paths).any(|dir| dir.join(executable).is_file()))
-        .unwrap_or(false)
-}
-
 fn subprocess_error(completed: &std::process::Output) -> String {
     let stdout = String::from_utf8_lossy(&completed.stdout)
         .trim()
@@ -5110,17 +5087,19 @@ fn install_safe_name(value: &str) -> String {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(unix)]
+    use super::remove_partial_state_tree;
     use super::{
         codex_toml_block, descriptor_signature, hermes_yaml_block_from_entries, inspect_mcp_server,
         install_mcp_endpoint, install_mcp_server, instruction_block, is_retryable_refresh_failure,
         language_for_path, native_client_command, parse_hermes_managed_entries,
         parse_toml_stdio_entry, persist_agent_hooks_config, reinstall_state, remove_mcp_server,
-        remove_partial_state_tree, rename_mcp_server, render_client_http_config,
-        resolve_mcp_target, run_reinstall_activation_boundary, select_available_daemon_port,
-        upsert_instruction_text, yaml_scalar, GraphStatePaths, ManagedStdioEntry,
-        McpClientInstallOptions, McpClientRemovalOptions, McpClientRenameOptions,
-        McpEndpointDescriptor, McpExistingEntryPolicy, McpInstallMode, McpServerDescriptor,
-        McpTargetLocality, ResolvedMcpTarget,
+        rename_mcp_server, render_client_http_config, resolve_mcp_target,
+        run_reinstall_activation_boundary, select_available_daemon_port, upsert_instruction_text,
+        yaml_scalar, GraphStatePaths, ManagedStdioEntry, McpClientInstallOptions,
+        McpClientRemovalOptions, McpClientRenameOptions, McpEndpointDescriptor,
+        McpExistingEntryPolicy, McpInstallMode, McpServerDescriptor, McpTargetLocality,
+        ResolvedMcpTarget,
     };
     use serde_json::json;
     use std::collections::BTreeMap;
@@ -5566,10 +5545,10 @@ mod tests {
     fn resolve_mcp_target_uses_expected_default_locality_and_paths() {
         let repo = TestDir::new("targets-default");
         let descriptor = test_descriptor(repo.path(), "codebase_graph_repo");
-        let home = std::env::var_os("HOME")
-            .map(PathBuf::from)
-            .unwrap_or_else(|| PathBuf::from("."));
-        let claude_user_path = home.join(".claude.json");
+        let claude_user_path =
+            crate::client_config::default_client_config_path("claude", "user", repo.path())
+                .unwrap();
+        let home = claude_user_path.parent().unwrap().to_path_buf();
         let openclaw_home = std::env::var_os("OPENCLAW_HOME")
             .map(PathBuf::from)
             .unwrap_or_else(|| home.join(".openclaw"));

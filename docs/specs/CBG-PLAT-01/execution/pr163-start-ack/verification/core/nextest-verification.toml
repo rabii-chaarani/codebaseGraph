@@ -1,0 +1,10 @@
+[store]
+dir = "/tmp/codebasegraph-pr163-ci-investigation-20261030/verification/nextest"
+
+[profile.pr163-verification]
+retries = 0
+test-threads = 1
+fail-fast = false
+
+[profile.pr163-verification.junit]
+path = "junit.xml"

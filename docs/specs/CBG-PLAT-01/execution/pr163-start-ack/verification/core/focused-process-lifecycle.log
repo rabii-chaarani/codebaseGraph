@@ -1,0 +1,19 @@
+    Finished `native-tests` profile [optimized] target(s) in 0.08s
+────────────
+ Nextest run ID f8cad167-f2ee-426e-b864-b4a9a053d1c1 with nextest profile: pr163-verification
+    Starting 13 tests across 1 binary (835 tests skipped)
+        PASS [   0.015s] ( 1/13) codebase-graph process_lifecycle::tests::accepted_nonblocking_socket_is_normalized_for_control_frames
+        PASS [   0.014s] ( 2/13) codebase-graph process_lifecycle::tests::bounded_protocol_rejects_unterminated_control_frame
+        PASS [   0.025s] ( 3/13) codebase-graph process_lifecycle::tests::capability_json_is_private_at_creation_and_after_replacement
+        PASS [   0.727s] ( 4/13) codebase-graph process_lifecycle::tests::delayed_non_start_acknowledgements_keep_the_short_deadline
+        PASS [   0.028s] ( 5/13) codebase-graph process_lifecycle::tests::retired_startup_rejects_late_guardian_before_child_creation
+        PASS [   0.144s] ( 6/13) codebase-graph process_lifecycle::tests::slow_trickle_cannot_extend_control_frame_deadline
+        PASS [   0.372s] ( 7/13) codebase-graph process_lifecycle::tests::start_accepts_delayed_ack_after_one_committed_request
+        PASS [   0.023s] ( 8/13) codebase-graph process_lifecycle::tests::workspace_without_global_state_remains_protected_by_guardian_lease
+        PASS [   0.014s] ( 9/13) codebase-graph process_lifecycle::unix::tests::absent_proof_never_establishes_emptiness
+        PASS [   0.014s] (10/13) codebase-graph process_lifecycle::unix::tests::fifo_writer_controls_empty_proof
+        PASS [   0.022s] (11/13) codebase-graph process_lifecycle::unix::tests::proof_without_ready_retains_live_writers_then_allows_empty_recovery
+        PASS [   0.015s] (12/13) codebase-graph process_lifecycle::unix::tests::recovery_rejects_regular_files_symlinks_and_replaced_fifo_identity
+        PASS [   0.052s] (13/13) codebase-graph process_lifecycle::unix::tests::stopped_owned_child_is_not_an_exit_and_resume_or_cancellation_still_completes
+────────────
+     Summary [   1.469s] 13 tests run: 13 passed, 835 skipped

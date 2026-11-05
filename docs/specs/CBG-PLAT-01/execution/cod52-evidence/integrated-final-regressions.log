@@ -1,0 +1,22 @@
+   Compiling codebase-graph v4.0.0 (/private/tmp/codebasegraph-cod52-macos-scans)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 7.22s
+────────────
+ Nextest run ID ae273b56-e60b-45af-8b20-47aabd40b613 with nextest profile: cod52
+    Starting 15 tests across 1 binary (830 tests skipped)
+        PASS [   0.032s] ( 1/15) codebase-graph storage::locks::rooted_directory_tests::dc_directory_hints_keep_verified_directories_and_reject_file_aliases
+        PASS [   0.025s] ( 2/15) codebase-graph storage::locks::rooted_directory_tests::dc_fifo_creation_pin_blocks_inode_aba_and_rejects_aliases
+        PASS [   0.019s] ( 3/15) codebase-graph storage::locks::rooted_directory_tests::dc_fifo_creation_pin_never_adopts_pin_collision_or_regular_file
+        PASS [   0.026s] ( 4/15) codebase-graph storage::locks::rooted_directory_tests::dc_nonce_promotion_requires_the_exact_existing_creation_tag
+        PASS [   0.018s] ( 5/15) codebase-graph storage::locks::rooted_directory_tests::dc_rooted_component_validation_is_noncreating_and_accepts_exact_key64
+        PASS [   0.018s] ( 6/15) codebase-graph storage::locks::rooted_directory_tests::dc_rooted_file_rename_is_no_replace_and_checks_exact_source_identity
+        PASS [   0.028s] ( 7/15) codebase-graph storage::locks::rooted_directory_tests::dc_rooted_namespace_no_replace_and_exact_empty_removal_preserve_foreign_entries
+        PASS [   0.018s] ( 8/15) codebase-graph storage::locks::rooted_directory_tests::dc_rooted_nonfollowing_open_rejects_symlinks_and_hardlinked_controls
+        PASS [   0.017s] ( 9/15) codebase-graph storage::locks::rooted_directory_tests::dc_rooted_operations_remain_on_actual_parent_after_public_name_substitution
+        PASS [   0.017s] (10/15) codebase-graph storage::locks::rooted_directory_tests::dc_rooted_readonly_payload_access_needs_no_payload_write_permission
+        PASS [   0.035s] (11/15) codebase-graph storage::locks::rooted_directory_tests::interrupted_directory_scan_restarts_on_the_pinned_root_after_name_replacement
+        PASS [   0.017s] (12/15) codebase-graph storage::locks::rooted_directory_tests::metadata_validation_preserves_private_creator_sharing_and_identity
+        PASS [   0.021s] (13/15) codebase-graph storage::locks::rooted_directory_tests::namespace_flush_accepts_an_existing_readonly_directory_anchor
+        PASS [   0.189s] (14/15) codebase-graph storage::locks::rooted_directory_tests::nested_directory_scans_do_not_consume_the_outer_cursor
+        PASS [   7.111s] (15/15) codebase-graph storage::maintenance_candidate::tests::terminal_receipt_selection_reaches_late_directory_after_child_receipt_veto
+────────────
+     Summary [   7.590s] 15 tests run: 15 passed, 830 skipped

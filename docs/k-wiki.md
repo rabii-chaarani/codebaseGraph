@@ -170,15 +170,34 @@ Compilation or rendering failures leave the last valid generation readable.
 An unchanged input is a cache hit; generation tokens prevent stale concurrent
 work from replacing newer output.
 
+Runtime reads reload configured source content before reusing a cached
+projection, so the next request observes completed edits and memory lifecycle
+changes made by another process. This adds source-reading work per request;
+external multi-file edits are not transactional. An incomplete I/O or UTF-8
+scan returns `source_unavailable` for ordinary reads and retains the previous
+complete cache. Health reports `ok: false` and HTTP status 503; its
+`projection_available` field indicates whether a prior snapshot remains.
+Permissive diagnostic and build operations return partial content with its
+findings, without replacing that runtime cache.
+
 To roll back, stop the preview process and restore the previous manifest and
 generation pointer from normal repository backup tooling. Never edit generated
 projection JSON as source.
 
 ## Validation profiles
 
-- `consume`: retains readable content and reports diagnostics.
-- `conformant`: fails required OKF 0.1 semantics.
-- `recommended`: adds advisory authoring guidance.
+- `consume`: retains readable content and reports diagnostics, including errors.
+- `conformant`: rejects error diagnostics.
+- `recommended`: rejects warning and error diagnostics, including authoring guidance.
+
+Validation exits with status 0 for acceptance and 1 for rejection, in both text
+and JSON modes. Validation, link checks, diagnostic queries, and projection
+builds combine loader, conformance, and compiler findings. Builds retain their
+consume-mode behavior. Locations refer to full source-file lines, including
+frontmatter offsets.
+
+MCP errors preserve the existing numeric RPC code and message, and include
+`error.data` with the domain `code`, `details`, and `retryable` flag.
 
 Diagnostics use stable codes and repository-relative paths. Public errors never
 include absolute host paths, source contents, secrets, or raw parser failures.

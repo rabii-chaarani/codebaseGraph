@@ -9,6 +9,7 @@ use std::path::PathBuf;
 
 #[derive(Debug)]
 pub(crate) struct HealthOptions {
+    pub(crate) confirm_legacy_quiescence: bool,
     pub(crate) repo_root: Option<PathBuf>,
     pub(crate) config: Option<PathBuf>,
     pub(crate) db: Option<PathBuf>,
@@ -20,6 +21,7 @@ pub(crate) struct HealthOptions {
 impl HealthOptions {
     pub(crate) fn parse(args: &[String]) -> Result<Self, String> {
         let mut options = Self {
+            confirm_legacy_quiescence: false,
             repo_root: None,
             config: None,
             db: None,
@@ -61,6 +63,10 @@ impl HealthOptions {
                         .ok_or_else(|| "--manifest requires a path".to_string())?;
                     options.manifest = Some(PathBuf::from(value));
                     index += 2;
+                }
+                "--confirm-legacy-quiescence" => {
+                    options.confirm_legacy_quiescence = true;
+                    index += 1;
                 }
                 "--json" => {
                     options.json = true;
@@ -582,5 +588,23 @@ impl GraphContextOptions {
             node_id,
             node_type,
         })
+    }
+}
+
+#[cfg(test)]
+mod maintenance_tests {
+    use super::HealthOptions;
+
+    #[test]
+    fn health_quiescence_confirmation_is_opt_in_and_documented() {
+        assert!(!HealthOptions::parse(&[]).unwrap().confirm_legacy_quiescence);
+        let arguments = vec!["--confirm-legacy-quiescence".into(), "--json".into()];
+        let options = HealthOptions::parse(&arguments).unwrap();
+        assert!(options.confirm_legacy_quiescence);
+        assert!(options.json);
+        let help = crate::adapters::cli::format::graph_health_help();
+        assert!(help.contains("--confirm-legacy-quiescence"));
+        assert!(help.contains("stopped and upgraded"));
+        assert!(HealthOptions::parse(&["--confirm-legacy-quiescence=true".into()]).is_err());
     }
 }

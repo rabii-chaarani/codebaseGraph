@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="nextest-run" tests="14" failures="0" errors="0" uuid="0dab2978-7d17-426e-b050-83d78ea65e34" timestamp="2026-10-26T18:35:41.786+09:30" time="0.460">
+    <testsuite name="codebase-graph" tests="14" disabled="0" errors="0" failures="0">
+        <testcase name="db_writer::phase::tests::copy_trace_metadata_reports_generated_file_bytes" classname="codebase-graph" timestamp="2026-10-26T18:35:41.787+09:30" time="0.028">
+        </testcase>
+        <testcase name="db_writer::phase::tests::error_tail_reader_requests_no_more_than_the_limit" classname="codebase-graph" timestamp="2026-10-26T18:35:41.815+09:30" time="0.019">
+        </testcase>
+        <testcase name="db_writer::phase::tests::error_tail_reads_at_most_the_limit_and_decodes_utf8_lossily" classname="codebase-graph" timestamp="2026-10-26T18:35:41.834+09:30" time="0.019">
+        </testcase>
+        <testcase name="db_writer::phase::tests::isolated_error_keeps_context_inside_the_cap" classname="codebase-graph" timestamp="2026-10-26T18:35:41.854+09:30" time="0.017">
+        </testcase>
+        <testcase name="db_writer::phase::tests::oversized_native_error_preserves_query_vs_explicit_checkpoint_boundary" classname="codebase-graph" timestamp="2026-10-26T18:35:41.872+09:30" time="0.017">
+        </testcase>
+        <testcase name="db_writer::phase::tests::phase_protocol_requires_v2_containment_contract" classname="codebase-graph" timestamp="2026-10-26T18:35:41.888+09:30" time="0.017">
+        </testcase>
+        <testcase name="db_writer::phase::tests::phase_query_keeps_successful_if_not_exists_idempotence_but_surfaces_native_error" classname="codebase-graph" timestamp="2026-10-26T18:35:41.905+09:30" time="0.106">
+        </testcase>
+        <testcase name="db_writer::phase::tests::phase_registry_scope_restores_nested_and_unwound_contexts" classname="codebase-graph" timestamp="2026-10-26T18:35:42.012+09:30" time="0.021">
+        </testcase>
+        <testcase name="db_writer::phase::tests::phase_request_v2_preserves_native_resource_settings" classname="codebase-graph" timestamp="2026-10-26T18:35:42.033+09:30" time="0.018">
+        </testcase>
+        <testcase name="db_writer::phase::tests::phase_test_allocation_is_scoped_to_the_ready_loader" classname="codebase-graph" timestamp="2026-10-26T18:35:42.053+09:30" time="0.019">
+        </testcase>
+        <testcase name="db_writer::phase::tests::phase_test_allocation_requires_trigger_and_rejects_unbounded_memory" classname="codebase-graph" timestamp="2026-10-26T18:35:42.072+09:30" time="0.026">
+        </testcase>
+        <testcase name="db_writer::phase::tests::scoped_phase_request_lives_outside_candidate_and_preserves_database_path" classname="codebase-graph" timestamp="2026-10-26T18:35:42.099+09:30" time="0.024">
+        </testcase>
+        <testcase name="db_writer::write::tests::isolated_phase_schedule_stops_after_first_error_without_replay" classname="codebase-graph" timestamp="2026-10-26T18:35:42.126+09:30" time="0.025">
+        </testcase>
+        <testcase name="db_writer::write::tests::query_errors_are_not_suppressed_by_duplicate_ddl_wording" classname="codebase-graph" timestamp="2026-10-26T18:35:42.151+09:30" time="0.094">
+        </testcase>
+    </testsuite>
+</testsuites>

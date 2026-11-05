@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="nextest-run" tests="5" failures="0" errors="0" uuid="c2454682-b32f-485d-81d6-a9c7e6c6cc75" timestamp="2026-10-27T15:09:18.961+09:30" time="301.558">
+    <testsuite name="codebase-graph::copy_phase_process" tests="5" disabled="0" errors="0" failures="0">
+        <testcase name="bounded_production_chunks_reopen_with_primary_keys_connectors_and_search" classname="codebase-graph::copy_phase_process" timestamp="2026-10-27T15:09:18.961+09:30" time="121.218">
+            <system-out>
+running 1 test
+test bounded_production_chunks_reopen_with_primary_keys_connectors_and_search ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 121.20s
+
+</system-out>
+            <system-err>chunked native build resources: {&quot;database_write&quot;:184452344,&quot;parse&quot;:23124382,&quot;search_index&quot;:1048544,&quot;staging&quot;:2053466}
+PK lookup plan: QueryResult { result: &quot;explain result\n┌────────────────────────────────────┐\n│┌──────────────────────────────────┐│\n││          Physical Plan           ││\n│└──────────────────────────────────┘│\n└────────────────────────────────────┘\n┌────────────────────────────────────┐\n│        RESULT_COLLECTOR[2]         │\n│   ------------------------------   │\n│         Expressions: n.id          │\n│   ------------------------------   │\n│         NumOutputTuples: 0         │\n│   ------------------------------   │\n│      ExecutionTime: 0.000000       │\n│   ------------------------------   │\n│        TotalTime: 0.000000         │\n└─────────────────┬──────────────────┘\n┌─────────────────┴──────────────────┐\n│           PROJECTION[1]            │\n│   ------------------------------   │\n│         Expressions: n.id          │\n│   ------------------------------   │\n│         NumOutputTuples: 0         │\n│   ------------------------------   │\n│      ExecutionTime: 0.000000       │\n│   ------------------------------   │\n│        TotalTime: 0.000000         │\n└─────────────────┬──────────────────┘\n┌─────────────────┴──────────────────┐\n│   PRIMARY_KEY_SCAN_NODE_TABLE[0]   │\n│   ------------------------------   │\n│            Key: missing            │\n│              Alias: n              │\n│             Index: HASH            │\n│          Expressions: n.id         │\n│   ------------------------------   │\n│         NumOutputTuples: 0         │\n│   ------------------------------   │\n│      ExecutionTime: 0.000000       │\n│   ------------------------------   │\n│        TotalTime: 0.000000         │\n└────────────────────────────────────┘\n\n&quot; }
+</system-err>
+        </testcase>
+        <testcase name="jumbo_staged_row_survives_real_copy_and_fresh_process_read" classname="codebase-graph::copy_phase_process" timestamp="2026-10-27T15:11:20.180+09:30" time="26.980">
+            <system-out>
+running 1 test
+test jumbo_staged_row_survives_real_copy_and_fresh_process_read ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 26.96s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="native_copy_acknowledgement_failure_preserves_managed_and_direct_bundles" classname="codebase-graph::copy_phase_process" timestamp="2026-10-27T15:11:47.161+09:30" time="153.320">
+            <system-out>
+running 1 test
+test native_copy_acknowledgement_failure_preserves_managed_and_direct_bundles ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 153.30s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="phase_process_oracle_accepts_reused_pid_but_rejects_reused_process" classname="codebase-graph::copy_phase_process" timestamp="2026-10-27T15:14:20.497+09:30" time="0.021">
+            <system-out>
+running 1 test
+test phase_process_oracle_accepts_reused_pid_but_rejects_reused_process ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="phase_process_oracle_rejects_missing_or_invalid_evidence" classname="codebase-graph::copy_phase_process" timestamp="2026-10-27T15:14:20.518+09:30" time="0.018">
+            <system-out>
+running 1 test
+test phase_process_oracle_rejects_missing_or_invalid_evidence ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+    </testsuite>
+</testsuites>

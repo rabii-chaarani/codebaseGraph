@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="nextest-run" tests="29" failures="0" errors="0" uuid="467d04e0-f3a8-4d37-ab03-ea8a7216e0e9" timestamp="2026-10-21T01:05:15.953+09:30" time="0.724">
+    <testsuite name="codebase-graph" tests="29" disabled="0" errors="0" failures="0">
+        <testcase name="storage::inventory::tests::busy_writer_is_reported_without_waiting_or_mutation" classname="codebase-graph" timestamp="2026-10-21T01:05:15.954+09:30" time="0.031">
+        </testcase>
+        <testcase name="storage::inventory::tests::configured_ancestor_root_is_rejected_without_scanning_sources" classname="codebase-graph" timestamp="2026-10-21T01:05:15.985+09:30" time="0.020">
+        </testcase>
+        <testcase name="storage::inventory::tests::dc_s1_a1_classifies_and_counts_active_live_recovery_and_legacy" classname="codebase-graph" timestamp="2026-10-21T01:05:16.005+09:30" time="0.029">
+        </testcase>
+        <testcase name="storage::inventory::tests::dc_s1_a2_missing_and_dropped_observations_do_not_create_or_repair" classname="codebase-graph" timestamp="2026-10-21T01:05:16.034+09:30" time="0.028">
+        </testcase>
+        <testcase name="storage::inventory::tests::dc_s1_a3_constant_pointer_does_not_hide_artifact_and_run_mutations" classname="codebase-graph" timestamp="2026-10-21T01:05:16.062+09:30" time="0.023">
+        </testcase>
+        <testcase name="storage::inventory::tests::dc_s1_a3_invalid_pointer_and_foreign_direct_are_retained" classname="codebase-graph" timestamp="2026-10-21T01:05:16.086+09:30" time="0.028">
+        </testcase>
+        <testcase name="storage::inventory::tests::dc_s1_a3_symlinks_are_not_followed_and_sizes_are_unknown" classname="codebase-graph" timestamp="2026-10-21T01:05:16.114+09:30" time="0.024">
+        </testcase>
+        <testcase name="storage::inventory::tests::dc_s1_a4_repeat_observation_is_deterministic" classname="codebase-graph" timestamp="2026-10-21T01:05:16.138+09:30" time="0.025">
+        </testcase>
+        <testcase name="storage::inventory::tests::existing_live_lease_is_observed_without_recovery" classname="codebase-graph" timestamp="2026-10-21T01:05:16.163+09:30" time="0.022">
+        </testcase>
+        <testcase name="storage::inventory::tests::hardlinked_direct_identity_is_unknown" classname="codebase-graph" timestamp="2026-10-21T01:05:16.185+09:30" time="0.023">
+        </testcase>
+        <testcase name="storage::inventory::tests::physical_hardlinks_count_once_and_allocation_uses_filesystem_blocks" classname="codebase-graph" timestamp="2026-10-21T01:05:16.208+09:30" time="0.025">
+        </testcase>
+        <testcase name="storage::inventory::tests::recognized_direct_pair_uses_repository_identity" classname="codebase-graph" timestamp="2026-10-21T01:05:16.233+09:30" time="0.024">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_bound_external_store_survives_missing_conventional_state" classname="codebase-graph" timestamp="2026-10-21T01:05:16.257+09:30" time="0.026">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_case_alias_roots_are_rejected_without_double_counting" classname="codebase-graph" timestamp="2026-10-21T01:05:16.283+09:30" time="0.023">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_complete_root_reconciliation_is_insertion_order_independent" classname="codebase-graph" timestamp="2026-10-21T01:05:16.306+09:30" time="0.035">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_config_repository_parent_traversal_cannot_erase_symlink" classname="codebase-graph" timestamp="2026-10-21T01:05:16.341+09:30" time="0.022">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_config_storage_parent_traversal_cannot_erase_symlink_or_missing_component" classname="codebase-graph" timestamp="2026-10-21T01:05:16.363+09:30" time="0.020">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_configured_storage_cannot_be_overridden_with_unselected_local_root" classname="codebase-graph" timestamp="2026-10-21T01:05:16.383+09:30" time="0.021">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_current_configuration_is_revalidated_on_every_observation" classname="codebase-graph" timestamp="2026-10-21T01:05:16.404+09:30" time="0.021">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_default_direct_only_is_current_graph_and_cache" classname="codebase-graph" timestamp="2026-10-21T01:05:16.425+09:30" time="0.023">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_direct_cache_inside_managed_root_is_rejected" classname="codebase-graph" timestamp="2026-10-21T01:05:16.449+09:30" time="0.020">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_explicit_direct_alongside_managed_is_current" classname="codebase-graph" timestamp="2026-10-21T01:05:16.468+09:30" time="0.029">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_external_config_requires_matching_repository_binding" classname="codebase-graph" timestamp="2026-10-21T01:05:16.498+09:30" time="0.020">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_external_current_direct_config_observes_exact_bundle_without_local_state" classname="codebase-graph" timestamp="2026-10-21T01:05:16.518+09:30" time="0.025">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_managed_config_makes_unselected_default_direct_former" classname="codebase-graph" timestamp="2026-10-21T01:05:16.543+09:30" time="0.027">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_managed_root_inside_direct_cache_is_rejected" classname="codebase-graph" timestamp="2026-10-21T01:05:16.570+09:30" time="0.024">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_raw_config_direct_spelling_selects_matching_cache" classname="codebase-graph" timestamp="2026-10-21T01:05:16.594+09:30" time="0.032">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_real_directory_dot_parent_config_paths_remain_supported" classname="codebase-graph" timestamp="2026-10-21T01:05:16.626+09:30" time="0.026">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_scope_rejects_source_state_and_unregistered_external_storage" classname="codebase-graph" timestamp="2026-10-21T01:05:16.652+09:30" time="0.024">
+        </testcase>
+    </testsuite>
+</testsuites>

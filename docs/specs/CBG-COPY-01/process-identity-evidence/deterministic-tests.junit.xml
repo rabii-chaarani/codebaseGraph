@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="nextest-run" tests="3" failures="0" errors="0" uuid="b52b6dc5-841f-4f5c-92f1-e84f791f460a" timestamp="2026-10-27T15:08:43.274+09:30" time="0.063">
+    <testsuite name="codebase-graph" tests="1" disabled="0" errors="0" failures="0">
+        <testcase name="db_writer::phase::tests::phase_trace_process_instance_is_stable_across_calls_and_threads" classname="codebase-graph" timestamp="2026-10-27T15:08:43.275+09:30" time="0.025">
+            <system-out>
+running 1 test
+test db_writer::phase::tests::phase_trace_process_instance_is_stable_across_calls_and_threads ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 845 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+    </testsuite>
+    <testsuite name="codebase-graph::copy_phase_process" tests="2" disabled="0" errors="0" failures="0">
+        <testcase name="phase_process_oracle_accepts_reused_pid_but_rejects_reused_process" classname="codebase-graph::copy_phase_process" timestamp="2026-10-27T15:08:43.301+09:30" time="0.019">
+            <system-out>
+running 1 test
+test phase_process_oracle_accepts_reused_pid_but_rejects_reused_process ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="phase_process_oracle_rejects_missing_or_invalid_evidence" classname="codebase-graph::copy_phase_process" timestamp="2026-10-27T15:08:43.320+09:30" time="0.017">
+            <system-out>
+running 1 test
+test phase_process_oracle_rejects_missing_or_invalid_evidence ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+    </testsuite>
+</testsuites>

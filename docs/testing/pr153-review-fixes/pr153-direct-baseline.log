@@ -1,0 +1,22 @@
+   Compiling codebase-graph v3.0.4 (/private/tmp/codebasegraph-pr153-review)
+    Finished `native-tests` profile [optimized] target(s) in 47.89s
+     Running unittests src/lib.rs (/Users/rabii/Projects/Repositories/codebaseGraph/target/native-tests/deps/codebase_graph-35351ef9068f9494)
+
+running 1 test
+test storage::maintenance_candidate::tests::direct_confirmation_does_not_block_modern_metadata_recovery ...
+thread 'storage::maintenance_candidate::tests::direct_confirmation_does_not_block_modern_metadata_recovery' (33055054) panicked at src/storage/maintenance_admission.rs:1990:21:
+fixture durable metadata write cut
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+thread 'storage::maintenance_candidate::tests::direct_confirmation_does_not_block_modern_metadata_recovery' (33055054) panicked at src/storage/maintenance_candidate.rs:2021:24:
+inapplicable confirmation must not starve Direct recovery
+FAILED
+
+failures:
+
+failures:
+    storage::maintenance_candidate::tests::direct_confirmation_does_not_block_modern_metadata_recovery
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 838 filtered out; finished in 0.20s
+
+error: test failed, to rerun pass `-p codebase-graph --lib`

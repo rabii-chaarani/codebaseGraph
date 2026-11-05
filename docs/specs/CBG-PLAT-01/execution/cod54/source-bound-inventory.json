@@ -1,0 +1,62 @@
+{
+  "entries": [
+    {
+      "name": "codebase-graph",
+      "size": 48024240,
+      "mode": "0o755"
+    },
+    {
+      "name": "k-wiki",
+      "size": 6776576,
+      "mode": "0o755"
+    },
+    {
+      "name": "libcodebasegraph-ssl-3.6.2.dylib",
+      "size": 996384,
+      "mode": "0o644"
+    },
+    {
+      "name": "libcodebasegraph-crypto-3.6.2.dylib",
+      "size": 5172016,
+      "mode": "0o644"
+    },
+    {
+      "name": "openssl-3.6.2-LICENSE.txt",
+      "size": 10175,
+      "mode": "0o644"
+    },
+    {
+      "name": "checksums.txt",
+      "size": 447,
+      "mode": "0o644"
+    },
+    {
+      "name": "install.sh",
+      "size": 6442,
+      "mode": "0o755"
+    },
+    {
+      "name": "install.ps1",
+      "size": 3086,
+      "mode": "0o644"
+    }
+  ],
+  "payload_sha256": {
+    "codebase-graph": "9b8694eac05840968c514a554171f6e705e0a6420bb4e31cafacfa5d242916f0",
+    "k-wiki": "fb51f6eb6fff723971c0f803659bfb8e829e6670cbef597441a5fff6a065106b",
+    "libcodebasegraph-ssl-3.6.2.dylib": "2cd63a2b676c6203cda0a8f87500ece49f798a844d33932090327de438abfa5d",
+    "libcodebasegraph-crypto-3.6.2.dylib": "d2a54e077eee955b4903a22c2c78e5d3de1a78a1b672adebed12c8f25c02a8b9",
+    "openssl-3.6.2-LICENSE.txt": "7d5450cb2d142651b8afa315b5f238efc805dad827d91ba367d8516bc9d49e7a"
+  },
+  "archive_sha256": "e5f32abbf8124584d5f6f2df403091c3323d16a1359a70f387fc99eeeb6e4282",
+  "provenance": {
+    "schema_version": 1,
+    "commit_sha": "855c7e282a27de4afbad2d4252d7692de4b42ecb",
+    "version": "4.0.0",
+    "target": "macos-arm64",
+    "archive": "codebase-graph-4.0.0-macos-arm64.tar.gz",
+    "archive_sha256": "e5f32abbf8124584d5f6f2df403091c3323d16a1359a70f387fc99eeeb6e4282"
+  },
+  "implementation_sha": "855c7e282a27de4afbad2d4252d7692de4b42ecb",
+  "installer_result": 0
+}

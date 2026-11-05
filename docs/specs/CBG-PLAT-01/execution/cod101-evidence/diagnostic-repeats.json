@@ -1,0 +1,110 @@
+{
+  "command": [
+    "/private/tmp/pr157-ci-fix-evidence/diagnostic-lib-tests",
+    "--exact",
+    "storage::maintenance_collector_tests::dc_s5_canonical_only_durable_detach_interruption_resumes_without_source_edit",
+    "--nocapture"
+  ],
+  "results": [
+    {
+      "iteration": 0,
+      "result": 0,
+      "seconds": 19.505625917
+    },
+    {
+      "iteration": 1,
+      "result": 0,
+      "seconds": 16.841320291
+    },
+    {
+      "iteration": 2,
+      "result": 0,
+      "seconds": 16.921751874999998
+    },
+    {
+      "iteration": 3,
+      "result": 0,
+      "seconds": 17.838461083999995
+    },
+    {
+      "iteration": 4,
+      "result": 0,
+      "seconds": 17.633315124999996
+    },
+    {
+      "iteration": 5,
+      "result": 0,
+      "seconds": 14.085189624999998
+    },
+    {
+      "iteration": 6,
+      "result": 0,
+      "seconds": 16.518808707999995
+    },
+    {
+      "iteration": 7,
+      "result": 0,
+      "seconds": 17.031901665999996
+    },
+    {
+      "iteration": 8,
+      "result": 0,
+      "seconds": 13.898395958999998
+    },
+    {
+      "iteration": 9,
+      "result": 0,
+      "seconds": 16.702551583
+    },
+    {
+      "iteration": 10,
+      "result": 0,
+      "seconds": 17.583676999999994
+    },
+    {
+      "iteration": 11,
+      "result": 0,
+      "seconds": 17.859921291000006
+    },
+    {
+      "iteration": 12,
+      "result": 0,
+      "seconds": 17.706752667000018
+    },
+    {
+      "iteration": 13,
+      "result": 0,
+      "seconds": 23.87436141699999
+    },
+    {
+      "iteration": 14,
+      "result": 0,
+      "seconds": 20.90744004200002
+    },
+    {
+      "iteration": 15,
+      "result": 0,
+      "seconds": 18.991779874999963
+    },
+    {
+      "iteration": 16,
+      "result": 0,
+      "seconds": 20.200680583000008
+    },
+    {
+      "iteration": 17,
+      "result": 0,
+      "seconds": 16.988905375
+    },
+    {
+      "iteration": 18,
+      "result": 0,
+      "seconds": 23.065330791999997
+    },
+    {
+      "iteration": 19,
+      "result": 0,
+      "seconds": 19.538914750000004
+    }
+  ]
+}

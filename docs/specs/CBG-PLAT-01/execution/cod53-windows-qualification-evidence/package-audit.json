@@ -1,0 +1,34 @@
+[
+  {
+    "path": "C:\\Users\\rcha0053\\pr158-qualification\\package-target\\package\\codebase-graph-4.0.0.crate",
+    "size": 8460008,
+    "sha256": "4d924d1260d40d48e04b9cb2e7c41dc72b904687d9ec0b60d08bcaf23ed258e8",
+    "assets": [
+      {
+        "path": "assets/ladybug-extensions/0.19.0/osx_arm64/fts/libfts.lbug_extension.xz",
+        "compressed_sha256": "e34b00df38ced0b09993112a6d3a2d76735ecea639bb7deaf4e804351343f891",
+        "matches_worktree": true,
+        "decompressed_sha256": "83ae4be9fa718577ca971f27ff890b3aea5789c9dd908784e28f52917febbfdb"
+      },
+      {
+        "path": "assets/ladybug-extensions/0.19.0/osx_arm64/json/libjson.lbug_extension.xz",
+        "compressed_sha256": "7d39d0ba2fe3eb41364febc09fb45aca02b37bb64a06e3a3666bfb70f49792cd",
+        "matches_worktree": true,
+        "decompressed_sha256": "e6482a025de31d662ee4b32a39c991706b8cc3c2ec49673ef5d8ce45cc23ce7a"
+      },
+      {
+        "path": "assets/ladybug-extensions/0.19.0/win_amd64/fts/libfts.lbug_extension.xz",
+        "compressed_sha256": "a8a9d74be93a54482b6bb6df7c44ead6cb751f398b87b10c990d63e2da77910d",
+        "matches_worktree": true,
+        "decompressed_sha256": "7f82059c8149bb7851420a9bfd0c46859e92efaeda0bcd5c65418d8f174edac4"
+      },
+      {
+        "path": "assets/ladybug-extensions/0.19.0/win_amd64/json/libjson.lbug_extension.xz",
+        "compressed_sha256": "adf5e05d5a63c181a1be3e1e6c90a8ffb9901118171e7caf8f860af055868ada",
+        "matches_worktree": true,
+        "decompressed_sha256": "bdecb5201dd6abccc06ddc1f6cb4fcf0be3adb7aa3ddaac2f383ed129fca2b1f"
+      }
+    ],
+    "verification": "cargo package --no-verify; extracted compile not yet executed"
+  }
+]

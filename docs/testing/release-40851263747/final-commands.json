@@ -1,0 +1,8 @@
+{
+  "suite": "cargo nextest run -p xtask --locked --offline --target-dir /private/tmp/codebasegraph-immutable-release-evidence-20261029/cargo-target --config-file /private/tmp/codebasegraph-immutable-release-evidence-20261029/final-nextest-report.toml --user-config-file none --no-fail-fast --no-tests fail --test-threads 1",
+  "check-workflows": "cargo run -p xtask --locked --offline --target-dir /private/tmp/codebasegraph-immutable-release-evidence-20261029/cargo-target -- check-workflows",
+  "release-gate": "cargo run -p xtask --locked --offline --target-dir /private/tmp/codebasegraph-immutable-release-evidence-20261029/cargo-target -- release-gate",
+  "fmt": "cargo fmt --all -- --check",
+  "clippy": "cargo clippy -p xtask --all-targets --locked --offline --target-dir /private/tmp/codebasegraph-immutable-release-evidence-20261029/cargo-target -- -D warnings",
+  "diff-check": "git diff --check"
+}

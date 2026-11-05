@@ -1,0 +1,4 @@
+codebase-graph v4.0.0 (/private/tmp/codebasegraph-cod53-windows-runtimes)
+├── codebase-graph feature "bundled-windows-extensions"
+│   └── codebase-graph feature "default" (command-line)
+└── codebase-graph feature "default" (command-line)

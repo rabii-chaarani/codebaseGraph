@@ -1,0 +1,15 @@
+
+running 1 test
+test storage::managed::transaction_janitor_tests::managed_read_recovery_closes_registered_run_without_replaying ... FAILED
+
+failures:
+
+failures:
+    storage::managed::transaction_janitor_tests::managed_read_recovery_closes_registered_run_without_replaying
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 827 filtered out; finished in 0.18s
+
+
+thread 'storage::managed::transaction_janitor_tests::managed_read_recovery_closes_registered_run_without_replaying' (31344599) panicked at src/storage/managed.rs:2150:13:
+fixture must have genuine producer registration
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace

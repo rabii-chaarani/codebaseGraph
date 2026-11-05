@@ -1,0 +1,69 @@
+# PR163 START ACK — independent core verification
+
+**Status: CORE PASS. 81/81 tests passed (13 lifecycle + 64 xtask + 4 native integration), retries0. Formatting, strict Clippy and diff checks pass. Full native/hosted artifact qualification remains pending.**
+
+## Result and scope
+
+**CORE LOCAL CHECKS PASS.** This supports the narrow reviewed repair's local correctness handoff, not full native-platform or installed-archive qualification. Required head-bound hosted native/artifact checks remain pending after push; no A05/A06 or aggregate completion is claimed.
+
+Scope: COD-54 / CBG-PLAT-01/S03, existing PR163 endpoint only. Canonical R03/A05–A06 remain under spec rev0.10 `1a9db7b558b60248888408daa6268a3b45f2f0df` and original approval `71dc27e92857c4215bbbe583f104de7f341dc816`; current-only D05a spec rev0.11 `8a410c7a22f5291f06a1cece5cd9e7c0be255e72` / approval `5c2e9a56d0fa87779fb31312562f4e53f902f0ac` is unchanged. Exact START response-only250ms→existing5s approval is recorded in `docs/specs/CBG-PLAT-01/approvals/pr163-start-ack.md` at HEAD below, signed coordinator brief `chg-1k9jre`; user reference “approve the 5-second”,2026-10-30. No new criterion/claim/topology, merge, release or aggregate closure.
+
+Evidence Verifier model/effort map is `inherit`; host applied no override per assignment. Actual runtime model/effort self-metadata is unexposed. No other roles dispatched. This verifier made no source/test/docs/Git/tracking/Scryer writes; diagnostics/JUnit/report outputs were written only under assigned `/tmp/.../verification`. Production owns persistence of this substance unchanged in the same PR163.
+
+## Exact tested snapshot and provenance
+
+- Repository: `/private/tmp/codebasegraph-pr163-ci-repair-20261030`, correct `rabii-chaarani/codebaseGraph` origin.
+- HEAD during all checks: **`84f860cbee741dbcbd0b66eb78c6640e924a6fef`** (approval note), committed tree `7227569d6b58da7c65011a2b0fffbd28c339bd84`.
+- **Dirty source candidate**, not a clean committed repair: only tracked modified source is `src/process_lifecycle/mod.rs`, SHA256 **`59c66cb5906eeb13e32c4daa0ca08d26fb416b3e86c14a1b004b930959284fc3`**. Exact baseline diff is `candidate-source.diff`; unchanged source hash verified after focused checks, Clippy, xtask and integration. Final status includes only that tracked modification plus Production's untracked canonical evidence documents (inventory/content hashes in `untracked-production-docs-at-core-end.json`); there are no untracked source/test additions. Production documents do not change the tested Rust source.
+- Original PR head `b603712e09a3e56651d0b5918af7e13a96d75bed`; failed CI actually executed synthetic merge **`4162dd67e1720f552bc3e2f3424192343d93d41d`**, not branch head. Approval record confirms both original source trees were `a7b5908da9a9f900a748746c24264e5c54930314`; do not substitute the head label for executed merge provenance.
+- Native integration compile captured actual Cargo compiler-artifact messages from this manifest/root. Normal CLI: `target/native-tests/codebase-graph`, SHA256 **`edcfcc32ec76580dac215ed19a5323d2266cf379538a77c5d75f92b6e647fb98`**. Integration binary `target/native-tests/deps/refresh_recovery_process-96bc2be4dd6ed04f`, SHA256 **`0cc8fdec8c79d36024bcebfd7d462136858bdc6aeb17192e3bff9cfe5f07c8c7`**. Exact source manifest, opt-level3/assertions/overflow flags, selected inventory and explicit `CARGO_BIN_EXE_codebase-graph` binding are in `integration-executable-provenance.json`, `integration-compiler-artifacts.jsonl` and `integration-discovered-inventory.json`. No other checkout's executable or target cache was reused.
+
+## Environment and dependency identity
+
+ARM64 macOS **26.6.2 /25G83**, same actual OS/build recorded by failed artifact job123951179128. Rust/Cargo1.96.0; cargo-nextest0.9.140; Apple Clang21/CommandLineTools SDK. Matching OS is useful platform evidence, not proof that this developer host is clean or a final current-stable consumer archive is qualified.
+
+Validated official Ladybug0.19 native cache: `/private/tmp/codebasegraph-copy153-evidence/native019`; lib/header bytes match the cached official asset and live official release digest. Archive SHA256 `6bee40babdf837bb6aa4d271047dfe5ed3dacf022f16af84952ca4c22d034d62`; `liblbug.a` SHA256 `d2e9a5c37617b0affb01f18f6ef48bb1531f5744f5ba06c849226842617ad142`; header SHA256 `7da5b7e36d6610e43a1512e4997ac123ba0886cf5598ae44aca5449aa02a8aa3`. Full asset/member identity in `native-environment-identity.json`.
+
+Commands used `LBUG_LIBRARY_DIR=LBUG_INCLUDE_DIR=<verifiednative019>`, `LBUG_VERSION=0.19.0`, local test `OPENSSL_LIB_DIR=/opt/homebrew/Cellar/openssl@3/3.6.2/lib`, unchanged `MACOSX_DEPLOYMENT_TARGET=13.3`, `CARGO_BUILD_JOBS=2`. This resource setting is not a product constant. No LBUG_SHARED/custom Rust flags/external CARGO_TARGET_DIR; default isolated target. `.cargo/config.toml` supplies serial tests and HOME at this target's `target/test-home`. OpenSSL is a developer test prerequisite here, **not** a consumer-runtime prerequisite concession. Native-tests inherits release optimization with debug assertions/overflow checks/unwind, so real lifecycle fault fixtures execute. Exact environment: `core-environment.json`.
+
+## Actual executed checks
+
+All commands were executed independently after Backend froze the final source. No retries, zero-test success or configured-only check is counted as a pass. Exact command/exit/source hashes in `core-commands.json`.
+
+| Check | Actual command / method | Result and genuine evidence |
+| --- | --- | --- |
+| Lifecycle control + Unix containment | `cargo nextest run --config-file <verification>/nextest-verification.toml --user-config-file none --profile pr163-verification --cargo-profile native-tests --offline --locked -p codebase-graph --lib -E 'test(process_lifecycle::)' --test-threads 1 --no-tests fail` | **13/13 pass**,835 filtered, retries0. Includes all8 shared-module cases and5Unix containment cases. Run `f8cad167-f2ee-426e-b864-b4a9a053d1c1`; `focused-process-lifecycle.log`, `focused-process-lifecycle.junit.xml`. |
+| Formatting | `cargo fmt --all --check` | exit0, `fmt-final.txt`. |
+| Strict warnings | `cargo clippy --offline --workspace --all-targets --all-features --locked -- -D warnings` | exit0, no warning lines; source-root compile paths verified; `clippy-final.log`/`.exit`. |
+| Complete xtask suite | `cargo nextest run --config-file <verification>/nextest-verification.toml --user-config-file none --profile pr163-verification --offline --locked -p xtask --test-threads 1 --no-tests fail` | **64/64 pass,0skipped**, retries0. Includes installer preservation/compatibility fixtures and tooling archive/provenance/workflow checks. `xtask-final.log`, `xtask-final.junit.xml`; these controlled binaries are not final optimized archive qualification. |
+| Native integration compile/provenance | `cargo test --offline --locked --profile native-tests -p codebase-graph --test refresh_recovery_process --no-run --message-format=json-render-diagnostics`, then exact nextest list | exit0; normal CLI and test artifact identity confirmed, assertions enabled. Four selected matches out of24 available cases; no ignored selected case. Compiler JSON/inventory and hashes retained. |
+| Selected native integration | `cargo nextest run --config-file <verification>/nextest-verification.toml --user-config-file none --profile pr163-verification --cargo-profile native-tests --offline --locked -p codebase-graph --test refresh_recovery_process -E '<four exact names in core-commands.json>' --test-threads 1 --no-tests fail` | **4/4 pass**,20 filtered,retries0,417.589s; all4 exceeded nextest60s slow display threshold but passed their existing oracles, no deadlines relaxed. Run `5a2de630-81bd-4656-b678-f073e08ba333`; `integration-selected.log`, `integration-selected.junit.xml`. |
+| Final whitespace/snapshot | `git --no-optional-locks diff --check` plus read-only identity/status/source SHA | exit0; final source unchanged; `candidate-final-identity.txt` and `core-source-snapshot.json`. |
+
+JUnit is genuine runner output, copied before subsequent runs could overwrite the active profile report. `junit-audit-core.json` records **81 emitted testcase results,0failures,0skips** (13+64+4); filtered835/20 are exclusions, not passing or ignored execution. The four selected native process cases are:
+
+1. `lifecycle_faults::owner_exit_after_state_before_start_cleans_gated_tree`: actual persisted/gated worker, owner exit, child cleanup and later publication.
+2. `lifecycle_faults::paused_database_loader_exits_after_outer_worker_failure_and_refresh_recovers`: real guarded loader stopped, owning worker terminated, loader exit, prior generation retained, real refresh recovery.
+3. `lifecycle_faults::authenticated_cancellation_cleans_loader_and_retries_pending_edit`: malformed/bounded control behavior and wrong nonce rejection leave loader alive; correct authenticated cancellation tears it down and pending edit recovers.
+4. `lifecycle_faults::unavailable_guardian_preserves_paused_tree_evidence_until_emptiness_is_proven`: paused owner/loader/guardian retains descriptor/proof/old generation and reports containment_unknown; controlled resume permits teardown and recovery.
+
+## Behavior and criterion-level trace
+
+| Oracle | Claims / anchors | Independent finding / limit |
+| --- | --- | --- |
+| Approved START-only response250ms→5s; no replay | `src/process_lifecycle/mod.rs::control`, `PreparedChild::start`; new exact tests `start_accepts_delayed_ack_after_one_committed_request`, `delayed_non_start_acknowledgements_keep_the_short_deadline` | Actual diff selects existing5sDEADLINE only for exact START. One `write_all` precedes bounded receive; connect/write250ms, nonSTART250ms and inbound100ms are unchanged. Owned loopback fixture parses nonce, records one START side effect, delays350ms, sends ACK; no second connection/request and one effect. Candidate passes. Backend supplied actual old250ms+newtest baseline errno35 failure and finalpass logs; verifier read them but did not rerun/mutate the baseline. This establishes controlled delayedACK defect, not original CI scheduler/syscall proof. |
+| Retained fail-closed ownership, cancellation, unknown containment | No anchored lifecycle-control Scryer claim; existing Materialization Worker `resp-281`/phase and containment intent are context, not invented fold authority |13control/Unix and4native process cases pass as above. No5s-exhaustion or clean-consumer assertion is inferred from350ms acceptance. Original failed job's one observed `containment_empty=true` is not universal proof. |
+| **A05 / R03** | Release Gate `resp-16/17/256`, Graph Store `resp-113`; final archive graph/wiki/MCP runtime | **Pending exact final hosted installed-archive smoke/current-stable isolated execution.** Core tests do not establish final artifact help/build/JSON/FTS/reopen/wiki/MCP no-external-runtime qualification. Failed original job built/installed successfully but final installed CLI failed. |
+| **A06 / R03** | Release Gate `resp-255–258`; final imports/rpaths/licenses/checksums and negative runtime cases | **Pending exact final archive evidence.** xtask tests confirm real controlled installer rejection/payload-preservation behavior and target/provenance contracts locally, but final shipped Mach-O audit and exact archive missing/corrupt/incompatible cases still require actual final pipeline results. |
+
+Graph-first semantic discovery, explicit runtime/change-impact context and exact source inspection were used. Graph/Scryer registration binds older dirty root and omits current control source; fresh `locate` returns no anchored `control` claim under Graph Runtime. This limits model evidence binding, not executed-source identity. No JUnit attachment/ingestion/fold into that wrong-root model; no unrelated drift reconciled. Current governing intent and original approvals are preserved without inventing claims to fill a table.
+
+## Handoff and pending gates
+
+No confirmed local core defect or warning remains. Cargo/native heavy slot is released. Final Reviewer and coordinator own the review/delivery decision for this exact source; Production alone serializes commit/push and records subsequent committed source/tree and hosted run/attempt/synthetic merge. A later source edit invalidates affected results and requires revalidation.
+
+Per coordinator priority, **no duplicate full3local native cohort or local optimized native-artifact build was started**. These checks are not waived: full native cohorts and unchanged actual optimized macOS artifact pipeline must run on the pushed final revision in head-bound hosted CI before their gates are reported passed. Windows native runtime is not available on this host. Required current-stable Apple Silicon final-installed-archive no-external-Homebrew/OpenSSL, hashes/imports/runtime/failure evidence remains explicit; hosted CI may supply it only when actual OS/build and isolation evidence are present. No final archive SHA exists from this core check, and none is fabricated. Ad-hoc signatures alone do not prove DeveloperID/notarization.
+
+Original run41013561222/attempt1/job123951179128 evidence remains a **failed** archive smoke on merge4162…, not converted to a pass. Current local host matches that OS/build but uses a developer native environment. Source/correctness handoff, supported-platform qualification, issue completion and maintainer aggregate closure remain separate. Endpoint is existing PR163 only; no merge/release/publication/deployment/restart or automatic issue/milestone closure.
+
+Reusable knowledge assessed: controlled delayedACK mechanism and official native cache identity are evidenced here; original CI scheduling cause is not proven. No repository memory write was needed or authorized in this bounded verification task.

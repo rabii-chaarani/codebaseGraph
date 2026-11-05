@@ -23,6 +23,16 @@ pub(crate) fn prepare_operation_request(
     let arguments = &invocation.arguments;
     let request = match operation_id {
         "health" => OperationRequest::Health(HealthRequest {
+            confirm_legacy_quiescence: match arguments.get("confirm_legacy_quiescence") {
+                None => false,
+                Some(serde_json::Value::Bool(value)) => *value,
+                Some(_) => {
+                    return Err(ApiError::new(
+                        "invalid_request",
+                        "confirm_legacy_quiescence must be a boolean",
+                    ))
+                }
+            },
             repo: invocation.repo.clone(),
             refresh_status: None,
             output_format: invocation.output_format,
@@ -478,6 +488,37 @@ mod tests {
     use serde_json::json;
 
     #[test]
+    fn health_confirmation_defaults_false_and_accepts_only_explicit_booleans() {
+        for (arguments, expected) in [
+            (json!({}), false),
+            (json!({"confirm_legacy_quiescence": false}), false),
+            (json!({"confirm_legacy_quiescence": true}), true),
+        ] {
+            let invocation = OperationInvocation {
+                repo: RepoSelector::default(),
+                arguments,
+                output_format: OutputFormat::Typed,
+            };
+            let OperationRequest::Health(request) =
+                prepare_operation_request("health", &invocation).unwrap()
+            else {
+                panic!("health request expected");
+            };
+            assert_eq!(request.confirm_legacy_quiescence, expected);
+        }
+        for value in [json!(null), json!("true"), json!(1), json!([]), json!({})] {
+            let invocation = OperationInvocation {
+                repo: RepoSelector::default(),
+                arguments: json!({"confirm_legacy_quiescence": value}),
+                output_format: OutputFormat::Typed,
+            };
+            let error = prepare_operation_request("health", &invocation).unwrap_err();
+            assert_eq!(error.code, "invalid_request");
+            assert!(error.message.contains("must be a boolean"));
+        }
+    }
+
+    #[test]
     fn normalize_request_applies_canonical_defaults() {
         let normalized = normalize_request(&OperationRequest::Search(SearchRequest {
             repo: RepoSelector::default(),
@@ -513,8 +554,6 @@ mod tests {
                 exclude_patterns: Vec::new(),
                 candidate_paths: Vec::new(),
                 parallel: true,
-                worker_memory_mib: None,
-                rust_memory_mib: None,
                 spill_chunk_mib: None,
                 max_parallelism: None,
                 progress: false,

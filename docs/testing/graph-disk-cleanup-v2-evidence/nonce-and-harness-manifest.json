@@ -1,0 +1,167 @@
+{
+  "scope": "Reviewed nonce restoration and combined all-target harness validation; no new collector/native Windows/Linux closure.",
+  "code_commit": "45a9eae45236f6a1527c1173c93e2cb652f67b8d",
+  "files": [
+    {
+      "path": "s2-nonce-author/evidence.json",
+      "sha256": "50d03b4c943173728ed38e7461a4bc1b41bdfa526ccf640b4458c85289821c7f",
+      "bytes": 16415,
+      "source": "/private/tmp/cleanup-s2-nonce-successor-sxkwggsc/evidence.json",
+      "source_sha256": "50d03b4c943173728ed38e7461a4bc1b41bdfa526ccf640b4458c85289821c7f"
+    },
+    {
+      "path": "s2-nonce-review/review-report.md",
+      "sha256": "a2a68efc0afc523e3fd6df4427e4e1544121b46370f355b4df8c18e49e5c82aa",
+      "bytes": 2697,
+      "source": "/private/tmp/cleanup-s2-nonce-review-d6a30hff/review-report.md",
+      "source_sha256": "a2a68efc0afc523e3fd6df4427e4e1544121b46370f355b4df8c18e49e5c82aa"
+    },
+    {
+      "path": "s2-nonce-review/review-report.json",
+      "sha256": "6ec580f052574dfdb6250a1d5d5d931ba2245465bfce0ec611e981885993b927",
+      "bytes": 15611,
+      "source": "/private/tmp/cleanup-s2-nonce-review-d6a30hff/review-report.json",
+      "source_sha256": "6ec580f052574dfdb6250a1d5d5d931ba2245465bfce0ec611e981885993b927"
+    },
+    {
+      "path": "s2-nonce-review/snapshot.json",
+      "sha256": "03539ee9352be8b73aa8adac67b4433912bb2c400c2fcdc0657a71de8eabb360",
+      "bytes": 756,
+      "source": "/private/tmp/cleanup-s2-nonce-review-d6a30hff/snapshot.json",
+      "source_sha256": "03539ee9352be8b73aa8adac67b4433912bb2c400c2fcdc0657a71de8eabb360"
+    },
+    {
+      "path": "s2-nonce-review/inputs-before.json",
+      "sha256": "633f6b85f709402197c306128c2baf790396419802ece90237e00f10088c82fc",
+      "bytes": 56656,
+      "source": "/private/tmp/cleanup-s2-nonce-review-d6a30hff/inputs-before.json",
+      "source_sha256": "633f6b85f709402197c306128c2baf790396419802ece90237e00f10088c82fc"
+    },
+    {
+      "path": "s2-nonce-review/inputs-after.json",
+      "sha256": "633f6b85f709402197c306128c2baf790396419802ece90237e00f10088c82fc",
+      "bytes": 56656,
+      "source": "/private/tmp/cleanup-s2-nonce-review-d6a30hff/inputs-after.json",
+      "source_sha256": "633f6b85f709402197c306128c2baf790396419802ece90237e00f10088c82fc"
+    },
+    {
+      "path": "s2-nonce-review/binaries-before.json",
+      "sha256": "9c6245e92f857a70db31d18896eaaf04d94b63e9a23e201ab36b35ea0cca41fb",
+      "bytes": 863,
+      "source": "/private/tmp/cleanup-s2-nonce-review-d6a30hff/binaries-before.json",
+      "source_sha256": "9c6245e92f857a70db31d18896eaaf04d94b63e9a23e201ab36b35ea0cca41fb"
+    },
+    {
+      "path": "s2-nonce-review/binaries-after.json",
+      "sha256": "9c6245e92f857a70db31d18896eaaf04d94b63e9a23e201ab36b35ea0cca41fb",
+      "bytes": 863,
+      "source": "/private/tmp/cleanup-s2-nonce-review-d6a30hff/binaries-after.json",
+      "source_sha256": "9c6245e92f857a70db31d18896eaaf04d94b63e9a23e201ab36b35ea0cca41fb"
+    },
+    {
+      "path": "s2-nonce-review/junit-lib-127.xml",
+      "sha256": "4d8f1cab7f7f3f6bc1ec872e4675698eb0f9300137ce0f95cfc537a442f518a7",
+      "bytes": 29106,
+      "source": "/private/tmp/cleanup-s2-nonce-review-d6a30hff/junit-lib-127.xml",
+      "source_sha256": "4d8f1cab7f7f3f6bc1ec872e4675698eb0f9300137ce0f95cfc537a442f518a7"
+    },
+    {
+      "path": "s2-nonce-review/junit-generation-5.xml",
+      "sha256": "a91de8ef7fdd13064f1ddae089c1b7a32cdd97de29867deeb8561c332b0cd68e",
+      "bytes": 1396,
+      "source": "/private/tmp/cleanup-s2-nonce-review-d6a30hff/junit-generation-5.xml",
+      "source_sha256": "a91de8ef7fdd13064f1ddae089c1b7a32cdd97de29867deeb8561c332b0cd68e"
+    },
+    {
+      "path": "s2-nonce-review/build.log.gz",
+      "sha256": "50a2114bd156d56d6162bfc00a544647fe98b7fbb7b130247e78db9dbdd167ad",
+      "bytes": 5639,
+      "source": "/private/tmp/cleanup-s2-nonce-review-d6a30hff/build.log",
+      "source_sha256": "92165bb6da45e5c257683e7afd25c850c8aea55f7d6e5b0630cd9acc50ba23ad"
+    },
+    {
+      "path": "s2-nonce-review/run-lib.log.gz",
+      "sha256": "f9499885b3dca35a79332e89bc1abf5a790cce340c82d762306bdb7a76e683ba",
+      "bytes": 4058,
+      "source": "/private/tmp/cleanup-s2-nonce-review-d6a30hff/run-lib.log",
+      "source_sha256": "e8f7fa8229bcbcd931c8f832bc0315e05bf853f2f21d68b5a0ba8a8199bf0a06"
+    },
+    {
+      "path": "s2-nonce-review/run-generation.log.gz",
+      "sha256": "7677c3e26eedd39b4bfc198c4c7ec7410aa9d0ac5e2ae89749773e473c9a5851",
+      "bytes": 5925,
+      "source": "/private/tmp/cleanup-s2-nonce-review-d6a30hff/run-generation.log",
+      "source_sha256": "6ad099850cd1b28dd0de31ebc53776a10e85075c1186ebab772b56852efd2f34"
+    },
+    {
+      "path": "s2-nonce-review/doctests.log.gz",
+      "sha256": "13922b48499aff08c7a1c5e7f649253db598335e75b6035722c810a95ea8c2d3",
+      "bytes": 5718,
+      "source": "/private/tmp/cleanup-s2-nonce-review-d6a30hff/doctests.log",
+      "source_sha256": "837f823936b76b0082fe9a1f5fa8d699775382d4a881378a163365727e26d3a5"
+    },
+    {
+      "path": "s2-nonce-review/original-regression-provenance.json",
+      "sha256": "b30dee6eb8db1571a14824767e3b41818ff694e6a0bb085793dfaf5c8011a4b9",
+      "bytes": 939,
+      "source": "/private/tmp/cleanup-s2-nonce-review-d6a30hff/original-regression-provenance.json",
+      "source_sha256": "b30dee6eb8db1571a14824767e3b41818ff694e6a0bb085793dfaf5c8011a4b9"
+    },
+    {
+      "path": "s2-nonce-review/original-regression.txt",
+      "sha256": "f9cf6fefd9f102fbb149c863cc4b38a17a271133dd1e86cde50fc40fe72a7cf5",
+      "bytes": 1006,
+      "source": "/private/tmp/cleanup-s2-nonce-review-d6a30hff/original-regression.txt",
+      "source_sha256": "f9cf6fefd9f102fbb149c863cc4b38a17a271133dd1e86cde50fc40fe72a7cf5"
+    },
+    {
+      "path": "s2-nonce-review/original-regression-ci-digest.txt",
+      "sha256": "d509a3b2257d4dae302ed1c43993d7476e10d8a355d395ae5c875bdcb6f91922",
+      "bytes": 1021,
+      "source": "/private/tmp/cleanup-s2-nonce-review-d6a30hff/original-regression-ci-digest.txt",
+      "source_sha256": "d509a3b2257d4dae302ed1c43993d7476e10d8a355d395ae5c875bdcb6f91922"
+    },
+    {
+      "path": "combined-harness-176/snapshot.json",
+      "sha256": "d802a8dbcc2b8995c84bf92dde021c10c8da991a1e4f49a1832764c253631fbd",
+      "bytes": 270,
+      "source": "/private/tmp/cleanup-combined-harness-176/snapshot.json",
+      "source_sha256": "d802a8dbcc2b8995c84bf92dde021c10c8da991a1e4f49a1832764c253631fbd"
+    },
+    {
+      "path": "combined-harness-176/report.json",
+      "sha256": "ef9c82cbc256ddd5727be613ea271bb2dcf5a7a08457fe2239728941b9e43eed",
+      "bytes": 1026,
+      "source": "/private/tmp/cleanup-combined-harness-176/report.json",
+      "source_sha256": "ef9c82cbc256ddd5727be613ea271bb2dcf5a7a08457fe2239728941b9e43eed"
+    },
+    {
+      "path": "combined-harness-176/inputs-before.json",
+      "sha256": "6aa0241167b0c6f39e338fba18f9d7f2ad9ee26fde3f30bc64d9f2bce860c511",
+      "bytes": 20910,
+      "source": "/private/tmp/cleanup-combined-harness-176/inputs-before.json",
+      "source_sha256": "6aa0241167b0c6f39e338fba18f9d7f2ad9ee26fde3f30bc64d9f2bce860c511"
+    },
+    {
+      "path": "combined-harness-176/inputs-after.json",
+      "sha256": "6aa0241167b0c6f39e338fba18f9d7f2ad9ee26fde3f30bc64d9f2bce860c511",
+      "bytes": 20910,
+      "source": "/private/tmp/cleanup-combined-harness-176/inputs-after.json",
+      "source_sha256": "6aa0241167b0c6f39e338fba18f9d7f2ad9ee26fde3f30bc64d9f2bce860c511"
+    },
+    {
+      "path": "combined-harness-176/check.log.gz",
+      "sha256": "76cafb2f912ca77a31d4d2f83b64336920029eff6193f2cda7cd08b11f436f70",
+      "bytes": 9019,
+      "source": "/private/tmp/cleanup-combined-harness-176/check.log",
+      "source_sha256": "fa31a68842854240d89425991200b182f2e431fc3c0b30a2b89c8454205a291d"
+    },
+    {
+      "path": "combined-harness-176/initial-wrong-target-interrupted.log.gz",
+      "sha256": "e7f7e7d20592317ea113228eabd67b5b0283f8a9490597d451194964765559b4",
+      "bytes": 1248,
+      "source": "/private/tmp/cleanup-combined-harness-176/initial-wrong-target-interrupted.log",
+      "source_sha256": "c927b3b08999260bc61305e65029c456369ced240bc40908d22386206f314b58"
+    }
+  ]
+}

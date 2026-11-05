@@ -167,7 +167,98 @@ pub(crate) fn serialize_health_block(payload: &serde_json::Value) -> String {
         lines.push(format!("error {}", block_value(error)));
     }
     append_refresh_health_lines(&mut lines, payload);
+    append_maintenance_health_lines(&mut lines, payload);
     format!("{}\n", lines.join("\n"))
+}
+
+fn append_maintenance_health_lines(lines: &mut Vec<String>, payload: &serde_json::Value) {
+    let Some(summary) = payload.get("maintenance").filter(|value| value.is_object()) else {
+        return;
+    };
+    let fields = [
+        "requested",
+        "running",
+        "pending",
+        "observed_at_unix_ms",
+        "observation_age_ms",
+        "inventory_status",
+        "measurement_complete",
+        "observation_complete",
+    ];
+    lines.push(format!(
+        "maintenance {}",
+        fields
+            .into_iter()
+            .map(|key| format!("{key}={}", block_optional_payload_scalar(summary, key)))
+            .collect::<Vec<_>>()
+            .join(" ")
+    ));
+    if let Some(bytes) = summary.get("bytes") {
+        for name in [
+            "total",
+            "retained",
+            "potential_reclamation",
+            "deferred",
+            "unknown",
+        ] {
+            append_maintenance_bucket(lines, name, &bytes[name]);
+        }
+        for name in [
+            "active_graph",
+            "active_cache",
+            "leased_generation",
+            "live_run",
+            "recovery_evidence",
+            "artifact_temporary",
+            "legacy_staging",
+            "retired_direct",
+            "coordination",
+            "unknown",
+        ] {
+            append_maintenance_bucket(
+                lines,
+                &format!("by_category.{name}"),
+                &bytes["by_category"][name],
+            );
+        }
+    }
+    for key in ["reasons", "errors"] {
+        if let Some(values) = summary.get(key).and_then(serde_json::Value::as_array) {
+            for value in values.iter().filter_map(serde_json::Value::as_str) {
+                lines.push(format!("maintenance.{key} {}", block_value(value)));
+            }
+        }
+    }
+    if let Some(attempt) = summary
+        .get("last_attempt")
+        .filter(|value| value.is_object())
+    {
+        let fields = [
+            "started_at_unix_ms",
+            "finished_at_unix_ms",
+            "status",
+            "attempted_entries",
+            "deleted_entries",
+            "reclaimed_allocated_bytes",
+            "continuation_phase",
+        ];
+        lines.push(format!(
+            "maintenance.last_attempt {}",
+            fields
+                .into_iter()
+                .map(|key| format!("{key}={}", block_optional_payload_scalar(attempt, key)))
+                .collect::<Vec<_>>()
+                .join(" ")
+        ));
+    }
+}
+
+fn append_maintenance_bucket(lines: &mut Vec<String>, name: &str, bucket: &serde_json::Value) {
+    lines.push(format!(
+        "maintenance.bytes.{name} logical_bytes={} allocated_bytes={}",
+        block_optional_payload_scalar(bucket, "logical_bytes"),
+        block_optional_payload_scalar(bucket, "allocated_bytes")
+    ));
 }
 
 fn append_refresh_health_lines(lines: &mut Vec<String>, payload: &serde_json::Value) {

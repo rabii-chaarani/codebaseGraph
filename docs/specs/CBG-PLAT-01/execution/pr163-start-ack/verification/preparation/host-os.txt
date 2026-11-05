@@ -1,0 +1,5 @@
+$ sw_vers
+exit_code=0
+ProductName:		macOS
+ProductVersion:		26.6.2
+BuildVersion:		25G83

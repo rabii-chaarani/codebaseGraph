@@ -1,0 +1,4 @@
+   Compiling xtask v4.0.0 (/private/tmp/codebasegraph-cod54-macos-distribution/crates/xtask)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.70s
+     Running `target/debug/xtask native-artifact --target macos-arm64 --commit-sha 71dc27e92857c4215bbbe583f104de7f341dc816 --output /private/tmp/codebasegraph-cod54-macos-distribution/dist/cod54-local`
+unsafe path in verified OpenSSL archive: pax_global_header

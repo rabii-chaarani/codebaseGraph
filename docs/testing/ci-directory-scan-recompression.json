@@ -1,0 +1,26 @@
+[
+  {
+    "asset": "assets/ladybug-extensions/0.19.0/win_amd64/fts/libfts.lbug_extension.xz",
+    "before_bytes": 3495384,
+    "after_bytes": 3495248,
+    "before_sha256": "78e2febd0f3f29df5379a014cc755d5540f04282a6f5bd2128738266a7c25d01",
+    "after_sha256": "a8a9d74be93a54482b6bb6df7c44ead6cb751f398b87b10c990d63e2da77910d",
+    "decoded_bytes": 14779904,
+    "decoded_sha256": "7f82059c8149bb7851420a9bfd0c46859e92efaeda0bcd5c65418d8f174edac4",
+    "actual_lzma_rs_decoder_equality": true,
+    "dictionary_bytes": 16777216,
+    "integrity_check": "CRC64"
+  },
+  {
+    "asset": "assets/ladybug-extensions/0.19.0/osx_arm64/fts/libfts.lbug_extension.xz",
+    "before_bytes": 313512,
+    "after_bytes": 313284,
+    "before_sha256": "066f43565dfca6c1cbe79f40f9102aeb52c98b68b7fb74861a6be81d4318df4a",
+    "after_sha256": "e34b00df38ced0b09993112a6d3a2d76735ecea639bb7deaf4e804351343f891",
+    "decoded_bytes": 1562680,
+    "decoded_sha256": "83ae4be9fa718577ca971f27ff890b3aea5789c9dd908784e28f52917febbfdb",
+    "actual_lzma_rs_decoder_equality": true,
+    "dictionary_bytes": 1572864,
+    "integrity_check": "CRC64"
+  }
+]

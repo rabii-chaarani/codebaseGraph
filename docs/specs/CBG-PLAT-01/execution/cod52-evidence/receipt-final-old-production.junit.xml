@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="nextest-run" tests="1" failures="1" errors="0" uuid="d8b0323e-9a5d-4520-a9ae-e64fead090e8" timestamp="2026-10-27T13:48:55.702+09:30" time="4.727">
+    <testsuite name="codebase-graph" tests="1" disabled="0" errors="0" failures="1">
+        <testcase name="storage::maintenance_candidate::tests::terminal_receipt_selection_reaches_late_directory_after_child_receipt_veto" classname="codebase-graph" timestamp="2026-10-27T13:48:55.703+09:30" time="4.725">
+            <failure message="thread &apos;storage::maintenance_candidate::tests::terminal_receipt_selection_reaches_late_directory_after_child_receipt_veto&apos; (34455936) panicked at src/storage/maintenance_candidate.rs:2237:14" type="test failure with exit code 101">thread &apos;storage::maintenance_candidate::tests::terminal_receipt_selection_reaches_late_directory_after_child_receipt_veto&apos; (34455936) panicked at src/storage/maintenance_candidate.rs:2237:14:
+selection must continue after the parent receipt is vetoed
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace</failure>
+            <system-out>
+running 1 test
+test storage::maintenance_candidate::tests::terminal_receipt_selection_reaches_late_directory_after_child_receipt_veto ... FAILED
+
+failures:
+
+failures:
+    storage::maintenance_candidate::tests::terminal_receipt_selection_reaches_late_directory_after_child_receipt_veto
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 844 filtered out; finished in 4.70s
+
+</system-out>
+            <system-err>
+thread &apos;storage::maintenance_candidate::tests::terminal_receipt_selection_reaches_late_directory_after_child_receipt_veto&apos; (34455936) panicked at src/storage/maintenance_candidate.rs:2237:14:
+selection must continue after the parent receipt is vetoed
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+</system-err>
+        </testcase>
+    </testsuite>
+</testsuites>

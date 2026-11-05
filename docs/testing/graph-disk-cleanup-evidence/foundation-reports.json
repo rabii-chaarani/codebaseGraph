@@ -1,0 +1,1748 @@
+{
+  "count_semantics": "Execution counts, not unique scenarios; duplicate library and storage_foundation bodies are retained.",
+  "reports": [
+    {
+      "id": "s1-post-main",
+      "report": "s1-post-main-junit.xml",
+      "sha256": "43789b2717a390d201e486c0c1def0e0f7aa8cfe3548a61fe2ee4fc8546e0603",
+      "root_attributes": {
+        "name": "nextest-run",
+        "tests": "29",
+        "failures": "0",
+        "errors": "0",
+        "uuid": "467d04e0-f3a8-4d37-ab03-ea8a7216e0e9",
+        "timestamp": "2026-10-21T01:05:15.953+09:30",
+        "time": "0.724"
+      },
+      "execution_counts": {
+        "cases": 29,
+        "failed": 0,
+        "skipped": 0
+      },
+      "case_names": [
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::busy_writer_is_reported_without_waiting_or_mutation",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::configured_ancestor_root_is_rejected_without_scanning_sources",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::dc_s1_a1_classifies_and_counts_active_live_recovery_and_legacy",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::dc_s1_a2_missing_and_dropped_observations_do_not_create_or_repair",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::dc_s1_a3_constant_pointer_does_not_hide_artifact_and_run_mutations",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::dc_s1_a3_invalid_pointer_and_foreign_direct_are_retained",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::dc_s1_a3_symlinks_are_not_followed_and_sizes_are_unknown",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::dc_s1_a4_repeat_observation_is_deterministic",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::existing_live_lease_is_observed_without_recovery",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::hardlinked_direct_identity_is_unknown",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::physical_hardlinks_count_once_and_allocation_uses_filesystem_blocks",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::recognized_direct_pair_uses_repository_identity",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::review_bound_external_store_survives_missing_conventional_state",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::review_case_alias_roots_are_rejected_without_double_counting",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::review_complete_root_reconciliation_is_insertion_order_independent",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::review_config_repository_parent_traversal_cannot_erase_symlink",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::review_config_storage_parent_traversal_cannot_erase_symlink_or_missing_component",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::review_configured_storage_cannot_be_overridden_with_unselected_local_root",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::review_current_configuration_is_revalidated_on_every_observation",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::review_default_direct_only_is_current_graph_and_cache",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::review_direct_cache_inside_managed_root_is_rejected",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::review_explicit_direct_alongside_managed_is_current",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::review_external_config_requires_matching_repository_binding",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::review_external_current_direct_config_observes_exact_bundle_without_local_state",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::review_managed_config_makes_unselected_default_direct_former",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::review_managed_root_inside_direct_cache_is_rejected",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::review_raw_config_direct_spelling_selects_matching_cache",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::review_real_directory_dot_parent_config_paths_remain_supported",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::review_scope_rejects_source_state_and_unregistered_external_storage",
+          "classname": "codebase-graph"
+        }
+      ],
+      "qualification": "Foundation slice only; no aggregate acceptance conclusion.",
+      "source_identity": "See canonical wiki S1 accepted snapshot bb3c716; S4 source manifest linkage pending"
+    },
+    {
+      "id": "s2-family-focused",
+      "report": "s2-family-focused-junit.xml",
+      "sha256": "6118b539934bbec11a16cacaf410fe10b12aea7d4b9e17a5ef600dc1d7941876",
+      "root_attributes": {
+        "name": "nextest-run",
+        "tests": "128",
+        "failures": "0",
+        "errors": "0",
+        "uuid": "ea7ebe62-3562-4851-99ac-bcaf424b1e6f",
+        "timestamp": "2026-10-21T02:00:41.862+09:30",
+        "time": "3.356"
+      },
+      "execution_counts": {
+        "cases": 128,
+        "failed": 0,
+        "skipped": 0
+      },
+      "case_names": [
+        {
+          "suite": "codebase-graph",
+          "name": "execution::run::tests::dc_s2_pure_planning_does_not_create_use_coordination_files",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::configured_ancestor_root_is_rejected_without_scanning_sources",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::dc_s1_a3_invalid_pointer_and_foreign_direct_are_retained",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::busy_writer_is_reported_without_waiting_or_mutation",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::dc_s1_a3_constant_pointer_does_not_hide_artifact_and_run_mutations",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::dc_s1_a4_repeat_observation_is_deterministic",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::dc_s1_a3_symlinks_are_not_followed_and_sizes_are_unknown",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::dc_s1_a2_missing_and_dropped_observations_do_not_create_or_repair",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::dc_s1_a1_classifies_and_counts_active_live_recovery_and_legacy",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::review_config_repository_parent_traversal_cannot_erase_symlink",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::existing_live_lease_is_observed_without_recovery",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::review_complete_root_reconciliation_is_insertion_order_independent",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::review_case_alias_roots_are_rejected_without_double_counting",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::recognized_direct_pair_uses_repository_identity",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::physical_hardlinks_count_once_and_allocation_uses_filesystem_blocks",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::review_bound_external_store_survives_missing_conventional_state",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::hardlinked_direct_identity_is_unknown",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::review_config_storage_parent_traversal_cannot_erase_symlink_or_missing_component",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::review_configured_storage_cannot_be_overridden_with_unselected_local_root",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::review_current_configuration_is_revalidated_on_every_observation",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::review_direct_cache_inside_managed_root_is_rejected",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::review_default_direct_only_is_current_graph_and_cache",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::review_external_config_requires_matching_repository_binding",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::review_managed_root_inside_direct_cache_is_rejected",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::review_explicit_direct_alongside_managed_is_current",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::review_managed_config_makes_unselected_default_direct_former",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::review_external_current_direct_config_observes_exact_bundle_without_local_state",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::review_real_directory_dot_parent_config_paths_remain_supported",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::review_scope_rejects_source_state_and_unregistered_external_storage",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_ownership::tests::dc_s2_exact_borrowed_writer_requires_exclusive_exact_destination",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::inventory::tests::review_raw_config_direct_spelling_selects_matching_cache",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_ownership::tests::dc_s2_current_v2_receipt_and_unknown_v1_follow_existing_guardian_policy",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_ownership::tests::dc_s2_family_group_deduplicates_same_parent_and_retains_all_guards",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_ownership::tests::dc_s2_external_bound_managed_store_does_not_require_local_state",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_ownership::tests::dc_s2_direct_borrowed_session_truthfully_defers_active_companions",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_ownership::tests::dc_s2_direct_reader_and_alternate_manifest_exclude_collector",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_ownership::tests::dc_s2_family_group_handles_distinct_parents_and_duplicate_resource_keys",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_ownership::tests::dc_s2_family_macos_unicode_nfc_nfd_existing_and_creation_aliases_exclude",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_ownership::tests::dc_s2_family_macos_parent_aliases_deduplicate_physical_family",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_ownership::tests::dc_s2_family_producer_conversion_holds_parent_until_session_release",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_ownership::tests::dc_s2_family_shared_existing_readable_coordination_requires_no_write_permission",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_ownership::tests::dc_s2_family_macos_long_s_consumer_blocks_ascii_direct_even_with_valid_record",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_ownership::tests::dc_s2_family_replaced_parent_incarnation_invalidates_held_use",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_ownership::tests::dc_s2_hardlinks_symlinks_and_case_aliases_cannot_bypass_resource_guard",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_ownership::tests::dc_s2_family_recreated_coordination_invalidates_destination_proof",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_ownership::tests::dc_s2_inventory_cohort_observer_is_noncreating_and_validates_lock_identity",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_ownership::tests::dc_s2_guarded_creation_and_controlled_proof_are_incarnation_bound",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_ownership::tests::dc_s2_missing_startup_lease_keeps_unknown_evidence",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_ownership::tests::dc_s2_owned_state_transition_never_waits_or_holds_state_during_validation",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_ownership::tests::dc_s2_preexisting_root_never_becomes_modern_from_guard_acquisition",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_ownership::tests::dc_s2_producer_and_collector_exclude_whole_artifact_operation",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_ownership::tests::dc_s2_managed_borrowed_session_can_admit_without_reacquiring_writer",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_ownership::tests::dc_s2_replaced_writer_inode_does_not_validate_borrowed_authority",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_ownership::tests::dc_s2_review_dangling_worker_state_is_unknown_and_preserved",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_ownership::tests::dc_s2_review_hardlinked_coordination_invalidates_held_authority",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_ownership::tests::dc_s2_review_unreadable_worker_state_is_unknown_and_preserved",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_ownership::tests::dc_s2_review_managed_read_resolution_completes_with_paused_collector",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_ownership::tests::dc_s2_worker_launch_evidence_without_lifecycle_is_unknown",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_ownership::tests::dc_s2_waiter_on_detached_incarnation_cannot_write_fresh_public_root",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_ownership::tests::dc_s2_writer_worker_and_startup_contention_are_nonblocking",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_ownership::tests::dc_s2_registered_shared_manifest_and_shared_database_are_retained",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_ownership::tests::dc_s2_review_legacy_database_new_cache_requires_destination_migration_proof",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_ownership::tests::dc_s2_shared_manifest_registration_across_database_parents_is_retained",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_ownership::tests::dc_s2_review_publication_proof_does_not_bless_legacy_destination_or_sibling",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "execution::run::tests::dc_s2_public_pipeline_keeps_use_guards_through_final_result_assembly",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::configured_ancestor_root_is_rejected_without_scanning_sources",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::busy_writer_is_reported_without_waiting_or_mutation",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::dc_s1_a3_invalid_pointer_and_foreign_direct_are_retained",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::dc_s1_a2_missing_and_dropped_observations_do_not_create_or_repair",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::dc_s1_a3_constant_pointer_does_not_hide_artifact_and_run_mutations",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::dc_s1_a4_repeat_observation_is_deterministic",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::dc_s1_a3_symlinks_are_not_followed_and_sizes_are_unknown",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::existing_live_lease_is_observed_without_recovery",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::hardlinked_direct_identity_is_unknown",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::dc_s1_a1_classifies_and_counts_active_live_recovery_and_legacy",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::recognized_direct_pair_uses_repository_identity",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::physical_hardlinks_count_once_and_allocation_uses_filesystem_blocks",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::review_bound_external_store_survives_missing_conventional_state",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::review_complete_root_reconciliation_is_insertion_order_independent",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::review_case_alias_roots_are_rejected_without_double_counting",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::review_config_repository_parent_traversal_cannot_erase_symlink",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::review_current_configuration_is_revalidated_on_every_observation",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::review_default_direct_only_is_current_graph_and_cache",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::review_config_storage_parent_traversal_cannot_erase_symlink_or_missing_component",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::review_configured_storage_cannot_be_overridden_with_unselected_local_root",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::review_direct_cache_inside_managed_root_is_rejected",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::review_explicit_direct_alongside_managed_is_current",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::review_managed_root_inside_direct_cache_is_rejected",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::review_external_config_requires_matching_repository_binding",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::review_external_current_direct_config_observes_exact_bundle_without_local_state",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::review_managed_config_makes_unselected_default_direct_former",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::review_real_directory_dot_parent_config_paths_remain_supported",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::review_scope_rejects_source_state_and_unregistered_external_storage",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::review_raw_config_direct_spelling_selects_matching_cache",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_current_v2_receipt_and_unknown_v1_follow_existing_guardian_policy",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_exact_borrowed_writer_requires_exclusive_exact_destination",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_direct_borrowed_session_truthfully_defers_active_companions",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_family_group_deduplicates_same_parent_and_retains_all_guards",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_external_bound_managed_store_does_not_require_local_state",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_family_group_handles_distinct_parents_and_duplicate_resource_keys",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_family_macos_parent_aliases_deduplicate_physical_family",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_family_producer_conversion_holds_parent_until_session_release",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_family_macos_unicode_nfc_nfd_existing_and_creation_aliases_exclude",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_direct_reader_and_alternate_manifest_exclude_collector",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_family_replaced_parent_incarnation_invalidates_held_use",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_family_shared_existing_readable_coordination_requires_no_write_permission",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_hardlinks_symlinks_and_case_aliases_cannot_bypass_resource_guard",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_inventory_cohort_observer_is_noncreating_and_validates_lock_identity",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_family_macos_long_s_consumer_blocks_ascii_direct_even_with_valid_record",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_family_recreated_coordination_invalidates_destination_proof",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_missing_startup_lease_keeps_unknown_evidence",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_guarded_creation_and_controlled_proof_are_incarnation_bound",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_owned_state_transition_never_waits_or_holds_state_during_validation",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_preexisting_root_never_becomes_modern_from_guard_acquisition",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_replaced_writer_inode_does_not_validate_borrowed_authority",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_producer_and_collector_exclude_whole_artifact_operation",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_managed_borrowed_session_can_admit_without_reacquiring_writer",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_review_hardlinked_coordination_invalidates_held_authority",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_review_dangling_worker_state_is_unknown_and_preserved",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_review_managed_read_resolution_completes_with_paused_collector",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_review_unreadable_worker_state_is_unknown_and_preserved",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_waiter_on_detached_incarnation_cannot_write_fresh_public_root",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_writer_worker_and_startup_contention_are_nonblocking",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_worker_launch_evidence_without_lifecycle_is_unknown",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_shared_manifest_registration_across_database_parents_is_retained",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_review_legacy_database_new_cache_requires_destination_migration_proof",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_registered_shared_manifest_and_shared_database_are_retained",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_review_publication_proof_does_not_bless_legacy_destination_or_sibling",
+          "classname": "codebase-graph::storage_foundation"
+        }
+      ],
+      "qualification": "Foundation slice only; no aggregate acceptance conclusion.",
+      "source_manifest": "s2-family-focused-source-manifest.json",
+      "source_manifest_sha256": "6437fb98f04feaced02de55c63f5063822bb8a7eb415b2dcede249face8e9be8"
+    },
+    {
+      "id": "s2-family-regression",
+      "report": "s2-family-regression-junit.xml",
+      "sha256": "ddccd6f40a368bcacd87f7c1c826028dde700841371e4d54fd6c27e45a11be92",
+      "root_attributes": {
+        "name": "nextest-run",
+        "tests": "127",
+        "failures": "0",
+        "errors": "0",
+        "uuid": "c2881b37-1476-4cea-ad1c-d580d5fb1c5e",
+        "timestamp": "2026-10-21T02:03:12.586+09:30",
+        "time": "65.973"
+      },
+      "execution_counts": {
+        "cases": 127,
+        "failed": 0,
+        "skipped": 0
+      },
+      "case_names": [
+        {
+          "suite": "codebase-graph",
+          "name": "db_writer::phase::tests::phase_protocol_requires_v2_containment_contract",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "db_writer::phase::tests::phase_registry_scope_restores_nested_and_unwound_contexts",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "db_writer::phase::tests::phase_request_v2_preserves_native_resource_settings",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "db_writer::phase::tests::phase_test_allocation_is_scoped_to_the_ready_loader",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "db_writer::phase::tests::phase_test_allocation_requires_trigger_and_rejects_unbounded_memory",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "db_writer::phase::tests::scoped_phase_request_lives_outside_candidate_and_preserves_database_path",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "db_writer::write::tests::database_pool_escalation_is_bounded_and_incremental",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "db_writer::write::tests::only_failed_database_operations_retry_pool_exhaustion",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "execution::run::tests::artifact_reuse_preserves_materialization_output",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "execution::run::tests::cached_and_clean_builds_stage_identical_rows",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "execution::run::tests::dc_s2_public_pipeline_keeps_use_guards_through_final_result_assembly",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "execution::run::tests::dc_s2_pure_planning_does_not_create_use_coordination_files",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "execution::run::tests::deleted_files_are_excluded_from_materialized_entries",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "execution::run::tests::digest_only_build_changes_can_reuse_all_raw_artifacts",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "execution::run::tests::graph_summary_counts_unique_ids_once",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "execution::run::tests::missing_or_corrupt_unchanged_artifacts_rebuild_from_scanned_sources",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "execution::run::tests::scanned_payload_completes_materialization_after_source_removal",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "execution::run::tests::unchanged_partitions_reuse_artifacts_without_reparsing",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "atomic_write_failure_preserves_existing_file_and_cleans_temp",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "control_lease_rejects_a_symlinked_lock_file",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "control_leases_are_exclusive_nonblocking_and_transfer_after_release",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "direct_control_lock_paths_are_stable_and_destination_scoped",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "direct_phase_unknown_preserves_base_and_blocks_publish_replay_and_cleanup",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "direct_prepared_recovery_preserves_expected_sidecars_on_validation_failure",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "direct_recovery_replays_every_rename_and_checkpoint",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "direct_store_recovers_database_manifest_and_committed_journal_phases",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "direct_store_recovers_interrupted_publication_with_sidecars_and_split_parents",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "direct_store_rejects_forged_journal_candidate_paths",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "direct_write_session_holds_writer_lock_and_drop_cleans_unpublished_candidates",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "empty_prelease_startup_is_retired_and_does_not_block_next_writer",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "error::tests::memory_budget_failure_can_report_supervised_process_split",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "error::tests::memory_budget_failure_has_a_structured_machine_readable_message",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "error::tests::source_change_failure_has_a_stable_machine_readable_message",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "existing_lock_probe_does_not_recreate_a_vanished_workspace",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "managed_abort_and_drop_retain_runs_while_phase_unknown",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "managed_begin_write_holds_writer_lock_and_marks_candidate_ready_explicitly",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "managed_cleanup_recovers_published_crash_after_active_pointer_write",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "managed_cleanup_recovers_publishing_crash_after_active_pointer_write",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "managed_cleanup_recovers_publishing_crash_after_generation_rename",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "managed_cleanup_recovers_publishing_crash_before_generation_rename",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "managed_cleanup_reports_and_later_removes_locked_runs",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "managed_control_lock_paths_are_stable_and_role_scoped",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "managed_last_reader_drop_triggers_best_effort_retirement_cleanup",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "managed_metadata_sizes_include_db_sidecars_and_allocated_bytes",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "managed_phase_unknown_preserves_candidate_and_active_read_until_empty",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "managed_publish_reconciles_an_error_after_active_pointer_commit",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "managed_publish_rejects_a_stale_base_generation",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "managed_store_rejects_untrusted_generation_ids",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "managed_writer_is_serialized_across_sessions",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "missing_lease_with_any_launch_evidence_remains_unknown",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "owned_writer_cleanup_reports_readers_and_collects_after_their_release",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "persisted_relative_barrier_survives_cleanup_from_a_different_process_cwd",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "persisted_run_barrier_survives_drop_and_blocks_generic_orphan_collection",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "phase_registry_collection_retains_unknown_siblings_then_reclaims_empty_orphans",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "phase_registry_probe_never_recreates_missing_roots_or_locks",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "private_lifecycle_receipt_accepts_ancestor_alias_but_rejects_foreign_or_symlink_roots",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "relative_registry_probe_matches_absolute_private_descriptor",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "run_workspace_cleanup_rejects_symlink_content",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::atomic::tests::atomic_temp_paths_are_scoped_to_the_writer_process",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::containment::tests::windows_job_name_does_not_expose_or_depend_on_control_nonce",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::containment::tests::windows_job_name_rejects_malformed_build_identity",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::busy_writer_is_reported_without_waiting_or_mutation",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::configured_ancestor_root_is_rejected_without_scanning_sources",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::dc_s1_a1_classifies_and_counts_active_live_recovery_and_legacy",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::dc_s1_a2_missing_and_dropped_observations_do_not_create_or_repair",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::dc_s1_a3_constant_pointer_does_not_hide_artifact_and_run_mutations",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::dc_s1_a3_invalid_pointer_and_foreign_direct_are_retained",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::dc_s1_a3_symlinks_are_not_followed_and_sizes_are_unknown",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::dc_s1_a4_repeat_observation_is_deterministic",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::existing_live_lease_is_observed_without_recovery",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::hardlinked_direct_identity_is_unknown",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::physical_hardlinks_count_once_and_allocation_uses_filesystem_blocks",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::recognized_direct_pair_uses_repository_identity",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::review_bound_external_store_survives_missing_conventional_state",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::review_case_alias_roots_are_rejected_without_double_counting",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::review_complete_root_reconciliation_is_insertion_order_independent",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::review_config_repository_parent_traversal_cannot_erase_symlink",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::review_config_storage_parent_traversal_cannot_erase_symlink_or_missing_component",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::review_configured_storage_cannot_be_overridden_with_unselected_local_root",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::review_current_configuration_is_revalidated_on_every_observation",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::review_default_direct_only_is_current_graph_and_cache",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::review_direct_cache_inside_managed_root_is_rejected",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::review_explicit_direct_alongside_managed_is_current",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::review_external_config_requires_matching_repository_binding",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::review_external_current_direct_config_observes_exact_bundle_without_local_state",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::review_managed_config_makes_unselected_default_direct_former",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::review_managed_root_inside_direct_cache_is_rejected",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::review_raw_config_direct_spelling_selects_matching_cache",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::review_real_directory_dot_parent_config_paths_remain_supported",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::inventory::tests::review_scope_rejects_source_state_and_unregistered_external_storage",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_current_v2_receipt_and_unknown_v1_follow_existing_guardian_policy",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_direct_borrowed_session_truthfully_defers_active_companions",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_direct_reader_and_alternate_manifest_exclude_collector",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_exact_borrowed_writer_requires_exclusive_exact_destination",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_external_bound_managed_store_does_not_require_local_state",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_family_group_deduplicates_same_parent_and_retains_all_guards",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_family_group_handles_distinct_parents_and_duplicate_resource_keys",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_family_macos_long_s_consumer_blocks_ascii_direct_even_with_valid_record",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_family_macos_parent_aliases_deduplicate_physical_family",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_family_macos_unicode_nfc_nfd_existing_and_creation_aliases_exclude",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_family_producer_conversion_holds_parent_until_session_release",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_family_recreated_coordination_invalidates_destination_proof",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_family_replaced_parent_incarnation_invalidates_held_use",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_family_shared_existing_readable_coordination_requires_no_write_permission",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_guarded_creation_and_controlled_proof_are_incarnation_bound",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_hardlinks_symlinks_and_case_aliases_cannot_bypass_resource_guard",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_inventory_cohort_observer_is_noncreating_and_validates_lock_identity",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_managed_borrowed_session_can_admit_without_reacquiring_writer",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_missing_startup_lease_keeps_unknown_evidence",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_owned_state_transition_never_waits_or_holds_state_during_validation",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_preexisting_root_never_becomes_modern_from_guard_acquisition",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_producer_and_collector_exclude_whole_artifact_operation",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_registered_shared_manifest_and_shared_database_are_retained",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_replaced_writer_inode_does_not_validate_borrowed_authority",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_review_dangling_worker_state_is_unknown_and_preserved",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_review_hardlinked_coordination_invalidates_held_authority",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_review_legacy_database_new_cache_requires_destination_migration_proof",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_review_managed_read_resolution_completes_with_paused_collector",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_review_publication_proof_does_not_bless_legacy_destination_or_sibling",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_review_unreadable_worker_state_is_unknown_and_preserved",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_shared_manifest_registration_across_database_parents_is_retained",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_waiter_on_detached_incarnation_cannot_write_fresh_public_root",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_worker_launch_evidence_without_lifecycle_is_unknown",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::maintenance_ownership::tests::dc_s2_writer_worker_and_startup_contention_are_nonblocking",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::run_workspace::tests::cleanup_barrier_records_its_absolute_origin",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::run_workspace::tests::confined_run_cleanup_is_idempotent",
+          "classname": "codebase-graph::storage_foundation"
+        },
+        {
+          "suite": "codebase-graph::storage_foundation",
+          "name": "storage::run_workspace::tests::unanchored_persisted_barrier_cannot_authorize_orphan_cleanup",
+          "classname": "codebase-graph::storage_foundation"
+        }
+      ],
+      "qualification": "Foundation slice only; no aggregate acceptance conclusion.",
+      "source_manifest": "s2-family-regression-source-manifest.json",
+      "source_manifest_sha256": "6437fb98f04feaced02de55c63f5063822bb8a7eb415b2dcede249face8e9be8"
+    },
+    {
+      "id": "s3-expanded",
+      "report": "s3-expanded-junit.xml",
+      "sha256": "e00f773cf313ef6575f4fdcf79486dc865dd19ee634888b5b4cf3e1d427e0627",
+      "root_attributes": {
+        "name": "nextest-run",
+        "tests": "31",
+        "failures": "0",
+        "errors": "0",
+        "uuid": "fc78ee6c-cec6-42bb-9bda-544e10913b47",
+        "timestamp": "2026-10-21T02:36:27.487+09:30",
+        "time": "1.185"
+      },
+      "execution_counts": {
+        "cases": 31,
+        "failed": 0,
+        "skipped": 0
+      },
+      "case_names": [
+        {
+          "suite": "codebase-graph",
+          "name": "artifact_store::tests::artifact_cleanup_rejects_symlinked_entries",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "artifact_store::tests::artifact_key_changes_when_inputs_change",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "artifact_store::tests::artifact_store_commits_only_durable_artifact_directories",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "artifact_store::tests::artifact_store_rejects_prior_format_envelopes",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "artifact_store::tests::artifact_store_rejects_wrong_expected_content",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "artifact_store::tests::artifact_store_roundtrips_raw_partition_and_reuses_existing_payload",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "artifact_store::tests::artifact_store_treats_corrupt_or_mismatched_payloads_as_cache_miss",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "artifact_store::tests::corrupt_existing_artifact_is_replaced_atomically_on_rebuild",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "artifact_store::tests::dc_s3_cooperative_envelope_preserves_checksum_and_rejects_invalid_metadata",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "artifact_store::tests::dc_s3_cooperative_rows_match_existing_oracle_across_metadata_boundaries",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "artifact_store::tests::malformed_artifact_keys_are_treated_as_cache_miss_and_safe_delete_noops",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "artifact_store::tests::oversized_artifact_is_rejected_before_deserialization",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "artifact_store::tests::reference_sized_artifact_fits_the_default_per_worker_budget",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "artifact_store::tests::streaming_partition_checksum_matches_the_legacy_canonical_payload",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance::tests::dc_s3_buffered_parser_parks_without_storage_locks_and_resumes_stack",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance::tests::dc_s3_cancel_wakes_parser_without_another_grant",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance::tests::dc_s3_cursor_spans_grants_and_does_not_starve_later_entries",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance::tests::dc_s3_detachment_defers_for_reader_but_private_deletion_does_not",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance::tests::dc_s3_owned_validation_job_releases_lease_before_wait_and_cancels",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance::tests::dc_s3_parser_and_foreground_share_single_entry_allowance",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance::tests::dc_s3_payload_symlink_and_hardlink_never_enter_retirement",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance::tests::dc_s3_prepare_then_foreign_child_rejects_public_detach",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance::tests::dc_s3_prepared_record_replay_preserves_original",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance::tests::dc_s3_private_identity_replacement_is_preserved",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance::tests::dc_s3_public_pending_surface_does_not_create_missing_installation",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance::tests::dc_s3_replay_preserves_new_payload_after_durable_unlink",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance::tests::dc_s3_replay_rejects_unrelated_or_replaced_journal",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance::tests::dc_s3_retirement_one_entry_budget_resumes_private_work",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance::tests::dc_s3_retirement_rechecks_reference_before_detachment",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance::tests::dc_s3_retirement_replay_never_deletes_reused_public_name",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance::tests::dc_s3_retirement_retains_foreign_contents",
+          "classname": "codebase-graph"
+        }
+      ],
+      "qualification": "Foundation slice only; no aggregate acceptance conclusion.",
+      "source_manifest": "s3-expanded-source-manifest.json",
+      "source_manifest_sha256": "95f89f93b01ad3c9b02cbab6b97278cdbb14d604080963a4a2b8a08deee39c5c"
+    },
+    {
+      "id": "s4-scheduler-primitive",
+      "report": "s4-scheduler-primitive-junit.xml",
+      "sha256": "c4d0cbb89af4996d859c7da5b1bed3b04a1a9b90dd44135bc7c9d2d2c9ecfb3f",
+      "root_attributes": {
+        "name": "nextest-run",
+        "tests": "10",
+        "failures": "0",
+        "errors": "0",
+        "uuid": "4afc80e9-29b9-4522-a8d9-a290d790d9ab",
+        "timestamp": "2026-10-21T02:33:19.150+09:30",
+        "time": "0.168"
+      },
+      "execution_counts": {
+        "cases": 10,
+        "failed": 0,
+        "skipped": 0
+      },
+      "case_names": [
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_scheduler::tests::cached_report_retains_observation_time_nulls_and_age",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_scheduler::tests::continuation_retries_even_when_report_pending_flag_is_clear",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_scheduler::tests::deferred_work_resumes_without_new_events_and_never_hot_loops",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_scheduler::tests::error_and_panic_release_permits_and_retry_with_unknown_allocation",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_scheduler::tests::execution_contention_preserves_demand_without_fabricating_observation",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_scheduler::tests::limits_and_completion_based_cooldown_are_explicit",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_scheduler::tests::observation_from_a_future_wall_clock_has_unknown_age",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_scheduler::tests::running_requests_coalesce_and_execution_permit_is_released_before_parking",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_scheduler::tests::shutdown_during_callback_drains_then_rejects_all_new_grants",
+          "classname": "codebase-graph"
+        },
+        {
+          "suite": "codebase-graph",
+          "name": "storage::maintenance_scheduler::tests::startup_duplicates_periodic_and_new_events_coalesce",
+          "classname": "codebase-graph"
+        }
+      ],
+      "qualification": "Foundation slice only; no aggregate acceptance conclusion.",
+      "source_identity": "Pending linkage to frozen source manifest; report alone does not qualify source."
+    }
+  ]
+}

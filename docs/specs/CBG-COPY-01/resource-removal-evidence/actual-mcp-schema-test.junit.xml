@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="nextest-run" tests="1" failures="0" errors="0" uuid="21e4ffbc-79f7-404d-96be-2b7139e3ec4f" timestamp="2026-10-26T21:57:11.374+09:30" time="11.102">
+    <testsuite name="codebase-graph" tests="1" disabled="0" errors="0" failures="0">
+        <testcase name="adapters::cli::tests::mcp::mcp_stdio_serves_tools_and_tool_errors" classname="codebase-graph" timestamp="2026-10-26T21:57:11.375+09:30" time="11.101">
+        </testcase>
+    </testsuite>
+</testsuites>

@@ -1,6 +1,6 @@
 use crate::error::NativeError;
 use crate::storage::atomic::{sync_dir, write_json_atomically};
-use crate::storage::containment::{collect_registry, ensure_registry_empty, probe_registry};
+use crate::storage::containment::{collect_registry, ensure_registry_empty};
 use crate::storage::layout::{direct_bundle_paths, DirectLayout, DIRECT_DB_SIDECAR_SUFFIXES};
 use crate::storage::locks::{open_locked, LockMode, WriterLease};
 use serde::{Deserialize, Serialize};
@@ -42,9 +42,16 @@ pub(crate) struct DirectWriteSession {
     layout: DirectLayout,
     writer_lease: Option<WriterLease>,
     finished: bool,
+    retirement_issue: Option<NativeError>,
 }
 
 impl DirectWriteSession {
+    pub(crate) fn writer_lease(&self) -> Result<&WriterLease, NativeError> {
+        self.writer_lease
+            .as_ref()
+            .ok_or_else(|| NativeError::InvalidInput("write session is finished".into()))
+    }
+
     pub(crate) fn phase_workspace_root(&self) -> PathBuf {
         self.layout.phase_workspace_root()
     }
@@ -66,7 +73,23 @@ impl DirectWriteSession {
         if result.is_ok() || self.layout.journal_path().exists() {
             self.finished = true;
         }
+        if result.is_ok() {
+            // Publication is already committed. Optional lifecycle attestation
+            // cannot turn that primary result into a failed publication.
+            self.retirement_issue = match self.writer_lease() {
+                Ok(writer) => super::maintenance_retirement::mark_explicit_direct_rebuild_active(
+                    &self.layout,
+                    writer,
+                )
+                .err(),
+                Err(error) => Some(error),
+            };
+        }
         result
+    }
+
+    pub(crate) fn take_retirement_issue(&mut self) -> Option<NativeError> {
+        self.retirement_issue.take()
     }
 
     pub(crate) fn finish(mut self) {
@@ -97,8 +120,63 @@ impl DirectStore {
     }
 
     pub(crate) fn begin_write(&self) -> Result<DirectWriteSession, NativeError> {
+        self.begin_write_with_rebuild(false)
+    }
+    pub(crate) fn begin_write_explicit_rebuild(&self) -> Result<DirectWriteSession, NativeError> {
+        self.begin_write_with_rebuild(true)
+    }
+    fn begin_write_with_rebuild(
+        &self,
+        explicit_rebuild: bool,
+    ) -> Result<DirectWriteSession, NativeError> {
+        let parent = self
+            .layout
+            .db_path()
+            .parent()
+            .ok_or_else(|| NativeError::InvalidInput("direct parent missing".into()))?;
+        let fresh = super::layout::create_fresh_reference_root(parent)?;
         self.ensure_parents()?;
-        let writer_lease = self.open_writer_lock()?;
+        let mut writer_lease = self.open_writer_lock()?;
+        if explicit_rebuild {
+            // Reactivation needs its own actual source/family/root exclusives;
+            // run it before retaining this session's ordinary Shared uses.
+            super::maintenance_legacy_guard::reactivate_legacy_source(
+                self.layout.db_path(),
+                self.layout.manifest_path(),
+                &writer_lease,
+            )?;
+        }
+        super::maintenance_ownership::register_direct_pair(&self.layout)?;
+        for resource in [self.layout.db_path(), self.layout.manifest_path()] {
+            writer_lease.retain(
+                super::maintenance_ownership::DatabaseUseLease::acquire_shared(resource)?
+                    .into_lock()?,
+            );
+        }
+        super::maintenance_ownership::ArtifactUseLease::ensure_root(
+            &self.layout.artifact_root_path(),
+        )?;
+        let domain = super::maintenance_ownership::ReferenceDomain::direct(&self.layout)?;
+        if let Some(fresh) = &fresh {
+            // A fresh DB parent cannot bless an existing external manifest.
+            if self
+                .layout
+                .manifest_path()
+                .parent()
+                .is_some_and(|manifest_parent| {
+                    super::inventory::same_physical_path(parent, manifest_parent)
+                })
+            {
+                super::maintenance_ownership::initialize_fresh_reference_domain(
+                    &domain,
+                    fresh,
+                    &writer_lease,
+                )?;
+            }
+        }
+        writer_lease.retain(
+            super::maintenance_ownership::ArtifactUseLease::acquire_in_domain(&domain)?.into_lock(),
+        );
         collect_registry(&self.layout.phase_workspace_root()).map_err(NativeError::InvalidInput)?;
         self.recover_with_lock()?;
         cleanup_candidate_set(&self.layout)?;
@@ -106,25 +184,59 @@ impl DirectStore {
             layout: self.layout.clone(),
             writer_lease: Some(writer_lease),
             finished: false,
+            retirement_issue: None,
         })
     }
 
-    pub(crate) fn begin_read(&self) -> Result<WriterLease, NativeError> {
-        let writer_lease = self.open_writer_lock()?;
-        if !matches!(
-            probe_registry(&self.layout.phase_workspace_root()),
-            Ok(true)
+    pub(crate) fn ensure_not_retired(&self) -> Result<(), NativeError> {
+        use super::maintenance_retirement::{observe_direct, DirectDisposition};
+        if matches!(
+            observe_direct(&self.layout),
+            Ok(DirectDisposition::Retiring | DirectDisposition::Retired)
         ) {
-            if self.layout.journal_path().exists() {
-                return Err(NativeError::InvalidInput(
-                    "containment_unknown: direct publish replay blocked by protected phase".into(),
-                ));
+            return Err(NativeError::InvalidInput(
+                "direct graph destination was retired; rebuild required with an explicit full materialization".into(),
+            ));
+        }
+        // Missing, unreadable or untrusted optional lifecycle metadata supplies
+        // no cleanup authority and must not block an otherwise committed read.
+        Ok(())
+    }
+
+    pub(crate) fn begin_read(&self) -> Result<WriterLease, NativeError> {
+        let mut writer_lease = self.open_writer_lock()?;
+        self.ensure_not_retired()?;
+        // A committed reader only needs its lifetime guards. Registration is
+        // producer overlap evidence; creating or repairing it is not required
+        // to serve an existing pair and cannot establish cleanup eligibility.
+        for resource in [self.layout.db_path(), self.layout.manifest_path()] {
+            writer_lease.retain(
+                super::maintenance_ownership::DatabaseUseLease::acquire_shared(resource)?
+                    .into_lock()?,
+            );
+        }
+        // No transaction journal means the committed pair needs no replay.
+        // Optional residue and phase inventories belong to the joined janitor,
+        // not this ordinary-read path. An uncertain journal remains required.
+        match fs::symlink_metadata(self.layout.journal_path()) {
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+                return writer_lease.relock_shared();
             }
-            return writer_lease.relock_shared();
+            Err(error) => return Err(error.into()),
+            Ok(_) => {}
         }
         self.recover_with_lock()?;
-        cleanup_candidate_set(&self.layout)?;
         writer_lease.relock_shared()
+    }
+
+    /// Noncreating residue diagnostic; uncertainty keeps optional cleanup pending.
+    pub(crate) fn candidate_cleanup_pending(&self) -> bool {
+        let mut paths = direct_bundle_paths(&self.layout.db_candidate_path());
+        paths.push(self.layout.manifest_candidate_path());
+        paths.iter().any(|path| {
+            !matches!(fs::symlink_metadata(path),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound)
+        })
     }
 
     fn publish_candidate_with_lock(
@@ -161,12 +273,16 @@ impl DirectStore {
         if !journal_path.exists() {
             return Ok(());
         }
+        // Unlike an ordinary committed read, replay mutates the destination.
+        // Preserve strict producer registration before any recovery effects.
+        super::maintenance_ownership::register_direct_pair(&self.layout)?;
+        let domain = super::maintenance_ownership::ReferenceDomain::direct(&self.layout)?;
+        let _mutation = super::maintenance_ownership::ReferenceMutation::begin_in_domain(&domain)?;
         let journal = self.read_journal()?;
         self.validate_journal_destinations(&journal)?;
         self.validate_journal_sources(&journal)?;
         self.resume_publish(journal)?;
         self.remove_journal_and_shadows()?;
-        cleanup_candidate_set(&self.layout)?;
         Ok(())
     }
 
@@ -362,6 +478,16 @@ fn replace_with_shadow(from: &Path, to: &Path) -> Result<(), NativeError> {
 }
 
 fn cleanup_candidate_set(layout: &DirectLayout) -> Result<(), NativeError> {
+    let mut candidates = direct_bundle_paths(&layout.db_candidate_path());
+    candidates.push(layout.manifest_candidate_path());
+    if !candidates
+        .iter()
+        .any(|path| fs::symlink_metadata(path).is_ok())
+    {
+        return Ok(());
+    }
+    let domain = super::maintenance_ownership::ReferenceDomain::direct(layout)?;
+    let _mutation = super::maintenance_ownership::ReferenceMutation::begin_in_domain(&domain)?;
     ensure_registry_empty(&layout.phase_workspace_root()).map_err(NativeError::InvalidInput)?;
     for path in direct_bundle_paths(&layout.db_candidate_path()) {
         remove_if_safe_if_present(&path)?;

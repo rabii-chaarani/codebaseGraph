@@ -1,0 +1,236 @@
+{
+  "work": "CBG-COPY-01/R1",
+  "source_base": "8e47d2b3c74b72b56a0b6b212d1bf939c8088ca7",
+  "approved_amendment_commit": "c8dd4ea9ca2a6f992756a2a41828396a27eabb6d",
+  "approved_amendment_sha256": "40fa2007539bf26e13a88a3c894428e3cee9dc46230d647e4be6bc1c2ca9b696",
+  "platform": "macOSarm64",
+  "rust": "1.96.0",
+  "native_version": "0.19.0",
+  "native_archive_sha256": "6bee40babdf837bb6aa4d271047dfe5ed3dacf022f16af84952ca4c22d034d62",
+  "final_normal_cli_sha256": "98a3f277d202ef550e7a588167fdc180752bec7e88313ce11d15349a808c8a22",
+  "checks": [
+    {
+      "name": "allworkspacealltargetsallfeaturescheck",
+      "result": "pass",
+      "log": "check-04.log",
+      "sha256": "6100154c937d1124fe9668a6fb6b9a921b74f17cd12dc1012308559a4b8333a4"
+    },
+    {
+      "name": "focusedmaterializationwriterstreamartifactprotocol",
+      "result": "134/134pass",
+      "log": "focused-unit-02.log",
+      "sha256": "f771ce70d3a62f4f9796a59bb9a02abe6a46ff3aa981dda2b08e83493e4624a0"
+    },
+    {
+      "name": "publicconfigAPIandownership",
+      "result": "42/42pass",
+      "log": "public-settings-tests.log",
+      "sha256": "72ac045dc804064d139678899de5839ea8b72afce32cc73ff26162070cf9ad00"
+    },
+    {
+      "name": "strictclippyfinal",
+      "result": "pass",
+      "log": "clippy-final.log",
+      "sha256": "9619b84e21e0080e3391562e370647415ecf3b3184ff0cb2933ca977a2c63105"
+    },
+    {
+      "name": "realCLIcopyreopencontrolManagedDirectfailure",
+      "result": "2/2pass",
+      "log": "native-copy-01.log",
+      "sha256": "0064f422b10e361b7385874ab3d3750a22b5cde5ebe3618e1f0bb732a3a97fc7"
+    },
+    {
+      "name": "legacybudgetfieldsnolongerapply",
+      "result": "1/1pass",
+      "log": "legacy-budget-config-process.log",
+      "sha256": "de4e09cae58e59cc6beb6fdb07c30638986ea1a5e285c48800901d06486651e9"
+    },
+    {
+      "name": "loaderallocationnotbudgetcancelled",
+      "result": "1/1pass",
+      "log": "ownership-no-ceiling-process.log",
+      "limit": "8MiBfixtureallocationtestsreachabilitynotphysicalexhaustion",
+      "sha256": "da5a191c9e1cf8480d9435ca6e40dd8a8943fbb5d2d410f369cae1e6a99ac8f5"
+    },
+    {
+      "name": "mixedjumboandmultilevelmerge",
+      "result": "2/2pass",
+      "log": "final-added-unit-cases.log",
+      "sha256": "018b6295f42a5db0c1404ae536aaee8af25caf34561ea785525c6f881d112378"
+    },
+    {
+      "name": "actualMCPgeneratedtoolschema",
+      "result": "1/1pass",
+      "log": "actual-mcp-schema-test.log",
+      "sha256": "723e0632b4a11c49ea9986929108f491cf9f0b43de92c598195a305f0c4807a5"
+    },
+    {
+      "name": "doctests",
+      "result": "3/3pass",
+      "log": "doctests.log",
+      "sha256": "f428961340dfb5ef273624b119c2ad02e36fc9249dad430b7a8352ac74d1b6ec"
+    },
+    {
+      "name": "optimizednativeprofilecompile",
+      "result": "pass",
+      "log": "native-profile-compile.log",
+      "limit": "compiled before finaltest-onlyoracleadjustments, notplatformruntimequalification",
+      "sha256": "cf3cda0783bb4ce5c4164841ff87c81e5cd1d305788981020350467193f25933"
+    },
+    {
+      "name": "jumboCLIJSONroundtrip",
+      "result": "1/1pass corrected fullJSONoracle",
+      "log": "native-jumbo-record-02.log",
+      "sha256": "8a50d739f7eb1f02a5ea7eb50f581a9a68c46a0387bd69bcdd887ce1c76b90a7"
+    },
+    {
+      "name": "finalallworkspacealltargetsallfeaturescheck",
+      "result": "pass",
+      "log": "check-final.log",
+      "sha256": "12fa6f4569df4bfcfe54cb3d5d47bc5773da03097b2fdd2253a4b22f8da34250"
+    },
+    {
+      "name": "finalstrictclippysnapshot",
+      "result": "pass",
+      "log": "clippy-final-snapshot.log",
+      "sha256": "114ce07a093184439c71d9db313466bf5b5d797e22cb1fd3e49722e3d1bcedef"
+    },
+    {
+      "name": "finalformatanddiffcheck",
+      "result": "pass"
+    },
+    {
+      "name": "independentfinalreview",
+      "result": "sourceGREEN no confirmedP0-P3",
+      "review_model": "openai-codex/gpt-6.1-sol",
+      "thinking": "max",
+      "source_hash_manifest": "final-source-hashes-04.json",
+      "report_sha256": "3af8d17e1231f5fc037ef456ad4a5bdb699f699acdc63910717610884c48e81d"
+    },
+    {
+      "name": "retainedcancellation",
+      "result": "1/1pass",
+      "log": "cancellation-after-removal.log",
+      "sha256": "595f4da7ecdc8b069c30e20a3d31f519994a8664f334d8d25e3910ec1617962e"
+    },
+    {
+      "name": "retainedunknowncontainment",
+      "result": "1/1pass",
+      "log": "unknown-containment-after-removal.log",
+      "sha256": "73df3335b47dd81684811c71b8547846cd37f628fc0e930f5aa10ca7c17d8ceb"
+    }
+  ],
+  "failed_attempts": [
+    {
+      "log": "check-01.log",
+      "reason": "cross-file integration remnants andserdeattribute duplication; repaired",
+      "sha256": "8f6282d7cf8b4e97199a4a9180b95b27fcaf6ab67d67afc95c0a6c20c1ba8b63"
+    },
+    {
+      "log": "check-03.log",
+      "reason": "test assumed label field absentfromSearchDocument; correctedactualIDfield",
+      "sha256": "e3b489bfaf05c460313275e2f73287ff11177311c7f2e87f8d38362d3f1a8e47"
+    },
+    {
+      "log": "focused-unit-01.log",
+      "reason": "wrongerrorliteralinretiredflagtest; actualrejectbehaviorverified",
+      "sha256": "f7f79b2bfa86c958c34404da6b6be2f0e14a1035ae5f014310096c5975c25d9a"
+    },
+    {
+      "log": "clippy-01.log",
+      "reason": "dead olderrorparse/import andsingleelementcanceltest; removednosuppression",
+      "sha256": "5e3ef93591d98c5838e54be6a672423397bdf0dbf90e868f8b123b44e826519e"
+    },
+    {
+      "log": "native-jumbo-record.log",
+      "reason": "wrongtextoracle: intentionally160charpreview; fullmetadataJSONsizeverified2MiB,correctedtestpending",
+      "sha256": "e63b52ab7c9a06908cd8c5dd6b2b3ec69531c9e17be12bae657a3aa5fcd5fbe9"
+    }
+  ],
+  "pending": [
+    "newcommitfullmacOSandWindowsCI",
+    "aggregatefullsuite/platformqualification notclaimed"
+  ],
+  "preserved": [
+    "batch/concurrency knobs",
+    "spill/streaming/fanin",
+    "diagnostic/protocol/searchformatbounds",
+    "ownership/containment/cancellation",
+    "ScopeAfailclosedCOPY",
+    "maintenanceperpassbounds"
+  ],
+  "removed": [
+    "worker_memory_mib/rust_memory_mib fields/options/defaults/validation",
+    "RSSlimitkillpolicy",
+    "source/partition/artifactestimateadmission",
+    "derivedapplicationLadybugpool128..384",
+    "chunk-targetrecordrejection",
+    "MemoryBudgetExceededapplicationerrorcontract"
+  ],
+  "not_claimed": [
+    "unlimitedOSmemory",
+    "nativeOOMimpossible",
+    "originalincidentrootcause",
+    "deployment",
+    "mergeready"
+  ],
+  "final_source_sha256": {
+    "knowledge/architecture/graph-runtime.md": "5878bd07c55a9af68ee89f3d6c8730ac0c3310fef91d5858b3d0184e761d1168",
+    "knowledge/architecture/graph-storage-lifecycle.md": "f1d13db5f3d1d87cd3fd17813b4bf4b3a5bf1966d7aee01a2cd2bf9c7152a70f",
+    "knowledge/architecture/materialization-pipeline.md": "5e2ad7af250fcb388c51a027b0237745fad8ae23d8574f4bc5cf647f9abb5881",
+    "src/adapters/cli/format/help.rs": "dcc1d0e9500dc21fad4f6635a46268a7a06d543cc1c2e050d63380ea3e3b0ec8",
+    "src/adapters/cli/materialization_input.rs": "c8963a4b67d7363d3f295de353a97af3db6096578e36f57254aff18e796c0ab7",
+    "src/adapters/cli/tests/dispatch_materialize.rs": "af6bcdd98f62aae44e370b2d4ddbf17dd34cb0246a49d665d3004d5abfc5256a",
+    "src/adapters/cli/tests/fixtures.rs": "63d2aa157ff043e5ccbf6e010074feb3e6ad1f9682d91603382f686eb676facd",
+    "src/adapters/cli/tests/install.rs": "64c2b26cd0110c52d8929ea76425c505a3eb2839dd1a4179cbda1cfd8a1c97f8",
+    "src/adapters/cli/tests/mcp.rs": "22cd4cef51368a0f3050641e7e437d7fbc4d798e6337b87c3bf1b446cf3081bc",
+    "src/adapters/mcp/options.rs": "4bb7a5eadd19606cf9cbe9922680c3be62b16a16fb690aa7cf55047ff10e4c9b",
+    "src/adapters/mcp/refresh.rs": "522e25f8ff1112aed77b221e208eff69fe8df152e6e8527013a4484fd5dca829",
+    "src/api/context.rs": "da07ae3b85d43d45c69cb89739c0f1ccc7d4234ed837fe1bd4fd05c07071a677",
+    "src/api/contracts.rs": "6cedee070d6724fdc29c76363988f3aac804931f3df9b86bad97f0845ff1be3f",
+    "src/api/core.rs": "b8acfa792f984269604512c2e35598e74b515bf060cca60c5b200e74cf6f317c",
+    "src/api/graph_read.rs": "d821e8d7c81ce44bcdb0e1ffd915fdd4321c0f4b09a023884500f300ede125d6",
+    "src/api/materialization.rs": "b2ba396562acc074e36d569ee5e03a380061082de7b33669451885329c89ff1c",
+    "src/api/normalization.rs": "56b1f81d7157cead4991bc47d709838d81aa0eab9e262d3ad24187fbc692e3d9",
+    "src/api/refresh.rs": "2cbe8222d464e68baf6234a1ac9bcc61eb96c78a0b5a9fece815ee8ba6c3eaf6",
+    "src/artifact_store.rs": "b63b79ba4dbe311f0e39ff69e876b120695017e077023bcb532d18c6bccbb7d9",
+    "src/db_writer/access.rs": "b390915f919bd6a68511afe858335cc929d3c082f706894c561dbb804904451d",
+    "src/db_writer/mod.rs": "dcf0a934c4fa96d95460a8c1e0fed6c9a7f78ae3aea1f0cf579aa0302fce9954",
+    "src/db_writer/phase.rs": "8cb94f7a81b1c03636f9c2aec4d492d6f62a267dac34797f0ad85b471650e846",
+    "src/db_writer/request.rs": "181ebf945156a82d0c894daf4d8a478a96eb51ca638a03b2a62ccef534ab4693",
+    "src/db_writer/tests.rs": "2249074e24508baa735fea6f27a9c5f6a7163d15215879ebb46549c418e6e42b",
+    "src/db_writer/write.rs": "e5e1856ceed991087ed69d5bf337bcd52ebbde0118b74f528438220cf4af4897",
+    "src/error.rs": "760cdf7c7744434ca4e4d60f701e02bfe99ec19c3c4745d8d8011c9a3cee93e4",
+    "src/execution/parallel.rs": "2c0973cc24637da4841d4603fb2b2df6f35de6ef6cb8a91ae89e779b8dcddabd",
+    "src/execution/run.rs": "35f2677f17822aac2ad90f0af1b0dc6f09c6f222acd78233769ee52f8e4c0f31",
+    "src/lib.rs": "509f314907f3860c8408f1ed32f8e94867ba79d906b01d7de2e7cc253910d751",
+    "src/materialization_worker.rs": "9512f83683901e5186ec3262e360ca733b39175f37a4cfb812441d55ad3daf55",
+    "src/process_lifecycle/mod.rs": "75b22b2db8dc471ed7d89e6982c9019b0a232bed411b9ae71b76b611d19241f6",
+    "src/process_lifecycle/windows.rs": "8e77aae5e43d84c59c3b143a91ca969a921f610b3abf7d1ca1e04767339e439f",
+    "src/protocol.rs": "a890e48f19cc6a21d5f753bf98b614e2c9d03896db7b830c0a449807a7d91c72",
+    "src/scan.rs": "04741059c6992f59f917eec89514a4674cf7fce80727d06f3cd32ffd2a346cb9",
+    "src/search_index/build.rs": "b7bb1a176951c81a2fd1d4bd0276ec92c132334d5bb6f12cb4c7b508af9ec875",
+    "src/search_index/io.rs": "ae4a620bd4958de7f5758322363e5aa367697106275dd8c2f54e4c6dddf59f51",
+    "src/search_index/mod.rs": "baa8c1ef3f4d840d757973baae21ee55491da190fad4228dc7fb13f9105b1fef",
+    "src/search_index/model.rs": "802670178e9af23a2ae615a51cdb08365ba1b0f8e441b477f617f6277f3a0389",
+    "src/search_index/read.rs": "103c69d3c8de3f45d33005cc2eb395bd5eaa3dc4fd79522699a80269c38c0940",
+    "src/search_index/tests.rs": "745f994751d697166e0236ee24a6a032ac5fd3903c564d12e97611809c9b9e9e",
+    "src/staging_writer/accumulator.rs": "2fa14e6f977981fa88ad44024bff7e3cd4fe33e8feebfc48e1ca45d919829915",
+    "src/staging_writer/spill.rs": "a1870eac16d7299ef937178b9520e68ff7603a308b7a5f59ed1b63c248035efd",
+    "src/staging_writer/tests.rs": "a500f7b2ad80e601a73e9dd0780106d305d74f842f654757099bf5daf69c3548",
+    "src/staging_writer/writer.rs": "7fec0e506c03a0707f92191e40fb21a2ccf0b0beb32d175ff10ae96315de4244",
+    "src/storage/containment.rs": "519c4f58c1d4be02970775b9ac1c341b5d05ef4523ae31909f429f804824f482",
+    "src/storage/maintenance_candidate.rs": "2d63f7e9950cd82784f84fb3cbffcb4ff266508949161ef65e5934d02ae4dd17",
+    "src/storage/maintenance_generations.rs": "3d2d2d0365bb86774fb65bddc61b11f6c79fd151db33a52cd2824bfcddb05c66",
+    "src/storage/maintenance_legacy_association.rs": "55f0f45c5b1a75f5a6a6ebada44d0b552cdb0275b3ac164f887c4e01fce8f7ac",
+    "src/storage/maintenance_ownership.rs": "760542a617a01a6bb09fe0ff75e052d6c66e6b9efbe8505d53ca8e22450cfafe",
+    "src/storage/test_harness.rs": "7023f205de1b9c16ac3ccdd1c87f44158595c423f5583a43ebed32d854b5f80e",
+    "tests/coordinator_process.rs": "4ffc40b55894159a45df943f5b924ea267e7781da6b4e20e036ebc05e358845a",
+    "tests/copy_phase_process.rs": "dbff1132733d5557a7108033f9bb41b8e5968357614c1b1bb8a4344fc046424b",
+    "tests/generation_storage.rs": "ab0628e9ec2b1ba42d873b4a399ad90632ad11a083fc16e5902c78eabd8d1807",
+    "tests/refresh_recovery_process.rs": "56c4133d2c75aa7b248d84ab1fc9b8aae8ef1b29fb4808155d70e201e07db248",
+    "tests/support/lifecycle_faults.rs": "6fa03996e99accc18adda746fbb376d55c35a8191a14ce261e918243154175a7",
+    "tests/support/storage_maintenance/collector.rs": "46ceff561e3252155dba410ff646f7cf25f5eb21960fee27f2dd9a7c57303a2c",
+    "tests/support/storage_maintenance/workload.rs": "9548cc7b66402bfc8af53031edfd6d8bcac73b38897d7fc7f63194b2aeec1008"
+  }
+}

@@ -1,0 +1,2701 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="nextest-run" tests="267" failures="0" errors="0" uuid="d5af3ac6-36ed-440d-8e5e-a73d56ee877f" timestamp="2026-10-27T13:21:34.026+09:30" time="55.753">
+    <testsuite name="codebase-graph::storage_foundation" tests="267" disabled="0" errors="0" failures="0">
+        <testcase name="atomic_write_failure_preserves_existing_file_and_cleans_temp" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:34.027+09:30" time="0.019">
+            <system-out>
+running 1 test
+test atomic_write_failure_preserves_existing_file_and_cleans_temp ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="control_lease_rejects_a_symlinked_lock_file" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:34.046+09:30" time="0.009">
+            <system-out>
+running 1 test
+test control_lease_rejects_a_symlinked_lock_file ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="control_leases_are_exclusive_nonblocking_and_transfer_after_release" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:34.056+09:30" time="0.010">
+            <system-out>
+running 1 test
+test control_leases_are_exclusive_nonblocking_and_transfer_after_release ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="direct_committed_read_accepts_readonly_parent_with_existing_guards" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:34.066+09:30" time="0.055">
+            <system-out>
+running 1 test
+test direct_committed_read_accepts_readonly_parent_with_existing_guards ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.05s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="direct_committed_read_preserves_corrupt_registration" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:34.121+09:30" time="0.053">
+            <system-out>
+running 1 test
+test direct_committed_read_preserves_corrupt_registration ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.04s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="direct_committed_read_preserves_missing_registration" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:34.174+09:30" time="0.054">
+            <system-out>
+running 1 test
+test direct_committed_read_preserves_missing_registration ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.04s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="direct_committed_registered_pair_reads_after_publication" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:34.228+09:30" time="0.122">
+            <system-out>
+running 1 test
+test direct_committed_registered_pair_reads_after_publication ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.11s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="direct_control_lock_paths_are_stable_and_destination_scoped" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:34.350+09:30" time="0.011">
+            <system-out>
+running 1 test
+test direct_control_lock_paths_are_stable_and_destination_scoped ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="direct_phase_unknown_preserves_base_and_blocks_publish_replay_and_cleanup" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:34.361+09:30" time="0.153">
+            <system-out>
+running 1 test
+test direct_phase_unknown_preserves_base_and_blocks_publish_replay_and_cleanup ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.14s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="direct_prepared_recovery_preserves_expected_sidecars_on_validation_failure" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:34.514+09:30" time="0.487">
+            <system-out>
+running 1 test
+test direct_prepared_recovery_preserves_expected_sidecars_on_validation_failure ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.47s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="direct_recovery_replays_every_rename_and_checkpoint" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:35.001+09:30" time="15.319">
+            <system-out>
+running 1 test
+test direct_recovery_replays_every_rename_and_checkpoint ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 15.28s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="direct_store_recovers_database_manifest_and_committed_journal_phases" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:50.321+09:30" time="0.117">
+            <system-out>
+running 1 test
+test direct_store_recovers_database_manifest_and_committed_journal_phases ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.10s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="direct_store_recovers_interrupted_publication_with_sidecars_and_split_parents" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:50.437+09:30" time="0.093">
+            <system-out>
+running 1 test
+test direct_store_recovers_interrupted_publication_with_sidecars_and_split_parents ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.08s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="direct_store_rejects_forged_journal_candidate_paths" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:50.530+09:30" time="0.031">
+            <system-out>
+running 1 test
+test direct_store_rejects_forged_journal_candidate_paths ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.02s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="direct_write_session_holds_writer_lock_and_drop_cleans_unpublished_candidates" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:50.561+09:30" time="0.071">
+            <system-out>
+running 1 test
+test direct_write_session_holds_writer_lock_and_drop_cleans_unpublished_candidates ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.06s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="empty_prelease_startup_is_retired_and_does_not_block_next_writer" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:50.632+09:30" time="0.093">
+            <system-out>
+running 1 test
+test empty_prelease_startup_is_retired_and_does_not_block_next_writer ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.08s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="error::tests::source_change_failure_has_a_stable_machine_readable_message" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:50.725+09:30" time="0.013">
+            <system-out>
+running 1 test
+test error::tests::source_change_failure_has_a_stable_machine_readable_message ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="existing_lock_probe_does_not_recreate_a_vanished_workspace" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:50.738+09:30" time="0.012">
+            <system-out>
+running 1 test
+test existing_lock_probe_does_not_recreate_a_vanished_workspace ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="final_containment_verification_requires_prior_retirement_without_writing" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:50.750+09:30" time="0.032">
+            <system-out>
+running 1 test
+test final_containment_verification_requires_prior_retirement_without_writing ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.02s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="managed_abort_and_drop_retain_runs_while_phase_unknown" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:50.782+09:30" time="0.292">
+            <system-out>
+running 1 test
+test managed_abort_and_drop_retain_runs_while_phase_unknown ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.28s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="managed_begin_write_holds_writer_lock_and_marks_candidate_ready_explicitly" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:51.074+09:30" time="0.119">
+            <system-out>
+running 1 test
+test managed_begin_write_holds_writer_lock_and_marks_candidate_ready_explicitly ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.11s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="managed_cleanup_recovers_published_crash_after_active_pointer_write" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:51.194+09:30" time="0.239">
+            <system-out>
+running 1 test
+test managed_cleanup_recovers_published_crash_after_active_pointer_write ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.22s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="managed_cleanup_recovers_publishing_crash_after_active_pointer_write" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:51.433+09:30" time="0.242">
+            <system-out>
+running 1 test
+test managed_cleanup_recovers_publishing_crash_after_active_pointer_write ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.23s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="managed_cleanup_recovers_publishing_crash_after_generation_rename" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:51.676+09:30" time="0.263">
+            <system-out>
+running 1 test
+test managed_cleanup_recovers_publishing_crash_after_generation_rename ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.24s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="managed_cleanup_recovers_publishing_crash_before_generation_rename" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:51.939+09:30" time="0.257">
+            <system-out>
+running 1 test
+test managed_cleanup_recovers_publishing_crash_before_generation_rename ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.24s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="managed_cleanup_reports_and_later_removes_locked_runs" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:52.196+09:30" time="0.075">
+            <system-out>
+running 1 test
+test managed_cleanup_reports_and_later_removes_locked_runs ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.06s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="managed_control_lock_paths_are_stable_and_role_scoped" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:52.271+09:30" time="0.015">
+            <system-out>
+running 1 test
+test managed_control_lock_paths_are_stable_and_role_scoped ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="managed_last_reader_drop_triggers_best_effort_retirement_cleanup" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:52.286+09:30" time="0.312">
+            <system-out>
+running 1 test
+test managed_last_reader_drop_triggers_best_effort_retirement_cleanup ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.30s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="managed_metadata_sizes_include_db_sidecars_and_allocated_bytes" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:52.599+09:30" time="0.141">
+            <system-out>
+running 1 test
+test managed_metadata_sizes_include_db_sidecars_and_allocated_bytes ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.13s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="managed_phase_unknown_preserves_candidate_and_active_read_until_empty" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:52.740+09:30" time="0.314">
+            <system-out>
+running 1 test
+test managed_phase_unknown_preserves_candidate_and_active_read_until_empty ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.30s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="managed_publish_reconciles_an_error_after_active_pointer_commit" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:53.054+09:30" time="0.290">
+            <system-out>
+running 1 test
+test managed_publish_reconciles_an_error_after_active_pointer_commit ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.28s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="managed_publish_rejects_a_stale_base_generation" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:53.345+09:30" time="0.136">
+            <system-out>
+running 1 test
+test managed_publish_rejects_a_stale_base_generation ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.12s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="managed_store_rejects_untrusted_generation_ids" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:53.481+09:30" time="0.053">
+            <system-out>
+running 1 test
+test managed_store_rejects_untrusted_generation_ids ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.04s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="managed_writer_is_serialized_across_sessions" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:53.534+09:30" time="0.088">
+            <system-out>
+running 1 test
+test managed_writer_is_serialized_across_sessions ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.08s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="missing_lease_with_any_launch_evidence_remains_unknown" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:53.622+09:30" time="0.016">
+            <system-out>
+running 1 test
+test missing_lease_with_any_launch_evidence_remains_unknown ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="owned_writer_cleanup_reports_readers_and_collects_after_their_release" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:53.638+09:30" time="0.309">
+            <system-out>
+running 1 test
+test owned_writer_cleanup_reports_readers_and_collects_after_their_release ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.30s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="persisted_relative_barrier_survives_cleanup_from_a_different_process_cwd" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:53.947+09:30" time="0.124">
+            <system-out>
+running 1 test
+test persisted_relative_barrier_survives_cleanup_from_a_different_process_cwd ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.11s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="persisted_run_barrier_survives_drop_and_blocks_generic_orphan_collection" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:54.071+09:30" time="0.102">
+            <system-out>
+running 1 test
+test persisted_run_barrier_survives_drop_and_blocks_generic_orphan_collection ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.09s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="phase_registry_collection_retains_unknown_siblings_then_reclaims_empty_orphans" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:54.173+09:30" time="0.053">
+            <system-out>
+running 1 test
+test phase_registry_collection_retains_unknown_siblings_then_reclaims_empty_orphans ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.04s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="phase_registry_probe_never_recreates_missing_roots_or_locks" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:54.226+09:30" time="0.013">
+            <system-out>
+running 1 test
+test phase_registry_probe_never_recreates_missing_roots_or_locks ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="private_lifecycle_receipt_accepts_ancestor_alias_but_rejects_foreign_or_symlink_roots" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:54.239+09:30" time="0.068">
+            <system-out>
+running 1 test
+test private_lifecycle_receipt_accepts_ancestor_alias_but_rejects_foreign_or_symlink_roots ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.06s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="process_lifecycle::tests::accepted_nonblocking_socket_is_normalized_for_control_frames" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:54.307+09:30" time="0.012">
+            <system-out>
+running 1 test
+test process_lifecycle::tests::accepted_nonblocking_socket_is_normalized_for_control_frames ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="process_lifecycle::tests::bounded_protocol_rejects_unterminated_control_frame" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:54.320+09:30" time="0.013">
+            <system-out>
+running 1 test
+test process_lifecycle::tests::bounded_protocol_rejects_unterminated_control_frame ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="process_lifecycle::tests::capability_json_is_private_at_creation_and_after_replacement" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:54.333+09:30" time="0.021">
+            <system-out>
+running 1 test
+test process_lifecycle::tests::capability_json_is_private_at_creation_and_after_replacement ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="process_lifecycle::tests::retired_startup_rejects_late_guardian_before_child_creation" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:54.354+09:30" time="0.020">
+            <system-out>
+running 1 test
+test process_lifecycle::tests::retired_startup_rejects_late_guardian_before_child_creation ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="process_lifecycle::tests::slow_trickle_cannot_extend_control_frame_deadline" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:54.374+09:30" time="0.136">
+            <system-out>
+running 1 test
+test process_lifecycle::tests::slow_trickle_cannot_extend_control_frame_deadline ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.13s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="process_lifecycle::tests::workspace_without_global_state_remains_protected_by_guardian_lease" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:54.509+09:30" time="0.019">
+            <system-out>
+running 1 test
+test process_lifecycle::tests::workspace_without_global_state_remains_protected_by_guardian_lease ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="process_lifecycle::unix::tests::absent_proof_never_establishes_emptiness" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:54.529+09:30" time="0.012">
+            <system-out>
+running 1 test
+test process_lifecycle::unix::tests::absent_proof_never_establishes_emptiness ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="process_lifecycle::unix::tests::fifo_writer_controls_empty_proof" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:54.540+09:30" time="0.012">
+            <system-out>
+running 1 test
+test process_lifecycle::unix::tests::fifo_writer_controls_empty_proof ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="process_lifecycle::unix::tests::proof_without_ready_retains_live_writers_then_allows_empty_recovery" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:54.552+09:30" time="0.022">
+            <system-out>
+running 1 test
+test process_lifecycle::unix::tests::proof_without_ready_retains_live_writers_then_allows_empty_recovery ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="process_lifecycle::unix::tests::recovery_rejects_regular_files_symlinks_and_replaced_fifo_identity" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:54.574+09:30" time="0.013">
+            <system-out>
+running 1 test
+test process_lifecycle::unix::tests::recovery_rejects_regular_files_symlinks_and_replaced_fifo_identity ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="process_lifecycle::unix::tests::stopped_owned_child_is_not_an_exit_and_resume_or_cancellation_still_completes" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:54.587+09:30" time="0.043">
+            <system-out>
+running 1 test
+test process_lifecycle::unix::tests::stopped_owned_child_is_not_an_exit_and_resume_or_cancellation_still_completes ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.03s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="process_rss::tests::allocator_pressure_relief_is_safe_at_phase_boundaries" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:54.630+09:30" time="0.010">
+            <system-out>
+running 1 test
+test process_rss::tests::allocator_pressure_relief_is_safe_at_phase_boundaries ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="process_rss::tests::sampler_reports_current_process_memory_charge" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:54.640+09:30" time="0.010">
+            <system-out>
+running 1 test
+test process_rss::tests::sampler_reports_current_process_memory_charge ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="relative_registry_probe_matches_absolute_private_descriptor" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:54.650+09:30" time="0.027">
+            <system-out>
+running 1 test
+test relative_registry_probe_matches_absolute_private_descriptor ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.02s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="run_workspace_cleanup_rejects_symlink_content" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:54.676+09:30" time="0.074">
+            <system-out>
+running 1 test
+test run_workspace_cleanup_rejects_symlink_content ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.06s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::atomic::tests::atomic_temp_paths_are_scoped_to_the_writer_process" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:54.750+09:30" time="0.010">
+            <system-out>
+running 1 test
+test storage::atomic::tests::atomic_temp_paths_are_scoped_to_the_writer_process ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::containment::tests::windows_job_name_does_not_expose_or_depend_on_control_nonce" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:54.760+09:30" time="0.009">
+            <system-out>
+running 1 test
+test storage::containment::tests::windows_job_name_does_not_expose_or_depend_on_control_nonce ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::containment::tests::windows_job_name_rejects_malformed_build_identity" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:54.770+09:30" time="0.009">
+            <system-out>
+running 1 test
+test storage::containment::tests::windows_job_name_rejects_malformed_build_identity ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::inventory::tests::bounded_detailed_inventory_retains_overdeep_state_and_reports_unknown_totals" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:54.779+09:30" time="0.036">
+            <system-out>
+running 1 test
+test storage::inventory::tests::bounded_detailed_inventory_retains_overdeep_state_and_reports_unknown_totals ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.03s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::inventory::tests::busy_writer_is_reported_without_waiting_or_mutation" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:54.815+09:30" time="0.015">
+            <system-out>
+running 1 test
+test storage::inventory::tests::busy_writer_is_reported_without_waiting_or_mutation ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::inventory::tests::configured_ancestor_root_is_rejected_without_scanning_sources" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:54.831+09:30" time="0.012">
+            <system-out>
+running 1 test
+test storage::inventory::tests::configured_ancestor_root_is_rejected_without_scanning_sources ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::inventory::tests::dc_s1_a1_classifies_and_counts_active_live_recovery_and_legacy" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:54.843+09:30" time="0.019">
+            <system-out>
+running 1 test
+test storage::inventory::tests::dc_s1_a1_classifies_and_counts_active_live_recovery_and_legacy ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::inventory::tests::dc_s1_a2_missing_and_dropped_observations_do_not_create_or_repair" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:54.862+09:30" time="0.019">
+            <system-out>
+running 1 test
+test storage::inventory::tests::dc_s1_a2_missing_and_dropped_observations_do_not_create_or_repair ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err>
+thread &apos;storage::inventory::tests::dc_s1_a2_missing_and_dropped_observations_do_not_create_or_repair&apos; (34414930) panicked at src/storage/./inventory.rs:2515:51:
+interrupted observation
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+</system-err>
+        </testcase>
+        <testcase name="storage::inventory::tests::dc_s1_a3_constant_pointer_does_not_hide_artifact_and_run_mutations" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:54.881+09:30" time="0.017">
+            <system-out>
+running 1 test
+test storage::inventory::tests::dc_s1_a3_constant_pointer_does_not_hide_artifact_and_run_mutations ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::inventory::tests::dc_s1_a3_invalid_pointer_and_foreign_direct_are_retained" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:54.899+09:30" time="0.013">
+            <system-out>
+running 1 test
+test storage::inventory::tests::dc_s1_a3_invalid_pointer_and_foreign_direct_are_retained ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::inventory::tests::dc_s1_a3_symlinks_are_not_followed_and_sizes_are_unknown" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:54.912+09:30" time="0.016">
+            <system-out>
+running 1 test
+test storage::inventory::tests::dc_s1_a3_symlinks_are_not_followed_and_sizes_are_unknown ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::inventory::tests::dc_s1_a4_repeat_observation_is_deterministic" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:54.928+09:30" time="0.017">
+            <system-out>
+running 1 test
+test storage::inventory::tests::dc_s1_a4_repeat_observation_is_deterministic ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::inventory::tests::existing_live_lease_is_observed_without_recovery" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:54.945+09:30" time="0.015">
+            <system-out>
+running 1 test
+test storage::inventory::tests::existing_live_lease_is_observed_without_recovery ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::inventory::tests::hardlinked_direct_identity_is_unknown" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:54.959+09:30" time="0.015">
+            <system-out>
+running 1 test
+test storage::inventory::tests::hardlinked_direct_identity_is_unknown ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::inventory::tests::physical_hardlinks_count_once_and_allocation_uses_filesystem_blocks" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:54.974+09:30" time="0.016">
+            <system-out>
+running 1 test
+test storage::inventory::tests::physical_hardlinks_count_once_and_allocation_uses_filesystem_blocks ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::inventory::tests::recognized_direct_pair_uses_repository_identity" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:54.990+09:30" time="0.015">
+            <system-out>
+running 1 test
+test storage::inventory::tests::recognized_direct_pair_uses_repository_identity ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::inventory::tests::review_bound_external_store_survives_missing_conventional_state" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.004+09:30" time="0.015">
+            <system-out>
+running 1 test
+test storage::inventory::tests::review_bound_external_store_survives_missing_conventional_state ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::inventory::tests::review_case_alias_roots_are_rejected_without_double_counting" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.020+09:30" time="0.014">
+            <system-out>
+running 1 test
+test storage::inventory::tests::review_case_alias_roots_are_rejected_without_double_counting ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::inventory::tests::review_complete_root_reconciliation_is_insertion_order_independent" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.033+09:30" time="0.013">
+            <system-out>
+running 1 test
+test storage::inventory::tests::review_complete_root_reconciliation_is_insertion_order_independent ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::inventory::tests::review_config_repository_parent_traversal_cannot_erase_symlink" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.047+09:30" time="0.014">
+            <system-out>
+running 1 test
+test storage::inventory::tests::review_config_repository_parent_traversal_cannot_erase_symlink ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::inventory::tests::review_config_storage_parent_traversal_cannot_erase_symlink_or_missing_component" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.061+09:30" time="0.014">
+            <system-out>
+running 1 test
+test storage::inventory::tests::review_config_storage_parent_traversal_cannot_erase_symlink_or_missing_component ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::inventory::tests::review_configured_storage_cannot_be_overridden_with_unselected_local_root" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.075+09:30" time="0.015">
+            <system-out>
+running 1 test
+test storage::inventory::tests::review_configured_storage_cannot_be_overridden_with_unselected_local_root ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::inventory::tests::review_current_configuration_is_revalidated_on_every_observation" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.090+09:30" time="0.014">
+            <system-out>
+running 1 test
+test storage::inventory::tests::review_current_configuration_is_revalidated_on_every_observation ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::inventory::tests::review_default_direct_only_is_current_graph_and_cache" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.104+09:30" time="0.016">
+            <system-out>
+running 1 test
+test storage::inventory::tests::review_default_direct_only_is_current_graph_and_cache ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::inventory::tests::review_direct_cache_inside_managed_root_is_rejected" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.121+09:30" time="0.013">
+            <system-out>
+running 1 test
+test storage::inventory::tests::review_direct_cache_inside_managed_root_is_rejected ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::inventory::tests::review_explicit_direct_alongside_managed_is_current" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.134+09:30" time="0.016">
+            <system-out>
+running 1 test
+test storage::inventory::tests::review_explicit_direct_alongside_managed_is_current ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::inventory::tests::review_external_config_requires_matching_repository_binding" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.150+09:30" time="0.014">
+            <system-out>
+running 1 test
+test storage::inventory::tests::review_external_config_requires_matching_repository_binding ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::inventory::tests::review_external_current_direct_config_observes_exact_bundle_without_local_state" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.164+09:30" time="0.015">
+            <system-out>
+running 1 test
+test storage::inventory::tests::review_external_current_direct_config_observes_exact_bundle_without_local_state ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::inventory::tests::review_managed_config_makes_unselected_default_direct_former" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.179+09:30" time="0.017">
+            <system-out>
+running 1 test
+test storage::inventory::tests::review_managed_config_makes_unselected_default_direct_former ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::inventory::tests::review_managed_root_inside_direct_cache_is_rejected" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.196+09:30" time="0.013">
+            <system-out>
+running 1 test
+test storage::inventory::tests::review_managed_root_inside_direct_cache_is_rejected ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::inventory::tests::review_raw_config_direct_spelling_selects_matching_cache" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.209+09:30" time="0.022">
+            <system-out>
+running 1 test
+test storage::inventory::tests::review_raw_config_direct_spelling_selects_matching_cache ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::inventory::tests::review_real_directory_dot_parent_config_paths_remain_supported" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.231+09:30" time="0.017">
+            <system-out>
+running 1 test
+test storage::inventory::tests::review_real_directory_dot_parent_config_paths_remain_supported ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::inventory::tests::review_scope_rejects_source_state_and_unregistered_external_storage" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.248+09:30" time="0.014">
+            <system-out>
+running 1 test
+test storage::inventory::tests::review_scope_rejects_source_state_and_unregistered_external_storage ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::locks::fixed_control_tests::dc_control_scratch_uses_small_worker_frame_and_retains_reserved_path_storage" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.262+09:30" time="0.009">
+            <system-out>
+running 1 test
+test storage::locks::fixed_control_tests::dc_control_scratch_uses_small_worker_frame_and_retains_reserved_path_storage ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::locks::fixed_control_tests::dc_coordination_nonce_initializes_only_exclusive_empty_creation_and_is_immutable" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.272+09:30" time="0.020">
+            <system-out>
+running 1 test
+test storage::locks::fixed_control_tests::dc_coordination_nonce_initializes_only_exclusive_empty_creation_and_is_immutable ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::locks::fixed_control_tests::dc_fixed_stamp_facts_cross_threads_but_actual_authority_cannot" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.291+09:30" time="0.009">
+            <system-out>
+running 1 test
+test storage::locks::fixed_control_tests::dc_fixed_stamp_facts_cross_threads_but_actual_authority_cannot ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::locks::fixed_control_tests::dc_fixed_stamp_open_read_and_recheck_are_noncreating_and_bounded" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.301+09:30" time="0.010">
+            <system-out>
+running 1 test
+test storage::locks::fixed_control_tests::dc_fixed_stamp_open_read_and_recheck_are_noncreating_and_bounded ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::locks::fixed_control_tests::dc_fixed_stamp_path_free_lock_release_and_identity_composition" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.311+09:30" time="0.011">
+            <system-out>
+running 1 test
+test storage::locks::fixed_control_tests::dc_fixed_stamp_path_free_lock_release_and_identity_composition ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::locks::fixed_control_tests::dc_fixed_stamp_rejects_in_place_change_and_new_public_incarnation" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.322+09:30" time="0.016">
+            <system-out>
+running 1 test
+test storage::locks::fixed_control_tests::dc_fixed_stamp_rejects_in_place_change_and_new_public_incarnation ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::locks::fixed_control_tests::dc_fixed_stamp_rejects_symlinks_hardlinks_and_nonregular_controls" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.338+09:30" time="0.012">
+            <system-out>
+running 1 test
+test storage::locks::fixed_control_tests::dc_fixed_stamp_rejects_symlinks_hardlinks_and_nonregular_controls ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::locks::fixed_control_tests::dc_fixed_stamp_same_length_write_with_restored_mtime_stays_changed" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.349+09:30" time="0.017">
+            <system-out>
+running 1 test
+test storage::locks::fixed_control_tests::dc_fixed_stamp_same_length_write_with_restored_mtime_stays_changed ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::locks::fixed_control_tests::dc_fixed_stamp_scratch_uses_shared_reservation_and_releases_it" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.367+09:30" time="0.009">
+            <system-out>
+running 1 test
+test storage::locks::fixed_control_tests::dc_fixed_stamp_scratch_uses_shared_reservation_and_releases_it ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::locks::rooted_directory_tests::dc_directory_hints_keep_verified_directories_and_reject_file_aliases" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.376+09:30" time="0.019">
+            <system-out>
+running 1 test
+test storage::locks::rooted_directory_tests::dc_directory_hints_keep_verified_directories_and_reject_file_aliases ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::locks::rooted_directory_tests::dc_fifo_creation_pin_blocks_inode_aba_and_rejects_aliases" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.395+09:30" time="0.027">
+            <system-out>
+running 1 test
+test storage::locks::rooted_directory_tests::dc_fifo_creation_pin_blocks_inode_aba_and_rejects_aliases ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.02s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::locks::rooted_directory_tests::dc_fifo_creation_pin_never_adopts_pin_collision_or_regular_file" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.422+09:30" time="0.011">
+            <system-out>
+running 1 test
+test storage::locks::rooted_directory_tests::dc_fifo_creation_pin_never_adopts_pin_collision_or_regular_file ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::locks::rooted_directory_tests::dc_nonce_promotion_requires_the_exact_existing_creation_tag" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.433+09:30" time="0.019">
+            <system-out>
+running 1 test
+test storage::locks::rooted_directory_tests::dc_nonce_promotion_requires_the_exact_existing_creation_tag ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::locks::rooted_directory_tests::dc_rooted_component_validation_is_noncreating_and_accepts_exact_key64" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.452+09:30" time="0.010">
+            <system-out>
+running 1 test
+test storage::locks::rooted_directory_tests::dc_rooted_component_validation_is_noncreating_and_accepts_exact_key64 ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::locks::rooted_directory_tests::dc_rooted_file_rename_is_no_replace_and_checks_exact_source_identity" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.462+09:30" time="0.010">
+            <system-out>
+running 1 test
+test storage::locks::rooted_directory_tests::dc_rooted_file_rename_is_no_replace_and_checks_exact_source_identity ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::locks::rooted_directory_tests::dc_rooted_namespace_no_replace_and_exact_empty_removal_preserve_foreign_entries" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.472+09:30" time="0.019">
+            <system-out>
+running 1 test
+test storage::locks::rooted_directory_tests::dc_rooted_namespace_no_replace_and_exact_empty_removal_preserve_foreign_entries ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::locks::rooted_directory_tests::dc_rooted_nonfollowing_open_rejects_symlinks_and_hardlinked_controls" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.492+09:30" time="0.010">
+            <system-out>
+running 1 test
+test storage::locks::rooted_directory_tests::dc_rooted_nonfollowing_open_rejects_symlinks_and_hardlinked_controls ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::locks::rooted_directory_tests::dc_rooted_operations_remain_on_actual_parent_after_public_name_substitution" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.502+09:30" time="0.011">
+            <system-out>
+running 1 test
+test storage::locks::rooted_directory_tests::dc_rooted_operations_remain_on_actual_parent_after_public_name_substitution ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::locks::rooted_directory_tests::dc_rooted_readonly_payload_access_needs_no_payload_write_permission" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.513+09:30" time="0.010">
+            <system-out>
+running 1 test
+test storage::locks::rooted_directory_tests::dc_rooted_readonly_payload_access_needs_no_payload_write_permission ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::locks::rooted_directory_tests::interrupted_directory_scan_restarts_on_the_pinned_root_after_name_replacement" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.523+09:30" time="0.031">
+            <system-out>
+running 1 test
+test storage::locks::rooted_directory_tests::interrupted_directory_scan_restarts_on_the_pinned_root_after_name_replacement ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.02s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::locks::rooted_directory_tests::metadata_validation_preserves_private_creator_sharing_and_identity" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.554+09:30" time="0.012">
+            <system-out>
+running 1 test
+test storage::locks::rooted_directory_tests::metadata_validation_preserves_private_creator_sharing_and_identity ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::locks::rooted_directory_tests::namespace_flush_accepts_an_existing_readonly_directory_anchor" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.566+09:30" time="0.018">
+            <system-out>
+running 1 test
+test storage::locks::rooted_directory_tests::namespace_flush_accepts_an_existing_readonly_directory_anchor ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::locks::rooted_directory_tests::nested_directory_scans_do_not_consume_the_outer_cursor" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.584+09:30" time="0.196">
+            <system-out>
+running 1 test
+test storage::locks::rooted_directory_tests::nested_directory_scans_do_not_consume_the_outer_cursor ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.19s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_admission::tests::canonical_large_registry_is_bounded_nonmutating_and_unknown_siblings_survive" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:55.780+09:30" time="0.302">
+            <system-out>
+running 1 test
+test storage::maintenance_admission::tests::canonical_large_registry_is_bounded_nonmutating_and_unknown_siblings_survive ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.29s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_admission::tests::canonical_live_producer_is_nonblocking_and_preparation_does_not_spend_grant" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:56.082+09:30" time="0.246">
+            <system-out>
+running 1 test
+test storage::maintenance_admission::tests::canonical_live_producer_is_nonblocking_and_preparation_does_not_spend_grant ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.23s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_admission::tests::canonical_metadata_composition_rejects_another_root_before_callback" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:56.329+09:30" time="0.250">
+            <system-out>
+running 1 test
+test storage::maintenance_admission::tests::canonical_metadata_composition_rejects_another_root_before_callback ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.24s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_admission::tests::canonical_ready_holds_actual_guards_and_compares_before_own_epoch" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:56.579+09:30" time="0.128">
+            <system-out>
+running 1 test
+test storage::maintenance_admission::tests::canonical_ready_holds_actual_guards_and_compares_before_own_epoch ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.11s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_admission::tests::canonical_small_grant_and_panic_drop_actual_authority_before_work" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:56.707+09:30" time="0.139">
+            <system-out>
+running 1 test
+test storage::maintenance_admission::tests::canonical_small_grant_and_panic_drop_actual_authority_before_work ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.12s
+
+</system-out>
+            <system-err>
+thread &apos;storage::maintenance_admission::tests::canonical_small_grant_and_panic_drop_actual_authority_before_work&apos; (34415112) panicked at src/storage/./maintenance_admission.rs:1092:29:
+fixture callback unwind
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+</system-err>
+        </testcase>
+        <testcase name="storage::maintenance_admission::tests::canonical_stale_epoch_and_changed_config_never_enter_callback" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:56.846+09:30" time="0.135">
+            <system-out>
+running 1 test
+test storage::maintenance_admission::tests::canonical_stale_epoch_and_changed_config_never_enter_callback ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.12s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_admission::tests::legacy_request_source_missing_cache_is_noncreating_and_cannot_approve_later_birth" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:56.981+09:30" time="0.122">
+            <system-out>
+running 1 test
+test storage::maintenance_admission::tests::legacy_request_source_missing_cache_is_noncreating_and_cannot_approve_later_birth ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.11s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_admission::tests::legacy_request_source_replacement_invalidates_confirmation_without_rebinding_runtime" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:57.103+09:30" time="0.125">
+            <system-out>
+running 1 test
+test storage::maintenance_admission::tests::legacy_request_source_replacement_invalidates_confirmation_without_rebinding_runtime ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.11s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_admission::tests::local_epoch_invalidates_current_counter_while_unrelated_shared_producer_stays_live" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:57.228+09:30" time="0.129">
+            <system-out>
+running 1 test
+test storage::maintenance_admission::tests::local_epoch_invalidates_current_counter_while_unrelated_shared_producer_stays_live ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.11s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_admission::tests::private_metadata_composes_actual_canonical_root_and_selector_without_reacquisition" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:57.357+09:30" time="0.152">
+            <system-out>
+running 1 test
+test storage::maintenance_admission::tests::private_metadata_composes_actual_canonical_root_and_selector_without_reacquisition ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.13s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_admission::tests::private_metadata_composes_actual_owned_root_without_reacquisition" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:57.509+09:30" time="0.137">
+            <system-out>
+running 1 test
+test storage::maintenance_admission::tests::private_metadata_composes_actual_owned_root_without_reacquisition ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.12s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_admission::tests::private_metadata_owner_keeps_preparation_images_in_charged_boxes" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:57.646+09:30" time="0.016">
+            <system-out>
+running 1 test
+test storage::maintenance_admission::tests::private_metadata_owner_keeps_preparation_images_in_charged_boxes ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_admission::tests::private_metadata_partial_frame_and_reset_preserve_unknown_bytes" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:57.662+09:30" time="0.244">
+            <system-out>
+running 1 test
+test storage::maintenance_admission::tests::private_metadata_partial_frame_and_reset_preserve_unknown_bytes ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.23s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_admission::tests::private_metadata_resumes_each_durable_control_cut_from_same_bound_files" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:57.907+09:30" time="0.392">
+            <system-out>
+running 1 test
+test storage::maintenance_admission::tests::private_metadata_resumes_each_durable_control_cut_from_same_bound_files ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.38s
+
+</system-out>
+            <system-err>
+thread &apos;storage::maintenance_admission::tests::private_metadata_resumes_each_durable_control_cut_from_same_bound_files&apos; (34415141) panicked at src/storage/./maintenance_admission.rs:1990:21:
+fixture durable metadata write cut
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+thread &apos;storage::maintenance_admission::tests::private_metadata_resumes_each_durable_control_cut_from_same_bound_files&apos; (34415141) panicked at src/storage/./maintenance_admission.rs:1990:21:
+fixture durable metadata write cut
+
+thread &apos;storage::maintenance_admission::tests::private_metadata_resumes_each_durable_control_cut_from_same_bound_files&apos; (34415141) panicked at src/storage/./maintenance_admission.rs:1990:21:
+fixture durable metadata write cut
+</system-err>
+        </testcase>
+        <testcase name="storage::maintenance_admission::tests::private_metadata_stages_over_one_hundred_frames_without_advancing_source_epoch" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:21:58.299+09:30" time="2.970">
+            <system-out>
+running 1 test
+test storage::maintenance_admission::tests::private_metadata_stages_over_one_hundred_frames_without_advancing_source_epoch ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 2.96s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_admission::tests::simultaneous_preparations_fit_one_account_without_maximum_path_overcharges" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:01.269+09:30" time="0.119">
+            <system-out>
+running 1 test
+test storage::maintenance_admission::tests::simultaneous_preparations_fit_one_account_without_maximum_path_overcharges ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.11s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_admission::tests::target_binding_duplicate_retains_actual_legacy_objects_and_same_challenge" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:01.388+09:30" time="0.111">
+            <system-out>
+running 1 test
+test storage::maintenance_admission::tests::target_binding_duplicate_retains_actual_legacy_objects_and_same_challenge ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.10s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_budget::tests::dc_grant_zero_entry101_deadline_and_atomic_transition" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:01.500+09:30" time="0.012">
+            <system-out>
+running 1 test
+test storage::maintenance_budget::tests::dc_grant_zero_entry101_deadline_and_atomic_transition ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_budget::tests::dc_memory_box_alignment_exact_charge_and_drop_order" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:01.512+09:30" time="0.011">
+            <system-out>
+running 1 test
+test storage::maintenance_budget::tests::dc_memory_box_alignment_exact_charge_and_drop_order ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_budget::tests::dc_memory_box_failed_reservation_and_panicking_pointee_release" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:01.523+09:30" time="0.012">
+            <system-out>
+running 1 test
+test storage::maintenance_budget::tests::dc_memory_box_failed_reservation_and_panicking_pointee_release ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err>
+thread &apos;storage::maintenance_budget::tests::dc_memory_box_failed_reservation_and_panicking_pointee_release&apos; (34415209) panicked at src/storage/./maintenance_budget.rs:504:17:
+expected pointee panic
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+</system-err>
+        </testcase>
+        <testcase name="storage::maintenance_budget::tests::dc_memory_box_fieldwise_large_initialization_is_charged_and_drops_once" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:01.535+09:30" time="0.011">
+            <system-out>
+running 1 test
+test storage::maintenance_budget::tests::dc_memory_box_fieldwise_large_initialization_is_charged_and_drops_once ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_budget::tests::dc_memory_box_into_inner_transfers_drop_once_and_releases_exact_charge" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:01.546+09:30" time="0.010">
+            <system-out>
+running 1 test
+test storage::maintenance_budget::tests::dc_memory_box_into_inner_transfers_drop_once_and_releases_exact_charge ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_budget::tests::dc_memory_checks_layout_overflow_and_duplicate_buffers" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:01.556+09:30" time="0.009">
+            <system-out>
+running 1 test
+test storage::maintenance_budget::tests::dc_memory_checks_layout_overflow_and_duplicate_buffers ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_budget::tests::dc_memory_simultaneous_reservations_share_one_ceiling" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:01.566+09:30" time="0.009">
+            <system-out>
+running 1 test
+test storage::maintenance_budget::tests::dc_memory_simultaneous_reservations_share_one_ceiling ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_budget::tests::dc_memory_split_failure_and_account_lifetime" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:01.575+09:30" time="0.009">
+            <system-out>
+running 1 test
+test storage::maintenance_budget::tests::dc_memory_split_failure_and_account_lifetime ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_budget::tests::dc_memory_work_types_cross_threads" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:01.584+09:30" time="0.009">
+            <system-out>
+running 1 test
+test storage::maintenance_budget::tests::dc_memory_work_types_cross_threads ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_controls::factory_codec_tests::dc_control_binding_modes_are_explicit_and_reserve_unknown_bytes" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:01.594+09:30" time="0.010">
+            <system-out>
+running 1 test
+test storage::maintenance_controls::factory_codec_tests::dc_control_binding_modes_are_explicit_and_reserve_unknown_bytes ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_controls::tests::dc_control_codec_reserves_before_bytes_and_preserves_full_intended_slot" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:01.603+09:30" time="0.010">
+            <system-out>
+running 1 test
+test storage::maintenance_controls::tests::dc_control_codec_reserves_before_bytes_and_preserves_full_intended_slot ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_controls::tests::dc_control_independent_regions_recover_every_partial_write_cut" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:01.614+09:30" time="0.697">
+            <system-out>
+running 1 test
+test storage::maintenance_controls::tests::dc_control_independent_regions_recover_every_partial_write_cut ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.69s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_controls::tests::dc_control_invalid_witnesses_and_unrelated_generations_stay_unknown" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:02.311+09:30" time="0.010">
+            <system-out>
+running 1 test
+test storage::maintenance_controls::tests::dc_control_invalid_witnesses_and_unrelated_generations_stay_unknown ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_json::tests::dc_json_differential_producer_whitespace_hash" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:02.321+09:30" time="0.009">
+            <system-out>
+running 1 test
+test storage::maintenance_json::tests::dc_json_differential_producer_whitespace_hash ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_json::tests::dc_json_long_string_dense_values_fixed_account" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:02.331+09:30" time="0.184">
+            <system-out>
+running 1 test
+test storage::maintenance_json::tests::dc_json_long_string_dense_values_fixed_account ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.17s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_json::tests::dc_json_low_ceiling_releases_failed_construction" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:02.514+09:30" time="0.010">
+            <system-out>
+running 1 test
+test storage::maintenance_json::tests::dc_json_low_ceiling_releases_failed_construction ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_json::tests::dc_json_producer_defaults_and_nonfinite_are_only_facts" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:02.524+09:30" time="0.010">
+            <system-out>
+running 1 test
+test storage::maintenance_json::tests::dc_json_producer_defaults_and_nonfinite_are_only_facts ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_json::tests::dc_json_rejects_malformed_trailing_utf8_and_matches_loader_depth" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:02.534+09:30" time="0.010">
+            <system-out>
+running 1 test
+test storage::maintenance_json::tests::dc_json_rejects_malformed_trailing_utf8_and_matches_loader_depth ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_json::tests::dc_json_unicode_duplicate_keys_and_lexical_facts" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:02.544+09:30" time="0.009">
+            <system-out>
+running 1 test
+test storage::maintenance_json::tests::dc_json_unicode_duplicate_keys_and_lexical_facts ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_legacy_guard::source_observation_layout_tests::prepared_source_observation_keeps_snapshot_and_recovery_images_boxed" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:02.553+09:30" time="0.009">
+            <system-out>
+running 1 test
+test storage::maintenance_legacy_guard::source_observation_layout_tests::prepared_source_observation_keeps_snapshot_and_recovery_images_boxed ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_legacy_guard::tests::dc_legacy_staging_closed_record_refuses_new_actual_producer" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:02.562+09:30" time="0.035">
+            <system-out>
+running 1 test
+test storage::maintenance_legacy_guard::tests::dc_legacy_staging_closed_record_refuses_new_actual_producer ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.03s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_legacy_guard::tests::dc_legacy_staging_custom_root_is_not_enrolled_or_created" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:02.597+09:30" time="0.010">
+            <system-out>
+running 1 test
+test storage::maintenance_legacy_guard::tests::dc_legacy_staging_custom_root_is_not_enrolled_or_created ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_legacy_guard::tests::dc_legacy_staging_retains_actual_shared_gate_through_arc_result_lifetime" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:02.607+09:30" time="0.015">
+            <system-out>
+running 1 test
+test storage::maintenance_legacy_guard::tests::dc_legacy_staging_retains_actual_shared_gate_through_arc_result_lifetime ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_origin::tests::dc_origin_actual_creation_frames_interrupted_publication_and_torn_prefix" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:02.622+09:30" time="0.167">
+            <system-out>
+running 1 test
+test storage::maintenance_origin::tests::dc_origin_actual_creation_frames_interrupted_publication_and_torn_prefix ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.16s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_origin::tests::dc_origin_frames_fail_closed_on_wrong_key_scope_identity_and_extra_bytes" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:02.789+09:30" time="0.010">
+            <system-out>
+running 1 test
+test storage::maintenance_origin::tests::dc_origin_frames_fail_closed_on_wrong_key_scope_identity_and_extra_bytes ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_origin::workspace_origin_tests::workspace_control_binds_only_two_exact_names_and_never_complete" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:02.799+09:30" time="0.010">
+            <system-out>
+running 1 test
+test storage::maintenance_origin::workspace_origin_tests::workspace_control_binds_only_two_exact_names_and_never_complete ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_origin::workspace_origin_tests::workspace_fifo_proof_is_exact_creation_only_and_rejects_other_names" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:02.809+09:30" time="0.010">
+            <system-out>
+running 1 test
+test storage::maintenance_origin::workspace_origin_tests::workspace_fifo_proof_is_exact_creation_only_and_rejects_other_names ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_origin::workspace_origin_tests::workspace_frames_bind_exact_creation_and_completed_bytes" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:02.818+09:30" time="0.011">
+            <system-out>
+running 1 test
+test storage::maintenance_origin::workspace_origin_tests::workspace_frames_bind_exact_creation_and_completed_bytes ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_origin::workspace_origin_tests::workspace_matching_partial_completion_is_creation_only" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:02.830+09:30" time="0.010">
+            <system-out>
+running 1 test
+test storage::maintenance_origin::workspace_origin_tests::workspace_matching_partial_completion_is_creation_only ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::legacy_coverage::staged_gate_tests::staged_generation_gate_authenticates_each_restart_prefix_until_activation" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:02.840+09:30" time="0.185">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::legacy_coverage::staged_gate_tests::staged_generation_gate_authenticates_each_restart_prefix_until_activation ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.18s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_activity_excludes_snapshots_until_all_producers_finish" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:03.025+09:30" time="0.158">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_epoch_activity_excludes_snapshots_until_all_producers_finish ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.15s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_collector_composes_owned_exclusive_root_without_reacquisition" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:03.183+09:30" time="0.054">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_epoch_collector_composes_owned_exclusive_root_without_reacquisition ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.04s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_crash_before_effect_invalidates_prior_snapshot" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:03.237+09:30" time="0.173">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_epoch_crash_before_effect_invalidates_prior_snapshot ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.16s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_direct_recovery_invalidates_and_idle_read_does_not" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:03.411+09:30" time="0.205">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_epoch_direct_recovery_invalidates_and_idle_read_does_not ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.19s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_exhaustion_rejects_before_effects_and_releases_activity" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:03.615+09:30" time="0.163">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_epoch_exhaustion_rejects_before_effects_and_releases_activity ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.15s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_initial_creator_excludes_fresh_coverage_until_effects_finish" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:03.778+09:30" time="0.151">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_epoch_initial_creator_excludes_fresh_coverage_until_effects_finish ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.14s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_managed_publication_reader_drop_and_generation_removal" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:03.929+09:30" time="1.250">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_epoch_managed_publication_reader_drop_and_generation_removal ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 1.24s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_managed_recovery_promotion_invalidates_before_references_change" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:05.179+09:30" time="0.991">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_epoch_managed_recovery_promotion_invalidates_before_references_change ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.98s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_mismatched_producer_disables_existing_coverage_before_effects" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:06.170+09:30" time="0.159">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_epoch_mismatched_producer_disables_existing_coverage_before_effects ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.15s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_missing_or_unwritable_control_never_repairs_recognized_proof" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:06.329+09:30" time="0.160">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_epoch_missing_or_unwritable_control_never_repairs_recognized_proof ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.15s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_new_cache_cannot_initialize_old_reference_domain" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:06.490+09:30" time="0.053">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_epoch_new_cache_cannot_initialize_old_reference_domain ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.04s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_observer_is_noncreating_and_does_not_advance" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:06.543+09:30" time="0.155">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_epoch_observer_is_noncreating_and_does_not_advance ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.14s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_optional_direct_cleanup_preserves_committed_read_but_not_journal_replay" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:06.698+09:30" time="0.653">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_epoch_optional_direct_cleanup_preserves_committed_read_but_not_journal_replay ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.64s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_optional_managed_cleanup_preserves_committed_read_and_residue" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:07.352+09:30" time="3.743">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_epoch_optional_managed_cleanup_preserves_committed_read_and_residue ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 3.73s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_retained_observation_does_not_block_current_writer_or_reader" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:11.094+09:30" time="0.984">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_epoch_retained_observation_does_not_block_current_writer_or_reader ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.97s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_root_creation_nonce_is_bound_beyond_recycled_numeric_metadata" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:12.079+09:30" time="0.154">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_epoch_root_creation_nonce_is_bound_beyond_recycled_numeric_metadata ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.14s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_scope_writer_replacement_stays_unknown" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:12.232+09:30" time="0.160">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_epoch_scope_writer_replacement_stays_unknown ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.15s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_scoped_run_lifetime_and_orphan_removal_invalidate" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:12.393+09:30" time="0.542">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_epoch_scoped_run_lifetime_and_orphan_removal_invalidate ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.53s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_unassociated_old_orphan_is_preserved_without_repair" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:12.935+09:30" time="0.168">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_epoch_unassociated_old_orphan_is_preserved_without_repair ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.16s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_fixed_epoch_activity_contention_returns_and_preserves_caller_ownership" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:13.103+09:30" time="0.167">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_fixed_epoch_activity_contention_returns_and_preserves_caller_ownership ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.15s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_fixed_epoch_callback_error_and_unwind_release_owned_controls_only" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:13.270+09:30" time="0.307">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_fixed_epoch_callback_error_and_unwind_release_owned_controls_only ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.29s
+
+</system-out>
+            <system-err>
+thread &apos;storage::maintenance_ownership::tests::dc_fixed_epoch_callback_error_and_unwind_release_owned_controls_only&apos; (34415461) panicked at src/storage/./maintenance_ownership.rs:5345:21:
+fixture callback unwind
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+</system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_fixed_epoch_cohort_or_control_replacement_rejects_before_effect" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:13.577+09:30" time="0.312">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_fixed_epoch_cohort_or_control_replacement_rejects_before_effect ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.30s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_fixed_epoch_complete_effect_reservation_allows_its_last_reserved_entry" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:13.889+09:30" time="0.159">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_fixed_epoch_complete_effect_reservation_allows_its_last_reserved_entry ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.15s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_fixed_epoch_exact_compare_precedes_increment_and_retains_real_controls" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:14.049+09:30" time="0.158">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_fixed_epoch_exact_compare_precedes_increment_and_retains_real_controls ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.15s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_fixed_epoch_expired_grant_does_not_open_or_change_epoch_controls" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:14.207+09:30" time="0.157">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_fixed_epoch_expired_grant_does_not_open_or_change_epoch_controls ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.14s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_fixed_epoch_preparation_delay_does_not_consume_fresh_mutation_grant" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:14.364+09:30" time="0.276">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_fixed_epoch_preparation_delay_does_not_consume_fresh_mutation_grant ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.26s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_fixed_epoch_preparation_is_noncreating_and_rejects_exhausted_or_oversized_controls" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:14.640+09:30" time="0.153">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_fixed_epoch_preparation_is_noncreating_and_rejects_exhausted_or_oversized_controls ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.14s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_fixed_epoch_rejects_shared_writer_and_shared_root_without_reacquiring_them" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:14.794+09:30" time="0.175">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_fixed_epoch_rejects_shared_writer_and_shared_root_without_reacquiring_them ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.16s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_fixed_epoch_replaced_root_with_same_control_inodes_is_not_the_same_domain" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:14.968+09:30" time="0.155">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_fixed_epoch_replaced_root_with_same_control_inodes_is_not_the_same_domain ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.14s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_fixed_epoch_stale_preparation_never_adopts_an_unrelated_increment" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:15.124+09:30" time="0.155">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_fixed_epoch_stale_preparation_never_adopts_an_unrelated_increment ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.14s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_fixed_epoch_zero_and_short_grants_have_no_epoch_effect" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:15.279+09:30" time="0.459">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_fixed_epoch_zero_and_short_grants_have_no_epoch_effect ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.45s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_cache_consumer_is_existing_readonly_and_does_not_advance_or_decode_optional_proof" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:15.738+09:30" time="0.154">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_cache_consumer_is_existing_readonly_and_does_not_advance_or_decode_optional_proof ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.14s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_cache_consumer_missing_guard_never_creates_or_attests_caller_owned_root" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:15.893+09:30" time="0.049">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_cache_consumer_missing_guard_never_creates_or_attests_caller_owned_root ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.04s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_cohort_recycled_numeric_lock_identity_does_not_restore_creation" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:15.942+09:30" time="0.060">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_cohort_recycled_numeric_lock_identity_does_not_restore_creation ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.05s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_cohort_unknown_or_corrupt_creation_header_never_repairs_on_use_or_observation" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:16.002+09:30" time="0.089">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_cohort_unknown_or_corrupt_creation_header_never_repairs_on_use_or_observation ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.08s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_current_v2_receipt_and_unknown_v1_follow_existing_guardian_policy" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:16.091+09:30" time="0.075">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_current_v2_receipt_and_unknown_v1_follow_existing_guardian_policy ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.06s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_direct_borrowed_session_truthfully_defers_active_companions" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:16.166+09:30" time="0.097">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_direct_borrowed_session_truthfully_defers_active_companions ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.08s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_direct_reader_and_alternate_manifest_exclude_collector" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:16.263+09:30" time="0.121">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_direct_reader_and_alternate_manifest_exclude_collector ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.11s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_exact_borrowed_writer_requires_exclusive_exact_destination" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:16.384+09:30" time="0.051">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_exact_borrowed_writer_requires_exclusive_exact_destination ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.04s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_external_bound_managed_store_does_not_require_local_state" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:16.435+09:30" time="0.095">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_external_bound_managed_store_does_not_require_local_state ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.08s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_factory_creates_bound_fixed_names_before_tracked_producer_use" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:16.531+09:30" time="0.175">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_factory_creates_bound_fixed_names_before_tracked_producer_use ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.16s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_factory_partial_names_are_never_repaired_or_retried_on_acquisition" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:16.705+09:30" time="0.058">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_factory_partial_names_are_never_repaired_or_retried_on_acquisition ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.05s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_family_group_deduplicates_same_parent_and_retains_all_guards" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:16.764+09:30" time="0.049">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_family_group_deduplicates_same_parent_and_retains_all_guards ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.04s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_family_group_handles_distinct_parents_and_duplicate_resource_keys" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:16.813+09:30" time="0.051">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_family_group_handles_distinct_parents_and_duplicate_resource_keys ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.04s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_family_macos_long_s_consumer_blocks_ascii_direct_even_with_valid_record" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:16.864+09:30" time="0.106">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_family_macos_long_s_consumer_blocks_ascii_direct_even_with_valid_record ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.09s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_family_macos_parent_aliases_deduplicate_physical_family" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:16.970+09:30" time="0.055">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_family_macos_parent_aliases_deduplicate_physical_family ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.04s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_family_macos_unicode_nfc_nfd_existing_and_creation_aliases_exclude" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:17.025+09:30" time="0.050">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_family_macos_unicode_nfc_nfd_existing_and_creation_aliases_exclude ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.04s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_family_producer_conversion_holds_parent_until_session_release" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:17.076+09:30" time="0.053">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_family_producer_conversion_holds_parent_until_session_release ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.04s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_family_recreated_coordination_invalidates_destination_proof" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:17.129+09:30" time="0.112">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_family_recreated_coordination_invalidates_destination_proof ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.10s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_family_replaced_parent_incarnation_invalidates_held_use" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:17.240+09:30" time="0.053">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_family_replaced_parent_incarnation_invalidates_held_use ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.04s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_family_shared_existing_readable_coordination_requires_no_write_permission" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:17.293+09:30" time="0.051">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_family_shared_existing_readable_coordination_requires_no_write_permission ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.04s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_fresh_creation_header_is_bound_and_really_downgraded_to_shared" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:17.344+09:30" time="0.083">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_fresh_creation_header_is_bound_and_really_downgraded_to_shared ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.07s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_guarded_creation_and_controlled_proof_are_incarnation_bound" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:17.427+09:30" time="0.096">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_guarded_creation_and_controlled_proof_are_incarnation_bound ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.09s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_hardlinks_symlinks_and_case_aliases_cannot_bypass_resource_guard" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:17.523+09:30" time="0.052">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_hardlinks_symlinks_and_case_aliases_cannot_bypass_resource_guard ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.04s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_inventory_cohort_observer_is_noncreating_and_validates_lock_identity" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:17.575+09:30" time="0.051">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_inventory_cohort_observer_is_noncreating_and_validates_lock_identity ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.04s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_legacy_cohort_v1_is_not_upgraded_by_read_or_guard_acquisition" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:17.626+09:30" time="0.051">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_legacy_cohort_v1_is_not_upgraded_by_read_or_guard_acquisition ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.04s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_managed_borrowed_session_defers_active_reference_use_without_deadlock" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:17.677+09:30" time="0.090">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_managed_borrowed_session_defers_active_reference_use_without_deadlock ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.08s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_missing_startup_lease_keeps_unknown_evidence" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:17.767+09:30" time="0.055">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_missing_startup_lease_keeps_unknown_evidence ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.04s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_optional_producer_capability_never_repairs_untracked_or_corrupt_proof" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:17.821+09:30" time="0.166">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_optional_producer_capability_never_repairs_untracked_or_corrupt_proof ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.15s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_owned_state_transition_never_waits_or_holds_state_during_validation" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:17.988+09:30" time="0.052">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_owned_state_transition_never_waits_or_holds_state_during_validation ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.04s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_preexisting_root_never_becomes_modern_from_guard_acquisition" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:18.040+09:30" time="0.052">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_preexisting_root_never_becomes_modern_from_guard_acquisition ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.04s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_producer_and_collector_exclude_whole_artifact_operation" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:18.092+09:30" time="0.053">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_producer_and_collector_exclude_whole_artifact_operation ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.04s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_producer_capability_borrows_live_tracked_root_and_activity" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:18.145+09:30" time="0.162">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_producer_capability_borrows_live_tracked_root_and_activity ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.15s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_producer_capability_uses_actual_borrowed_exclusive_root" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:18.307+09:30" time="0.178">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_producer_capability_uses_actual_borrowed_exclusive_root ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.17s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_publication_nonce_proof_is_optional_but_never_numeric_only" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:18.485+09:30" time="0.345">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_publication_nonce_proof_is_optional_but_never_numeric_only ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.33s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_registered_shared_manifest_and_shared_database_are_retained" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:18.830+09:30" time="0.188">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_registered_shared_manifest_and_shared_database_are_retained ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.18s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_replaced_writer_inode_does_not_validate_borrowed_authority" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:19.018+09:30" time="0.049">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_replaced_writer_inode_does_not_validate_borrowed_authority ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.04s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_review_dangling_worker_state_is_unknown_and_preserved" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:19.066+09:30" time="0.049">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_review_dangling_worker_state_is_unknown_and_preserved ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.04s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_review_hardlinked_coordination_invalidates_held_authority" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:19.115+09:30" time="0.049">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_review_hardlinked_coordination_invalidates_held_authority ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.04s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_review_legacy_database_new_cache_requires_destination_migration_proof" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:19.164+09:30" time="0.127">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_review_legacy_database_new_cache_requires_destination_migration_proof ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.12s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_review_managed_read_resolution_completes_with_paused_collector" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:19.291+09:30" time="0.068">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_review_managed_read_resolution_completes_with_paused_collector ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.06s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_review_publication_proof_does_not_bless_legacy_destination_or_sibling" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:19.359+09:30" time="0.107">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_review_publication_proof_does_not_bless_legacy_destination_or_sibling ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.10s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_review_unreadable_worker_state_is_unknown_and_preserved" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:19.466+09:30" time="0.047">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_review_unreadable_worker_state_is_unknown_and_preserved ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.04s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_shared_manifest_registration_across_database_parents_is_retained" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:19.513+09:30" time="0.104">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_shared_manifest_registration_across_database_parents_is_retained ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.09s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_waiter_on_detached_incarnation_cannot_write_fresh_public_root" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:19.617+09:30" time="0.101">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_waiter_on_detached_incarnation_cannot_write_fresh_public_root ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.09s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_worker_launch_evidence_without_lifecycle_is_unknown" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:19.719+09:30" time="0.057">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_worker_launch_evidence_without_lifecycle_is_unknown ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.04s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_workspace_child_owns_startup_gate_and_late_start_refuses_closed" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:19.776+09:30" time="0.328">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_workspace_child_owns_startup_gate_and_late_start_refuses_closed ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.32s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_workspace_live_output_prevents_terminal_and_preserves_root" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:20.105+09:30" time="0.398">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_workspace_live_output_prevents_terminal_and_preserves_root ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.38s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_workspace_terminal_admission_preserves_local_source_with_unrelated_producer" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:20.503+09:30" time="0.362">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_workspace_terminal_admission_preserves_local_source_with_unrelated_producer ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.35s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_writer_worker_and_startup_contention_are_nonblocking" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:20.865+09:30" time="0.051">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_s2_writer_worker_and_startup_contention_are_nonblocking ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.04s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_workspace_root_removal_restarts_after_partial_effects_and_failed_done" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:20.917+09:30" time="0.464">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_workspace_root_removal_restarts_after_partial_effects_and_failed_done ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.45s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_workspace_root_removal_unknown_sibling_never_starts_intent" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:21.381+09:30" time="0.348">
+            <system-out>
+running 1 test
+test storage::maintenance_ownership::tests::dc_workspace_root_removal_unknown_sibling_never_starts_intent ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.34s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_projection::tests::dc_projection_decodes_utf8_surrogates_and_all_json_escapes_exactly" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:21.729+09:30" time="0.014">
+            <system-out>
+running 1 test
+test storage::maintenance_projection::tests::dc_projection_decodes_utf8_surrogates_and_all_json_escapes_exactly ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_projection::tests::dc_projection_matches_current_config_scalars_duplicates_and_escaped_keys" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:21.743+09:30" time="0.016">
+            <system-out>
+running 1 test
+test storage::maintenance_projection::tests::dc_projection_matches_current_config_scalars_duplicates_and_escaped_keys ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_projection::tests::dc_projection_rechecks_current_source_before_decoding_and_does_not_move_file_cursor" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:21.759+09:30" time="0.011">
+            <system-out>
+running 1 test
+test storage::maintenance_projection::tests::dc_projection_rechecks_current_source_before_decoding_and_does_not_move_file_cursor ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_projection::tests::dc_projection_requires_complete_object_and_preserves_loader_depth_errors" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:21.770+09:30" time="0.012">
+            <system-out>
+running 1 test
+test storage::maintenance_projection::tests::dc_projection_requires_complete_object_and_preserves_loader_depth_errors ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_projection::tests::dc_projection_streams_large_ignored_keys_values_and_limits_only_decoded_storage" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:21.782+09:30" time="0.250">
+            <system-out>
+running 1 test
+test storage::maintenance_projection::tests::dc_projection_streams_large_ignored_keys_values_and_limits_only_decoded_storage ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.24s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_projection::tests::dc_projection_validates_long_ignored_numbers_like_ordinary_loader_without_cutoff" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:22.032+09:30" time="0.042">
+            <system-out>
+running 1 test
+test storage::maintenance_projection::tests::dc_projection_validates_long_ignored_numbers_like_ordinary_loader_without_cutoff ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.03s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_projection::tests::numeric_projection_preserves_the_input_cursor" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:22.074+09:30" time="0.010">
+            <system-out>
+running 1 test
+test storage::maintenance_projection::tests::numeric_projection_preserves_the_input_cursor ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_projection::tests::projection_rejects_changed_content_when_the_metadata_stamp_matches" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:22.084+09:30" time="0.010">
+            <system-out>
+running 1 test
+test storage::maintenance_projection::tests::projection_rejects_changed_content_when_the_metadata_stamp_matches ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_retirement::tests::direct_marker_fixed_slots_preserve_full_native_pair_identity" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:22.094+09:30" time="0.009">
+            <system-out>
+running 1 test
+test storage::maintenance_retirement::tests::direct_marker_fixed_slots_preserve_full_native_pair_identity ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_retirement::tests::direct_marker_record_generation_and_corruption_are_checked" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:22.104+09:30" time="0.009">
+            <system-out>
+running 1 test
+test storage::maintenance_retirement::tests::direct_marker_record_generation_and_corruption_are_checked ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_workspace_gate::preparation_layout_tests::selector_replacement_does_not_write_through_the_detached_owner" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:22.113+09:30" time="0.010">
+            <system-out>
+running 1 test
+test storage::maintenance_workspace_gate::preparation_layout_tests::selector_replacement_does_not_write_through_the_detached_owner ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::maintenance_workspace_gate::preparation_layout_tests::workspace_removal_keeps_large_images_out_of_fixed_owner_layout" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:22.123+09:30" time="0.009">
+            <system-out>
+running 1 test
+test storage::maintenance_workspace_gate::preparation_layout_tests::workspace_removal_keeps_large_images_out_of_fixed_owner_layout ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::managed::transaction_janitor_tests::managed_absent_read_probe_preserves_genuine_first_producer_root_creation" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:22.133+09:30" time="0.428">
+            <system-out>
+running 1 test
+test storage::managed::transaction_janitor_tests::managed_absent_read_probe_preserves_genuine_first_producer_root_creation ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.42s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::managed::transaction_janitor_tests::managed_read_recovery_closes_registered_run_without_replaying" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:22.561+09:30" time="1.271">
+            <system-out>
+running 1 test
+test storage::managed::transaction_janitor_tests::managed_read_recovery_closes_registered_run_without_replaying ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 1.26s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::managed::transaction_janitor_tests::managed_read_recovery_does_not_recreate_a_partially_retired_run_lease" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:23.832+09:30" time="0.987">
+            <system-out>
+running 1 test
+test storage::managed::transaction_janitor_tests::managed_read_recovery_does_not_recreate_a_partially_retired_run_lease ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.97s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::managed::transaction_janitor_tests::managed_registered_owner_finish_retains_terminal_work_for_bounded_collection" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:24.819+09:30" time="0.517">
+            <system-out>
+running 1 test
+test storage::managed::transaction_janitor_tests::managed_registered_owner_finish_retains_terminal_work_for_bounded_collection ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.51s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::managed::transaction_janitor_tests::managed_typed_ambiguous_pointer_error_retains_bytes_and_requires_durability_recovery" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:25.337+09:30" time="0.563">
+            <system-out>
+running 1 test
+test storage::managed::transaction_janitor_tests::managed_typed_ambiguous_pointer_error_retains_bytes_and_requires_durability_recovery ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.55s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::managed::transaction_janitor_tests::managed_typed_generation_issue_never_preempts_required_replay_or_its_error" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:25.900+09:30" time="1.088">
+            <system-out>
+running 1 test
+test storage::managed::transaction_janitor_tests::managed_typed_generation_issue_never_preempts_required_replay_or_its_error ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 1.08s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::managed::transaction_janitor_tests::managed_typed_merge_preserves_first_issue_with_a_complete_latest_report" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:26.988+09:30" time="0.012">
+            <system-out>
+running 1 test
+test storage::managed::transaction_janitor_tests::managed_typed_merge_preserves_first_issue_with_a_complete_latest_report ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::managed::transaction_janitor_tests::managed_typed_recovered_publication_retains_run_until_persisted_barrier_resolves" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:27.001+09:30" time="0.585">
+            <system-out>
+running 1 test
+test storage::managed::transaction_janitor_tests::managed_typed_recovered_publication_retains_run_until_persisted_barrier_resolves ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.57s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::managed::transaction_janitor_tests::managed_typed_recovery_accepts_staged_only_and_published_only_seams" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:27.586+09:30" time="1.084">
+            <system-out>
+running 1 test
+test storage::managed::transaction_janitor_tests::managed_typed_recovery_accepts_staged_only_and_published_only_seams ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 1.07s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::managed::transaction_janitor_tests::managed_typed_required_corrupt_or_missing_evidence_is_not_an_absent_alternative" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:28.670+09:30" time="1.001">
+            <system-out>
+running 1 test
+test storage::managed::transaction_janitor_tests::managed_typed_required_corrupt_or_missing_evidence_is_not_an_absent_alternative ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.99s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::run_workspace::retain_recovery_tests::retain_for_recovery_preserves_journal_and_payload_but_releases_actual_lease" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:29.672+09:30" time="0.029">
+            <system-out>
+running 1 test
+test storage::run_workspace::retain_recovery_tests::retain_for_recovery_preserves_journal_and_payload_but_releases_actual_lease ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.02s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::run_workspace::tests::cleanup_barrier_records_its_absolute_origin" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:29.701+09:30" time="0.030">
+            <system-out>
+running 1 test
+test storage::run_workspace::tests::cleanup_barrier_records_its_absolute_origin ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.02s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::run_workspace::tests::confined_run_cleanup_is_idempotent" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:29.730+09:30" time="0.013">
+            <system-out>
+running 1 test
+test storage::run_workspace::tests::confined_run_cleanup_is_idempotent ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="storage::run_workspace::tests::unanchored_persisted_barrier_cannot_authorize_orphan_cleanup" classname="codebase-graph::storage_foundation" timestamp="2026-10-27T13:22:29.744+09:30" time="0.036">
+            <system-out>
+running 1 test
+test storage::run_workspace::tests::unanchored_persisted_barrier_cannot_authorize_orphan_cleanup ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 267 filtered out; finished in 0.02s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+    </testsuite>
+</testsuites>

@@ -48,7 +48,17 @@ pub fn validate_bundle(bundle: &LoadedBundle, profile: ConformanceProfile) -> Co
     apply_recommended_guidance(bundle, &mut diagnostics);
     diagnostics.sort_by(diagnostic_order);
 
-    let accepted = match profile {
+    let accepted = accepts_diagnostics(profile, &diagnostics);
+
+    ConformanceReport {
+        profile,
+        accepted,
+        diagnostics,
+    }
+}
+
+pub(crate) fn accepts_diagnostics(profile: ConformanceProfile, diagnostics: &[Diagnostic]) -> bool {
+    match profile {
         ConformanceProfile::Consume => true,
         ConformanceProfile::Conformant => diagnostics
             .iter()
@@ -56,12 +66,6 @@ pub fn validate_bundle(bundle: &LoadedBundle, profile: ConformanceProfile) -> Co
         ConformanceProfile::Recommended => diagnostics
             .iter()
             .all(|diagnostic| diagnostic.severity == DiagnosticSeverity::Info),
-    };
-
-    ConformanceReport {
-        profile,
-        accepted,
-        diagnostics,
     }
 }
 

@@ -1,0 +1,16 @@
+{
+  "base": "7038e66ff8271ffddc511f879cf8d28353a09b2d",
+  "approval": "eaa430c849094078bb4c228ea03136dde5587e91",
+  "files": {
+    "Cargo.toml": "455a508cf5a3d4ac664af80133bafebe1c8b4c4f721d3ca3e52ab65f822b298e",
+    "docs/release.md": "6343cbe12df65148254a057cd65572631d8f3b2c0a49029eaef5c696729740d9",
+    "src/db_writer/extensions.rs": "fdaad58193a79b94345a88237efe452938f643ee9c45b8c6e8548c36b760a69d",
+    "Cargo.lock": "b99948cf1027f1609cbec7f7c43b796743ce4523550e95ce860cfe5dbd4d7d84",
+    "crates/k-wiki/Cargo.toml": "40e75f1823566efb2d999059ad6cc83e6d407dfab1fbbfd96abd82a9a1d86fcd",
+    "crates/xtask/src/main.rs": "d8561f5d8ba107e599890c825522f0fc518581bd52702c2115822f0f661d7099",
+    "release/install/install.ps1": "bdd6f0eace6fbd4ea25c9e09d2c6cb6c0b54a05955d024aa97d76443c58ae308",
+    ".github/actions/setup-native/action.yml": "2a2a840860e85ca7b0a67a8e27a3ccaf1b074fffb92f6dc118e70bf8009d1665"
+  },
+  "diff_sha256": "fee7b0a6122950e952eb79758d3dadf58ecceea9389e7bffc4869090da096d82",
+  "scope": "D05d defaultbytesonly; not wholeS02"
+}

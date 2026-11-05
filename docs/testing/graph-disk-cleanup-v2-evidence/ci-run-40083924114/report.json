@@ -1,0 +1,54 @@
+{
+  "baseline": "d2c6f7b23432df4c0247e45719538dd08169ea6d",
+  "failed_run": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40083924114",
+  "failed_jobs": {
+    "windows": 120842881282,
+    "macos_arm64": 120842881378
+  },
+  "approved_plan": "User instruction: PLEASE IMPLEMENT THIS PLAN: Finish CI repairs for PR #153.",
+  "changes": [
+    "Canonical generation-storage fixture paths before configuration writes.",
+    "Metadata-only rooted identity checks retain private creator sharing/security. Snapshot digests cover the accepted copied bytes without reopening the private temporary file.",
+    "Artifact publication releases child payload/receipt handles before directory rename. A consumed creator continuation validates receipt bytes, identities and nonce under the existing publication lease.",
+    "Windows replacement fixtures verify native rename exclusion and stale evidence after legitimate release.",
+    "Path envelopes use checked actual selector/projected string lengths and retain shared-account reservations for clones/joins.",
+    "Configuration projections use independently reopened Windows handles, preserving caller cursors. Preparation identity checks do not mint a mutation timer. Logical unit tests use explicit fixture grants, and real enrollment continuations accept exhausted grants only while an existing enrollment is pending.",
+    "Two losslessly recompressed Windows extension streams recover package headroom; decoded binaries, 16 MiB dictionaries and CRC64 integrity remain unchanged."
+  ],
+  "local_verification": {
+    "platform": "macOS-26.6.2-arm64-arm-64bit",
+    "focused_cases": 180,
+    "focused_result": "176/176 in focused-176.log.gz plus 4/4 in focused.junit.xml; zero ignored in either selection. The second run overwrote the first JUnit path, so only the preserved full 176-case log establishes that first run.",
+    "generation_cases": 5,
+    "generation_result": "5/5 passing, zero skipped, including atomic publication and ten-update convergence; 842.330 seconds.",
+    "clippy": "cargo clippy --offline --workspace --all-targets --all-features -- -D warnings: pass",
+    "format": "cargo fmt --all -- --check: pass",
+    "diff_check": "git diff --check: pass",
+    "package": {
+      "command": "cargo package --offline --locked --allow-dirty --no-verify",
+      "bytes": 10484560,
+      "limit": 10485760,
+      "sha256": "f6241b962b28b78c22c6f72d8aef55f74b284e421b7746bf7e851b0f7107796f"
+    },
+    "runtime_decoder": "Pinned lzma_rs::xz_decompress verified identical 14,779,904-byte FTS and 14,178,304-byte JSON payloads. Encoder binary matched the recorded official 7-Zip 26.05 archive.",
+    "tested_input_note": "The tested-input manifest was captured before the two Windows resource recompressions. Their decoded payload equality is independently recorded; the changed streams are not consumed by the Darwin binaries."
+  },
+  "unchanged_limits": {
+    "maintenance_bytes": 8388608,
+    "worker_stack_bytes": 262144,
+    "mutation_entries": 100,
+    "mutation_milliseconds": 100
+  },
+  "public_api_changes": false,
+  "qualification": "Native CI for the follow-up commit is pending. These local executions do not establish Windows native execution or aggregate closure.",
+  "files_sha256": {
+    "generation.junit.xml": "213a4b6be84fb6c43738d465220787a0cdbe0926c98d7bd2d4e0548d355b0486",
+    "asset-recompression.json": "59e6401fbde79ca939cce57846b60d5ebaf41927c46bdfa32169852b509f51c9",
+    "generation.log.gz": "5ed5638860c91a8eef55cd46125b04c5b56b9adc208fe225e75f25474d6fab1c",
+    "clippy.log": "82febda19b6f0366f63180bb550c06978b0d1c267feb66009fa0ebcc0d05583f",
+    "focused-176.log.gz": "e64039db7d619c574035f3605f6fd5f0f071efde63c3baa69fb1ecb7f4164844",
+    "tested-inputs.json": "8c2a3a24e54888ba1b5cb016f48e298c1ff6364c774792747ecced15bb654194",
+    "focused.junit.xml": "03817b8f5111f4b5f3ecd382eb088501d382b5364fbca653c4b6e434773d4e08",
+    "focused-4.log.gz": "88387e865f5e70d1fdb67cec21499181f4476ef4610ed56d51640417dc864a7d"
+  }
+}

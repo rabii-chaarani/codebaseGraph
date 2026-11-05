@@ -2,8 +2,7 @@ use super::http::is_local_host;
 use crate::adapters::required_arg;
 use crate::api::context::{
     read_selected_install_config, GraphInstallConfig, GraphRefreshBackend, GraphRefreshPolicy,
-    DEFAULT_MAX_PARALLELISM, DEFAULT_RUST_MEMORY_MIB, DEFAULT_SPILL_CHUNK_MIB,
-    DEFAULT_WORKER_MEMORY_MIB,
+    DEFAULT_MAX_PARALLELISM, DEFAULT_SPILL_CHUNK_MIB,
 };
 use crate::api::RefreshConfigOverrides;
 use crate::api::{CoordinatorCodebaseGraphApi, RepoSelector};
@@ -15,8 +14,6 @@ pub(crate) struct McpRuntimeSettings {
     pub(crate) refresh_backend: GraphRefreshBackend,
     pub(crate) reconcile_interval_ms: u64,
     pub(crate) include_fts: bool,
-    pub(crate) worker_memory_mib: u64,
-    pub(crate) rust_memory_mib: u64,
     pub(crate) spill_chunk_mib: u64,
     pub(crate) max_parallelism: usize,
     pub(crate) explicit_overrides: RefreshConfigOverrides,
@@ -29,8 +26,6 @@ impl Default for McpRuntimeSettings {
             refresh_backend: GraphRefreshBackend::Auto,
             reconcile_interval_ms: crate::api::context::DEFAULT_RECONCILE_INTERVAL_MS,
             include_fts: true,
-            worker_memory_mib: DEFAULT_WORKER_MEMORY_MIB,
-            rust_memory_mib: DEFAULT_RUST_MEMORY_MIB,
             spill_chunk_mib: DEFAULT_SPILL_CHUNK_MIB,
             max_parallelism: DEFAULT_MAX_PARALLELISM,
             explicit_overrides: RefreshConfigOverrides::default(),
@@ -47,8 +42,6 @@ pub(crate) struct McpServeOptions {
     pub(in crate::adapters) api: Option<CoordinatorCodebaseGraphApi>,
     pub(in crate::adapters) refresh_policy: Option<GraphRefreshPolicy>,
     pub(in crate::adapters) refresh_backend: Option<GraphRefreshBackend>,
-    pub(in crate::adapters) worker_memory_mib: Option<u64>,
-    pub(in crate::adapters) rust_memory_mib: Option<u64>,
     pub(in crate::adapters) spill_chunk_mib: Option<u64>,
     pub(in crate::adapters) max_parallelism: Option<usize>,
 }
@@ -79,8 +72,6 @@ impl McpServeOptions {
             api: None,
             refresh_policy: None,
             refresh_backend: None,
-            worker_memory_mib: None,
-            rust_memory_mib: None,
             spill_chunk_mib: None,
             max_parallelism: None,
         }
@@ -124,20 +115,6 @@ impl McpServeOptions {
                 )?)?);
                 index + 2
             }
-            "--worker-memory-mib" => {
-                self.worker_memory_mib = Some(parse_positive_u64(
-                    required_arg(args, index, "--worker-memory-mib")?,
-                    "--worker-memory-mib",
-                )?);
-                index + 2
-            }
-            "--rust-memory-mib" => {
-                self.rust_memory_mib = Some(parse_positive_u64(
-                    required_arg(args, index, "--rust-memory-mib")?,
-                    "--rust-memory-mib",
-                )?);
-                index + 2
-            }
             "--spill-chunk-mib" => {
                 self.spill_chunk_mib = Some(parse_positive_u64(
                     required_arg(args, index, "--spill-chunk-mib")?,
@@ -178,14 +155,6 @@ impl McpServeOptions {
             settings.refresh_backend = value;
             settings.explicit_overrides.backend = true;
         }
-        if let Some(value) = self.worker_memory_mib {
-            settings.worker_memory_mib = value;
-            settings.explicit_overrides.worker_memory_mib = true;
-        }
-        if let Some(value) = self.rust_memory_mib {
-            settings.rust_memory_mib = value;
-            settings.explicit_overrides.rust_memory_mib = true;
-        }
         if let Some(value) = self.spill_chunk_mib {
             settings.spill_chunk_mib = value;
             settings.explicit_overrides.spill_chunk_mib = true;
@@ -204,8 +173,6 @@ fn settings_from_install_config(config: GraphInstallConfig) -> McpRuntimeSetting
         refresh_backend: config.refresh.backend,
         reconcile_interval_ms: config.refresh.reconcile_interval_ms,
         include_fts: config.materialization.include_fts,
-        worker_memory_mib: config.materialization.worker_memory_mib,
-        rust_memory_mib: config.materialization.rust_memory_mib,
         spill_chunk_mib: config.materialization.spill_chunk_mib,
         max_parallelism: config.materialization.max_parallelism,
         explicit_overrides: RefreshConfigOverrides::default(),
@@ -213,20 +180,8 @@ fn settings_from_install_config(config: GraphInstallConfig) -> McpRuntimeSetting
 }
 
 fn validate_runtime_settings(settings: McpRuntimeSettings) -> Result<McpRuntimeSettings, String> {
-    if settings.worker_memory_mib == 0
-        || settings.rust_memory_mib == 0
-        || settings.spill_chunk_mib == 0
-        || settings.max_parallelism == 0
-    {
-        return Err(
-            "MCP materialization memory limits and max parallelism must be positive".into(),
-        );
-    }
-    if settings.rust_memory_mib > settings.worker_memory_mib {
-        return Err("rust_memory_mib must not exceed worker_memory_mib".into());
-    }
-    if settings.spill_chunk_mib > settings.rust_memory_mib {
-        return Err("spill_chunk_mib must not exceed rust_memory_mib".into());
+    if settings.spill_chunk_mib == 0 || settings.max_parallelism == 0 {
+        return Err("MCP spill_chunk_mib and max_parallelism must be positive".into());
     }
     Ok(settings)
 }

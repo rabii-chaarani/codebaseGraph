@@ -1,0 +1,89 @@
+{
+  "approved_spec_commit": "c5b62ba77d2f94b71714b5319f3b3fa215983f9f",
+  "implementation_base": "5839055d9279f4475f893a54abeaa542344c1b02",
+  "static_release_archive": {
+    "version": "0.19.0",
+    "sha256": "6bee40babdf837bb6aa4d271047dfe5ed3dacf022f16af84952ca4c22d034d62"
+  },
+  "cli": {
+    "path": "local frozen compiler artifact",
+    "sha256": "5acca8f98ee5108261f3eae4e96d7467ea2cddc8c75ccbd0e90050975b14cde2"
+  },
+  "executed": [
+    {
+      "command": "cargo test -p xtask --locked",
+      "result": "42 passed,0failed",
+      "log_sha256": "4ff84539c916d0877d2a13522aa60f0d48ddb0586d412571e11ec649bd55fce0"
+    },
+    {
+      "command": "cargo nextest run ... --lib selected writer/staging/execution/search",
+      "result": "72 passed,0failed",
+      "log_sha256": "00ac3c11e8320ae12b3346515ddb8243b3acacb580526a9aab6aecceb4f03ab9"
+    },
+    {
+      "command": "cargo test -p codebase-graph --test copy_phase_process --locked -- --nocapture",
+      "result": "2 passed,0failed",
+      "log_sha256": "092a729c080a0574d7d6c6db6aaa3d76f3a876e1af80bb823e3f2d99a1e0b3b9"
+    },
+    {
+      "command": "cargo clippy --workspace --all-targets --all-features --locked -- -D warnings",
+      "result": "passed after moving helper before test module",
+      "log_sha256": "5240928b35f279dd113668b6b32cae99570fd6b60f96b66c2b99bb6207067e8c"
+    },
+    {
+      "command": "cargo nextest ... final writer/phase +pool matrix",
+      "result": "15 passed,0failed",
+      "log_sha256": "5f36785be519557ab15540c26d1f193e59109cc34dc41dba1e1c87cf8d1af514"
+    },
+    {
+      "command": "cargo test --profile native-tests --test copy_phase_process --locked -- --nocapture",
+      "result": "2 passed,0failed including same-source clean control",
+      "log_sha256": "21cc9f39b7851d4a0cb2ff0643f2e95e2bf802a4af02614e392958871c9dfb00"
+    },
+    {
+      "command": "cargo clippy --workspace --all-targets --all-features --locked -- -D warnings (final)",
+      "result": "passed",
+      "log_sha256": "71cb61d12721c357b0ddb1ddc49f44b95471dbe4f4eb3ef26ce25755991dcbb3"
+    },
+    {
+      "command": "cargo test --workspace --doc --locked",
+      "result": "3 passed,0failed",
+      "log_sha256": "d85e2712ea9002c60b12a7faea49a771cf95d0e132f2d36bdb34159ebaf7786f"
+    }
+  ],
+  "initial_failures": [
+    {
+      "kind": "compile",
+      "reason": "test helper missing PathBuf import, fixed before execution"
+    },
+    {
+      "kind": "test oracle",
+      "reason": "fixture produced Defines not HasReturnType edges; corrected to actual expected Module\u2192Defines\u2192Function endpoints, native02passed"
+    },
+    {
+      "kind": "Clippy",
+      "reason": "helper followed test module; moved without warning suppression"
+    }
+  ],
+  "pending": [
+    "fullworkspace1344serialrun currentlyrunning",
+    "optimizedexistinglifecycle16case run currentlyrunning",
+    "Windowsx86_64 existing PRCI",
+    "finalaggregatehandoff notmerge/deploy"
+  ],
+  "no_claims": [
+    "not original incident diagnosis",
+    "no engine upgrade",
+    "no deployment/daemon changes",
+    "no Scryer currentworktree verdict ingestion"
+  ],
+  "final_source_sha256": {
+    "src/db_writer/write.rs": "d1625f1bd5239eea6eb7dd2b85244ce93f2df13d1503007b6cbe37dddd782542",
+    "src/db_writer/phase.rs": "1500b94723ada235301c44f6e9c27ffcddeb3f13f03862de84a54b100ca0be7e",
+    "src/execution/run.rs": "0c2adc995840d52503545e7918e76e785ad41705320eb03c36844fb229489752",
+    "src/staging_writer/accumulator.rs": "13737811c1dd9cb827573bf4ca7233265c393c3dbdc02214ceca9a3814199d4e",
+    "src/staging_writer/tests.rs": "39360ae193bd29bc6a2e72ab9b188569a952944afa1b0f686224d9a96a8dc942",
+    "src/staging_writer/writer.rs": "08d8cfbb0ec534f09e5ad7c13e5e90cb1ab397b80b51aae1356cb397431e2a55",
+    "tests/copy_phase_process.rs": "ca61337099747e3356c4308bfcba7c6b73f8d2a604bef6808569509465567c3e"
+  }
+}

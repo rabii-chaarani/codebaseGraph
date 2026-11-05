@@ -1,0 +1,49 @@
+error[E0277]: `Rc<()>` cannot be sent between threads safely
+   --> /private/tmp/cleanup-v2-s3-review-_098ctam/negative-traits.rs:7:18
+    |
+  7 |     needs_send::<maintenance_budget::MutationGrant>();
+    |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `Rc<()>` cannot be sent between threads safely
+    |
+    = help: within `MutationGrant`, the trait `Send` is not implemented for `Rc<()>`
+note: required because it appears within the type `PhantomData<Rc<()>>`
+   --> /Users/rabii/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/marker.rs:811:12
+    |
+811 | pub struct PhantomData<T: PointeeSized>;
+    |            ^^^^^^^^^^^
+note: required because it appears within the type `MutationGrant`
+   --> /private/tmp/cleanup-v2-s3-review-_098ctam/repo/src/storage/maintenance_budget.rs:208:19
+    |
+208 | pub(crate) struct MutationGrant {
+    |                   ^^^^^^^^^^^^^
+note: required by a bound in `needs_send`
+   --> /private/tmp/cleanup-v2-s3-review-_098ctam/negative-traits.rs:4:18
+    |
+  4 | fn needs_send<T: Send>() {}
+    |                  ^^^^ required by this bound in `needs_send`
+
+error[E0277]: `Rc<()>` cannot be shared between threads safely
+   --> /private/tmp/cleanup-v2-s3-review-_098ctam/negative-traits.rs:8:18
+    |
+  8 |     needs_sync::<maintenance_budget::MutationGrant>();
+    |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `Rc<()>` cannot be shared between threads safely
+    |
+    = help: within `MutationGrant`, the trait `Sync` is not implemented for `Rc<()>`
+note: required because it appears within the type `PhantomData<Rc<()>>`
+   --> /Users/rabii/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/marker.rs:811:12
+    |
+811 | pub struct PhantomData<T: PointeeSized>;
+    |            ^^^^^^^^^^^
+note: required because it appears within the type `MutationGrant`
+   --> /private/tmp/cleanup-v2-s3-review-_098ctam/repo/src/storage/maintenance_budget.rs:208:19
+    |
+208 | pub(crate) struct MutationGrant {
+    |                   ^^^^^^^^^^^^^
+note: required by a bound in `needs_sync`
+   --> /private/tmp/cleanup-v2-s3-review-_098ctam/negative-traits.rs:5:18
+    |
+  5 | fn needs_sync<T: Sync>() {}
+    |                  ^^^^ required by this bound in `needs_sync`
+
+error: aborting due to 2 previous errors
+
+For more information about this error, try `rustc --explain E0277`.

@@ -1,0 +1,8 @@
+
+running 2 tests
+test db_writer::extensions::tests::bundled_extension_archives_decompress_before_cache_seed ... ok
+test db_writer::extensions::tests::supports_prebuilt_and_source_built_ladybug_extension_cache_versions ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 799 filtered out; finished in 0.57s
+
+NATIVE_EXIT_STATUS=0

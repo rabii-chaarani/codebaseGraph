@@ -1,0 +1,7 @@
+────────────
+ Nextest run ID 5f3b8e10-9d6f-414b-a4ec-6a910655d899 with nextest profile: cleanup-s5
+    Starting 2 tests across 1 binary
+        PASS [   0.024s] (1/2) codebase-graph::storage_maintenance health_preserves_legacy_fields_and_marks_unobserved_maintenance_unknown
+        PASS [   0.018s] (2/2) codebase-graph::storage_maintenance nonboolean_quiescence_confirmation_is_rejected_before_repository_effects
+────────────
+     Summary [   0.042s] 2 tests run: 2 passed, 0 skipped

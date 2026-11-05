@@ -1,0 +1,25 @@
+{
+  "source_baseline": "2a392a1b49f25923291ad90944148aa72a5caace",
+  "failed_merge": "4a9bef13247bf2faa1f311e4de0328ebd1dc67d3",
+  "same_git_tree": true,
+  "worktree": "/private/tmp/codebasegraph-cod52-macos-scans",
+  "platform": "macOS-26.6.2-arm64-arm-64bit",
+  "os": "ProductName:\t\tmacOS\nProductVersion:\t\t26.6.2\nBuildVersion:\t\t25G83\n",
+  "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)\nbinary: rustc\ncommit-hash: ac68faa20c58cbccd01ee7208bf3b6e93a7d7f96\ncommit-date: 2026-05-25\nhost: aarch64-apple-darwin\nrelease: 1.96.0\nLLVM version: 22.1.2\n",
+  "target_dir": "/private/tmp/codebasegraph-pr153-platform-862a8f88d485/cargo-target",
+  "cli": "/private/tmp/pr157-ci-fix-evidence/baseline-bin/codebase-graph",
+  "checks": {
+    "targeted": "env CARGO_TARGET_DIR=/private/tmp/codebasegraph-pr153-platform-862a8f88d485/cargo-target CARGO_BIN_EXE_codebase-graph=/private/tmp/pr157-ci-fix-evidence/baseline-bin/codebase-graph cargo nextest run --locked -p codebase-graph --lib --config-file /private/tmp/pr157-ci-fix-evidence/nextest.toml --profile pr157 -E 'test(artifact_store::tests::dc_origin_) | test(storage::maintenance_collector_tests::dc_s5_canonical_only_) | test(storage::locks::rooted_directory_tests::) | test(terminal_receipt_selection_reaches_late_directory_after_child_receipt_veto)' --no-fail-fast",
+    "clippy": "env CARGO_TARGET_DIR=/private/tmp/codebasegraph-pr153-platform-862a8f88d485/cargo-target cargo clippy --locked --workspace --all-targets --all-features -- -D warnings",
+    "format": "cargo fmt --all --check",
+    "whitespace": "git diff --check"
+  },
+  "limits": [
+    "Diagnostic checkpoint only; original CI cause unproven.",
+    "Native pair repetition 0 completed; subsequent exploratory repetition deliberately interrupted, not passing.",
+    "Sandbox full run interrupted after local IPC denial; not source defect or qualification.",
+    "Unsandboxed frozen diagnostic baseline full run remains in progress; not passing.",
+    "Temporary diagnostic stress test completed 1000 real tracked publications; not retained implementation.",
+    "Current-host macOS evidence only; hosted/native Windows and full current revision qualification pending."
+  ]
+}

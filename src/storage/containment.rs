@@ -37,7 +37,6 @@ pub(crate) struct ExitOutcome {
     pub code: Option<i32>,
     pub signal: Option<i32>,
     pub high_water_bytes: u64,
-    pub budget_reason: Option<String>,
     pub cancelled: bool,
     pub containment_empty: bool,
     #[serde(default)]
@@ -45,9 +44,6 @@ pub(crate) struct ExitOutcome {
 }
 impl fmt::Display for ExitOutcome {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if let Some(reason) = &self.budget_reason {
-            return write!(f, "{reason}");
-        }
         if let Some(reason) = &self.supervision_error {
             return write!(f, "{reason}");
         }
@@ -68,6 +64,28 @@ impl fmt::Display for ExitOutcome {
 /// Missing registries are inactive. Existing unproven evidence is retained.
 /// Retirement is written only while holding an existing guardian lease.
 pub(crate) fn probe_registry(root: &Path) -> Result<bool, String> {
+    probe_registry_mode(root, LifecycleProbe::Retire)
+}
+
+#[derive(Clone, Copy)]
+enum LifecycleProbe {
+    Retire,
+    VerifyRetired,
+}
+
+/// Final closure check under the actual workspace startup gate. Every marker
+/// must already exist; this path never creates files or reacquires that gate.
+pub(crate) fn ensure_retired_registry_empty(root: &Path) -> Result<(), String> {
+    match probe_registry_mode(root, LifecycleProbe::VerifyRetired)? {
+        true => Ok(()),
+        false => Err(format!(
+            "containment_unknown: registry {} is not retired and empty",
+            root.display()
+        )),
+    }
+}
+
+fn probe_registry_mode(root: &Path, mode: LifecycleProbe) -> Result<bool, String> {
     let anchored;
     let root = if root.is_relative() {
         anchored = std::env::current_dir()
@@ -90,7 +108,10 @@ pub(crate) fn probe_registry(root: &Path) -> Result<bool, String> {
         .and_then(|n| n.to_str())
         .is_some_and(|n| n.starts_with(".lifecycle-"))
     {
-        return probe_lifecycle(root);
+        return match mode {
+            LifecycleProbe::Retire => probe_lifecycle(root),
+            LifecycleProbe::VerifyRetired => probe_lifecycle_mode(root, mode),
+        };
     }
     for entry in fs::read_dir(root).map_err(|e| e.to_string())? {
         let entry = match entry {
@@ -106,7 +127,7 @@ pub(crate) fn probe_registry(root: &Path) -> Result<bool, String> {
         if metadata.is_symlink() {
             return Ok(false);
         }
-        if metadata.is_dir() && !probe_registry(&entry.path())? {
+        if metadata.is_dir() && !probe_registry_mode(&entry.path(), mode)? {
             return Ok(false);
         }
     }
@@ -126,7 +147,16 @@ pub(crate) fn ensure_registry_empty(root: &Path) -> Result<(), String> {
     }
 }
 pub(crate) fn probe_lifecycle(path: &Path) -> Result<bool, String> {
+    probe_lifecycle_mode(path, LifecycleProbe::Retire)
+}
+fn probe_lifecycle_mode(path: &Path, mode: LifecycleProbe) -> Result<bool, String> {
     if !real_directory(path) {
+        return Ok(false);
+    }
+    if matches!(mode, LifecycleProbe::VerifyRetired)
+        && !fs::symlink_metadata(path.join("retired"))
+            .is_ok_and(|m| m.is_file() && !m.file_type().is_symlink())
+    {
         return Ok(false);
     }
     let lease = match OpenOptions::new()
@@ -135,7 +165,12 @@ pub(crate) fn probe_lifecycle(path: &Path) -> Result<bool, String> {
         .open(path.join("lease"))
     {
         Ok(f) => f,
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return retire_prelease_startup(path),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+            return match mode {
+                LifecycleProbe::Retire => retire_prelease_startup(path),
+                LifecycleProbe::VerifyRetired => Ok(false),
+            }
+        }
         Err(_) => return Ok(false),
     };
     if lease.try_lock_exclusive().is_err() {
@@ -170,9 +205,68 @@ pub(crate) fn probe_lifecycle(path: &Path) -> Result<bool, String> {
             return Ok(false);
         }
     }
-    retire_lifecycle(path)?;
+    if matches!(mode, LifecycleProbe::Retire) {
+        retire_lifecycle(path)?;
+    }
     Ok(true)
 }
+/// Nonmutating proof check for maintenance holding the exact lifecycle lease.
+/// Reuse the guardian's v2 receipt/FIFO/job policy; never authorize persisted PIDs.
+#[cfg(test)]
+pub(crate) fn lifecycle_empty_with_owned(
+    path: &Path,
+    lease: &super::locks::LockedFile,
+) -> Result<bool, String> {
+    if !lease
+        .verifies(&path.join("lease"), super::locks::LockMode::Exclusive)
+        .map_err(|e| e.to_string())?
+        || !real_directory(path)
+    {
+        return Ok(false);
+    }
+    for name in ["ready.json", "proof.json", "receipt.json"] {
+        match fs::symlink_metadata(path.join(name)) {
+            Ok(metadata) => {
+                if metadata.file_type().is_symlink() || !metadata.is_file() {
+                    return Ok(false);
+                }
+                let file = fs::File::open(path.join(name)).map_err(|error| error.to_string())?;
+                if super::locks::file_link_count(&file).map_err(|error| error.to_string())? != 1 {
+                    return Ok(false);
+                }
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => (),
+            Err(e) => return Err(e.to_string()),
+        }
+    }
+    let bytes = match fs::read(path.join("ready.json")) {
+        Ok(bytes) => Some(bytes),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+            match fs::read(path.join("proof.json")) {
+                Ok(bytes) => Some(bytes),
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,
+                Err(e) => return Err(e.to_string()),
+            }
+        }
+        Err(e) => return Err(e.to_string()),
+    };
+    let Some(bytes) = bytes else {
+        return Ok(prelease_directory_is_empty(path, true));
+    };
+    let descriptor: BuildDescriptorV2 = match serde_json::from_slice(&bytes) {
+        Ok(value) => value,
+        Err(_) => return Ok(false),
+    };
+    if descriptor.version != 2 || !same_private_directory(&descriptor.lifecycle_dir, path) {
+        return Ok(false);
+    }
+    let receipt = fs::read(path.join("receipt.json"))
+        .ok()
+        .and_then(|bytes| serde_json::from_slice::<ExitOutcome>(&bytes).ok())
+        .is_some_and(|outcome| outcome.containment_empty);
+    Ok(receipt || probe_descriptor(&descriptor)?)
+}
+
 fn real_directory(path: &Path) -> bool {
     fs::symlink_metadata(path)
         .is_ok_and(|metadata| metadata.is_dir() && !metadata.file_type().is_symlink())
@@ -273,18 +367,23 @@ pub(crate) fn collect_registry(root: &Path) -> Result<(), String> {
     Ok(())
 }
 pub(crate) fn retire_lifecycle(path: &Path) -> Result<(), String> {
-    match OpenOptions::new()
-        .create_new(true)
-        .write(true)
-        .open(path.join("retired"))
-    {
-        Ok(mut f) => {
-            f.write_all(b"retired-v2\n").map_err(|e| e.to_string())?;
-            f.sync_all().map_err(|e| e.to_string())
-        }
-        Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => Ok(()),
-        Err(e) => Err(e.to_string()),
+    let marker = path.join("retired");
+    let fresh = match crate::process_lifecycle::FreshLifecycleFile::create(&marker) {
+        Ok(fresh) => fresh,
+        // Existing tombstones retain their historical no-op behavior and are
+        // never converted into creation evidence, including a racing creator.
+        Err(_) if fs::symlink_metadata(&marker).is_ok() => return Ok(()),
+        Err(error) => return Err(error),
+    };
+    let mut output =
+        super::maintenance_controls::WorkspaceControlFile::from_created(fresh, &marker);
+    if let Some(tracked) = output.tracking() {
+        let _ = super::maintenance_origin::record_created_workspace_control(tracked);
     }
+    output
+        .write_all(b"retired-v2\n")
+        .map_err(|e| e.to_string())?;
+    output.finish_created().map_err(|e| e.to_string())
 }
 #[cfg(unix)]
 pub(crate) fn probe_descriptor(d: &BuildDescriptorV2) -> Result<bool, String> {

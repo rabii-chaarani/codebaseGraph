@@ -1,0 +1,4 @@
+codebase-graph v4.0.0 (C:\Users\rcha0053\Repositories\cbg-pr158)
+├── codebase-graph feature "bundled-windows-extensions"
+│   └── codebase-graph feature "default" (command-line)
+└── codebase-graph feature "default" (command-line)

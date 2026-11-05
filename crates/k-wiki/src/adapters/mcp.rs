@@ -185,12 +185,12 @@ where
             "result": payload
         })),
         Err(error) if error.code == "unknown_tool" => {
-            Some(rpc_error(request_id, -32602, &error.message))
+            Some(rpc_transport_error(request_id, -32602, error))
         }
         Err(error) if error.code == "unsupported_method" => {
-            Some(rpc_error(request_id, -32601, &error.message))
+            Some(rpc_transport_error(request_id, -32601, error))
         }
-        Err(error) => Some(rpc_error(request_id, -32602, &error.message)),
+        Err(error) => Some(rpc_transport_error(request_id, -32602, error)),
     }
 }
 
@@ -213,6 +213,16 @@ pub fn rpc_error(request_id: Value, code: i64, message: &str) -> Value {
             "message": message,
         }
     })
+}
+
+fn rpc_transport_error(request_id: Value, code: i64, error: TransportError) -> Value {
+    let mut response = rpc_error(request_id, code, &error.message);
+    response["error"]["data"] = json!({
+        "code": error.code,
+        "details": error.details,
+        "retryable": error.retryable,
+    });
+    response
 }
 
 fn call_tool<G>(

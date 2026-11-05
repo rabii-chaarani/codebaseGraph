@@ -1,0 +1,19 @@
+{
+  "source_commit": "c60f143323d32775c2ca1c7f2323c16d56327de6",
+  "run_id": 40149674096,
+  "windows": {
+    "preflight_passed": 43,
+    "preflight_failed": 0,
+    "full_suite_finished": false,
+    "full_suite_collector_failures_observed": 3,
+    "job": "timed out",
+    "common_rejection": "terminal workspace root-removal preparation reported Stale"
+  },
+  "macos": {
+    "generation": "passed",
+    "integration": "passed",
+    "unit": "833 passed, one logical admission fixture failed, two existing ignored"
+  },
+  "linux": "tests and artifact passed",
+  "follow_up": "Windows cohorts and package-specific bundled features; raw workspace rejection diagnostics; logical fixture grant separated from unchanged production grant"
+}

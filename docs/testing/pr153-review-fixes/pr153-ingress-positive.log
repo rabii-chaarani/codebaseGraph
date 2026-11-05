@@ -1,0 +1,15 @@
+   Compiling codebase-graph v3.0.4 (/private/tmp/codebasegraph-pr153-review)
+    Finished `native-tests` profile [optimized] target(s) in 53.27s
+     Running unittests src/lib.rs (/Users/rabii/Projects/Repositories/codebaseGraph/target/native-tests/deps/codebase_graph-35351ef9068f9494)
+
+running 1 test
+test storage::maintenance::tests::direct_confirmation_ingress_does_not_pin_legacy_source_or_block_recovery ...
+thread 'storage::maintenance::tests::direct_confirmation_ingress_does_not_pin_legacy_source_or_block_recovery' (33067449) panicked at src/storage/maintenance_admission.rs:1990:21:
+fixture durable metadata write cut
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+thread 'storage::maintenance::tests::direct_confirmation_ingress_does_not_pin_legacy_source_or_block_recovery' (33067449) panicked at src/storage/maintenance_admission.rs:1990:21:
+fixture durable metadata write cut
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 839 filtered out; finished in 120.26s

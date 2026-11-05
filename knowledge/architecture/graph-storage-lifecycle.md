@@ -147,7 +147,7 @@ Health and materialization output expose:
 - pending run count and cleanup status;
 - physical and logical database sizes;
 - parsing, staging, search, and database phase high-water marks plus spill bytes;
-- configured Rust and worker RSS limits;
+- batching/concurrency settings and observed resource high-water marks;
 - refresh role, coordinator/leader PID, active worker PID, pending state, coalesced and overflow counts, deduplicated refreshes, and the latest no-op reason.
 
 A healthy idle managed store reports format v2, one active generation, zero run directories, and `cleanup_pending = false`.

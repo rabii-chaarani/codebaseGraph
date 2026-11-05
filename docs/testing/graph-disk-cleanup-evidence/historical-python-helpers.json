@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "work_item": "COD-99",
+  "classification": "historical evidence only; not maintained implementation or supported tooling",
+  "source_commit": "7038e66ff8271ffddc511f879cf8d28353a09b2d",
+  "approval": {
+    "date": "2026-10-27",
+    "user_decision": "i approve archiving the python helpers",
+    "scope": "Lossless historical archival of the four Python helpers; no policy exemption or release publication approval."
+  },
+  "archive": {
+    "path": "docs/testing/graph-disk-cleanup-evidence/historical-python-helpers.tar.gz",
+    "sha256": "032ac4ef9cfddf40dc0540a913f71c34de4901a4a7d61d035141cb96832e7519",
+    "size_bytes": 15810,
+    "member_paths_relative_to": "repository root"
+  },
+  "creation_command": "git archive --format=tar.gz --output=docs/testing/graph-disk-cleanup-evidence/historical-python-helpers.tar.gz 7038e66ff8271ffddc511f879cf8d28353a09b2d -- docs/testing/graph-disk-cleanup-evidence/audit.py docs/testing/graph-disk-cleanup-evidence/qualification.py docs/testing/graph-disk-cleanup-evidence/test_audit.py docs/testing/graph-disk-cleanup-evidence/test_qualification.py",
+  "files": [
+    {
+      "path": "docs/testing/graph-disk-cleanup-evidence/audit.py",
+      "git_blob_sha1": "18a90517c8f2954dea0d57df412faf119186f266",
+      "sha256": "316630c38e1638370b8c1873174d4311cc32ae4d0d9bcbbf0045e1083ccfb518",
+      "size_bytes": 6707,
+      "git_mode": "100644"
+    },
+    {
+      "path": "docs/testing/graph-disk-cleanup-evidence/qualification.py",
+      "git_blob_sha1": "1384a3298cedeb0f3d0022938e885b50875cce04",
+      "sha256": "264753ae10581691d0dc1c7591acab9601b29ff7c9f95df8d04ed56b56509e3b",
+      "size_bytes": 26627,
+      "git_mode": "100644"
+    },
+    {
+      "path": "docs/testing/graph-disk-cleanup-evidence/test_audit.py",
+      "git_blob_sha1": "f934f32d3a7f5d583c038bf4c431a48a674573e9",
+      "sha256": "b317ac2a5f4ab7ec3c52e98169e37090d65c9a7a92d397bd898962516f6f545c",
+      "size_bytes": 5632,
+      "git_mode": "100644"
+    },
+    {
+      "path": "docs/testing/graph-disk-cleanup-evidence/test_qualification.py",
+      "git_blob_sha1": "4e20628898f3e019e7e45bb956d1669b960a1e53",
+      "sha256": "4fa5adbdff51ec53085ae307444ca4800a557726b95e18cacfc42091c0c57ef3",
+      "size_bytes": 24274,
+      "git_mode": "100644"
+    }
+  ]
+}

@@ -1,0 +1,469 @@
+{
+  "records": [
+    {
+      "path": ".gitattributes",
+      "bytes": 9,
+      "sha256": "8b9c3028d6467ff3be7c793141927841d70f47f52d0590677438f488ca154992",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "cache-audit.json",
+      "bytes": 1696,
+      "sha256": "8ca16a7084171c1e4864ee17edd71f43e86953b3e6337a204f32cc1e00e3cad0",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "cargo-install-shared-resumed.log",
+      "bytes": 1473,
+      "sha256": "268d88c26153bc5152519ee8b01d36719ef52cbf2762ef2aa8bb4af7f6510699",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "default-extension-tests-shared-wrapped.log",
+      "bytes": 345,
+      "sha256": "1d518acaf738c68e51eee9227742123668322c23c8dc9b177edcfc5b30cde36a",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "default-extension-tests-shared.log",
+      "bytes": 2857,
+      "sha256": "63ff487a72dc30ece3609ee3fad1f89c22bd24940de633a01fdf9ee345b360d8",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "default-feature-tree.log",
+      "bytes": 249,
+      "sha256": "177f0c5250af3cd75299e606da184ff00eb0c9342005e7a3e7836d559edc3883",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "delivery-validation.json",
+      "bytes": 1480,
+      "sha256": "018dfb4f7e6eddc8137ec5e72d3992776eb5eec124bbf1452e77be2a7e6183e8",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "download-negative-assertions.json",
+      "bytes": 388,
+      "sha256": "a2863d80fb9caa4e881068f57f64ea681538f7427d360c2b1668a4cf14db25d8",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "download-negative-final.log",
+      "bytes": 239,
+      "sha256": "4f5aff8faec8c865e4278926dcd6c3f2db74c5a5101e3e1bcc6195a95c5924be",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "download-proxy-requests.json",
+      "bytes": 537,
+      "sha256": "7a83a8efbcdf493cf1f314e6c7f4a19d5195d4871dbfd1ffe21283240b2f0029",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "durable-guard-negative-after.log",
+      "bytes": 239,
+      "sha256": "4f5aff8faec8c865e4278926dcd6c3f2db74c5a5101e3e1bcc6195a95c5924be",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "durable-guard-negative.log",
+      "bytes": 239,
+      "sha256": "4f5aff8faec8c865e4278926dcd6c3f2db74c5a5101e3e1bcc6195a95c5924be",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "exact-native-versions.log",
+      "bytes": 983,
+      "sha256": "44aabc08658e870f531bb6925552d8712fef58b512e527527c2000d460954fc5",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "execution-review.md",
+      "bytes": 35880,
+      "sha256": "dfa3212ae2dc920d5e635e19d2be3401ac8b88228110e27db25220cb319768c7",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "guarded-build-profile-before.json",
+      "bytes": 1312,
+      "sha256": "c3acf3717254a1454fda06f73e3ff5799e0f27399a12db714a40188ff924ab87",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "guarded-installed-results.json",
+      "bytes": 2305,
+      "sha256": "568babf5fa55ee890f35118ebcce12f66522dadf5b43f0dc8f30bf03e64c82d1",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "guardian-startup-investigation.json",
+      "bytes": 3295,
+      "sha256": "30fab848bab52e8a475db3aa91e616b6d7d108229182c952cccb1c5948910f01",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "guardian-startup-investigation.md",
+      "bytes": 2430,
+      "sha256": "d8c299f4fc3dc3bbb189cbc19d8c96a46b0c2ec834cd467c3d53d342efb2ba9f",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "installed-build-help.log",
+      "bytes": 1587,
+      "sha256": "66b232cf52ac19ec8b083ad4ae2a116853139f894d3dd4be9b493de950b5b4fe",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "installed-graph-build-guarded.log",
+      "bytes": 16083,
+      "sha256": "d912be6f074f17efcc40cb369f47d9a3e52be96f0ccf5a74624322e2f67f864e",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "installed-graph-build-short.log",
+      "bytes": 16081,
+      "sha256": "d21e041eefd8334c4238017d101830941858f242d40fbcef901d38180f990550",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "installed-graph-build.log",
+      "bytes": 625,
+      "sha256": "fb7122f045ebc0626d26812f1ca63a07a37010d19d8d1fc7ce54cc94055831ac",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "installed-graph-search-guarded.log",
+      "bytes": 2604,
+      "sha256": "9a1f16ebf1372160fca12216aa296f65e5399a745eea2b9bbf0825c5e2d836ba",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "installed-graph-search-short.log",
+      "bytes": 2604,
+      "sha256": "9a1f16ebf1372160fca12216aa296f65e5399a745eea2b9bbf0825c5e2d836ba",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "installed-graph-search.log",
+      "bytes": 196,
+      "sha256": "f464771f9c80cd6ad490c7ad22dedc578e12144840163d69c49e1c04de522471",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "installed-help.log",
+      "bytes": 1443,
+      "sha256": "e73fa1fe3f566989f66dd1a9ee59ac9e32175173f26aa11bfb822b7050d9dace",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "installed-short-build-binding.json",
+      "bytes": 2075,
+      "sha256": "765ad113f60f415fa703958358e7ebf59aad154d73acc9f32a6bb277744ca7e4",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "installed-short-cache-audit.json",
+      "bytes": 419,
+      "sha256": "dca1dad27997a7e0e55a0c708f3d2b9ef4df23444dc35fe40bf2724d5e62152a",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "ladybug-shared-download.json",
+      "bytes": 1857,
+      "sha256": "4f05e181fba07fbb3327adad80248e56a656fbb847edd17b9e4594598dd37a99",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "ladybug-shared-imports.log",
+      "bytes": 992,
+      "sha256": "975ba7347b9f50f3961b4bc98db9f426600369a0a3530a07d4e0d4e380ceb812",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "loaded-module-audit.json",
+      "bytes": 1344,
+      "sha256": "330a3686c791663a80a5d6d92f50561d6e71d95fd39dad9ff6d440c251608bcd",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "missing-compiler-install-finding.md",
+      "bytes": 2163,
+      "sha256": "fa02631ed737cf8d53ea1d5e962fe7cf2880a5272c131fe6b70e14983da531e8",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "missing-compiler-install-result.json",
+      "bytes": 8673,
+      "sha256": "b21fac772327c160cbad16d75874668df3615fc199fbfd7ecf91467e5993793e",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "missing-compiler-install.log",
+      "bytes": 9413,
+      "sha256": "de2c40a4305d8087a5546c45ddd9318c84567ad55e8d2f253cd00ab09734ed0c",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "missing-native-library-install.log",
+      "bytes": 10435,
+      "sha256": "019ca3ae30d695dfa0fd2fbb2fa9db4d885823d9233a35cf93f054cf2bbe3358",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "missing-native-library-result.json",
+      "bytes": 561,
+      "sha256": "8ac74919967e34405ac95212614a792ac68f45caba4c3d9e366a720041fb98dc",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "missing-native-runtime.log",
+      "bytes": 190,
+      "sha256": "ae69807ea02235b708e5bcccb926e69a039bb837ab9238a3a0e41fbea228c573",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "missing-openssl-runtime.log",
+      "bytes": 190,
+      "sha256": "ae69807ea02235b708e5bcccb926e69a039bb837ab9238a3a0e41fbea228c573",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "missing-runtime-results.json",
+      "bytes": 778,
+      "sha256": "c898ab1d4a2218302cee2f92799613644bb2b003bd1f91be9a67890f8e744106",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "native-json-fts-create.log",
+      "bytes": 1720,
+      "sha256": "6a0a72f2aa6e40ecb5ccd9a8e6c86032164ee500faa991c967d4e74026a293e9",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "native-json-fts-reopen.log",
+      "bytes": 1142,
+      "sha256": "481319f3bde03a97b830f1a7bda75f25d218fe788d5d0123a538572deaa836a2",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "native-probe-Cargo.toml",
+      "bytes": 184,
+      "sha256": "93416b3288160c0168c3dde8e676c582dbb0dfbfbf0455c19cb37bf84eab6b32",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "native-probe.rs",
+      "bytes": 4554,
+      "sha256": "66015b12a528c8608f73c7afaf46c7ac1d52f724febe6415881b7e3623ccc604",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "native-trial-notes.md",
+      "bytes": 1109,
+      "sha256": "53f9d6aed3a5454012101de94c28e6706455b1506d3791a6096ce5938b620c62",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "optout-feature-tree.log",
+      "bytes": 65,
+      "sha256": "db6ff54745f99f38060bb30c58f49434b0b32f6e6fc060bbc6c932024bb542d5",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "os-version.json",
+      "bytes": 125,
+      "sha256": "6c9b235fa7c510e06fc910b31e8c6f1764651286ea921c83d5f1ae3e9305cc60",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "package-audit.json",
+      "bytes": 1714,
+      "sha256": "2bc404b3903450b03e2d8cef40f55eb01bfb8a52b3f2566fc38e8812c8597116",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "pr-ci-evidence.json",
+      "bytes": 9894,
+      "sha256": "64b6449cf0c68182ad969bee9626e9bfbc9358a7052170c42d452ca7e3de69ee",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "probe-static-review.md",
+      "bytes": 8347,
+      "sha256": "c9e896bb7824993f029c268a99e7b58118976473423c0adc72cf721186f47f71",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "profiles-before.json",
+      "bytes": 99,
+      "sha256": "b4224e0a83c518fd987b3639e0d68c4d396752d93b3bb1a420b3fd451881746e",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "proxy-guard-ready.json",
+      "bytes": 129,
+      "sha256": "a3d467594ae335d663cf13f0906f3dba04fe9c997579e0caf8959211634ee7fc",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "proxy-guard-requests.jsonl",
+      "bytes": 276,
+      "sha256": "8a4d879060675c3e73b5b06f647a05c78cacc55dea2a1b4324529e6288dbc19b",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "qualification-status.json",
+      "bytes": 14033,
+      "sha256": "8e3675d903ab070db724a06103db07ae366752671206fdb7e8d04b1a955904ce",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "reject-proxy.py",
+      "bytes": 1311,
+      "sha256": "ca7ada29f99cb0a6da0807d6f468c22ad81d1bce59abe5c9f743c1b03b83588f",
+      "from_archive": true,
+      "match": true
+    },
+    {
+      "path": "run-index-current.json",
+      "bytes": 18155,
+      "sha256": "c91b05691b2f5cfb7d5138426eab70c2483f0bfb41f82cbe467311468198a528",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "run-index-final-resume.json",
+      "bytes": 8278,
+      "sha256": "3f48af72140b63f734c320dfe90987c6c957e4d832a7806dc13631291464c427",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "run-native.ps1",
+      "bytes": 663,
+      "sha256": "8ff6671702586004741bbafe97e0cef9c9f5dd107ddd97a1d8da7a1cd229176e",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "runtime-download-policy-resumed.json",
+      "bytes": 1031,
+      "sha256": "747a69896a23953e236935661f515f33412b9f99266d5ace7a00b8d20e7c83e1",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "runtime-download-policy-search.json",
+      "bytes": 886,
+      "sha256": "e3073ce8cf0d7797ae1676e32aa2adf261ad5dfa2799c6e6e9a73d1eb048fa1d",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "rust-provenance.json",
+      "bytes": 821,
+      "sha256": "2fbf0f17d25af19bf614cf4610ae08ea4ec799955a0bbafaeb60d77d6a0e0aa1",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "shared-native-inputs.json",
+      "bytes": 834,
+      "sha256": "cee62679e8935f20984f6ccbe708654787ffdfb0e5067b1ee359f572e7500d4b",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "source-build-inputs.json",
+      "bytes": 2003,
+      "sha256": "7ca37b2cc378dcc9323b054142026c8818d2351a52a509e8b75c077b7588378a",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "source-build-recipe.json",
+      "bytes": 2636,
+      "sha256": "dfaf3b5771e6e8f0a0a562f61902f55273291a676663a1aa101a75d6366ff9f2",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "source-snapshot.json",
+      "bytes": 1238,
+      "sha256": "666fb584eaa744b3bf45b912be94ba68f6760bca6efc7741e4e30cfe100956f8",
+      "from_archive": false,
+      "match": true
+    },
+    {
+      "path": "tested-artifacts.json",
+      "bytes": 993,
+      "sha256": "aa15a8e25ed1a77bfbcecb10beac3cbd58b998a2bc28a576bfeee2463e001132",
+      "from_archive": false,
+      "match": true
+    }
+  ],
+  "source_sha": "5f68b41cebc327072cf71be770c9e5a9d1c0dad2",
+  "archive": {
+    "path": "historical-reject-proxy.tar.gz",
+    "bytes": 998,
+    "sha256": "d37b3c86d978018d137375e7a30316b3ce779b2787df5037237032bdec892752",
+    "creation_command": "git archive --format=tar.gz 5f68b41cebc327072cf71be770c9e5a9d1c0dad2 docs/specs/CBG-PLAT-01/execution/cod53-windows-qualification-evidence/reject-proxy.py"
+  },
+  "deterministic_second_archive": true,
+  "original_index_bytes_unchanged": true,
+  "other_historical_files_unchanged": true
+}

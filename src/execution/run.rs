@@ -1,7 +1,7 @@
 use super::parallel::build_execution_plan;
 use super::timing::elapsed_seconds;
 use crate::artifact_store::{ArtifactExpectations, ArtifactStore};
-use crate::error::{MemoryBudgetExceeded, NativeError};
+use crate::error::NativeError;
 use crate::partition_builder::GraphPartition;
 use crate::protocol::{
     GraphSummary, ManifestEntry, NativeSyntaxMaterializationRequest,
@@ -13,18 +13,34 @@ use std::fs;
 use std::path::Path;
 use std::time::Instant;
 
-// Ladybug's bundled JSON reader does not consolidate a list or glob of JSON
-// files, so production currently loads one complete table document at a time.
-const COPY_FILE_CHUNK_BYTES: usize = usize::MAX;
+#[cfg(test)]
+thread_local! {
+    static OPERATION_FINISHED_HOOK: std::cell::RefCell<Option<Box<dyn FnOnce()>>> = const { std::cell::RefCell::new(None) };
+}
 
 pub fn execute_materialization_pipeline(
     request: &NativeSyntaxMaterializationRequest,
 ) -> Result<NativeSyntaxMaterializationResponse, NativeError> {
+    // Keep use ownership over scan, artifact persistence, sidecar construction,
+    // native helper lifetimes and final result assembly.
+    let _artifact_use = crate::storage::maintenance_ownership::ArtifactUseLease::acquire_shared(
+        &request.resolved_artifact_root(),
+    )?;
+    let _database_use = crate::storage::maintenance_ownership::DatabaseUseLease::acquire_shared(
+        Path::new(&request.db_path),
+    )?;
     let mut phase_timings = BTreeMap::new();
     let scan_started = Instant::now();
     let scan = scan::scan_sources(request)?;
     phase_timings.insert("scan_seconds".to_string(), elapsed_seconds(scan_started));
-    execute_scanned_materialization(scan, phase_timings)
+    let result = execute_scanned_materialization(scan, phase_timings);
+    #[cfg(test)]
+    OPERATION_FINISHED_HOOK.with(|hook| {
+        if let Some(hook) = hook.borrow_mut().take() {
+            hook();
+        }
+    });
+    result
 }
 
 fn execute_scanned_materialization(
@@ -41,17 +57,14 @@ fn execute_scanned_materialization(
         .ok()
         .and_then(|mib| mib.checked_mul(1024 * 1024))
         .ok_or_else(|| {
-            NativeError::MemoryBudgetExceeded(MemoryBudgetExceeded::new(
-                "staging_spill_configuration",
-                request.rust_memory_limit_bytes().unwrap_or(u64::MAX),
-                u64::MAX,
-                0,
-            ))
+            NativeError::InvalidInput(
+                "spill chunk size cannot be represented on this platform".into(),
+            )
         })?;
     let mut staging_accumulator = staging_writer::StagingAccumulator::with_limits(
         &request.staging_dir,
         spill_chunk_bytes,
-        COPY_FILE_CHUNK_BYTES,
+        spill_chunk_bytes,
     )?;
     let materialization_paths = scan.supported.keys().cloned().collect::<Vec<_>>();
     let materialization_total = materialization_paths.len();
@@ -65,6 +78,15 @@ fn execute_scanned_materialization(
     // proportional to the number of source files.
     let mut progress_events = BTreeMap::new();
     let mut planned_entries = BTreeMap::new();
+    let mut transient_partitions = Vec::new();
+    transient_partitions
+        .try_reserve_exact(materialization_total)
+        .map_err(|error| {
+            NativeError::Io(std::io::Error::other(format!(
+                "failed to reserve transient artifact slots: {error}"
+            )))
+        })?;
+    transient_partitions.resize_with(materialization_total, || None);
     let mut parsed_paths = BTreeSet::new();
     let mut artifacts_reused = 0usize;
     let mut artifacts_rebuilt = 0usize;
@@ -94,6 +116,9 @@ fn execute_scanned_materialization(
                     },
                 );
             }
+            if let Some(transient) = result.transient {
+                transient_partitions[index] = Some(transient);
+            }
             planned_entries.insert(
                 result.partition.entry.path.clone(),
                 result.partition.entry.compact(),
@@ -114,17 +139,20 @@ fn execute_scanned_materialization(
         diff,
     } = scan;
     diagnostics.extend(parse_diagnostics);
-    let artifact_memory_limit = request.rust_memory_limit_bytes()?;
     let mut materialized_entries = BTreeMap::new();
     let mut rebuilt_entries = BTreeMap::new();
     for (index, path) in materialization_paths.iter().enumerate() {
-        let partition = load_planned_partition(
-            &supported,
-            path,
-            &planned_entries,
-            &artifact_store,
-            artifact_memory_limit,
-        )?;
+        let transient = transient_partitions[index].take();
+        let partition = if let Some(transient) = transient.as_ref() {
+            let snapshot = &supported[path];
+            transient.load(&ArtifactExpectations {
+                path,
+                content_hash: &snapshot.content_hash,
+                language: snapshot.language.as_deref().unwrap_or_default(),
+            })?
+        } else {
+            load_planned_partition(&supported, path, &planned_entries, &artifact_store)?
+        };
         let compact_entry = partition.entry.clone().compact();
         materialized_entries.insert(path.clone(), compact_entry.clone());
         if parsed_paths.contains(path) {
@@ -132,6 +160,7 @@ fn execute_scanned_materialization(
         }
         let staging_started = Instant::now();
         staging_accumulator.add_partition(&partition);
+        drop(transient);
         staging_seconds += elapsed_seconds(staging_started);
         if request.progress {
             progress_events.insert(
@@ -235,7 +264,6 @@ fn load_planned_partition(
     path: &str,
     planned_entries: &BTreeMap<String, ManifestEntry>,
     artifact_store: &ArtifactStore,
-    memory_limit_bytes: u64,
 ) -> Result<GraphPartition, NativeError> {
     let snapshot = supported.get(path).ok_or_else(|| {
         NativeError::InvalidInput(format!(
@@ -253,14 +281,13 @@ fn load_planned_partition(
         ))
     })?;
     artifact_store
-        .load_partition_with_budget(
+        .load_partition(
             artifact_key,
             &ArtifactExpectations {
                 path,
                 content_hash: &snapshot.content_hash,
                 language: snapshot.language.as_deref().unwrap_or_default(),
             },
-            memory_limit_bytes,
         )?
         .ok_or_else(|| {
             NativeError::InvalidInput(format!(
@@ -287,6 +314,108 @@ mod tests {
     use crate::protocol::{ManifestEntry, NativeManifest, OntologySchema};
     use std::path::{Path, PathBuf};
     use std::time::{SystemTime, UNIX_EPOCH};
+
+    #[test]
+    fn dc_s2_public_pipeline_keeps_use_guards_through_final_result_assembly() {
+        use crate::storage::maintenance_ownership::{ArtifactUseLease, DatabaseUseLease};
+        use std::sync::mpsc;
+        use std::time::Duration;
+        let root = unique_temp_dir("codebase-graph-s2-public-operation");
+        let source = root.join("repo");
+        let state = root.join("state");
+        fs::create_dir_all(&source).unwrap();
+        fs::write(source.join("lib.rs"), "pub fn guarded() {}\n").unwrap();
+        let fresh = crate::storage::layout::create_fresh_reference_root(&state)
+            .unwrap()
+            .unwrap();
+        let layout = crate::storage::layout::ManagedLayout::new(&state);
+        layout.ensure_roots().unwrap();
+        let writer = crate::storage::locks::open_locked(
+            layout.writer_lock_path(),
+            crate::storage::locks::LockMode::Exclusive,
+        )
+        .unwrap();
+        let domain =
+            crate::storage::maintenance_ownership::ReferenceDomain::managed(&layout).unwrap();
+        assert!(
+            crate::storage::maintenance_ownership::initialize_fresh_reference_domain(
+                &domain, &fresh, &writer
+            )
+            .unwrap()
+        );
+        drop(writer);
+        let before = match crate::storage::maintenance_ownership::observe_reference_epoch(&domain)
+            .unwrap()
+        {
+            crate::storage::maintenance_ownership::EpochObservation::Verified(epoch) => epoch,
+            other => panic!("{other:?}"),
+        };
+        let mut request = request(&source, &state, None, Vec::new());
+        request.artifact_root = layout.artifacts_root().to_string_lossy().into_owned();
+        let artifact = request.resolved_artifact_root();
+        let database = PathBuf::from(&request.db_path);
+        let (ready_tx, ready_rx) = mpsc::channel();
+        let (resume_tx, resume_rx) = mpsc::channel();
+        let worker = std::thread::spawn(move || {
+            OPERATION_FINISHED_HOOK.with(|hook| {
+                *hook.borrow_mut() = Some(Box::new(move || {
+                    ready_tx.send(()).unwrap();
+                    resume_rx.recv_timeout(Duration::from_secs(30)).unwrap();
+                }))
+            });
+            execute_materialization_pipeline(&request)
+        });
+        ready_rx.recv_timeout(Duration::from_secs(60)).unwrap();
+        assert!(artifact.is_dir());
+        assert!(matches!(
+            crate::storage::maintenance_ownership::observe_reference_epoch(&domain).unwrap(),
+            crate::storage::maintenance_ownership::EpochObservation::Pending(_)
+        ));
+        assert!(ArtifactUseLease::try_exclusive(&artifact)
+            .unwrap()
+            .is_none());
+        assert!(DatabaseUseLease::try_exclusive(&database)
+            .unwrap()
+            .is_none());
+        resume_tx.send(()).unwrap();
+        assert!(worker.join().unwrap().unwrap().database_written);
+        assert!(ArtifactUseLease::try_exclusive(&artifact)
+            .unwrap()
+            .is_some());
+        assert!(DatabaseUseLease::try_exclusive(&database)
+            .unwrap()
+            .is_some());
+        let after = match crate::storage::maintenance_ownership::observe_reference_epoch(&domain)
+            .unwrap()
+        {
+            crate::storage::maintenance_ownership::EpochObservation::Verified(epoch) => epoch,
+            other => panic!("{other:?}"),
+        };
+        assert!(after.counter() > before.counter());
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn dc_s2_pure_planning_does_not_create_use_coordination_files() {
+        let root = unique_temp_dir("codebase-graph-s2-pure-plan");
+        let source = root.join("repo");
+        let state = root.join("state");
+        fs::create_dir_all(&source).unwrap();
+        fs::write(source.join("lib.rs"), "pub fn planned() {}\n").unwrap();
+        let request = request(&source, &state, None, Vec::new());
+        crate::execution::plan_materialization(&request).unwrap();
+        assert!(!request.resolved_artifact_root().exists());
+        // Scan keeps its established snapshot/staging behavior; pure planning
+        // adds neither artifact-use nor database-use coordination files.
+        if state.exists() {
+            assert!(!fs::read_dir(&state).unwrap().any(|entry| entry
+                .unwrap()
+                .file_name()
+                .to_string_lossy()
+                .starts_with(".database-use-")));
+        }
+        fs::remove_dir_all(root).unwrap();
+    }
 
     #[test]
     fn scanned_payload_completes_materialization_after_source_removal() {
@@ -426,6 +555,11 @@ mod tests {
             .join(&corrupt_key)
             .join("partition.json");
         fs::write(&corrupt_path, "{not-json").unwrap();
+        let corrupt_identity = crate::storage::locks::path_identity(&corrupt_path).unwrap();
+        let foreign_neighbor = corrupt_path.parent().unwrap().join("foreign-neighbor");
+        fs::write(&foreign_neighbor, b"preserve foreign cache sibling").unwrap();
+        let foreign_identity = crate::storage::locks::path_identity(&foreign_neighbor).unwrap();
+
         let corrupt_previous = manifest_from_response(&response);
 
         let corrupt_state = root.join("state-corrupt");
@@ -438,6 +572,30 @@ mod tests {
         ))
         .unwrap();
         assert!(corrupt_response.artifacts_rebuilt >= 1);
+        assert_eq!(fs::read(&corrupt_path).unwrap(), b"{not-json");
+        assert_eq!(
+            crate::storage::locks::path_identity(&corrupt_path).unwrap(),
+            corrupt_identity
+        );
+        assert_eq!(
+            fs::read(&foreign_neighbor).unwrap(),
+            b"preserve foreign cache sibling"
+        );
+        assert_eq!(
+            crate::storage::locks::path_identity(&foreign_neighbor).unwrap(),
+            foreign_identity
+        );
+        assert!(corrupt_response
+            .diagnostics
+            .iter()
+            .any(|message| message.contains("artifact cache publication conflict")));
+        assert!(!fs::read_dir(corrupt_state.join("staging"))
+            .unwrap()
+            .filter_map(Result::ok)
+            .any(|entry| entry
+                .file_name()
+                .to_string_lossy()
+                .starts_with(".partition-fallback-")));
 
         let _ = fs::remove_dir_all(root);
     }
@@ -721,8 +879,6 @@ mod tests {
             atomic_rebuild: false,
             strict: true,
             parallel: false,
-            worker_memory_mib: 768,
-            rust_memory_mib: 384,
             spill_chunk_mib: 32,
             max_parallelism: 2,
             progress: false,

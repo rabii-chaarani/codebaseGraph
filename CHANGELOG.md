@@ -1,5 +1,104 @@
 # Changelog
 
+## [4.2.1](https://github.com/rabii-chaarani/codebaseGraph/compare/v4.2.0...v4.2.1) (2026-11-05)
+
+
+### Bug Fixes
+
+* **mcp:** honor Windows client profiles and shim commands ([#164](https://github.com/rabii-chaarani/codebaseGraph/issues/164)) ([2f1fe10](https://github.com/rabii-chaarani/codebaseGraph/commit/2f1fe10f6fc5f275f61e4a9bc2d38b4b33a7b5a9))
+
+## [4.2.0](https://github.com/rabii-chaarani/codebaseGraph/compare/v4.1.0...v4.2.0) (2026-11-04)
+
+
+### Features
+
+* **release:** consolidate approved COD-103 production gates ([053ef0e](https://github.com/rabii-chaarani/codebaseGraph/commit/053ef0e6b85259056a5766e637a0edd94a682b4e))
+
+
+### Bug Fixes
+
+* **ci:** archive historical Python evidence helpers ([#159](https://github.com/rabii-chaarani/codebaseGraph/issues/159)) ([34eac4f](https://github.com/rabii-chaarani/codebaseGraph/commit/34eac4f8644adc046093babd84ee1fdbffdae853))
+* **extensions:** enable default Windows bundled bytes (COD-53 subset) ([#158](https://github.com/rabii-chaarani/codebaseGraph/issues/158)) ([c4e9767](https://github.com/rabii-chaarani/codebaseGraph/commit/c4e9767d8f3ec92c40dd2f809b8421b8f9c78742))
+* **release:** bundle relocatable macOS OpenSSL runtimes (COD-54) ([#163](https://github.com/rabii-chaarani/codebaseGraph/issues/163)) ([c60a00c](https://github.com/rabii-chaarani/codebaseGraph/commit/c60a00c1d747b73789cd6edc7ee20601182a35ca))
+* **release:** normalize verified dry-run crate archive ([#181](https://github.com/rabii-chaarani/codebaseGraph/issues/181)) ([c04c8a5](https://github.com/rabii-chaarani/codebaseGraph/commit/c04c8a53d33a7f8107e965e503fc4f700880bde3))
+* **release:** upload verified assets before immutable publication ([#169](https://github.com/rabii-chaarani/codebaseGraph/issues/169)) ([a07e6d1](https://github.com/rabii-chaarani/codebaseGraph/commit/a07e6d1e322622b7cee5b5358816cb3d54c17647))
+* **storage:** isolate macOS nested directory scan cursors (COD-52) ([#157](https://github.com/rabii-chaarani/codebaseGraph/issues/157)) ([62dcb10](https://github.com/rabii-chaarani/codebaseGraph/commit/62dcb10305af07e24be7b1a960407f47135bf93c))
+
+## [4.1.0](https://github.com/rabii-chaarani/codebaseGraph/compare/v4.0.5...v4.1.0) (2026-11-03)
+
+
+### Features
+
+* **release:** consolidate approved COD-103 production gates ([053ef0e](https://github.com/rabii-chaarani/codebaseGraph/commit/053ef0e6b85259056a5766e637a0edd94a682b4e))
+
+## [4.0.5](https://github.com/rabii-chaarani/codebaseGraph/compare/v4.0.4...v4.0.5) (2026-10-31)
+
+
+### Bug Fixes
+
+* **release:** bundle relocatable macOS OpenSSL runtimes (COD-54) ([#163](https://github.com/rabii-chaarani/codebaseGraph/issues/163)) ([c60a00c](https://github.com/rabii-chaarani/codebaseGraph/commit/c60a00c1d747b73789cd6edc7ee20601182a35ca))
+
+## [4.0.4](https://github.com/rabii-chaarani/codebaseGraph/compare/v4.0.3...v4.0.4) (2026-10-30)
+
+
+### Bug Fixes
+
+* **release:** upload verified assets before immutable publication ([#169](https://github.com/rabii-chaarani/codebaseGraph/issues/169)) ([a07e6d1](https://github.com/rabii-chaarani/codebaseGraph/commit/a07e6d1e322622b7cee5b5358816cb3d54c17647))
+
+## [4.0.3](https://github.com/rabii-chaarani/codebaseGraph/compare/v4.0.2...v4.0.3) (2026-10-29)
+
+
+### Bug Fixes
+
+* **extensions:** enable default Windows bundled bytes (COD-53 subset) ([#158](https://github.com/rabii-chaarani/codebaseGraph/issues/158)) ([c4e9767](https://github.com/rabii-chaarani/codebaseGraph/commit/c4e9767d8f3ec92c40dd2f809b8421b8f9c78742))
+
+## [4.0.2](https://github.com/rabii-chaarani/codebaseGraph/compare/v4.0.1...v4.0.2) (2026-10-28)
+
+
+### Bug Fixes
+
+* **storage:** isolate macOS nested directory scan cursors (COD-52) ([#157](https://github.com/rabii-chaarani/codebaseGraph/issues/157)) ([62dcb10](https://github.com/rabii-chaarani/codebaseGraph/commit/62dcb10305af07e24be7b1a960407f47135bf93c))
+
+## [4.0.1](https://github.com/rabii-chaarani/codebaseGraph/compare/v3.0.4...v4.0.1) (2026-10-27)
+
+This release replaces the unpublished 4.0.0 proposal ([#156](https://github.com/rabii-chaarani/codebaseGraph/pull/156)). Its production gate failed before any tag or release was created. The storage changes below are included because 3.0.4 remains the last published release.
+
+### ⚠ BREAKING CHANGES
+
+* **storage:** database open helpers return GuardedDatabase and reject path forms whose native resource identity cannot be proven. Connections borrow the guarded handle; canonical Windows extended paths retain their namespace.
+
+### Features
+
+* **storage:** automate graph disk cleanup and controlled legacy retirement ([#153](https://github.com/rabii-chaarani/codebaseGraph/pull/153)) ([75a99c8](https://github.com/rabii-chaarani/codebaseGraph/commit/75a99c840aa53e75a3f14df8dab41979c9efa19c))
+
+### Bug Fixes
+
+* **ci:** archive historical Python evidence helpers without changing their bytes, and check repository release policy in ordinary CI ([#159](https://github.com/rabii-chaarani/codebaseGraph/pull/159)) ([34eac4f](https://github.com/rabii-chaarani/codebaseGraph/commit/34eac4f8644adc046093babd84ee1fdbffdae853))
+* **release:** stop replaying old release overrides when a manifest version has no published tag, and stage the four public archive/checksum files for the two supported native targets ([#162](https://github.com/rabii-chaarani/codebaseGraph/pull/162)).
+
+## [4.0.0](https://github.com/rabii-chaarani/codebaseGraph/compare/v3.0.4...v4.0.0) (2026-10-27)
+
+
+### ⚠ BREAKING CHANGES
+
+* **storage:** database open helpers return GuardedDatabase and reject path forms whose native resource identity cannot be proven. Connections borrow the guarded handle; canonical Windows extended paths retain their namespace.
+
+### Features
+
+* **storage:** automate graph disk cleanup and controlled legacy retirement ([#153](https://github.com/rabii-chaarani/codebaseGraph/issues/153)) ([75a99c8](https://github.com/rabii-chaarani/codebaseGraph/commit/75a99c840aa53e75a3f14df8dab41979c9efa19c))
+
+## [3.0.4](https://github.com/rabii-chaarani/codebaseGraph/compare/v3.0.3...v3.0.4) (2026-10-21)
+
+
+### Bug Fixes
+
+* **deps:** update ammonia to the patched 4.1.8 release ([#152](https://github.com/rabii-chaarani/codebaseGraph/pull/152))
+* **k-wiki:** close diagnostic gaps and add regression coverage ([#149](https://github.com/rabii-chaarani/codebaseGraph/issues/149)) ([98ff47a](https://github.com/rabii-chaarani/codebaseGraph/commit/98ff47aee385366f5884193f70f050da79169e71))
+
+### Tests
+
+* Verify stale-worker recovery and native-phase teardown across manual graph publication ([#152](https://github.com/rabii-chaarani/codebaseGraph/pull/152)).
+
 ## [3.0.3](https://github.com/rabii-chaarani/codebaseGraph/compare/v3.0.2...v3.0.3) (2026-10-15)
 
 

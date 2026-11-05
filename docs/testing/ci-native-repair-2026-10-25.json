@@ -1,0 +1,35 @@
+{
+  "baseline": "5bcec75c44a259d1e4e15fbc37d79b9e49f59e47",
+  "baseline_ci_run": 40094039013,
+  "baseline_windows_failures": 33,
+  "checks": {
+    "xtask_tests": {
+      "passed": 35
+    },
+    "focused_storage_tests": {
+      "passed": 10,
+      "profile": "native-tests",
+      "platform": "macos-arm64"
+    },
+    "format": "passed",
+    "clippy_workspace_all_targets_all_features_warnings_denied": "passed",
+    "workflow_policy": "passed",
+    "windows_projection_locks_cross_check": "passed; compile-only, not a native Windows runtime result",
+    "package_bytes": 10485511,
+    "package_limit_bytes": 10485760
+  },
+  "native_verification": "pending; local optimized unit cohort running; hosted execution required",
+  "inputs": {
+    ".github/workflows/native.yml": "393ee139dce235d5cc8745d6a2b1728e88d6f2ba60e1d780e022c02c535e78e7",
+    "Cargo.toml": "344ab68b5e38b642c86d27548807fc5632d8f2aa4b2cb6e33bc20d90d728b5da",
+    "crates/xtask/src/main.rs": "85e9e107b93238c04649a9bfa99b6f3ae2fda978020985056981e4c7d7967c41",
+    "crates/xtask/src/native_tests.rs": "15f82582ca10ce0507a31cdc644b09e93c87802166e5fbd9cd5468b4f0501369",
+    "src/storage/inventory.rs": "7efaa197a9a43af5a1820fe2f776b675f8b5a975e972edd159e3efdcb68755b0",
+    "src/storage/locks.rs": "4c4a00f1186bea9c9d279376b8009260a0415e039050f7896974cb1fa8483114",
+    "src/storage/maintenance_candidate.rs": "e5b12f88d4c8b18329734c347a3bf1eed2aa3b986484a81e5bf8891c11392b3f",
+    "src/storage/maintenance_legacy_bootstrap.rs": "83aa5326b85153ad782b0df2766d9cd3c4800c58915417d3cf8152259fe92246",
+    "src/storage/maintenance_projection.rs": "4565d3a507eee3122bf67d03689f0d1cc415544e5a79e07604378f73c3b1feb5",
+    "src/storage/maintenance_workspace_gate.rs": "f8abc36c8d3ca88b2ce87b690dd0b5d513707e89add5f453e17d91198090d772",
+    "src/storage/managed.rs": "29790ff1fe1f16c77645b408654f8bda325e5d771afa29539fdcd8c5aae461a2"
+  }
+}

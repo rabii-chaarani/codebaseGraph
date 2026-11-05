@@ -1,0 +1,8 @@
+{
+  "bytes": 8451673,
+  "sha256": "e843e817b7c9da071d1983d756c1eb90e7034a96f886bcfeafd15e2fe0a73132",
+  "source_snapshot": "subset-source-snapshot.json",
+  "command": "cargo package --locked --allow-dirty",
+  "result": 0,
+  "scope": "exact changed subset extracted source compiled on macOS0.19pinnednative notWindowsqualification"
+}

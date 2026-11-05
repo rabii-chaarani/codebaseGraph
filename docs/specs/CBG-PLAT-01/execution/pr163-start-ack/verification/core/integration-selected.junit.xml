@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="nextest-run" tests="4" failures="0" errors="0" uuid="5a2de630-81bd-4656-b678-f073e08ba333" timestamp="2026-10-30T20:19:37.330+09:30" time="417.589">
+    <testsuite name="codebase-graph::refresh_recovery_process" tests="4" disabled="0" errors="0" failures="0">
+        <testcase name="lifecycle_faults::authenticated_cancellation_cleans_loader_and_retries_pending_edit" classname="codebase-graph::refresh_recovery_process" timestamp="2026-10-30T20:19:37.331+09:30" time="107.295">
+        </testcase>
+        <testcase name="lifecycle_faults::owner_exit_after_state_before_start_cleans_gated_tree" classname="codebase-graph::refresh_recovery_process" timestamp="2026-10-30T20:21:24.627+09:30" time="90.445">
+        </testcase>
+        <testcase name="lifecycle_faults::paused_database_loader_exits_after_outer_worker_failure_and_refresh_recovers" classname="codebase-graph::refresh_recovery_process" timestamp="2026-10-30T20:22:55.072+09:30" time="110.549">
+        </testcase>
+        <testcase name="lifecycle_faults::unavailable_guardian_preserves_paused_tree_evidence_until_emptiness_is_proven" classname="codebase-graph::refresh_recovery_process" timestamp="2026-10-30T20:24:45.622+09:30" time="109.299">
+        </testcase>
+    </testsuite>
+</testsuites>

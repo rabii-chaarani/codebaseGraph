@@ -1,0 +1,26 @@
+[
+  {
+    "name": "cargo",
+    "url": "https://static.rust-lang.org/dist/2026-05-28/cargo-1.96.0-x86_64-pc-windows-msvc.tar.xz",
+    "sha256": "a1ba24b0a35d1c3ce86dd24cf8633ad0d0b0eb1e5eaa1d01644417dea28351ee",
+    "components": [
+      "cargo"
+    ]
+  },
+  {
+    "name": "rustc",
+    "url": "https://static.rust-lang.org/dist/2026-05-28/rustc-1.96.0-x86_64-pc-windows-msvc.tar.xz",
+    "sha256": "cfba935dbd6d0deaf0a02339f9b6c0573b30f41697919ba7532b60ef2e6306b4",
+    "components": [
+      "rustc"
+    ]
+  },
+  {
+    "name": "rust-std",
+    "url": "https://static.rust-lang.org/dist/2026-05-28/rust-std-1.96.0-x86_64-pc-windows-msvc.tar.xz",
+    "sha256": "48b22b9237d5d43cbec4f7076e816a4d0b1b682932dfa82afd2573434d43fc53",
+    "components": [
+      "rust-std-x86_64-pc-windows-msvc"
+    ]
+  }
+]

@@ -1,0 +1,79 @@
+    Updating crates.io index
+warning: crate codebase-graph@4.0.2 already exists on crates.io index
+   Packaging codebase-graph v4.0.2 (/private/tmp/codebasegraph-pr158-ci-merge)
+    Updating crates.io index
+    Packaged 207 files, 14.0MiB (8.1MiB compressed)
+   Verifying codebase-graph v4.0.2 (/private/tmp/codebasegraph-pr158-ci-merge)
+   Compiling shlex v2.0.1
+   Compiling find-msvc-tools v0.1.9
+   Compiling tree-sitter-language v0.1.8
+   Compiling proc-macro2 v1.0.106
+   Compiling quote v1.0.45
+   Compiling rustversion v1.0.22
+   Compiling serde_core v1.0.228
+   Compiling scratch v1.0.9
+   Compiling equivalent v1.0.2
+   Compiling serde_json v1.0.150
+   Compiling hashbrown v0.15.5
+   Compiling cc v1.2.64
+   Compiling termcolor v1.4.1
+   Compiling unicode-width v0.1.14
+   Compiling cxxbridge-flags v1.0.138
+   Compiling indexmap v2.7.1
+   Compiling autocfg v1.5.1
+   Compiling num-traits v0.2.19
+   Compiling codespan-reporting v0.11.1
+   Compiling link-cplusplus v1.0.12
+   Compiling libmimalloc-sys v0.1.49
+   Compiling cxx v1.0.138
+   Compiling cmake v0.1.58
+   Compiling aho-corasick v1.1.4
+   Compiling powerfmt v0.2.0
+   Compiling regex-syntax v0.8.11
+   Compiling rust_decimal v1.42.1
+   Compiling deranged v0.3.11
+   Compiling syn v2.0.117
+   Compiling tree-sitter-javascript v0.25.0
+   Compiling tree-sitter-cpp v0.23.4
+   Compiling tree-sitter-python v0.25.0
+   Compiling tree-sitter-typescript v0.23.2
+   Compiling regex-automata v0.4.14
+   Compiling tree-sitter-html v0.23.2
+   Compiling tree-sitter-c v0.24.2
+   Compiling tree-sitter-rust v0.24.2
+   Compiling tree-sitter-fortran v0.6.0
+   Compiling tree-sitter-css v0.25.0
+   Compiling tree-sitter-go v0.25.0
+   Compiling arrayvec v0.7.6
+   Compiling cty v0.2.2
+   Compiling time-core v0.1.2
+   Compiling crc-catalog v2.5.0
+   Compiling foldhash v0.1.5
+   Compiling serde v1.0.228
+   Compiling same-file v1.0.6
+   Compiling num-conv v0.1.0
+   Compiling getrandom v0.3.4
+   Compiling time v0.3.36
+   Compiling walkdir v2.5.0
+   Compiling tree-sitter v0.25.10
+   Compiling cxx-build v1.0.138
+   Compiling regex v1.12.4
+   Compiling crc v3.4.0
+   Compiling cxxbridge-macro v1.0.138
+   Compiling serde_derive v1.0.228
+   Compiling lbug v0.19.0
+   Compiling codebase-graph v4.0.2 (/private/tmp/codebasegraph-pr158-ci-merge/target/package/codebase-graph-4.0.2)
+   Compiling fsevent-sys v4.1.0
+   Compiling streaming-iterator v0.1.9
+   Compiling byteorder v1.5.0
+   Compiling log v0.4.32
+   Compiling uuid v1.18.1
+   Compiling bitflags v2.13.0
+   Compiling notify-types v2.0.0
+   Compiling lzma-rs v0.3.0
+   Compiling notify v8.2.0
+   Compiling mimalloc v0.1.52
+   Compiling fs2 v0.4.3
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 38.46s
+   Uploading codebase-graph v4.0.2 (/private/tmp/codebasegraph-pr158-ci-merge)
+warning: aborting upload due to dry run

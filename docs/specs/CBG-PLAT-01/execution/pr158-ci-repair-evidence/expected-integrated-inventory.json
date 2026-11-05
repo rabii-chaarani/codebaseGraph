@@ -1,0 +1,11 @@
+{
+  "Cargo.toml": "93a90ad47726f12faf1b6e32d2c5f8efb0a306edd492d0cb37e028ece2414f24",
+  "Cargo.lock": "5ec48f452b9fc349a73dc91e79a62e6b4483e008b6feeff7924baa657a02025f",
+  "crates/k-wiki/Cargo.toml": "7dd10bba3a8f3d4869ae5926b70c6d3a331a7afaf2b9242319ab3cf303c30816",
+  "crates/xtask/Cargo.toml": "ad470786428820842dc5a2c03ccbe0a7a549474f7bd84304904f9c846d979d62",
+  "crates/xtask/src/main.rs": "70507a624361a97a7bcdb28412b31112258fcb023fa8e80dccd943b113b335ad",
+  ".github/workflows/ci.yml": "a2cc1e8eb18dee65eaa72f9fdfbfd7a9df23f3a071a4faa935e124a888c747bb",
+  "docs/release.md": "5f867117736b465211c677ae7bbb19aec5d47ec7837228d7f50cfe0ba7fb3991",
+  "docs/specs/CBG-PLAT-01/execution/cod53-windows-qualification-evidence/historical-reject-proxy.tar.gz": "d37b3c86d978018d137375e7a30316b3ce779b2787df5037237032bdec892752",
+  "docs/specs/CBG-PLAT-01/execution/cod53-windows-qualification-evidence/archived-inputs.json": "fed1f963d456b8634542f0f8c13649f9aa383c00d7dd2f7b034978de7bc5ac42"
+}

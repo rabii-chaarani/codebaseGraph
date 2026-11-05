@@ -1,0 +1,28 @@
+{
+  "baseline": "88a369f5820c7c21e05a4336f061887cc5f5d52f",
+  "overlay": [
+    {
+      "path": "src/storage/maintenance_budget.rs",
+      "sha256": "3288f29d3133f7f403afcf275d35e8c55fb53cc487b0251b245070e19daa27e0",
+      "bytes": 12186
+    },
+    {
+      "path": "src/storage/maintenance_json.rs",
+      "sha256": "d6c2162b2aa37d77667900f5491a5e09fb6a66e1c4ff7ba9d93d056794e45d9e",
+      "bytes": 19665
+    },
+    {
+      "path": "src/storage/maintenance.rs",
+      "sha256": "c5d94f0ac68d9ed81f8dfb060928887f1c2641798236ba60ecb15f9cc9c970a7",
+      "bytes": 7896
+    },
+    {
+      "path": "src/storage/mod.rs",
+      "sha256": "9ac2905364228f9376c69fbc6347fe84b043b5ca6e63e27046bb5eeedaac6081",
+      "bytes": 333
+    }
+  ],
+  "source": "/private/tmp/dc-s3-facts-final-lm75n3xh/repo",
+  "prior_snapshot": "/private/tmp/dc-s3-facts-snapshot-hy04bi67",
+  "qualification": "facts-only; no storage authority; source frozen before cargo"
+}

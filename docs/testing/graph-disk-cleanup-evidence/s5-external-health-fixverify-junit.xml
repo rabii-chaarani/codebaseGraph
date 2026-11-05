@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="nextest-run" tests="2" failures="0" errors="0" uuid="5f3b8e10-9d6f-414b-a4ec-6a910655d899" timestamp="2026-10-21T03:24:43.730+09:30" time="0.042">
+    <testsuite name="codebase-graph::storage_maintenance" tests="2" disabled="0" errors="0" failures="0">
+        <testcase name="health_preserves_legacy_fields_and_marks_unobserved_maintenance_unknown" classname="codebase-graph::storage_maintenance" timestamp="2026-10-21T03:24:43.731+09:30" time="0.024">
+        </testcase>
+        <testcase name="nonboolean_quiescence_confirmation_is_rejected_before_repository_effects" classname="codebase-graph::storage_maintenance" timestamp="2026-10-21T03:24:43.754+09:30" time="0.018">
+        </testcase>
+    </testsuite>
+</testsuites>

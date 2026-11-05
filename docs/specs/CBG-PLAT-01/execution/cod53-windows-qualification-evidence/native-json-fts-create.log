@@ -1,0 +1,45 @@
+PRESEEDED_JSON_FTS_FROM_DEFAULT_LIBRARY
+SQL LOAD json
+result
+Extension: json has been loaded.
+
+SQL LOAD fts
+result
+Extension: fts has been loaded.
+
+MODULE lbug_shared.dll C:\Users\rcha0053\pr158-qualification\ladybug-shared-0.19.0\lbug_shared.dll
+MODULE libssl-3-x64.dll C:\Users\rcha0053\AppData\Local\anaconda3\Library\bin\libssl-3-x64.dll
+MODULE libcrypto-3-x64.dll C:\Users\rcha0053\AppData\Local\anaconda3\Library\bin\libcrypto-3-x64.dll
+MODULE MSVCP140.dll C:\WINDOWS\SYSTEM32\MSVCP140.dll
+MODULE VCRUNTIME140.dll C:\WINDOWS\SYSTEM32\VCRUNTIME140.dll
+MODULE VCRUNTIME140_1.dll C:\WINDOWS\SYSTEM32\VCRUNTIME140_1.dll
+SQL CREATE NODE TABLE Documents (ID INT64, title STRING, text STRING, PRIMARY KEY(ID))
+result
+Table Documents has been created.
+
+SQL COPY Documents FROM 'C:/Users/rcha0053/pr158-qualification/native-positive-db/documents.json'
+result|skipped_duplicate_pk_count|skipped_duplicate_pks
+1 tuples have been copied to the Documents table.|0|[]
+
+SQL MATCH (d:Documents) RETURN d.title, d.text
+d.title|d.text
+six|Hello World
+
+SQL CALL CREATE_FTS_INDEX('Documents', 'documents_index', ['title', 'text'], stemmer := 'english')
+result
+Index documents_index has been created.
+
+SQL CALL QUERY_FTS_INDEX('Documents', 'documents_index', 'world') RETURN node.title
+node.title
+six
+
+SQL CALL SHOW_LOADED_EXTENSIONS() RETURN *
+extension name|extension source|extension path
+JSON|OFFICIAL|C:\Users\rcha0053\pr158-qualification\profile-native-positive/.lbdb/extension/0.19.0/win_amd64/json/libjson.lbug_extension
+FTS|OFFICIAL|C:\Users\rcha0053\pr158-qualification\profile-native-positive/.lbdb/extension/0.19.0/win_amd64/fts/libfts.lbug_extension
+
+SQL CHECKPOINT
+
+
+PASS_JSON_COPY_FTS_CREATE_QUERY
+NATIVE_EXIT_STATUS=0

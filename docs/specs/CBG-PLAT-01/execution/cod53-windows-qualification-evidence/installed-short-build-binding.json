@@ -1,0 +1,26 @@
+{
+  "command": "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"C:/Users/rcha0053/pr158-qualification/run-native.ps1\" \"C:/Users/rcha0053/pr158-qualification/installed/bin/codebase-graph.exe\" build --repo-root \"C:/Users/rcha0053/q158\" --mode full --no-git --single-thread --max-parallelism 1 --json > \"C:/Users/rcha0053/pr158-qualification/installed-graph-build-short.log\" 2>&1",
+  "cwd": "C:\\Users\\rcha0053\\q158",
+  "launch_observed_at": "2026-10-28T12:13:32.657Z",
+  "source": "retained root session tool-call details",
+  "env": {
+    "LADYBUG_HTTPS_PROXY": "http://127.0.0.1:59741",
+    "LADYBUG_HTTP_PROXY": "http://127.0.0.1:59741",
+    "LADYBUG_ALL_PROXY": "http://127.0.0.1:59741",
+    "HTTPS_PROXY": "http://127.0.0.1:59741",
+    "HTTP_PROXY": "http://127.0.0.1:59741",
+    "ALL_PROXY": "http://127.0.0.1:59741",
+    "LADYBUG_NO_PROXY": null,
+    "no_proxy": null,
+    "NO_PROXY": null,
+    "QUALIFICATION_NATIVE_PATH": "C:\\Users\\rcha0053\\pr158-qualification\\ladybug-shared-0.19.0;C:\\Users\\rcha0053\\AppData\\Local\\anaconda3\\Library\\bin;C:\\Windows\\System32;C:\\Windows;C:\\Windows\\System32\\WindowsPowerShell\\v1.0",
+    "USERPROFILE": "C:\\Users\\rcha0053\\q158home",
+    "HOME": "C:\\Users\\rcha0053\\q158home"
+  },
+  "profile_before": "fresh directory created only after assert not exists; retained launch code and tool result",
+  "before_evidence": "short_profile=home/q158home; assert not short_profile.exists(); short_profile.mkdir()",
+  "native_exit": 0,
+  "observed_at": "2026-10-29T01:10:08.523341+00:00",
+  "barrier_limit": "rejecting proxy59741 observed in prior native negative/positive runs. Kernel restart lost listener; uninterrupted listener lifetime across this long build cannot be established. No build request was recorded before restart. Current installed build result/cache is valid but uninterrupted runtime downloader block for this build is not claimed.",
+  "not_a_benchmark": "host wall-time jumps/suspension; preserve raw phase durations without performance conclusions"
+}

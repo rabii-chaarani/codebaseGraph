@@ -1,0 +1,33 @@
+{
+  "primary_sources": {
+    "file_api_mode": "https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-arefileapisansi",
+    "ansi_codepage": "https://learn.microsoft.com/en-us/windows/win32/api/winnls/nf-winnls-getacp",
+    "utf8_process_codepage": "https://learn.microsoft.com/en-us/windows/apps/design/globalizing/use-utf8-code-page",
+    "create_file_a": "https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-createfilea",
+    "namespace_semantics": "https://learn.microsoft.com/en-us/windows/win32/fileio/naming-a-file",
+    "msvc_filesystem_conversion": "https://github.com/microsoft/STL/blob/main/stl/src/filesystem.cpp"
+  },
+  "policy": "Preserve exact canonical Disk/UNC/VerbatimDisk/VerbatimUNC namespaces; nonASCII only with effective ANSI/OEM FileAPI codepage65001; no prefix stripping or process-global setter.",
+  "prior_windows_p1_report": {
+    "path": "/private/tmp/cleanup-s2-pathfix-review-wt1kmbw3/windows-prefix-followup.md",
+    "sha256": "583c1db9663998b036ed62b31c4e8fee9269b82d5b0eede713492f52671f0220"
+  },
+  "prior_tilde_failure": {
+    "path": "/private/tmp/cleanup-s2-wrapper-review-ccjn2do9/tilde-probe.log",
+    "sha256": "417acd28bdc8143feeda839a24ffe0d01cbb1cbe3ef3f125a16dc1d370c06bb6"
+  },
+  "prior_corrupt_native_fixture_leak": {
+    "path": "/private/tmp/codebasegraph-disk-cleanup-7t9af0a6/s2-wrapper-evidence/corrupt-native-fixture-leak.log",
+    "sha256": "387544134e47bbe5f63d1601f8279dee31b30a8741fa71ec5ad8bf038d0c2ee3"
+  },
+  "previous_snapshot": {
+    "path": "/private/tmp/cleanup-s2-wrapper-pathfix-yowgkj08/snapshot.json",
+    "sha256": "530429c9426c680a5260f2ad55139c2f5ad85442347bd3bd4f92882419fd219a"
+  },
+  "pinned_createfilea": {
+    "path": "/Users/rabii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/lbug-0.19.0/lbug-src/src/common/file_system/local_file_system.cpp",
+    "sha256": "dd02f6018a2065d67d8c637cc2a5fb19b0c8c57998488d0a8bdad2a210d752ad",
+    "lines": "60-118",
+    "excerpt": "std::unique_ptr<FileInfo> LocalFileSystem::openFile(const std::string& path, FileOpenFlags flags,\n    main::ClientContext* context) {\n    auto fullPath = expandPath(context, path);\n    auto fileFlags = flags.flags;\n    validateFileFlags(fileFlags);\n\n    int openFlags = 0;\n    bool readMode = fileFlags & FileFlags::READ_ONLY;\n    bool writeMode = fileFlags & FileFlags::WRITE;\n    if (readMode && writeMode) {\n        openFlags = O_RDWR;\n    } else if (readMode) {\n        openFlags = O_RDONLY;\n    } else if (writeMode) {\n        openFlags = O_WRONLY;\n    } else {\n        // LCOV_EXCL_START\n        throw InternalException(\"READ, WRITE or both should be specified when opening a file.\");\n        // LCOV_EXCL_STOP\n    }\n    if (writeMode) {\n        DASSERT(fileFlags & FileFlags::WRITE);\n        if (fileFlags & FileFlags::CREATE_IF_NOT_EXISTS) {\n            openFlags |= O_CREAT;\n        } else if (fileFlags & FileFlags::CREATE_AND_TRUNCATE_IF_EXISTS) {\n            openFlags |= O_CREAT | O_TRUNC;\n        }\n    }\n\n#if defined(_WIN32)\n    auto dwDesiredAccess = 0ul;\n    int dwCreationDisposition;\n    if (fileFlags & FileFlags::CREATE_IF_NOT_EXISTS) {\n        dwCreationDisposition = OPEN_ALWAYS;\n    } else if (fileFlags & FileFlags::CREATE_AND_TRUNCATE_IF_EXISTS) {\n        dwCreationDisposition = CREATE_ALWAYS;\n    } else {\n        dwCreationDisposition = OPEN_EXISTING;\n    }\n    auto dwShareMode = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE;\n    if (openFlags & (O_CREAT | O_WRONLY | O_RDWR)) {\n        dwDesiredAccess |= GENERIC_WRITE;\n    }\n    // O_RDONLY is 0 in practice, so openFlags & (O_RDONLY | O_RDWR) doesn't work.\n    if (!(openFlags & O_WRONLY)) {\n        dwDesiredAccess |= GENERIC_READ;\n    }\n    if (openFlags & FileFlags::BINARY) {\n        dwDesiredAccess |= _O_BINARY;\n    }\n\n    HANDLE handle = CreateFileA(fullPath.c_str(), dwDesiredAccess, dwShareMode, nullptr,\n        dwCreationDisposition, FILE_ATTRIBUTE_NORMAL, nullptr);\n    if (handle == INVALID_HANDLE_VALUE) {\n        throw IOException(std::format(\"Cannot open file. path: {} - Error {}: {}\", fullPath,\n            GetLastError(), std::system_category().message(GetLastError())));\n    }\n    if (flags.lockType != FileLockType::NO_LOCK) {\n        DWORD dwFlags = flags.lockType == FileLockType::READ_LOCK ?"
+  }
+}

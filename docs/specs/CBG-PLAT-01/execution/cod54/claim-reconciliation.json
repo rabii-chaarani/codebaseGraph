@@ -1,0 +1,23 @@
+{
+  "source_sha": "855c7e282a27de4afbad2d4252d7692de4b42ecb",
+  "model_scope": "older original checkout; not target-SHA-bound",
+  "claims_checked": [
+    "resp-16",
+    "resp-17",
+    "resp-255",
+    "resp-256",
+    "resp-257",
+    "resp-258",
+    "resp-113"
+  ],
+  "result": "intendedresponsibilitiesunchanged existing-claimrepair; noaddedclaims/anchors/topology",
+  "executed_reports": [
+    "final-xtask.junit.xml",
+    "source-bound-artifact.json"
+  ],
+  "not_performed": [
+    "no targetimplementationfingerprint ingestion intoolder-rootmodel",
+    "no globaldriftreconcile coveringunrelatedscopes"
+  ],
+  "pending": "reconcilearchitecturalevidenceagainstintendedsourcewhenmodelrootavailable"
+}

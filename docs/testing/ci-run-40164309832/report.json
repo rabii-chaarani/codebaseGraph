@@ -1,0 +1,82 @@
+{
+  "source_commit": "e1004eca426fb05bf865772091f24e0f6badd083",
+  "tested_merge_commit": "86f246a61976cdb2e93eb9b40cb85488021f3272",
+  "merge_difference": [
+    "CHANGELOG.md"
+  ],
+  "run_id": 40164309832,
+  "macos": {
+    "unit": "passed",
+    "generation": "passed",
+    "integration": "passed",
+    "arm_artifact": "passed",
+    "intel_artifact": "passed",
+    "test_step_minutes_including_compilation": {
+      "unit": 30.9,
+      "generation": 18.3,
+      "integration": 47.3
+    },
+    "target_inventory": {
+      "unit": 5,
+      "generation": 1,
+      "integration_and_doctests": 24,
+      "disjoint": true,
+      "complete": true
+    }
+  },
+  "windows_generation": {
+    "passed": 4,
+    "failed": 1,
+    "case": "managed_reads_survive_deferred_retired_generation_deletion",
+    "failure": "Expected cleanup_pending=false immediately after releasing the blocking handle; materialization correctly reported pending bounded cleanup.",
+    "test_seconds": 2779.1,
+    "follow_up_commit": "ef01aab",
+    "follow_up": "Use the existing shipping-health convergence helper, which checks readability, active-generation identity, empty errors, 100-entry grants and physical owned idle."
+  },
+  "remaining_ci": "run complete; required failed",
+  "local_follow_up": {
+    "format": "passed",
+    "clippy_workspace_all_targets_all_features_warnings_denied": "passed",
+    "package_bytes": 10485571,
+    "package_limit": 10485760,
+    "msvc_cross_check": "unavailable: this host's C++ compiler cannot locate Windows SDK wchar.h; native verification pending"
+  },
+  "windows_unit": {
+    "focused_preflight_passed": 45,
+    "remaining_observed_failure": "dc_s5_real_copied_orphan_staging_requires_confirmation_then_retires_without_source_edit",
+    "raw_error": "maintenance target changed during preparation",
+    "conclusion": "cancelled at 90-minute job limit before full coverage completed"
+  },
+  "windows_integration": {
+    "observed_failure": "blocked_refresh_recovers_after_memory_budget_restore_without_source_edit",
+    "failure_state": "live worker and a readable successor, recovery deadline reached with another epoch pending",
+    "conclusion": "cancelled at 90-minute job limit"
+  },
+  "linux": {
+    "library_passed": 830,
+    "library_failed": 1,
+    "case": "dc_driver_real_requested_allocations_fit_tight_ceiling_and_aligned_factory",
+    "observed_retained_bytes": 144,
+    "integration_and_doctests": "passed",
+    "follow_up": "native support removed by explicit user request; retain this executed failure evidence"
+  },
+  "follow_up": {
+    "supported_targets": [
+      "macos-arm64",
+      "windows-x86_64"
+    ],
+    "windows_runtime": "four serial unit groups and four serial integration groups; generation runs once",
+    "windows_legacy_diagnostics": "preserve source-owner stamps and staging operation context before generic errors",
+    "recovery_fixture": "Windows uses the same 5000 ms reconciliation cadence before/after restoring only memory limits, with a 240-second logical recovery bound; production timings unchanged",
+    "local_verification": {
+      "xtask_tests_passed": 42,
+      "format": "passed",
+      "clippy_workspace_all_targets_all_features_warnings_denied": "passed",
+      "workflow_policy": "passed",
+      "native_macos_focused_tests_passed": 3,
+      "native_macos_focused_tests_seconds": 245.32,
+      "package_bytes": 8444246,
+      "package_limit": 10485760
+    }
+  }
+}

@@ -11,6 +11,7 @@ source:
 
 build:
   number: 0
+  skip: true  # [not ((osx and arm64) or (win64 and not arm64))]
   script:
     - cargo build --locked --release --bin codebase-graph
     - mkdir -p "${PREFIX}/bin"

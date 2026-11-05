@@ -1,0 +1,18 @@
+{
+  "baseline": "88a369f5820c7c21e05a4336f061887cc5f5d52f",
+  "repo": "/private/tmp/cleanup-s2-windowsfix-review-s6o1lmgl/repo",
+  "patch_sha256": "c0d22b8bcbbdd6b838dac8506e29cf1dd698b87f924a22b1152df622a806211b",
+  "source": {
+    "Cargo.toml": "308ca32ea3d86311d11700d9c435030abf145d3d9e9a73f658f41a97c146beaa",
+    "src/db_writer/access.rs": "104d9ed3ecc6b3b3c3ecef64a16b462464465d6f7aa0cbbaa2dc3d9dbc8b2a1d",
+    "src/db_writer/mod.rs": "519f8c9c5f0482d0ca4d9cea6430fe831ea753b3a13b7ba5af06499f91a0f81e",
+    "src/db_writer/tests.rs": "fb00bc867d9aaeeb903c62bae36c6d08bf20726c61efd41b726c053e0f3ff1f2",
+    "src/api/graph_read.rs": "759863fd6b8d19b4701fa5357f48404251d9fb3b603a62d3bc0be8b9333c778b"
+  },
+  "limitations": [
+    "Darwin verification requested; no Windows compile/runtime available in this session",
+    "UNC syntax checks are not native UNC execution"
+  ],
+  "root": "/private/tmp/cleanup-s2-windowsfix-review-s6o1lmgl",
+  "patch": "/private/tmp/cleanup-s2-wrapper-windowsfix-09wodcy6/wrapper-and-feature.patch"
+}

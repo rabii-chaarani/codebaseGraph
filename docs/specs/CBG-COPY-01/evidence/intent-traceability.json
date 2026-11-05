@@ -1,0 +1,66 @@
+{
+  "work": "CBG-COPY-01",
+  "approved_scope": "A",
+  "approved_spec_commit": "c5b62ba77d2f94b71714b5319f3b3fa215983f9f",
+  "base": "5839055d9279f4475f893a54abeaa542344c1b02",
+  "existing_claims": {
+    "resp-110": {
+      "contract": "fresh schema/staged-row database load",
+      "implementation": [
+        "src/db_writer/write.rs::write_database_with_metrics",
+        "src/db_writer/write.rs::write_database_isolated_with",
+        "src/db_writer/phase.rs::execute_phase"
+      ],
+      "tests": [
+        "db_writer::write::tests::isolated_phase_schedule_stops_after_first_error_without_replay",
+        "copy_phase_process::native_copy_acknowledgement_failure_preserves_managed_and_direct_bundles"
+      ]
+    },
+    "resp-273": {
+      "contract": "stage within configured budget",
+      "implementation": [
+        "src/execution/run.rs::execute_scanned_materialization",
+        "src/staging_writer/accumulator.rs::JsonTableSink",
+        "src/staging_writer/accumulator.rs::ConnectorSink"
+      ],
+      "tests": [
+        "staging_writer::accumulator::output_tests::final_output_limits_include_json_framing_and_csv_header",
+        "copy_phase_process::bounded_production_chunks_reopen_with_primary_keys_connectors_and_search"
+      ]
+    },
+    "resp-108": {
+      "contract": "publish complete graph generations",
+      "implementation": [
+        "src/api/materialization.rs::execute_materialization_request (unchanged owner)"
+      ],
+      "tests": [
+        "copy_phase_process::native_copy_acknowledgement_failure_preserves_managed_and_direct_bundles",
+        "tests/generation_storage.rs (existing suite)"
+      ]
+    },
+    "resp-264": {
+      "contract": "report build/resource failures",
+      "implementation": [
+        "src/db_writer/phase.rs::isolated_phase_error",
+        "src/db_writer/phase.rs::read_error_tail_from"
+      ],
+      "tests": [
+        "db_writer::phase::tests::oversized_native_error_preserves_query_vs_explicit_checkpoint_boundary",
+        "db_writer::phase::tests::error_tail_reader_requests_no_more_than_the_limit"
+      ]
+    },
+    "resp-281": {
+      "contract": "release graph-load phase resources",
+      "implementation": [
+        "src/db_writer/phase.rs::run_isolated_phase",
+        "src/db_writer/phase.rs::run_guarded_phase (existing containment retained)"
+      ],
+      "tests": [
+        "tests/refresh_recovery_process.rs lifecycle cases (execution pending)"
+      ]
+    }
+  },
+  "model_reconciliation": "Registered model points to original checkout. New worktree has no model; no matching-fingerprint test verdict ingestion or implemented-claim fold is claimed.",
+  "no_new_claims": "This fix restores existing fresh-load/budget/publication responsibilities; no new nodes, links or responsibilities required.",
+  "linear": "pending connection verification; no synchronization claimed"
+}

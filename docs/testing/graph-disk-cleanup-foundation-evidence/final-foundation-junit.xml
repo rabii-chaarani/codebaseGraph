@@ -1,0 +1,607 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="nextest-run" tests="299" failures="0" errors="0" uuid="bda126c4-1f9e-4980-9545-acf34ec6de22" timestamp="2026-10-21T05:03:35.032+09:30" time="37.326">
+    <testsuite name="codebase-graph" tests="166" disabled="0" errors="0" failures="0">
+        <testcase name="adapters::cli::graph::options::maintenance_tests::health_quiescence_confirmation_is_opt_in_and_documented" classname="codebase-graph" timestamp="2026-10-21T05:03:35.032+09:30" time="0.017">
+        </testcase>
+        <testcase name="api::context::tests::resolve_runtime_prefers_explicit_graph_and_manifest_paths" classname="codebase-graph" timestamp="2026-10-21T05:03:35.032+09:30" time="0.017">
+        </testcase>
+        <testcase name="api::context::tests::resolve_runtime_reads_managed_v2_active_generation" classname="codebase-graph" timestamp="2026-10-21T05:03:35.049+09:30" time="0.112">
+        </testcase>
+        <testcase name="api::context::tests::resolve_runtime_selects_configured_graph_and_manifest_paths" classname="codebase-graph" timestamp="2026-10-21T05:03:35.163+09:30" time="0.038">
+        </testcase>
+        <testcase name="api::contracts::tests::older_health_requests_decode_with_confirmation_disabled" classname="codebase-graph" timestamp="2026-10-21T05:03:35.204+09:30" time="0.016">
+        </testcase>
+        <testcase name="api::context::tests::resolve_runtime_recovers_direct_pair_before_returning_read_lease" classname="codebase-graph" timestamp="2026-10-21T05:03:35.052+09:30" time="0.180">
+        </testcase>
+        <testcase name="api::contracts::tests::public_materialization_lifecycle_and_refresh_requests_ignore_retired_fields" classname="codebase-graph" timestamp="2026-10-21T05:03:35.224+09:30" time="0.017">
+        </testcase>
+        <testcase name="api::contracts::tests::public_operation_contracts_round_trip_without_transport_types" classname="codebase-graph" timestamp="2026-10-21T05:03:35.234+09:30" time="0.016">
+        </testcase>
+        <testcase name="api::core::tests::duplicate_operations_are_rejected_in_registration" classname="codebase-graph" timestamp="2026-10-21T05:03:35.241+09:30" time="0.015">
+        </testcase>
+        <testcase name="api::core::tests::health_schema_documents_explicit_default_false_quiescence" classname="codebase-graph" timestamp="2026-10-21T05:03:35.259+09:30" time="0.015">
+        </testcase>
+        <testcase name="api::core::tests::generic_mcp_server_registration_preserves_configuration_with_short_arguments" classname="codebase-graph" timestamp="2026-10-21T05:03:35.252+09:30" time="0.034">
+        </testcase>
+        <testcase name="api::core::tests::legacy_setup_returns_structured_reinstall_error" classname="codebase-graph" timestamp="2026-10-21T05:03:35.288+09:30" time="0.024">
+        </testcase>
+        <testcase name="api::core::tests::legacy_materialize_rejects_but_plan_is_still_allowed" classname="codebase-graph" timestamp="2026-10-21T05:03:35.278+09:30" time="0.035">
+        </testcase>
+        <testcase name="api::core::tests::materialization_memory_failure_preserves_structured_details" classname="codebase-graph" timestamp="2026-10-21T05:03:35.312+09:30" time="0.016">
+        </testcase>
+        <testcase name="api::core::tests::operation_registry_is_unique_and_sorted" classname="codebase-graph" timestamp="2026-10-21T05:03:35.331+09:30" time="0.016">
+        </testcase>
+        <testcase name="api::core::tests::mcp_install_operation_preserves_unrelated_client_configuration" classname="codebase-graph" timestamp="2026-10-21T05:03:35.313+09:30" time="0.037">
+        </testcase>
+        <testcase name="api::core::tests::refresh_health_classification_requires_live_acknowledged_reconciliation" classname="codebase-graph" timestamp="2026-10-21T05:03:35.348+09:30" time="0.016">
+        </testcase>
+        <testcase name="api::core::tests::resolve_mcp_operation_uses_registered_operation_metadata" classname="codebase-graph" timestamp="2026-10-21T05:03:35.352+09:30" time="0.015">
+        </testcase>
+        <testcase name="api::core::tests::resolve_unknown_operation_is_none" classname="codebase-graph" timestamp="2026-10-21T05:03:35.370+09:30" time="0.015">
+        </testcase>
+        <testcase name="api::core::tests::resolve_operation_returns_registered_descriptor_and_handler" classname="codebase-graph" timestamp="2026-10-21T05:03:35.367+09:30" time="0.021">
+        </testcase>
+        <testcase name="api::core::tests::unknown_operation_request_is_rejected" classname="codebase-graph" timestamp="2026-10-21T05:03:35.391+09:30" time="0.015">
+        </testcase>
+        <testcase name="api::core::tests::syntax_operation_publishes_the_selected_language_catalog" classname="codebase-graph" timestamp="2026-10-21T05:03:35.387+09:30" time="0.020">
+        </testcase>
+        <testcase name="api::materialization::tests::build_request_reads_manifest_and_merges_config_rules" classname="codebase-graph" timestamp="2026-10-21T05:03:35.407+09:30" time="0.040">
+        </testcase>
+        <testcase name="api::materialization::tests::cleanup_errors_are_appended_without_hiding_the_primary_failure" classname="codebase-graph" timestamp="2026-10-21T05:03:35.410+09:30" time="0.263">
+        </testcase>
+        <testcase name="api::context::tests::dc_epoch_optional_direct_cleanup_keeps_both_runtime_selectors_readable_and_pending" classname="codebase-graph" timestamp="2026-10-21T05:03:35.032+09:30" time="1.556">
+        </testcase>
+        <testcase name="api::context::tests::dc_epoch_optional_managed_cleanup_keeps_runtime_readable_and_pending" classname="codebase-graph" timestamp="2026-10-21T05:03:35.032+09:30" time="2.493">
+        </testcase>
+        <testcase name="api::materialization::tests::dc_epoch_manifest_finalization_advances_tracked_reference_domain" classname="codebase-graph" timestamp="2026-10-21T05:03:37.529+09:30" time="0.097">
+        </testcase>
+        <testcase name="api::materialization::tests::deferred_artifact_collection_preserves_unregistered_foreign_state" classname="codebase-graph" timestamp="2026-10-21T05:03:37.629+09:30" time="0.035">
+        </testcase>
+        <testcase name="api::materialization::tests::direct_abort_retains_candidate_staging_and_phase_evidence_while_lease_is_held" classname="codebase-graph" timestamp="2026-10-21T05:03:37.668+09:30" time="0.291">
+        </testcase>
+        <testcase name="api::materialization::tests::materialization_option_limits_override_install_config" classname="codebase-graph" timestamp="2026-10-21T05:03:37.959+09:30" time="0.054">
+        </testcase>
+        <testcase name="api::materialization::tests::native_request_source_root_must_match_a_bound_repository_identity" classname="codebase-graph" timestamp="2026-10-21T05:03:38.018+09:30" time="0.034">
+        </testcase>
+        <testcase name="api::materialization::tests::prepublication_failures_clean_managed_and_direct_run_state" classname="codebase-graph" timestamp="2026-10-21T05:03:38.054+09:30" time="1.292">
+        </testcase>
+        <testcase name="api::materialization::tests::public_materialization_request_preserves_transport_fields_without_preparation" classname="codebase-graph" timestamp="2026-10-21T05:03:39.347+09:30" time="0.024">
+        </testcase>
+        <testcase name="api::materialization::tests::refresh_noop_aborts_prepared_writer_when_storage_identity_rebinds" classname="codebase-graph" timestamp="2026-10-21T05:03:39.374+09:30" time="0.249">
+        </testcase>
+        <testcase name="api::materialization::tests::request_manifest_path_uses_override_for_native_requests_only_when_present" classname="codebase-graph" timestamp="2026-10-21T05:03:39.623+09:30" time="0.029">
+        </testcase>
+        <testcase name="api::normalization::tests::agent_hook_selection_is_normalized_and_validated" classname="codebase-graph" timestamp="2026-10-21T05:03:39.654+09:30" time="0.020">
+        </testcase>
+        <testcase name="api::normalization::tests::health_confirmation_defaults_false_and_accepts_only_explicit_booleans" classname="codebase-graph" timestamp="2026-10-21T05:03:39.674+09:30" time="0.017">
+        </testcase>
+        <testcase name="api::normalization::tests::normalize_request_applies_canonical_defaults" classname="codebase-graph" timestamp="2026-10-21T05:03:39.694+09:30" time="0.016">
+        </testcase>
+        <testcase name="api::normalization::tests::operation_schema_requirements_share_normalization_policy" classname="codebase-graph" timestamp="2026-10-21T05:03:39.714+09:30" time="0.016">
+        </testcase>
+        <testcase name="api::normalization::tests::prepare_operation_request_applies_canonical_registered_input_defaults" classname="codebase-graph" timestamp="2026-10-21T05:03:39.730+09:30" time="0.015">
+        </testcase>
+        <testcase name="api::normalization::tests::validate_request_rejects_invalid_operation_rules_before_execution" classname="codebase-graph" timestamp="2026-10-21T05:03:39.748+09:30" time="0.015">
+        </testcase>
+        <testcase name="api::normalization::tests::validate_request_rejects_unsupported_mcp_clients_and_scopes" classname="codebase-graph" timestamp="2026-10-21T05:03:39.768+09:30" time="0.015">
+        </testcase>
+        <testcase name="api::presenter::maintenance_tests::maintenance_block_preserves_nulls_and_complete_structured_summary" classname="codebase-graph" timestamp="2026-10-21T05:03:39.783+09:30" time="0.016">
+        </testcase>
+        <testcase name="api::presenter::tests::health_block_surfaces_refresh_error_and_retains_structured_payload" classname="codebase-graph" timestamp="2026-10-21T05:03:39.803+09:30" time="0.015">
+        </testcase>
+        <testcase name="api::presenter::tests::selected_output_format_presents_typed_or_block_response" classname="codebase-graph" timestamp="2026-10-21T05:03:39.821+09:30" time="0.015">
+        </testcase>
+        <testcase name="artifact_store::tests::artifact_cleanup_rejects_symlinked_entries" classname="codebase-graph" timestamp="2026-10-21T05:03:39.837+09:30" time="0.024">
+        </testcase>
+        <testcase name="artifact_store::tests::artifact_key_changes_when_inputs_change" classname="codebase-graph" timestamp="2026-10-21T05:03:39.862+09:30" time="0.016">
+        </testcase>
+        <testcase name="artifact_store::tests::artifact_store_commits_only_durable_artifact_directories" classname="codebase-graph" timestamp="2026-10-21T05:03:39.879+09:30" time="0.062">
+        </testcase>
+        <testcase name="artifact_store::tests::artifact_store_rejects_prior_format_envelopes" classname="codebase-graph" timestamp="2026-10-21T05:03:39.944+09:30" time="0.070">
+        </testcase>
+        <testcase name="artifact_store::tests::artifact_store_rejects_wrong_expected_content" classname="codebase-graph" timestamp="2026-10-21T05:03:40.017+09:30" time="0.077">
+        </testcase>
+        <testcase name="artifact_store::tests::artifact_store_roundtrips_raw_partition_and_reuses_existing_payload" classname="codebase-graph" timestamp="2026-10-21T05:03:40.097+09:30" time="0.109">
+        </testcase>
+        <testcase name="artifact_store::tests::artifact_store_treats_corrupt_or_mismatched_payloads_as_cache_miss" classname="codebase-graph" timestamp="2026-10-21T05:03:40.209+09:30" time="0.031">
+        </testcase>
+        <testcase name="artifact_store::tests::corrupt_existing_artifact_is_replaced_atomically_on_rebuild" classname="codebase-graph" timestamp="2026-10-21T05:03:40.242+09:30" time="0.130">
+        </testcase>
+        <testcase name="artifact_store::tests::dc_s3_artifact_producing_guard_covers_write_reuse_replace_and_failure" classname="codebase-graph" timestamp="2026-10-21T05:03:40.374+09:30" time="0.236">
+        </testcase>
+        <testcase name="artifact_store::tests::malformed_artifact_keys_are_treated_as_cache_miss_and_safe_delete_noops" classname="codebase-graph" timestamp="2026-10-21T05:03:40.612+09:30" time="0.020">
+        </testcase>
+        <testcase name="artifact_store::tests::oversized_artifact_is_rejected_before_deserialization" classname="codebase-graph" timestamp="2026-10-21T05:03:40.635+09:30" time="0.029">
+        </testcase>
+        <testcase name="artifact_store::tests::reference_sized_artifact_fits_the_default_per_worker_budget" classname="codebase-graph" timestamp="2026-10-21T05:03:40.669+09:30" time="0.016">
+        </testcase>
+        <testcase name="artifact_store::tests::streaming_partition_checksum_matches_the_legacy_canonical_payload" classname="codebase-graph" timestamp="2026-10-21T05:03:40.685+09:30" time="0.016">
+        </testcase>
+        <testcase name="coordinator::tests::ambiguous_operation_disconnect_is_not_replayed_or_retryable" classname="codebase-graph" timestamp="2026-10-21T05:03:40.703+09:30" time="0.044">
+        </testcase>
+        <testcase name="coordinator::tests::caller_deadline_does_not_release_the_real_execution_permit" classname="codebase-graph" timestamp="2026-10-21T05:03:40.748+09:30" time="0.190">
+        </testcase>
+        <testcase name="coordinator::tests::concurrent_clients_share_one_repository_coordinator" classname="codebase-graph" timestamp="2026-10-21T05:03:40.941+09:30" time="0.732">
+        </testcase>
+        <testcase name="coordinator::tests::deadline_calls_fail_promptly_when_owner_state_is_legacy" classname="codebase-graph" timestamp="2026-10-21T05:03:41.675+09:30" time="0.018">
+        </testcase>
+        <testcase name="coordinator::tests::drain_waits_for_active_execution_after_the_caller_times_out" classname="codebase-graph" timestamp="2026-10-21T05:03:41.696+09:30" time="0.227">
+        </testcase>
+        <testcase name="coordinator::tests::elapsed_receive_deadline_is_not_extended_by_trickled_frame_bytes" classname="codebase-graph" timestamp="2026-10-21T05:03:41.924+09:30" time="0.215">
+        </testcase>
+        <testcase name="coordinator::tests::expired_request_received_as_trickled_bytes_never_dispatches" classname="codebase-graph" timestamp="2026-10-21T05:03:42.140+09:30" time="0.152">
+        </testcase>
+        <testcase name="coordinator::tests::follower_refreshes_a_stale_authenticated_route" classname="codebase-graph" timestamp="2026-10-21T05:03:42.294+09:30" time="0.198">
+        </testcase>
+        <testcase name="coordinator::tests::follower_takes_over_after_owner_release" classname="codebase-graph" timestamp="2026-10-21T05:03:42.497+09:30" time="1.097">
+        </testcase>
+        <testcase name="coordinator::tests::maintenance_cannot_bypass_queued_or_active_real_execution" classname="codebase-graph" timestamp="2026-10-21T05:03:43.598+09:30" time="0.017">
+        </testcase>
+        <testcase name="coordinator::tests::maintenance_panic_releases_slot_without_resurrecting_stopped_admission" classname="codebase-graph" timestamp="2026-10-21T05:03:43.618+09:30" time="0.016">
+        </testcase>
+        <testcase name="coordinator::tests::maintenance_permit_blocks_real_execution_until_actual_drop" classname="codebase-graph" timestamp="2026-10-21T05:03:43.637+09:30" time="0.016">
+        </testcase>
+        <testcase name="coordinator::tests::maintenance_permit_is_exclusive_during_simultaneous_grant_requests" classname="codebase-graph" timestamp="2026-10-21T05:03:43.653+09:30" time="0.016">
+        </testcase>
+        <testcase name="coordinator::tests::ping_stays_responsive_and_graph_requests_are_rejected_while_busy" classname="codebase-graph" timestamp="2026-10-21T05:03:43.672+09:30" time="0.219">
+        </testcase>
+        <testcase name="coordinator::tests::request_receive_failure_is_retryable_before_dispatch" classname="codebase-graph" timestamp="2026-10-21T05:03:43.894+09:30" time="0.017">
+        </testcase>
+        <testcase name="coordinator::tests::retryable_receive_failure_retries_the_same_owner" classname="codebase-graph" timestamp="2026-10-21T05:03:43.913+09:30" time="0.091">
+        </testcase>
+        <testcase name="api::materialization::tests::committed_managed_graph_survives_deferred_artifact_collection" classname="codebase-graph" timestamp="2026-10-21T05:03:36.592+09:30" time="14.671">
+        </testcase>
+        <testcase name="execution::run::tests::dc_s2_pure_planning_does_not_create_use_coordination_files" classname="codebase-graph" timestamp="2026-10-21T05:03:51.264+09:30" time="0.023">
+        </testcase>
+        <testcase name="protocol::maintenance_summary_tests::partial_measurements_and_deferred_outcomes_round_trip_without_zero_fill" classname="codebase-graph" timestamp="2026-10-21T05:03:51.287+09:30" time="0.018">
+        </testcase>
+        <testcase name="execution::run::tests::dc_s2_public_pipeline_keeps_use_guards_through_final_result_assembly" classname="codebase-graph" timestamp="2026-10-21T05:03:44.004+09:30" time="7.305">
+        </testcase>
+        <testcase name="protocol::maintenance_summary_tests::running_attempt_does_not_require_fabricated_metrics" classname="codebase-graph" timestamp="2026-10-21T05:03:51.306+09:30" time="0.017">
+        </testcase>
+        <testcase name="protocol::maintenance_summary_tests::unobserved_maintenance_keeps_all_measurements_unknown" classname="codebase-graph" timestamp="2026-10-21T05:03:51.310+09:30" time="0.017">
+        </testcase>
+        <testcase name="storage::inventory::tests::configured_ancestor_root_is_rejected_without_scanning_sources" classname="codebase-graph" timestamp="2026-10-21T05:03:51.327+09:30" time="0.019">
+        </testcase>
+        <testcase name="storage::inventory::tests::busy_writer_is_reported_without_waiting_or_mutation" classname="codebase-graph" timestamp="2026-10-21T05:03:51.323+09:30" time="0.023">
+        </testcase>
+        <testcase name="storage::inventory::tests::dc_s1_a2_missing_and_dropped_observations_do_not_create_or_repair" classname="codebase-graph" timestamp="2026-10-21T05:03:51.346+09:30" time="0.028">
+        </testcase>
+        <testcase name="storage::inventory::tests::dc_s1_a1_classifies_and_counts_active_live_recovery_and_legacy" classname="codebase-graph" timestamp="2026-10-21T05:03:51.345+09:30" time="0.029">
+        </testcase>
+        <testcase name="storage::inventory::tests::dc_s1_a3_invalid_pointer_and_foreign_direct_are_retained" classname="codebase-graph" timestamp="2026-10-21T05:03:51.375+09:30" time="0.027">
+        </testcase>
+        <testcase name="storage::inventory::tests::dc_s1_a3_constant_pointer_does_not_hide_artifact_and_run_mutations" classname="codebase-graph" timestamp="2026-10-21T05:03:51.374+09:30" time="0.031">
+        </testcase>
+        <testcase name="storage::inventory::tests::dc_s1_a3_symlinks_are_not_followed_and_sizes_are_unknown" classname="codebase-graph" timestamp="2026-10-21T05:03:51.402+09:30" time="0.030">
+        </testcase>
+        <testcase name="storage::inventory::tests::dc_s1_a4_repeat_observation_is_deterministic" classname="codebase-graph" timestamp="2026-10-21T05:03:51.405+09:30" time="0.028">
+        </testcase>
+        <testcase name="storage::inventory::tests::existing_live_lease_is_observed_without_recovery" classname="codebase-graph" timestamp="2026-10-21T05:03:51.431+09:30" time="0.023">
+        </testcase>
+        <testcase name="storage::inventory::tests::hardlinked_direct_identity_is_unknown" classname="codebase-graph" timestamp="2026-10-21T05:03:51.433+09:30" time="0.022">
+        </testcase>
+        <testcase name="storage::inventory::tests::physical_hardlinks_count_once_and_allocation_uses_filesystem_blocks" classname="codebase-graph" timestamp="2026-10-21T05:03:51.454+09:30" time="0.022">
+        </testcase>
+        <testcase name="storage::inventory::tests::recognized_direct_pair_uses_repository_identity" classname="codebase-graph" timestamp="2026-10-21T05:03:51.455+09:30" time="0.022">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_case_alias_roots_are_rejected_without_double_counting" classname="codebase-graph" timestamp="2026-10-21T05:03:51.477+09:30" time="0.021">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_bound_external_store_survives_missing_conventional_state" classname="codebase-graph" timestamp="2026-10-21T05:03:51.477+09:30" time="0.022">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_config_repository_parent_traversal_cannot_erase_symlink" classname="codebase-graph" timestamp="2026-10-21T05:03:51.499+09:30" time="0.020">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_complete_root_reconciliation_is_insertion_order_independent" classname="codebase-graph" timestamp="2026-10-21T05:03:51.498+09:30" time="0.022">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_config_storage_parent_traversal_cannot_erase_symlink_or_missing_component" classname="codebase-graph" timestamp="2026-10-21T05:03:51.519+09:30" time="0.022">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_configured_storage_cannot_be_overridden_with_unselected_local_root" classname="codebase-graph" timestamp="2026-10-21T05:03:51.519+09:30" time="0.021">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_current_configuration_is_revalidated_on_every_observation" classname="codebase-graph" timestamp="2026-10-21T05:03:51.540+09:30" time="0.022">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_default_direct_only_is_current_graph_and_cache" classname="codebase-graph" timestamp="2026-10-21T05:03:51.541+09:30" time="0.022">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_direct_cache_inside_managed_root_is_rejected" classname="codebase-graph" timestamp="2026-10-21T05:03:51.562+09:30" time="0.019">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_explicit_direct_alongside_managed_is_current" classname="codebase-graph" timestamp="2026-10-21T05:03:51.563+09:30" time="0.022">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_external_config_requires_matching_repository_binding" classname="codebase-graph" timestamp="2026-10-21T05:03:51.581+09:30" time="0.018">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_external_current_direct_config_observes_exact_bundle_without_local_state" classname="codebase-graph" timestamp="2026-10-21T05:03:51.585+09:30" time="0.021">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_managed_config_makes_unselected_default_direct_former" classname="codebase-graph" timestamp="2026-10-21T05:03:51.599+09:30" time="0.022">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_managed_root_inside_direct_cache_is_rejected" classname="codebase-graph" timestamp="2026-10-21T05:03:51.606+09:30" time="0.018">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_real_directory_dot_parent_config_paths_remain_supported" classname="codebase-graph" timestamp="2026-10-21T05:03:51.625+09:30" time="0.056">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_raw_config_direct_spelling_selects_matching_cache" classname="codebase-graph" timestamp="2026-10-21T05:03:51.621+09:30" time="0.060">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_scope_rejects_source_state_and_unregistered_external_storage" classname="codebase-graph" timestamp="2026-10-21T05:03:51.681+09:30" time="0.030">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_activity_excludes_snapshots_until_all_producers_finish" classname="codebase-graph" timestamp="2026-10-21T05:03:51.681+09:30" time="0.044">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_collector_composes_owned_exclusive_root_without_reacquisition" classname="codebase-graph" timestamp="2026-10-21T05:03:51.714+09:30" time="0.022">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_crash_before_effect_invalidates_prior_snapshot" classname="codebase-graph" timestamp="2026-10-21T05:03:51.726+09:30" time="0.050">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_exhaustion_rejects_before_effects_and_releases_activity" classname="codebase-graph" timestamp="2026-10-21T05:03:51.778+09:30" time="0.074">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_direct_recovery_invalidates_and_idle_read_does_not" classname="codebase-graph" timestamp="2026-10-21T05:03:51.736+09:30" time="0.133">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_initial_creator_excludes_fresh_coverage_until_effects_finish" classname="codebase-graph" timestamp="2026-10-21T05:03:51.855+09:30" time="0.035">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_managed_recovery_promotion_invalidates_before_references_change" classname="codebase-graph" timestamp="2026-10-21T05:03:51.893+09:30" time="0.540">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_managed_publication_reader_drop_and_generation_removal" classname="codebase-graph" timestamp="2026-10-21T05:03:51.869+09:30" time="0.565">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_missing_or_unwritable_control_never_repairs_recognized_proof" classname="codebase-graph" timestamp="2026-10-21T05:03:52.435+09:30" time="0.046">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_mismatched_producer_disables_existing_coverage_before_effects" classname="codebase-graph" timestamp="2026-10-21T05:03:52.433+09:30" time="0.050">
+        </testcase>
+        <testcase name="api::materialization::tests::committed_direct_graph_survives_real_workspace_cleanup_failure" classname="codebase-graph" timestamp="2026-10-21T05:03:35.675+09:30" time="16.814">
+        </testcase>
+        <testcase name="api::materialization::tests::committed_direct_graph_survives_deferred_artifact_collection" classname="codebase-graph" timestamp="2026-10-21T05:03:35.448+09:30" time="17.049">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_new_cache_cannot_initialize_old_reference_domain" classname="codebase-graph" timestamp="2026-10-21T05:03:52.480+09:30" time="0.031">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_observer_is_noncreating_and_does_not_advance" classname="codebase-graph" timestamp="2026-10-21T05:03:52.483+09:30" time="0.072">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_scope_writer_replacement_stays_unknown" classname="codebase-graph" timestamp="2026-10-21T05:03:52.558+09:30" time="0.184">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_scoped_run_lifetime_and_orphan_removal_invalidate" classname="codebase-graph" timestamp="2026-10-21T05:03:52.744+09:30" time="0.330">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_retained_observation_does_not_block_current_writer_or_reader" classname="codebase-graph" timestamp="2026-10-21T05:03:52.514+09:30" time="0.570">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_unassociated_old_orphan_is_preserved_without_repair" classname="codebase-graph" timestamp="2026-10-21T05:03:53.075+09:30" time="0.125">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_current_v2_receipt_and_unknown_v1_follow_existing_guardian_policy" classname="codebase-graph" timestamp="2026-10-21T05:03:53.086+09:30" time="0.130">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_direct_borrowed_session_truthfully_defers_active_companions" classname="codebase-graph" timestamp="2026-10-21T05:03:53.203+09:30" time="0.147">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_direct_reader_and_alternate_manifest_exclude_collector" classname="codebase-graph" timestamp="2026-10-21T05:03:53.219+09:30" time="0.157">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_exact_borrowed_writer_requires_exclusive_exact_destination" classname="codebase-graph" timestamp="2026-10-21T05:03:53.352+09:30" time="0.064">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_optional_direct_cleanup_preserves_committed_read_but_not_journal_replay" classname="codebase-graph" timestamp="2026-10-21T05:03:52.489+09:30" time="0.928">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_external_bound_managed_store_does_not_require_local_state" classname="codebase-graph" timestamp="2026-10-21T05:03:53.379+09:30" time="0.088">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_family_group_deduplicates_same_parent_and_retains_all_guards" classname="codebase-graph" timestamp="2026-10-21T05:03:53.420+09:30" time="0.065">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_family_group_handles_distinct_parents_and_duplicate_resource_keys" classname="codebase-graph" timestamp="2026-10-21T05:03:53.420+09:30" time="0.065">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_family_macos_unicode_nfc_nfd_existing_and_creation_aliases_exclude" classname="codebase-graph" timestamp="2026-10-21T05:03:53.485+09:30" time="0.060">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_family_macos_parent_aliases_deduplicate_physical_family" classname="codebase-graph" timestamp="2026-10-21T05:03:53.485+09:30" time="0.061">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_family_macos_long_s_consumer_blocks_ascii_direct_even_with_valid_record" classname="codebase-graph" timestamp="2026-10-21T05:03:53.470+09:30" time="0.083">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_family_producer_conversion_holds_parent_until_session_release" classname="codebase-graph" timestamp="2026-10-21T05:03:53.548+09:30" time="0.059">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_family_replaced_parent_incarnation_invalidates_held_use" classname="codebase-graph" timestamp="2026-10-21T05:03:53.555+09:30" time="0.066">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_family_recreated_coordination_invalidates_destination_proof" classname="codebase-graph" timestamp="2026-10-21T05:03:53.548+09:30" time="0.116">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_family_shared_existing_readable_coordination_requires_no_write_permission" classname="codebase-graph" timestamp="2026-10-21T05:03:53.609+09:30" time="0.055">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_guarded_creation_and_controlled_proof_are_incarnation_bound" classname="codebase-graph" timestamp="2026-10-21T05:03:53.624+09:30" time="0.072">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_inventory_cohort_observer_is_noncreating_and_validates_lock_identity" classname="codebase-graph" timestamp="2026-10-21T05:03:53.667+09:30" time="0.031">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_hardlinks_symlinks_and_case_aliases_cannot_bypass_resource_guard" classname="codebase-graph" timestamp="2026-10-21T05:03:53.667+09:30" time="0.032">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_owned_state_transition_never_waits_or_holds_state_during_validation" classname="codebase-graph" timestamp="2026-10-21T05:03:53.699+09:30" time="0.065">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_missing_startup_lease_keeps_unknown_evidence" classname="codebase-graph" timestamp="2026-10-21T05:03:53.698+09:30" time="0.070">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_producer_and_collector_exclude_whole_artifact_operation" classname="codebase-graph" timestamp="2026-10-21T05:03:53.771+09:30" time="0.061">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_preexisting_root_never_becomes_modern_from_guard_acquisition" classname="codebase-graph" timestamp="2026-10-21T05:03:53.767+09:30" time="0.066">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_managed_borrowed_session_defers_active_reference_use_without_deadlock" classname="codebase-graph" timestamp="2026-10-21T05:03:53.697+09:30" time="0.145">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_replaced_writer_inode_does_not_validate_borrowed_authority" classname="codebase-graph" timestamp="2026-10-21T05:03:53.837+09:30" time="0.047">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_review_dangling_worker_state_is_unknown_and_preserved" classname="codebase-graph" timestamp="2026-10-21T05:03:53.844+09:30" time="0.064">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_review_hardlinked_coordination_invalidates_held_authority" classname="codebase-graph" timestamp="2026-10-21T05:03:53.887+09:30" time="0.035">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_registered_shared_manifest_and_shared_database_are_retained" classname="codebase-graph" timestamp="2026-10-21T05:03:53.837+09:30" time="0.152">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_review_managed_read_resolution_completes_with_paused_collector" classname="codebase-graph" timestamp="2026-10-21T05:03:53.924+09:30" time="0.122">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_review_legacy_database_new_cache_requires_destination_migration_proof" classname="codebase-graph" timestamp="2026-10-21T05:03:53.911+09:30" time="0.165">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_review_unreadable_worker_state_is_unknown_and_preserved" classname="codebase-graph" timestamp="2026-10-21T05:03:54.048+09:30" time="0.072">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_review_publication_proof_does_not_bless_legacy_destination_or_sibling" classname="codebase-graph" timestamp="2026-10-21T05:03:53.992+09:30" time="0.170">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_waiter_on_detached_incarnation_cannot_write_fresh_public_root" classname="codebase-graph" timestamp="2026-10-21T05:03:54.123+09:30" time="0.048">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_shared_manifest_registration_across_database_parents_is_retained" classname="codebase-graph" timestamp="2026-10-21T05:03:54.076+09:30" time="0.097">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_optional_managed_cleanup_preserves_committed_read_and_residue" classname="codebase-graph" timestamp="2026-10-21T05:03:52.497+09:30" time="1.681">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_worker_launch_evidence_without_lifecycle_is_unknown" classname="codebase-graph" timestamp="2026-10-21T05:03:54.162+09:30" time="0.022">
+        </testcase>
+        <testcase name="storage::run_workspace::tests::confined_run_cleanup_is_idempotent" classname="codebase-graph" timestamp="2026-10-21T05:03:54.181+09:30" time="0.029">
+        </testcase>
+        <testcase name="storage::run_workspace::tests::cleanup_barrier_records_its_absolute_origin" classname="codebase-graph" timestamp="2026-10-21T05:03:54.173+09:30" time="0.041">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_writer_worker_and_startup_contention_are_nonblocking" classname="codebase-graph" timestamp="2026-10-21T05:03:54.172+09:30" time="0.046">
+        </testcase>
+        <testcase name="storage::run_workspace::tests::unanchored_persisted_barrier_cannot_authorize_orphan_cleanup" classname="codebase-graph" timestamp="2026-10-21T05:03:54.184+09:30" time="0.050">
+        </testcase>
+    </testsuite>
+    <testsuite name="codebase-graph::storage_foundation" tests="131" disabled="0" errors="0" failures="0">
+        <testcase name="control_lease_rejects_a_symlinked_lock_file" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:54.217+09:30" time="0.012">
+        </testcase>
+        <testcase name="atomic_write_failure_preserves_existing_file_and_cleans_temp" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:54.213+09:30" time="0.020">
+        </testcase>
+        <testcase name="control_leases_are_exclusive_nonblocking_and_transfer_after_release" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:54.221+09:30" time="0.013">
+        </testcase>
+        <testcase name="direct_committed_read_accepts_readonly_parent_with_existing_guards" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:54.232+09:30" time="0.032">
+        </testcase>
+        <testcase name="direct_committed_read_preserves_corrupt_registration" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:54.233+09:30" time="0.035">
+        </testcase>
+        <testcase name="direct_control_lock_paths_are_stable_and_destination_scoped" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:54.264+09:30" time="0.013">
+        </testcase>
+        <testcase name="direct_committed_read_preserves_missing_registration" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:54.234+09:30" time="0.050">
+        </testcase>
+        <testcase name="direct_committed_registered_pair_reads_after_publication" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:54.234+09:30" time="0.154">
+        </testcase>
+        <testcase name="direct_phase_unknown_preserves_base_and_blocks_publish_replay_and_cleanup" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:54.268+09:30" time="0.299">
+        </testcase>
+        <testcase name="direct_store_recovers_database_manifest_and_committed_journal_phases" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:54.391+09:30" time="0.349">
+        </testcase>
+        <testcase name="direct_store_recovers_interrupted_publication_with_sidecars_and_split_parents" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:54.570+09:30" time="0.256">
+        </testcase>
+        <testcase name="direct_store_rejects_forged_journal_candidate_paths" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:54.742+09:30" time="0.106">
+        </testcase>
+        <testcase name="direct_write_session_holds_writer_lock_and_drop_cleans_unpublished_candidates" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:54.828+09:30" time="0.096">
+        </testcase>
+        <testcase name="error::tests::memory_budget_failure_can_report_supervised_process_split" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:54.927+09:30" time="0.013">
+        </testcase>
+        <testcase name="error::tests::memory_budget_failure_has_a_structured_machine_readable_message" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:54.942+09:30" time="0.011">
+        </testcase>
+        <testcase name="error::tests::source_change_failure_has_a_stable_machine_readable_message" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:54.953+09:30" time="0.010">
+        </testcase>
+        <testcase name="existing_lock_probe_does_not_recreate_a_vanished_workspace" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:54.965+09:30" time="0.018">
+        </testcase>
+        <testcase name="empty_prelease_startup_is_retired_and_does_not_block_next_writer" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:54.850+09:30" time="0.165">
+        </testcase>
+        <testcase name="managed_begin_write_holds_writer_lock_and_marks_candidate_ready_explicitly" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:55.018+09:30" time="0.323">
+        </testcase>
+        <testcase name="direct_prepared_recovery_preserves_expected_sidecars_on_validation_failure" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:54.280+09:30" time="1.114">
+        </testcase>
+        <testcase name="managed_abort_and_drop_retain_runs_while_phase_unknown" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:54.986+09:30" time="0.767">
+        </testcase>
+        <testcase name="managed_cleanup_recovers_published_crash_after_active_pointer_write" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:55.344+09:30" time="0.579">
+        </testcase>
+        <testcase name="managed_cleanup_recovers_publishing_crash_after_active_pointer_write" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:55.396+09:30" time="0.539">
+        </testcase>
+        <testcase name="managed_cleanup_reports_and_later_removes_locked_runs" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:55.938+09:30" time="0.152">
+        </testcase>
+        <testcase name="managed_control_lock_paths_are_stable_and_role_scoped" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:56.092+09:30" time="0.023">
+        </testcase>
+        <testcase name="managed_cleanup_recovers_publishing_crash_after_generation_rename" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:55.755+09:30" time="0.587">
+        </testcase>
+        <testcase name="managed_cleanup_recovers_publishing_crash_before_generation_rename" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:55.925+09:30" time="0.660">
+        </testcase>
+        <testcase name="managed_metadata_sizes_include_db_sidecars_and_allocated_bytes" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:56.344+09:30" time="0.348">
+        </testcase>
+        <testcase name="managed_last_reader_drop_triggers_best_effort_retirement_cleanup" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:56.118+09:30" time="0.759">
+        </testcase>
+        <testcase name="managed_publish_rejects_a_stale_base_generation" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:56.879+09:30" time="0.352">
+        </testcase>
+        <testcase name="managed_store_rejects_untrusted_generation_ids" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:57.237+09:30" time="0.074">
+        </testcase>
+        <testcase name="managed_publish_reconciles_an_error_after_active_pointer_commit" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:56.695+09:30" time="0.706">
+        </testcase>
+        <testcase name="managed_phase_unknown_preserves_candidate_and_active_read_until_empty" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:56.586+09:30" time="0.861">
+        </testcase>
+        <testcase name="missing_lease_with_any_launch_evidence_remains_unknown" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:57.402+09:30" time="0.059">
+        </testcase>
+        <testcase name="managed_writer_is_serialized_across_sessions" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:57.313+09:30" time="0.173">
+        </testcase>
+        <testcase name="persisted_relative_barrier_survives_cleanup_from_a_different_process_cwd" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:57.464+09:30" time="0.219">
+        </testcase>
+        <testcase name="persisted_run_barrier_survives_drop_and_blocks_generic_orphan_collection" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:57.488+09:30" time="0.221">
+        </testcase>
+        <testcase name="phase_registry_probe_never_recreates_missing_roots_or_locks" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:57.711+09:30" time="0.027">
+        </testcase>
+        <testcase name="phase_registry_collection_retains_unknown_siblings_then_reclaims_empty_orphans" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:57.685+09:30" time="0.171">
+        </testcase>
+        <testcase name="private_lifecycle_receipt_accepts_ancestor_alias_but_rejects_foreign_or_symlink_roots" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:57.741+09:30" time="0.204">
+        </testcase>
+        <testcase name="relative_registry_probe_matches_absolute_private_descriptor" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:57.857+09:30" time="0.095">
+        </testcase>
+        <testcase name="storage::atomic::tests::atomic_temp_paths_are_scoped_to_the_writer_process" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:57.955+09:30" time="0.011">
+        </testcase>
+        <testcase name="storage::containment::tests::windows_job_name_does_not_expose_or_depend_on_control_nonce" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:57.967+09:30" time="0.010">
+        </testcase>
+        <testcase name="storage::containment::tests::windows_job_name_rejects_malformed_build_identity" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:57.980+09:30" time="0.011">
+        </testcase>
+        <testcase name="run_workspace_cleanup_rejects_symlink_content" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:57.948+09:30" time="0.118">
+        </testcase>
+        <testcase name="storage::inventory::tests::busy_writer_is_reported_without_waiting_or_mutation" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:57.991+09:30" time="0.077">
+        </testcase>
+        <testcase name="owned_writer_cleanup_reports_readers_and_collects_after_their_release" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:57.449+09:30" time="0.646">
+        </testcase>
+        <testcase name="storage::inventory::tests::configured_ancestor_root_is_rejected_without_scanning_sources" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:58.067+09:30" time="0.033">
+        </testcase>
+        <testcase name="storage::inventory::tests::dc_s1_a1_classifies_and_counts_active_live_recovery_and_legacy" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:58.070+09:30" time="0.070">
+        </testcase>
+        <testcase name="storage::inventory::tests::dc_s1_a2_missing_and_dropped_observations_do_not_create_or_repair" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:58.095+09:30" time="0.064">
+        </testcase>
+        <testcase name="storage::inventory::tests::dc_s1_a3_constant_pointer_does_not_hide_artifact_and_run_mutations" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:58.100+09:30" time="0.068">
+        </testcase>
+        <testcase name="storage::inventory::tests::dc_s1_a3_invalid_pointer_and_foreign_direct_are_retained" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:58.144+09:30" time="0.038">
+        </testcase>
+        <testcase name="storage::inventory::tests::dc_s1_a3_symlinks_are_not_followed_and_sizes_are_unknown" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:58.159+09:30" time="0.028">
+        </testcase>
+        <testcase name="storage::inventory::tests::dc_s1_a4_repeat_observation_is_deterministic" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:58.171+09:30" time="0.032">
+        </testcase>
+        <testcase name="storage::inventory::tests::existing_live_lease_is_observed_without_recovery" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:58.182+09:30" time="0.027">
+        </testcase>
+        <testcase name="storage::inventory::tests::hardlinked_direct_identity_is_unknown" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:58.191+09:30" time="0.030">
+        </testcase>
+        <testcase name="storage::inventory::tests::recognized_direct_pair_uses_repository_identity" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:58.209+09:30" time="0.027">
+        </testcase>
+        <testcase name="storage::inventory::tests::physical_hardlinks_count_once_and_allocation_uses_filesystem_blocks" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:58.207+09:30" time="0.034">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_bound_external_store_survives_missing_conventional_state" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:58.221+09:30" time="0.028">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_complete_root_reconciliation_is_insertion_order_independent" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:58.241+09:30" time="0.027">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_case_alias_roots_are_rejected_without_double_counting" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:58.240+09:30" time="0.032">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_config_repository_parent_traversal_cannot_erase_symlink" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:58.248+09:30" time="0.055">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_config_storage_parent_traversal_cannot_erase_symlink_or_missing_component" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:58.271+09:30" time="0.061">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_configured_storage_cannot_be_overridden_with_unselected_local_root" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:58.275+09:30" time="0.066">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_current_configuration_is_revalidated_on_every_observation" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:58.307+09:30" time="0.034">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_default_direct_only_is_current_graph_and_cache" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:58.335+09:30" time="0.027">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_direct_cache_inside_managed_root_is_rejected" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:58.341+09:30" time="0.026">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_explicit_direct_alongside_managed_is_current" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:58.341+09:30" time="0.042">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_external_config_requires_matching_repository_binding" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:58.362+09:30" time="0.024">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_external_current_direct_config_observes_exact_bundle_without_local_state" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:58.366+09:30" time="0.027">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_managed_root_inside_direct_cache_is_rejected" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:58.386+09:30" time="0.026">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_managed_config_makes_unselected_default_direct_former" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:58.383+09:30" time="0.030">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_raw_config_direct_spelling_selects_matching_cache" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:58.393+09:30" time="0.037">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_real_directory_dot_parent_config_paths_remain_supported" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:58.412+09:30" time="0.067">
+        </testcase>
+        <testcase name="storage::inventory::tests::review_scope_rejects_source_state_and_unregistered_external_storage" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:58.413+09:30" time="0.066">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_collector_composes_owned_exclusive_root_without_reacquisition" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:58.482+09:30" time="0.051">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_activity_excludes_snapshots_until_all_producers_finish" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:58.434+09:30" time="0.100">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_crash_before_effect_invalidates_prior_snapshot" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:58.482+09:30" time="0.099">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_exhaustion_rejects_before_effects_and_releases_activity" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:58.534+09:30" time="0.105">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_initial_creator_excludes_fresh_coverage_until_effects_finish" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:58.584+09:30" time="0.100">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_direct_recovery_invalidates_and_idle_read_does_not" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:58.534+09:30" time="0.275">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_mismatched_producer_disables_existing_coverage_before_effects" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:58.812+09:30" time="0.190">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_missing_or_unwritable_control_never_repairs_recognized_proof" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:59.007+09:30" time="0.148">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_new_cache_cannot_initialize_old_reference_domain" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:59.156+09:30" time="0.109">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_observer_is_noncreating_and_does_not_advance" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:59.268+09:30" time="0.162">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_managed_recovery_promotion_invalidates_before_references_change" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:58.686+09:30" time="0.750">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_managed_publication_reader_drop_and_generation_removal" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:58.642+09:30" time="0.812">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_retained_observation_does_not_block_current_writer_or_reader" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:59.457+09:30" time="0.665">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_scope_writer_replacement_stays_unknown" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:04:00.125+09:30" time="0.113">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_optional_direct_cleanup_preserves_committed_read_but_not_journal_replay" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:59.430+09:30" time="1.087">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_scoped_run_lifetime_and_orphan_removal_invalidate" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:04:00.240+09:30" time="0.324">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_unassociated_old_orphan_is_preserved_without_repair" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:04:00.520+09:30" time="0.154">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_current_v2_receipt_and_unknown_v1_follow_existing_guardian_policy" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:04:00.567+09:30" time="0.150">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_direct_borrowed_session_truthfully_defers_active_companions" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:04:00.676+09:30" time="0.122">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_direct_reader_and_alternate_manifest_exclude_collector" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:04:00.720+09:30" time="0.151">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_exact_borrowed_writer_requires_exclusive_exact_destination" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:04:00.801+09:30" time="0.081">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_family_group_deduplicates_same_parent_and_retains_all_guards" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:04:00.885+09:30" time="0.071">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_external_bound_managed_store_does_not_require_local_state" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:04:00.873+09:30" time="0.091">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_family_group_handles_distinct_parents_and_duplicate_resource_keys" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:04:00.956+09:30" time="0.080">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_family_macos_long_s_consumer_blocks_ascii_direct_even_with_valid_record" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:04:00.967+09:30" time="0.101">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_family_macos_parent_aliases_deduplicate_physical_family" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:04:01.038+09:30" time="0.072">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_family_macos_unicode_nfc_nfd_existing_and_creation_aliases_exclude" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:04:01.067+09:30" time="0.096">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_family_producer_conversion_holds_parent_until_session_release" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:04:01.114+09:30" time="0.096">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_family_replaced_parent_incarnation_invalidates_held_use" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:04:01.213+09:30" time="0.072">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_family_recreated_coordination_invalidates_destination_proof" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:04:01.166+09:30" time="0.135">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_family_shared_existing_readable_coordination_requires_no_write_permission" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:04:01.288+09:30" time="0.054">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_guarded_creation_and_controlled_proof_are_incarnation_bound" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:04:01.304+09:30" time="0.125">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_hardlinks_symlinks_and_case_aliases_cannot_bypass_resource_guard" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:04:01.346+09:30" time="0.092">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_inventory_cohort_observer_is_noncreating_and_validates_lock_identity" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:04:01.431+09:30" time="0.074">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_optional_managed_cleanup_preserves_committed_read_and_residue" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:59.438+09:30" time="2.095">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_missing_startup_lease_keeps_unknown_evidence" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:04:01.508+09:30" time="0.052">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_managed_borrowed_session_defers_active_reference_use_without_deadlock" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:04:01.442+09:30" time="0.122">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_owned_state_transition_never_waits_or_holds_state_during_validation" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:04:01.536+09:30" time="0.034">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_preexisting_root_never_becomes_modern_from_guard_acquisition" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:04:01.563+09:30" time="0.054">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_producer_and_collector_exclude_whole_artifact_operation" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:04:01.564+09:30" time="0.057">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_replaced_writer_inode_does_not_validate_borrowed_authority" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:04:01.620+09:30" time="0.041">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_review_dangling_worker_state_is_unknown_and_preserved" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:04:01.623+09:30" time="0.038">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_review_hardlinked_coordination_invalidates_held_authority" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:04:01.661+09:30" time="0.041">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_registered_shared_manifest_and_shared_database_are_retained" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:04:01.573+09:30" time="0.133">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_review_managed_read_resolution_completes_with_paused_collector" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:04:01.705+09:30" time="0.095">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_review_legacy_database_new_cache_requires_destination_migration_proof" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:04:01.664+09:30" time="0.143">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_review_unreadable_worker_state_is_unknown_and_preserved" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:04:01.802+09:30" time="0.061">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_review_publication_proof_does_not_bless_legacy_destination_or_sibling" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:04:01.709+09:30" time="0.176">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_shared_manifest_registration_across_database_parents_is_retained" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:04:01.810+09:30" time="0.093">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_waiter_on_detached_incarnation_cannot_write_fresh_public_root" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:04:01.866+09:30" time="0.041">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_worker_launch_evidence_without_lifecycle_is_unknown" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:04:01.888+09:30" time="0.047">
+        </testcase>
+        <testcase name="storage::run_workspace::tests::cleanup_barrier_records_its_absolute_origin" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:04:01.910+09:30" time="0.065">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_writer_worker_and_startup_contention_are_nonblocking" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:04:01.906+09:30" time="0.069">
+        </testcase>
+        <testcase name="storage::run_workspace::tests::confined_run_cleanup_is_idempotent" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:04:01.938+09:30" time="0.037">
+        </testcase>
+        <testcase name="storage::run_workspace::tests::unanchored_persisted_barrier_cannot_authorize_orphan_cleanup" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:04:01.978+09:30" time="0.066">
+        </testcase>
+        <testcase name="direct_recovery_replays_every_rename_and_checkpoint" classname="codebase-graph::storage_foundation" timestamp="2026-10-21T05:03:54.284+09:30" time="18.074">
+        </testcase>
+    </testsuite>
+    <testsuite name="codebase-graph::storage_maintenance" tests="2" disabled="0" errors="0" failures="0">
+        <testcase name="health_preserves_legacy_fields_and_marks_unobserved_maintenance_unknown" classname="codebase-graph::storage_maintenance" timestamp="2026-10-21T05:04:01.978+09:30" time="0.044">
+        </testcase>
+        <testcase name="nonboolean_quiescence_confirmation_is_rejected_before_repository_effects" classname="codebase-graph::storage_maintenance" timestamp="2026-10-21T05:04:01.978+09:30" time="0.044">
+        </testcase>
+    </testsuite>
+</testsuites>

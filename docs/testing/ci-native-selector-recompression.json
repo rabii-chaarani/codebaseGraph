@@ -1,0 +1,30 @@
+{
+  "asset": "assets/ladybug-extensions/0.19.0/win_amd64/json/libjson.lbug_extension.xz",
+  "before_bytes": 3372056,
+  "after_bytes": 3371312,
+  "saved_bytes": 744,
+  "before_sha256": "6eb7946117aaffeaf6042a10a171bf77af9ee57d9d7983c4c3693e2dc311df87",
+  "after_sha256": "adf5e05d5a63c181a1be3e1e6c90a8ffb9901118171e7caf8f860af055868ada",
+  "decoded_bytes": 14178304,
+  "decoded_sha256": "bdecb5201dd6abccc06ddc1f6cb4fcf0be3adb7aa3ddaac2f383ed129fca2b1f",
+  "actual_lzma_rs_decoder_equality": true,
+  "lzma_rs_dependency_sha256": "9a4ed494d1463638bbb3794d7b08a02783a06f7f8087a391ea262cd224646bf6",
+  "dictionary_bytes": 16777216,
+  "integrity_check": "CRC64",
+  "encoder_command": [
+    "/private/tmp/cgraph-official-7zip-26.05/7zz",
+    "a",
+    "-txz",
+    "-mx=9",
+    "-md=16m",
+    "-mmt=1",
+    "-mf=off",
+    "-mcrc=8",
+    "-mfb=220",
+    "-mlc=3",
+    "-mlp=1",
+    "-mpb=2",
+    "/private/tmp/pr153-selector-package/win-json-fb220.xz",
+    "/private/tmp/pr153-package-tuning/json.raw"
+  ]
+}

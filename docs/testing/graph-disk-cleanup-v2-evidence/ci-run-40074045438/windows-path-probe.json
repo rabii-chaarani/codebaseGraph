@@ -1,0 +1,6 @@
+{
+  "method": "Actual memory module and FixedControlScratch constructor/test copied byte-for-byte except module-doc placement and native path alias fixed to the exact Windows [u16;32768] layout. Standalone build avoids unrelated native C++ dependencies; host execution does not qualify Windows OS operations.",
+  "locks_sha256": "3cf865ded0431c8d1822c65fbb7a9274bf81a39ab20ba62a55a953e82e4dbe4e",
+  "budget_sha256": "2d15689d5811386c87505cf8b89a0c90b066f781020f18e9fe5a69aa4ba5d8aa",
+  "probe_sha256": "8fe3b540667ee2b6389ae6da82d66982134abe4609ff335354d2e6246ec3799a"
+}

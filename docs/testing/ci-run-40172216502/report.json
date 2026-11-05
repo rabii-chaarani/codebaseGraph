@@ -1,0 +1,51 @@
+{
+  "source_commit": "55819ba7ff03f26c51f243435c41c9fceb60908c",
+  "tested_merge": "c2d9bae897438dc380f2b7b4891943d7f22606ae",
+  "merge_difference": [
+    "CHANGELOG.md"
+  ],
+  "run_id": 40172216502,
+  "supported_targets": [
+    "macos-arm64",
+    "windows-x86_64"
+  ],
+  "static_checks": "all passed",
+  "package_bytes": 8444431,
+  "package_files": 203,
+  "macos": {
+    "generation": "5 passed; about 28 minutes including compilation",
+    "integration": "passed",
+    "unit": "833 passed, 1 failed, 2 ignored; trickled-request fixture started its sleep before server accept"
+  },
+  "windows": {
+    "unit1": "passed, including copied-orphan staging and expanded preflight",
+    "unit4": "passed",
+    "unit3": "reader-lease fixture deferred after release; source_changed; 85 attempted entries; 3008 attempts",
+    "unit2": "90-minute cancellation; twenty-update case reached the last revision while making steady durable progress",
+    "generation": "deferred-deletion regression passed; full cohort cancelled at 90 minutes during ten-update convergence",
+    "integration1": "passed near the 90-minute limit",
+    "integration2": "manual publication after failed phase exit exceeded 90-second fixture bound",
+    "integration3": "manual publication before legacy-PID recovery exceeded 90-second fixture bound",
+    "integration4": "initial graph_context returned an MCP error; original assertion omitted its body"
+  },
+  "follow_up": {
+    "deadline_fixture": "synchronize real accept time and inspect actual dispatcher slot/queue; original 50 ms request budget retained",
+    "manual_publication_fixture": "240-second Windows logical wait; ordering checks unchanged",
+    "daemon_fixture": "retry only graph_busy and retain full diagnostics for all other errors",
+    "temporary_storage": "use runner.temp via TMP/TEMP for native tests instead of system-profile temporary storage",
+    "generation_groups": "four disjoint discovered case groups on Windows, no duplicated regression preflight; macOS retains one complete generation cohort",
+    "collector_diagnostics": "retain exact expected/actual stamps and mutation role before deferred classification",
+    "production_constraints": "unchanged 8 MiB ceiling, 256 KiB worker stack, and 100-entry/100 ms grants"
+  },
+  "local_validation": {
+    "format": "passed",
+    "clippy_workspace_all_targets_all_features_warnings_denied": "passed",
+    "workflow_policy": "passed",
+    "xtask_tests_passed": 42,
+    "deadline_repeat_passes": 20,
+    "optimized_deadline_tests_passed": 2,
+    "native_http_daemon_fixture": "passed, 44.69 seconds",
+    "old_source_unit_repeat": "passed all cases; stopped afterward at expected dirty-source guard"
+  },
+  "native_follow_up": "pending"
+}

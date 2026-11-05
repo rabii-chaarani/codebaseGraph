@@ -1,0 +1,58 @@
+   Compiling codebase-graph v3.0.4 (/private/tmp/codebasegraph-pr153-review)
+    Finished `native-tests` profile [optimized] target(s) in 59.32s
+────────────
+ Nextest run ID f58f802c-25fd-401e-b79e-ec18806a307f with nextest profile: pr153
+    Starting 50 tests across 1 binary (790 tests skipped)
+        PASS [   0.020s] ( 1/50) codebase-graph storage::maintenance::tests::dc_cursor_codec_corruption_and_recreated_root
+        PASS [   0.017s] ( 2/50) codebase-graph storage::maintenance::tests::dc_cursor_full_generation_address_and_short_adapter
+        PASS [   0.023s] ( 3/50) codebase-graph storage::maintenance::tests::dc_cursor_restart_blocked_first_and_category_rotation
+        PASS [   0.017s] ( 4/50) codebase-graph storage::maintenance::tests::dc_cursor_wrap_and_all_categories
+        PASS [   0.021s] ( 5/50) codebase-graph storage::maintenance::tests::dc_measurement_foreign_json_is_unknown_not_retained_coordination
+        PASS [   0.019s] ( 6/50) codebase-graph storage::maintenance::tests::dc_measurement_untraversed_subtree_has_unknown_sizes
+        SLOW [> 60.000s] (─────) codebase-graph storage::maintenance::tests::direct_confirmation_ingress_does_not_pin_legacy_source_or_block_recovery
+        PASS [  60.230s] ( 7/50) codebase-graph storage::maintenance::tests::direct_confirmation_ingress_does_not_pin_legacy_source_or_block_recovery
+        PASS [   0.023s] ( 8/50) codebase-graph storage::maintenance_candidate::tests::candidate_reason_codes_are_fixed_and_reports_do_not_invent_measurements
+        PASS [   0.252s] ( 9/50) codebase-graph storage::maintenance_candidate::tests::candidate_recovers_interrupted_role_control_before_parsing_legacy_payload
+        PASS [   0.112s] (10/50) codebase-graph storage::maintenance_candidate::tests::managed_confirmation_remains_pending_until_legacy_enrollment
+        PASS [   0.020s] (11/50) codebase-graph storage::maintenance_candidate::tests::prepared_candidate_crossings_keep_large_state_indirect
+        PASS [   0.017s] (12/50) codebase-graph storage::maintenance_candidate::tests::retirement_control_roundtrip_does_not_certify_whole_pass
+        PASS [   0.022s] (13/50) codebase-graph storage::maintenance_legacy_association::checkpoint_tests::dc_legacy_fixed_certificate_rejects_reserved_and_torn_frames
+        PASS [   0.018s] (14/50) codebase-graph storage::maintenance_legacy_association::checkpoint_tests::dc_legacy_streaming_native_schema_matches_current_assets
+        PASS [   4.175s] (15/50) codebase-graph storage::maintenance_legacy_association::tests::dc_legacy_actual_native_association_restart_and_backup_keep_three_payload_fds
+        PASS [   3.482s] (16/50) codebase-graph storage::maintenance_legacy_association::tests::dc_legacy_cache_change_after_certification_invalidates_final_join
+        PASS [   6.898s] (17/50) codebase-graph storage::maintenance_legacy_association::tests::dc_legacy_database_catalog_and_source_root_substitution_are_unknown
+        PASS [   3.470s] (18/50) codebase-graph storage::maintenance_legacy_association::tests::dc_legacy_durable_checkpoint_resumes_after_one_payload_without_relabeling_epoch
+        PASS [   3.298s] (19/50) codebase-graph storage::maintenance_legacy_association::tests::dc_legacy_manifest_and_cache_substitution_never_mint_association
+        PASS [   3.414s] (20/50) codebase-graph storage::maintenance_legacy_association::tests::dc_legacy_original_epoch_cancellation_and_cap_fail_closed
+        PASS [   3.357s] (21/50) codebase-graph storage::maintenance_legacy_association::tests::dc_legacy_real_public_producer_without_receipts_has_complete_native_association
+        PASS [   0.020s] (22/50) codebase-graph storage::maintenance_legacy_bootstrap::cohort_preparation_layout_tests::accepted_administrative_cohort_keeps_binding_image_out_of_fixed_owner_layout
+        PASS [   0.017s] (23/50) codebase-graph storage::maintenance_legacy_bootstrap::retained_source_observation_layout_tests::retained_source_observer_keeps_snapshot_image_out_of_fixed_owner_layout
+        PASS [   0.119s] (24/50) codebase-graph storage::maintenance_legacy_bootstrap::source_recovery_tests::dc_legacy_staging_owned_commit_recovers_without_another_confirmation
+        PASS [   0.100s] (25/50) codebase-graph storage::maintenance_legacy_bootstrap::source_recovery_tests::dc_legacy_staging_owned_intent_recovers_without_another_confirmation
+        PASS [   0.103s] (26/50) codebase-graph storage::maintenance_legacy_bootstrap::source_recovery_tests::dc_legacy_staging_owned_slot_recovers_without_another_confirmation
+        PASS [   0.019s] (27/50) codebase-graph storage::maintenance_legacy_bootstrap::staging_scope_layout_tests::prepared_staging_scope_keeps_binding_and_scratch_images_boxed
+        PASS [   0.098s] (28/50) codebase-graph storage::maintenance_legacy_bootstrap::tests::dc_legacy_real_dispatcher_claim_closes_and_aborts_only_staging_scope
+        PASS [   0.105s] (29/50) codebase-graph storage::maintenance_legacy_bootstrap::tests::dc_legacy_real_dispatcher_claim_enrolls_and_explicit_rebuild_invalidates_original_owner
+        PASS [   0.045s] (30/50) codebase-graph storage::maintenance_legacy_generations_engine::tests::legacy_generation_advisory_scan_exceeds_one_hundred_entries
+        PASS [   0.018s] (31/50) codebase-graph storage::maintenance_legacy_guard::source_observation_layout_tests::prepared_source_observation_keeps_snapshot_and_recovery_images_boxed
+        PASS [   0.032s] (32/50) codebase-graph storage::maintenance_legacy_guard::tests::dc_legacy_staging_closed_record_refuses_new_actual_producer
+        PASS [   0.018s] (33/50) codebase-graph storage::maintenance_legacy_guard::tests::dc_legacy_staging_custom_root_is_not_enrolled_or_created
+        PASS [   0.022s] (34/50) codebase-graph storage::maintenance_legacy_guard::tests::dc_legacy_staging_retains_actual_shared_gate_through_arc_result_lifetime
+        PASS [   5.587s] (35/50) codebase-graph storage::maintenance_legacy_staging::tests::dc_staging_actual_public_copy_json_csv_profiles_and_streamed_certificates
+        PASS [   0.019s] (36/50) codebase-graph storage::maintenance_legacy_staging::tests::dc_staging_filenames_select_only_exact_known_profiles
+        PASS [   0.029s] (37/50) codebase-graph storage::maintenance_scheduler::allocation_boundary_test::dc_driver_real_requested_allocations_fit_tight_ceiling_and_aligned_factory
+        PASS [   0.017s] (38/50) codebase-graph storage::maintenance_scheduler::independent_review_probes::dc_driver_destructor_panic_preserves_success_and_runtime_drop_can_join_while_unwinding
+        PASS [   0.018s] (39/50) codebase-graph storage::maintenance_scheduler::independent_review_probes::dc_driver_factory_panic_records_failure_without_inventing_attempt
+        PASS [   0.019s] (40/50) codebase-graph storage::maintenance_scheduler::independent_review_probes::independent_outer_panic_preserves_prior_success
+        PASS [   0.017s] (41/50) codebase-graph storage::maintenance_scheduler::independent_review_probes::independent_stopping_lasts_until_driver_disposal_finishes
+        PASS [   0.017s] (42/50) codebase-graph storage::maintenance_scheduler::panic_payload_probe::independent_panicking_factory_payload_publishes_terminal_failure
+        PASS [   0.018s] (43/50) codebase-graph storage::maintenance_scheduler::spawn_failure_test::dc_driver_spawn_failure_releases_all_startup_reservations_without_factory
+        PASS [   0.021s] (44/50) codebase-graph storage::maintenance_scheduler::tests::dc_driver_confirmation_arriving_inflight_survives_prior_completion
+        PASS [   0.019s] (45/50) codebase-graph storage::maintenance_scheduler::tests::dc_driver_one_account_covers_rebind_snapshots_and_retained_handle_lifetime
+        PASS [   0.123s] (46/50) codebase-graph storage::maintenance_scheduler::tests::dc_driver_resolved_startup_binding_runs_actual_dispatcher_without_default_cooldown
+        PASS [   0.018s] (47/50) codebase-graph storage::maintenance_scheduler::tests::dc_driver_transient_wait_observes_completed_disposal_and_factory_failure
+        PASS [   0.017s] (48/50) codebase-graph storage::maintenance_scheduler::tests::dc_scheduler_idle_busy_error_and_continuation_are_paced
+        PASS [   0.016s] (49/50) codebase-graph storage::maintenance_scheduler::tests::dc_scheduler_sustained_requests_do_not_slide_due_or_lose_inflight_demand
+        PASS [   0.023s] (50/50) codebase-graph storage::maintenance_scheduler::tests::queued_confirmation_keeps_request_time_source_after_pair_replacement
+────────────
+     Summary [  95.603s] 50 tests run: 50 passed (1 slow), 790 skipped

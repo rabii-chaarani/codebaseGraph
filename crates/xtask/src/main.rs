@@ -13,31 +13,27 @@ use std::process::{Command, Stdio};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use yaml_serde::Value as YamlValue;
 
+mod ci;
+mod macos;
+#[cfg(test)]
+mod macos_installer_tests;
+mod native_tests;
 mod release;
 
 const CONFIRMATIONS: &[&str] = &["release-environment", "private-vulnerability-reporting"];
 const CRATES_IO_PACKAGE_LIMIT_BYTES: u64 = 10 * 1024 * 1024;
-const NATIVE_TARGETS: [NativeTarget; 4] = [
-    NativeTarget::LinuxX86_64,
-    NativeTarget::MacosArm64,
-    NativeTarget::MacosX86_64,
-    NativeTarget::WindowsX86_64,
-];
+const NATIVE_TARGETS: [NativeTarget; 2] = [NativeTarget::MacosArm64, NativeTarget::WindowsX86_64];
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 enum NativeTarget {
-    LinuxX86_64,
     MacosArm64,
-    MacosX86_64,
     WindowsX86_64,
 }
 
 impl NativeTarget {
     fn parse(value: &str) -> Result<Self, String> {
         match value {
-            "linux-x86_64" => Ok(Self::LinuxX86_64),
             "macos-arm64" => Ok(Self::MacosArm64),
-            "macos-x86_64" => Ok(Self::MacosX86_64),
             "windows-x86_64" => Ok(Self::WindowsX86_64),
             other => Err(format!("unsupported native target: {other}")),
         }
@@ -45,9 +41,7 @@ impl NativeTarget {
 
     fn as_str(self) -> &'static str {
         match self {
-            Self::LinuxX86_64 => "linux-x86_64",
             Self::MacosArm64 => "macos-arm64",
-            Self::MacosX86_64 => "macos-x86_64",
             Self::WindowsX86_64 => "windows-x86_64",
         }
     }
@@ -61,9 +55,7 @@ impl NativeTarget {
 
     fn host(self) -> (&'static str, &'static str) {
         match self {
-            Self::LinuxX86_64 => ("linux", "x86_64"),
             Self::MacosArm64 => ("macos", "aarch64"),
-            Self::MacosX86_64 => ("macos", "x86_64"),
             Self::WindowsX86_64 => ("windows", "x86_64"),
         }
     }
@@ -74,6 +66,29 @@ impl NativeTarget {
 
     fn uses_windows_extensions(self) -> bool {
         self == Self::WindowsX86_64
+    }
+
+    fn payload_files(self) -> Vec<&'static str> {
+        let (graph, wiki) = self.binary_names();
+        let mut files = vec![graph, wiki];
+        if self == Self::MacosArm64 {
+            files.extend(macos::PAYLOAD_FILES);
+        }
+        files
+    }
+
+    fn package_files(self) -> Vec<(&'static str, u32)> {
+        let (graph, wiki) = self.binary_names();
+        let mut files = vec![(graph, 0o755), (wiki, 0o755)];
+        if self == Self::MacosArm64 {
+            files.extend(macos::PAYLOAD_FILES.map(|name| (name, 0o644)));
+        }
+        files.extend([
+            ("checksums.txt", 0o644),
+            ("install.sh", 0o755),
+            ("install.ps1", 0o644),
+        ]);
+        files
     }
 }
 
@@ -97,9 +112,11 @@ fn main() {
 fn run() -> Result<(), String> {
     let mut args = env::args().skip(1);
     match args.next().as_deref() {
+        Some("ci-mode") => ci::run_ci_mode(args.collect()),
         Some("release-gate") => release_gate(args.collect()),
         Some("check-workflows") => check_workflows_command(),
         Some("release-metadata") => release::metadata_command(args.collect()),
+        Some("release-package-preflight") => release::package_preflight_command(args.collect()),
         Some("native-test") => native_test(args.collect()),
         Some("native-artifact") => native_artifact(args.collect()),
         Some("validate-native-artifacts") => validate_native_artifacts(args.collect()),
@@ -129,7 +146,7 @@ fn run() -> Result<(), String> {
         }
         Some(command) => Err(format!("unknown xtask command: {command}")),
         None => Err(
-            "usage: cargo run -p xtask -- <release-gate|check-workflows|native-test|native-artifact|validate-native-artifacts|smoke-artifact|smoke-wiki-artifact|verify-release-version|verify-crate-size>"
+            "usage: cargo run -p xtask -- <ci-mode|release-gate|release-metadata|release-package-preflight|check-workflows|native-test|native-artifact|validate-native-artifacts|smoke-artifact|smoke-wiki-artifact|verify-release-version|verify-crate-size>"
                 .to_string(),
         ),
     }
@@ -160,22 +177,118 @@ fn validate_crate_size(bytes: u64) -> Result<(), String> {
 }
 
 fn native_test(args: Vec<String>) -> Result<(), String> {
-    let options = parse_options(&args, &["--target"])?;
-    let target = NativeTarget::parse(required_option(&options, "--target")?)?;
-    ensure_native_host(target)?;
-    let command_args = native_test_command(target);
-    let mut command = Command::new("cargo");
-    command.args(command_args);
-    run_command(&mut command, "native test")
+    native_tests::run(args)
+}
+
+fn native_test_capture_command(target: NativeTarget) -> Vec<&'static str> {
+    let mut args = native_test_command(target);
+    args.extend(["--no-run", "--message-format=json-render-diagnostics"]);
+    args
+}
+
+fn record_native_test_cli_artifact(
+    message: &Value,
+    manifest: &Path,
+    candidates: &mut BTreeSet<PathBuf>,
+) -> Result<(), String> {
+    if message["reason"] != "compiler-artifact"
+        || message["target"]["name"] != "codebase-graph"
+        || message["profile"]["test"] != false
+        || !message["target"]["kind"]
+            .as_array()
+            .is_some_and(|kinds| kinds.iter().any(|kind| kind == "bin"))
+    {
+        return Ok(());
+    }
+    let actual_manifest = message["manifest_path"]
+        .as_str()
+        .ok_or("native-test CLI artifact has no source manifest")?;
+    if fs::canonicalize(actual_manifest).map_err(|error| error.to_string())? != manifest {
+        return Ok(());
+    }
+    let executable = message["executable"]
+        .as_str()
+        .ok_or("native-test normal CLI artifact has no executable")?;
+    let executable = fs::canonicalize(executable).map_err(|error| error.to_string())?;
+    if !executable.is_file() {
+        return Err("native-test CLI artifact is not a file".into());
+    }
+    candidates.insert(executable);
+    Ok(())
+}
+
+fn unique_native_test_cli(candidates: BTreeSet<PathBuf>) -> Result<PathBuf, String> {
+    if candidates.len() != 1 {
+        return Err(format!(
+            "expected one source-bound normal codebase-graph CLI compiler artifact, got {}",
+            candidates.len()
+        ));
+    }
+    Ok(candidates
+        .into_iter()
+        .next()
+        .expect("one captured executable"))
+}
+
+fn capture_native_test_cli(target: NativeTarget) -> Result<PathBuf, String> {
+    let manifest = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../Cargo.toml");
+    let manifest = fs::canonicalize(manifest).map_err(|error| error.to_string())?;
+    let mut child = Command::new("cargo")
+        .args(native_test_capture_command(target))
+        .stdout(Stdio::piped())
+        .stderr(Stdio::inherit())
+        .spawn()
+        .map_err(|error| format!("failed to capture native-test CLI: {error}"))?;
+    let stdout = child.stdout.take().expect("capture stdout was piped");
+    let mut candidates = BTreeSet::new();
+    let mut failure = None;
+    for line in BufReader::new(stdout).lines() {
+        let line = match line {
+            Ok(line) => line,
+            Err(error) => {
+                failure = Some(error.to_string());
+                break;
+            }
+        };
+        match serde_json::from_str::<Value>(&line) {
+            Ok(message) => {
+                if let Some(rendered) = message["message"]["rendered"].as_str() {
+                    eprint!("{rendered}");
+                }
+                if let Err(error) =
+                    record_native_test_cli_artifact(&message, &manifest, &mut candidates)
+                {
+                    failure.get_or_insert(error);
+                }
+            }
+            Err(error) => {
+                failure.get_or_insert(format!("invalid native-test compiler message: {error}"));
+            }
+        }
+    }
+    let status = child.wait().map_err(|error| error.to_string())?;
+    if !status.success() {
+        return Err(format!(
+            "native-test artifact capture failed with status {status}"
+        ));
+    }
+    if let Some(error) = failure {
+        return Err(error);
+    }
+    unique_native_test_cli(candidates)
 }
 
 fn native_test_command(target: NativeTarget) -> Vec<&'static str> {
-    let mut args = vec!["test", "--workspace", "--locked"];
+    let mut args = vec![
+        "test",
+        "--workspace",
+        "--locked",
+        "--profile",
+        "native-tests",
+    ];
     if target.uses_windows_extensions() {
         // Keep optimized fault-test binaries separate from shipped artifacts.
         args.extend([
-            "--profile",
-            "native-tests",
             "--features",
             "codebase-graph/bundled-windows-extensions,k-wiki/bundled-windows-extensions",
         ]);
@@ -192,7 +305,6 @@ fn native_artifact(args: Vec<String>) -> Result<(), String> {
     ensure_native_host(target)?;
 
     let version = release_version()?;
-    build_native_binaries(target)?;
     fs::create_dir_all(output).map_err(|error| {
         format!(
             "failed to create artifact output {}: {error}",
@@ -201,7 +313,22 @@ fn native_artifact(args: Vec<String>) -> Result<(), String> {
     })?;
 
     let staging = unique_temp_dir(&format!("native_artifact_{}", target.as_str()))?;
-    let result = build_and_smoke_native_archive(target, &version, commit_sha, output, &staging);
+    let result = (|| {
+        let runtime = if target == NativeTarget::MacosArm64 {
+            Some(macos::prepare_openssl(&staging.join("openssl"))?)
+        } else {
+            None
+        };
+        build_native_binaries(target, runtime.as_deref())?;
+        build_and_smoke_native_archive(
+            target,
+            &version,
+            commit_sha,
+            output,
+            &staging,
+            runtime.as_deref(),
+        )
+    })();
     let _ = fs::remove_dir_all(&staging);
     result
 }
@@ -284,22 +411,25 @@ fn release_version() -> Result<String, String> {
 }
 
 fn release_version_from_tag(tag: &str) -> Result<String, String> {
-    let version = tag
-        .strip_prefix('v')
-        .ok_or_else(|| format!("release tag must match vX.Y.Z, got {tag:?}"))?;
-    let parts: Vec<&str> = version.split('.').collect();
-    if parts.len() != 3
-        || parts
-            .iter()
-            .any(|part| part.is_empty() || !part.bytes().all(|byte| byte.is_ascii_digit()))
-    {
-        return Err(format!("release tag must match vX.Y.Z, got {tag:?}"));
-    }
-    Ok(version.to_string())
+    ci::validate_release_tag(tag)
 }
 
-fn build_native_binaries(target: NativeTarget) -> Result<(), String> {
+fn configure_native_build(command: &mut Command, runtime: Option<&Path>) {
+    if let Some(library_dir) = runtime {
+        command
+            .env("OPENSSL_LIB_DIR", library_dir)
+            .env("MACOSX_DEPLOYMENT_TARGET", "13.3");
+        let flags = env::var("RUSTFLAGS").unwrap_or_default();
+        command.env_remove("CARGO_ENCODED_RUSTFLAGS").env(
+            "RUSTFLAGS",
+            format!("{flags} -C link-arg=-Wl,-headerpad_max_install_names"),
+        );
+    }
+}
+
+fn build_native_binaries(target: NativeTarget, runtime: Option<&Path>) -> Result<(), String> {
     let mut graph = Command::new("cargo");
+    configure_native_build(&mut graph, runtime);
     graph.args(["build", "--locked", "--release", "--bin", "codebase-graph"]);
     if target.uses_windows_extensions() {
         graph.args(["--features", "bundled-windows-extensions"]);
@@ -307,6 +437,7 @@ fn build_native_binaries(target: NativeTarget) -> Result<(), String> {
     run_command(&mut graph, "codebase-graph release build")?;
 
     let mut wiki = Command::new("cargo");
+    configure_native_build(&mut wiki, runtime);
     wiki.args([
         "build",
         "--locked",
@@ -328,6 +459,7 @@ fn build_and_smoke_native_archive(
     commit_sha: &str,
     output: &Path,
     staging: &Path,
+    runtime: Option<&Path>,
 ) -> Result<(), String> {
     let package = staging.join("package");
     let extracted = staging.join("extracted");
@@ -349,12 +481,10 @@ fn build_and_smoke_native_archive(
     set_executable(&package.join(wiki_name))?;
     set_executable(&package.join("install.sh"))?;
 
-    let checksums = format!(
-        "{}  {graph_name}\n{}  {wiki_name}\n",
-        sha256_file(&package.join(graph_name))?,
-        sha256_file(&package.join(wiki_name))?
-    );
-    fs::write(package.join("checksums.txt"), checksums).map_err(|error| error.to_string())?;
+    if let Some(library_dir) = runtime {
+        macos::stage_runtime(library_dir, &package)?;
+    }
+    write_internal_checksums(&package, target)?;
 
     let archive_name = target.archive_name(version);
     let archive_path = output.join(&archive_name);
@@ -381,8 +511,18 @@ fn build_and_smoke_native_archive(
 
     extract_and_validate_native_archive(&archive_path, target, &extracted)?;
     dry_run_installer(target, &extracted, &install_bin)?;
-    smoke_artifact(&extracted.join(graph_name))?;
-    smoke_wiki_artifact(&extracted.join(wiki_name))?;
+    if target == NativeTarget::MacosArm64 {
+        macos::validate_package(&extracted)?;
+        let installed = staging.join("installed bin with spaces");
+        install_macos_package(&extracted, &installed, false)?;
+        macos::validate_package(&installed)?;
+        smoke_artifact(&installed.join(graph_name))?;
+        smoke_wiki_artifact(&installed.join(wiki_name))?;
+        verify_macos_install_rejects_bad_runtime(&extracted, &installed, staging)?;
+    } else {
+        smoke_artifact(&extracted.join(graph_name))?;
+        smoke_wiki_artifact(&extracted.join(wiki_name))?;
+    }
     println!("{}", archive_path.display());
     Ok(())
 }
@@ -426,14 +566,7 @@ fn create_native_archive(
         .mtime(0)
         .write(file, Compression::default());
     let mut archive = tar::Builder::new(encoder);
-    let (graph_name, wiki_name) = target.binary_names();
-    for (name, mode) in [
-        (graph_name, 0o755),
-        (wiki_name, 0o755),
-        ("checksums.txt", 0o644),
-        ("install.sh", 0o755),
-        ("install.ps1", 0o644),
-    ] {
+    for (name, mode) in target.package_files() {
         append_deterministic_file(&mut archive, &package.join(name), name, mode)?;
     }
     let encoder = archive
@@ -510,17 +643,22 @@ fn extract_and_validate_native_archive(
 }
 
 fn expected_package_files(target: NativeTarget) -> BTreeSet<String> {
-    let (graph_name, wiki_name) = target.binary_names();
-    [
-        graph_name,
-        wiki_name,
-        "checksums.txt",
-        "install.sh",
-        "install.ps1",
-    ]
-    .into_iter()
-    .map(str::to_string)
-    .collect()
+    target
+        .package_files()
+        .into_iter()
+        .map(|(name, _)| name.to_string())
+        .collect()
+}
+
+fn write_internal_checksums(directory: &Path, target: NativeTarget) -> Result<(), String> {
+    let mut text = String::new();
+    for name in target.payload_files() {
+        text.push_str(&format!(
+            "{}  {name}\n",
+            sha256_file(&directory.join(name))?
+        ));
+    }
+    fs::write(directory.join("checksums.txt"), text).map_err(|error| error.to_string())
 }
 
 fn validate_internal_checksums(directory: &Path, target: NativeTarget) -> Result<(), String> {
@@ -528,12 +666,12 @@ fn validate_internal_checksums(directory: &Path, target: NativeTarget) -> Result
         .map_err(|error| format!("failed to read checksums.txt: {error}"))?;
     let mut checksums = BTreeMap::new();
     for line in text.lines() {
-        let mut parts = line.split_whitespace();
-        let digest = parts.next().unwrap_or_default();
-        let name = parts.next().unwrap_or_default();
-        if parts.next().is_some()
-            || digest.len() != 64
+        let Some((digest, name)) = line.split_once("  ") else {
+            return Err(format!("invalid checksums.txt line: {line:?}"));
+        };
+        if digest.len() != 64
             || !digest.bytes().all(|byte| byte.is_ascii_hexdigit())
+            || name.bytes().any(|byte| byte.is_ascii_whitespace())
             || checksums
                 .insert(name.to_string(), digest.to_ascii_lowercase())
                 .is_some()
@@ -541,13 +679,13 @@ fn validate_internal_checksums(directory: &Path, target: NativeTarget) -> Result
             return Err(format!("invalid checksums.txt line: {line:?}"));
         }
     }
-    let (graph_name, wiki_name) = target.binary_names();
-    let expected_names: BTreeSet<String> = [graph_name, wiki_name]
+    let expected_names: BTreeSet<String> = target
+        .payload_files()
         .into_iter()
         .map(str::to_string)
         .collect();
     if checksums.keys().cloned().collect::<BTreeSet<_>>() != expected_names {
-        return Err("checksums.txt does not contain exactly both packaged binaries".to_string());
+        return Err("checksums.txt does not contain the exact packaged payload".to_string());
     }
     for (name, expected) in checksums {
         let actual = sha256_file(&directory.join(&name))?;
@@ -586,6 +724,61 @@ fn dry_run_installer(
         command
     };
     run_command(&mut command, "packaged installer dry-run")
+}
+
+fn install_macos_package(source: &Path, destination: &Path, dry_run: bool) -> Result<(), String> {
+    let mut command = Command::new("/bin/bash");
+    command
+        .arg(source.join("install.sh"))
+        .arg("--source-dir")
+        .arg(source)
+        .arg("--bin-dir")
+        .arg(destination);
+    if dry_run {
+        command.arg("--dry-run");
+    }
+    run_command(&mut command, "packaged macOS installer")
+}
+
+fn verify_macos_install_rejects_bad_runtime(
+    source: &Path,
+    destination: &Path,
+    staging: &Path,
+) -> Result<(), String> {
+    let target = NativeTarget::MacosArm64;
+    let before = target
+        .payload_files()
+        .into_iter()
+        .map(|name| sha256_file(&destination.join(name)).map(|digest| (name, digest)))
+        .collect::<Result<BTreeMap<_, _>, _>>()?;
+    for failure in ["missing", "corrupt", "incompatible"] {
+        let broken = staging.join(format!("{failure} runtime"));
+        fs::create_dir(&broken).map_err(|error| error.to_string())?;
+        for (name, _) in target.package_files() {
+            copy_file(source.join(name), broken.join(name))?;
+        }
+        let library = broken.join(macos::PAYLOAD_FILES[0]);
+        if failure == "missing" {
+            fs::remove_file(&library).map_err(|error| error.to_string())?;
+        } else {
+            fs::write(&library, b"not a compatible Mach-O library\n")
+                .map_err(|error| error.to_string())?;
+            if failure == "incompatible" {
+                write_internal_checksums(&broken, target)?;
+            }
+        }
+        for dry_run in [true, false] {
+            if install_macos_package(&broken, destination, dry_run).is_ok() {
+                return Err(format!("installer accepted {failure} bundled runtime"));
+            }
+            for (name, digest) in &before {
+                if sha256_file(&destination.join(name))? != *digest {
+                    return Err(format!("{failure} runtime changed installed {name}"));
+                }
+            }
+        }
+    }
+    Ok(())
 }
 
 fn sha256_file(path: &Path) -> Result<String, String> {
@@ -724,12 +917,24 @@ fn run_command(command: &mut Command, description: &str) -> Result<(), String> {
 fn release_gate(args: Vec<String>) -> Result<(), String> {
     let mut production = false;
     let mut require_conda = false;
+    let mut source_sha = None;
+    let mut release_candidate = false;
     let mut confirmations = BTreeSet::new();
     let mut index = 0;
     while index < args.len() {
         match args[index].as_str() {
             "--production" => production = true,
             "--require-conda" => require_conda = true,
+            "--release-candidate" => release_candidate = true,
+            "--source-sha" => {
+                index += 1;
+                let sha = args
+                    .get(index)
+                    .ok_or_else(|| "--source-sha requires a value".to_string())?;
+                if source_sha.replace(sha.clone()).is_some() {
+                    return Err("--source-sha may only be provided once".to_string());
+                }
+            }
             "--confirm" => {
                 index += 1;
                 let flag = args
@@ -742,7 +947,19 @@ fn release_gate(args: Vec<String>) -> Result<(), String> {
         index += 1;
     }
 
+    if release_candidate && source_sha.is_none() {
+        return Err("--release-candidate requires --source-sha".to_string());
+    }
+    if let Some(source_sha) = source_sha.as_deref() {
+        ci::verify_checkout(Path::new("."), source_sha)?;
+    }
+
     let mut issues = Vec::new();
+    if release_candidate {
+        if let Err(error) = ci::validate_release_candidate(Path::new("."), None) {
+            issues.push(format!("FAIL: release-candidate-invalid: {error}."));
+        }
+    }
     check_security_policy(&mut issues);
     check_rust_only_files(&mut issues);
     check_cargo_metadata(&mut issues);
@@ -801,6 +1018,109 @@ fn check_security_policy(issues: &mut Vec<String>) {
     }
 }
 
+fn is_docs_helper_path(root: &Path, candidate: &Path) -> Result<bool, String> {
+    let relative = if candidate.is_absolute() {
+        if let Ok(relative) = candidate.strip_prefix(root) {
+            relative.to_path_buf()
+        } else {
+            let repository_root = root.canonicalize().map_err(|error| {
+                format!(
+                    "cannot resolve repository root {} for the docs Python exception: {error}",
+                    root.display()
+                )
+            })?;
+            let Ok(relative) = candidate.strip_prefix(&repository_root) else {
+                return Ok(false);
+            };
+            relative.to_path_buf()
+        }
+    } else {
+        candidate
+            .strip_prefix(root)
+            .unwrap_or(candidate)
+            .to_path_buf()
+    };
+
+    let mut components = Vec::new();
+    for component in relative.components() {
+        let std::path::Component::Normal(name) = component else {
+            return Ok(false);
+        };
+        components.push(name.to_os_string());
+    }
+    if components.len() < 2
+        || components[0].to_str() != Some("docs")
+        || relative.extension() != Some(std::ffi::OsStr::new("py"))
+    {
+        return Ok(false);
+    }
+
+    let repository_root = root.canonicalize().map_err(|error| {
+        format!(
+            "cannot resolve repository root {} for the docs Python exception: {error}",
+            root.display()
+        )
+    })?;
+    let mut path = repository_root.clone();
+    for (index, component) in components.iter().enumerate() {
+        path.push(component);
+        let metadata = fs::symlink_metadata(&path).map_err(|error| {
+            format!(
+                "cannot inspect docs Python exception path {}: {error}; no exception is granted",
+                path.display()
+            )
+        })?;
+        if metadata.file_type().is_symlink() {
+            return Err(format!(
+                "docs Python exception rejects symlink path {}; no exception is granted",
+                path.display()
+            ));
+        }
+        let is_last = index + 1 == components.len();
+        if (is_last && !metadata.is_file()) || (!is_last && !metadata.is_dir()) {
+            return Ok(false);
+        }
+    }
+
+    let docs = repository_root.join("docs");
+    let real_docs = docs.canonicalize().map_err(|error| {
+        format!(
+            "cannot resolve literal docs directory {}: {error}; no exception is granted",
+            docs.display()
+        )
+    })?;
+    if real_docs.parent() != Some(repository_root.as_path()) {
+        return Err(format!(
+            "docs directory {} does not resolve to the repository's literal docs directory; no exception is granted",
+            docs.display()
+        ));
+    }
+    let real_candidate = path.canonicalize().map_err(|error| {
+        format!(
+            "cannot resolve docs Python exception path {}: {error}; no exception is granted",
+            path.display()
+        )
+    })?;
+    if real_candidate.strip_prefix(&real_docs).is_err() {
+        return Err(format!(
+            "docs Python exception path {} resolves outside literal docs; no exception is granted",
+            path.display()
+        ));
+    }
+
+    Ok(true)
+}
+
+fn has_generated_component(path: &Path) -> bool {
+    path.components().any(|component| {
+        matches!(
+            component,
+            std::path::Component::Normal(name)
+                if matches!(name.to_str(), Some(".git" | "target" | ".codebaseGraph" | ".kwiki"))
+        )
+    })
+}
+
 fn check_rust_only_files(issues: &mut Vec<String>) {
     for forbidden in ["pyproject.toml", "requirements-dev.txt"] {
         if Path::new(forbidden).exists() {
@@ -818,19 +1138,21 @@ fn check_rust_only_files(issues: &mut Vec<String>) {
     }
     for path in files_under(Path::new(".")) {
         let relative = path.strip_prefix(".").unwrap_or(&path);
-        let text_path = relative.to_string_lossy();
-        if text_path.contains("/target/")
-            || text_path.contains("/.git/")
-            || text_path.contains("/.codebaseGraph/")
-            || text_path.contains("/.kwiki/")
-        {
+        if has_generated_component(relative) {
             continue;
         }
         if path.extension().is_some_and(|extension| extension == "py") {
-            issues.push(format!(
-                "FAIL: python-file-present: {} must not be maintained source.",
-                text_path
-            ));
+            let text_path = relative.to_string_lossy();
+            match is_docs_helper_path(Path::new("."), &path) {
+                Ok(true) => {}
+                Ok(false) => issues.push(format!(
+                    "FAIL: python-file-present: {} must not be maintained source.",
+                    text_path
+                )),
+                Err(error) => {
+                    issues.push(format!("FAIL: docs-python-exception-unavailable: {error}."))
+                }
+            }
         }
     }
 }
@@ -1007,11 +1329,635 @@ fn check_workflows(issues: &mut Vec<String>) {
     }
 }
 
-#[cfg(test)]
-fn workflow_yaml_error(text: &str) -> Option<String> {
-    yaml_serde::from_str::<YamlValue>(text)
-        .err()
-        .map(|error| error.to_string())
+fn native_retention_policy_valid(ci: &YamlValue, native: &YamlValue) -> bool {
+    let selector = yaml_path(ci, &["jobs", "native_retention"]).unwrap_or(&YamlValue::Null);
+    let selector_steps = yaml_path(selector, &["steps"]).and_then(YamlValue::as_sequence);
+    let selector_step = yaml_step_by_id(selector, "decision").unwrap_or(&YamlValue::Null);
+    let selector_outputs = yaml_path(selector, &["outputs"]).unwrap_or(&YamlValue::Null);
+    let native_job = yaml_path(ci, &["jobs", "native"]).unwrap_or(&YamlValue::Null);
+    let native_with = yaml_path(native_job, &["with"]).unwrap_or(&YamlValue::Null);
+    let upload_input = yaml_path(
+        native,
+        &["on", "workflow_call", "inputs", "upload-artifact"],
+    )
+    .unwrap_or(&YamlValue::Null);
+    let retention_input = yaml_path(
+        native,
+        &["on", "workflow_call", "inputs", "artifact-retention-days"],
+    )
+    .unwrap_or(&YamlValue::Null);
+    let upload_step = yaml_step_by_name(
+        yaml_path(native, &["jobs", "native"]).unwrap_or(&YamlValue::Null),
+        "Upload internal artifact",
+    )
+    .unwrap_or(&YamlValue::Null);
+    let upload_with = yaml_path(upload_step, &["with"]).unwrap_or(&YamlValue::Null);
+    let diagnostics_upload = yaml_step_by_name(
+        yaml_path(native, &["jobs", "tests"]).unwrap_or(&YamlValue::Null),
+        "Upload native test diagnostics",
+    )
+    .unwrap_or(&YamlValue::Null);
+
+    let selector_valid = yaml_path(selector, &["name"]).and_then(YamlValue::as_str)
+        == Some("native artifact retention")
+        && yaml_path(selector, &["runs-on"]).and_then(YamlValue::as_str) == Some("ubuntu-latest")
+        && selector.get("permissions").is_none()
+        && selector.get("environment").is_none()
+        && selector.get("env").is_none()
+        && selector.get("needs").is_none()
+        && selector.get("if").is_none()
+        && selector.get("continue-on-error").is_none()
+        && selector_steps.is_some_and(|steps| steps.len() == 1)
+        && yaml_path(selector_step, &["name"]).and_then(YamlValue::as_str)
+            == Some("Select native artifact retention")
+        && yaml_path(selector_step, &["id"]).and_then(YamlValue::as_str) == Some("decision")
+        && yaml_path(selector_step, &["shell"]).and_then(YamlValue::as_str) == Some("bash")
+        && yaml_path(selector_step, &["run"])
+            .and_then(YamlValue::as_str)
+            .is_some_and(|run| !run.trim().is_empty())
+        && selector_step.get("uses").is_none()
+        && selector_step.get("env").is_none()
+        && selector_step.get("if").is_none()
+        && selector_step.get("continue-on-error").is_none()
+        && yaml_mapping_key_set(Some(selector_outputs))
+            == Some(BTreeSet::from(["retain".to_string()]))
+        && yaml_path(selector_outputs, &["retain"]).and_then(YamlValue::as_str)
+            == Some("${{ steps.decision.outputs.retain }}");
+
+    let native_valid = yaml_path(native_job, &["uses"]).and_then(YamlValue::as_str)
+        == Some("./.github/workflows/native.yml")
+        && yaml_path(native_job, &["needs"]).and_then(yaml_string_set)
+            == Some(BTreeSet::from([
+                "classify".to_string(),
+                "native_retention".to_string(),
+            ]))
+        && yaml_path(native_job, &["strategy", "matrix", "include"])
+            .and_then(YamlValue::as_sequence)
+            .is_some_and(|targets| {
+                let expected_targets: BTreeSet<String> = NATIVE_TARGETS
+                    .iter()
+                    .map(|target| target.as_str().to_string())
+                    .collect();
+                let actual_targets: BTreeSet<String> = targets
+                    .iter()
+                    .filter_map(|target| {
+                        yaml_path(target, &["target"])
+                            .and_then(YamlValue::as_str)
+                            .map(str::to_string)
+                    })
+                    .collect();
+                targets.len() == expected_targets.len()
+                    && actual_targets == expected_targets
+                    && targets.iter().all(|target| {
+                        yaml_path(target, &["run-tests"]).and_then(YamlValue::as_bool) == Some(true)
+                    })
+            })
+        && yaml_path(native_job, &["if"]).and_then(YamlValue::as_str)
+            == Some("needs.classify.outputs.mode == 'full'")
+        && native_job.get("continue-on-error").is_none()
+        && yaml_path(native_with, &["target"]).and_then(YamlValue::as_str)
+            == Some("${{ matrix.target }}")
+        && yaml_path(native_with, &["source-sha"]).and_then(YamlValue::as_str)
+            == Some("${{ github.sha }}")
+        && yaml_path(native_with, &["run-tests"]).and_then(YamlValue::as_str)
+            == Some("${{ matrix.run-tests }}")
+        && yaml_path(native_with, &["upload-artifact"]).and_then(YamlValue::as_str)
+            == Some("${{ fromJSON(needs.native_retention.outputs.retain) }}")
+        && yaml_path(native_with, &["artifact-retention-days"]).and_then(YamlValue::as_i64)
+            == Some(90)
+        && yaml_path(upload_input, &["required"]).and_then(YamlValue::as_bool) == Some(true)
+        && yaml_path(upload_input, &["type"]).and_then(YamlValue::as_str) == Some("boolean")
+        && yaml_path(retention_input, &["required"]).and_then(YamlValue::as_bool) == Some(true)
+        && yaml_path(retention_input, &["type"]).and_then(YamlValue::as_str) == Some("number")
+        && yaml_path(upload_step, &["if"]).and_then(YamlValue::as_str)
+            == Some("inputs.upload-artifact")
+        && yaml_path(upload_step, &["uses"]).and_then(YamlValue::as_str)
+            == Some("actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a")
+        && yaml_path(upload_with, &["name"]).and_then(YamlValue::as_str)
+            == Some("native-${{ inputs.target }}")
+        && yaml_path(upload_with, &["path"]).and_then(YamlValue::as_str)
+            == Some("dist/${{ inputs.target }}/")
+        && yaml_path(upload_with, &["if-no-files-found"]).and_then(YamlValue::as_str)
+            == Some("error")
+        && yaml_path(upload_with, &["retention-days"]).and_then(YamlValue::as_str)
+            == Some("${{ inputs.artifact-retention-days }}")
+        && yaml_path(diagnostics_upload, &["if"]).and_then(YamlValue::as_str) == Some("always()")
+        && yaml_path(diagnostics_upload, &["with", "retention-days"]).and_then(YamlValue::as_i64)
+            == Some(3);
+
+    let required_needs = yaml_path(ci, &["jobs", "required", "needs"])
+        .and_then(yaml_string_set)
+        .unwrap_or_default();
+    let required_step = yaml_step_by_name(
+        yaml_path(ci, &["jobs", "required"]).unwrap_or(&YamlValue::Null),
+        "Require current mode and mandatory jobs",
+    )
+    .unwrap_or(&YamlValue::Null);
+    let expected_required_needs = BTreeSet::from([
+        "classify".to_string(),
+        "fmt".to_string(),
+        "supply-chain".to_string(),
+        "repository-policy".to_string(),
+        "clippy".to_string(),
+        "publish-dry-run".to_string(),
+        "native".to_string(),
+        "native_retention".to_string(),
+    ]);
+    let required_run = yaml_path(required_step, &["run"])
+        .and_then(YamlValue::as_str)
+        .unwrap_or_default();
+    selector_valid
+        && native_valid
+        && required_needs == expected_required_needs
+        && yaml_path(ci, &["jobs", "required", "if"]).and_then(YamlValue::as_str)
+            == Some("${{ always() }}")
+        && yaml_path(required_step, &["name"]).and_then(YamlValue::as_str)
+            == Some("Require current mode and mandatory jobs")
+        && yaml_path(required_step, &["shell"]).and_then(YamlValue::as_str) == Some("bash")
+        && yaml_path(required_step, &["env", "RESULTS"]).and_then(YamlValue::as_str)
+            == Some("${{ toJSON(needs) }}")
+        && yaml_path(required_step, &["env", "DECISION"]).and_then(YamlValue::as_str)
+            == Some("${{ needs.classify.outputs.decision }}")
+        && yaml_path(required_step, &["env", "REPOSITORY_ID"]).and_then(YamlValue::as_str)
+            == Some("${{ github.repository_id }}")
+        && yaml_path(required_step, &["env", "GH_TOKEN"]).and_then(YamlValue::as_str)
+            == Some("${{ github.token }}")
+        && required_run.contains("positive_metadata")
+        && required_run.contains("git/ref/heads/main")
+        && required_run.contains("pulls/$number")
+        && required_run.contains("RESULTS")
+        && !required_run.contains("echo success")
+}
+
+fn workflow_step_id<'a>(job: &'a YamlValue, id: &str) -> Option<&'a YamlValue> {
+    yaml_step_by_id(job, id)
+}
+
+fn ci_repository_policy_valid(ci: &YamlValue) -> bool {
+    let job = yaml_path(ci, &["jobs", "repository-policy"]).unwrap_or(&YamlValue::Null);
+    let steps = yaml_path(job, &["steps"]).and_then(YamlValue::as_sequence);
+    let purpose = yaml_step_by_id(job, "purpose").unwrap_or(&YamlValue::Null);
+    let checkout = yaml_step_by_name(job, "Check out tested source").unwrap_or(&YamlValue::Null);
+    let policy =
+        yaml_step_by_name(job, "Check repository release policy").unwrap_or(&YamlValue::Null);
+    let regression = yaml_step_by_name(job, "Check classifier and workflow regressions")
+        .unwrap_or(&YamlValue::Null);
+    let permissions = BTreeSet::from(["contents".to_string(), "pull-requests".to_string()]);
+    let purpose_run = yaml_path(purpose, &["run"])
+        .and_then(YamlValue::as_str)
+        .unwrap_or_default();
+    let policy_run = yaml_path(policy, &["run"])
+        .and_then(YamlValue::as_str)
+        .unwrap_or_default();
+    let purpose_valid = yaml_path(purpose, &["name"]).and_then(YamlValue::as_str)
+        == Some("Read current policy purpose")
+        && yaml_path(purpose, &["shell"]).and_then(YamlValue::as_str) == Some("bash")
+        && yaml_path(purpose, &["env", "GH_TOKEN"]).and_then(YamlValue::as_str)
+            == Some("${{ github.token }}")
+        && yaml_path(purpose, &["env", "REPOSITORY_ID"]).and_then(YamlValue::as_str)
+            == Some("${{ github.repository_id }}")
+        && purpose.get("if").is_none()
+        && purpose.get("continue-on-error").is_none()
+        && purpose_run.contains("set -euo pipefail")
+        && purpose_run.contains("GITHUB_EVENT_NAME")
+        && purpose_run.contains("GITHUB_REPOSITORY")
+        && purpose_run.contains("GITHUB_SHA")
+        && purpose_run.contains("GITHUB_REF")
+        && purpose_run.contains("REPOSITORY_ID")
+        && purpose_run.contains("gh api \"repos/$GITHUB_REPOSITORY/pulls/$number\"")
+        && purpose_run.contains("($event[0].pull_request | identity)")
+        && purpose_run.contains(".state == \"open\"")
+        && purpose_run.contains(
+            ".head.ref == \"release-please--branches--main--components--codebase-graph\"",
+        )
+        && purpose_run.contains(".head.repo.full_name == $repository")
+        && purpose_run.contains(".head.repo.id == $event[0].pull_request.head.repo.id")
+        && purpose_run.contains(".base.sha == $event[0].pull_request.base.sha")
+        && purpose_run.contains(".head.sha == $event[0].pull_request.head.sha")
+        && purpose_run.contains("Unsupported repository-policy event")
+        && purpose_run.contains("release-candidate=%s")
+        && !purpose_run.contains("|| candidate=false")
+        && !purpose_run.contains("cargo run");
+    let checkout_valid = yaml_path(checkout, &["uses"]).and_then(YamlValue::as_str)
+        == Some("actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10")
+        && yaml_path(checkout, &["with", "ref"]).and_then(YamlValue::as_str)
+            == Some("${{ github.sha }}")
+        && yaml_path(checkout, &["with", "persist-credentials"]).and_then(YamlValue::as_bool)
+            == Some(false)
+        && checkout.get("if").is_none();
+    let candidate_append = "true) args+=(--release-candidate) ;;";
+    let ordinary_branch = "false) ;;";
+    let policy_valid = yaml_path(policy, &["name"]).and_then(YamlValue::as_str)
+        == Some("Check repository release policy")
+        && yaml_path(policy, &["shell"]).and_then(YamlValue::as_str) == Some("bash")
+        && yaml_path(policy, &["env", "TESTED_SHA"]).and_then(YamlValue::as_str)
+            == Some("${{ github.sha }}")
+        && yaml_path(policy, &["env", "RELEASE_CANDIDATE"]).and_then(YamlValue::as_str)
+            == Some("${{ steps.purpose.outputs.release-candidate }}")
+        && policy.get("if").is_none()
+        && policy.get("continue-on-error").is_none()
+        && policy_run.contains("args=(release-gate --source-sha \"$TESTED_SHA\")")
+        && policy_run.contains(candidate_append)
+        && policy_run.contains(ordinary_branch)
+        && policy_run.contains("Invalid repository-policy purpose")
+        && policy_run.contains("cargo run -p xtask --locked -- \"${args[@]}\"")
+        && !policy_run.contains("--allow-dirty");
+    let regression_valid = yaml_path(regression, &["run"]).and_then(YamlValue::as_str)
+        == Some("cargo test -p xtask --locked")
+        && regression.get("if").is_none();
+    yaml_path(job, &["name"]).and_then(YamlValue::as_str) == Some("repository policy")
+        && yaml_path(job, &["runs-on"]).and_then(YamlValue::as_str) == Some("ubuntu-latest")
+        && yaml_mapping_key_set(yaml_path(job, &["permissions"])) == Some(permissions)
+        && yaml_path(job, &["permissions", "contents"]).and_then(YamlValue::as_str) == Some("read")
+        && yaml_path(job, &["permissions", "pull-requests"]).and_then(YamlValue::as_str)
+            == Some("read")
+        && job.get("if").is_none()
+        && job.get("continue-on-error").is_none()
+        && job.get("environment").is_none()
+        && job.get("env").is_none()
+        && steps.is_some_and(|steps| steps.len() == 4)
+        && purpose_valid
+        && checkout_valid
+        && policy_valid
+        && regression_valid
+}
+
+fn crate_preflight_policy_valid(release: &YamlValue) -> bool {
+    let job = yaml_path(release, &["jobs", "crate-preflight"]).unwrap_or(&YamlValue::Null);
+    let expected_needs = BTreeSet::from(["release-target".to_string(), "ci-gate".to_string()]);
+    let expected_outputs = BTreeSet::from([
+        "artifact-name".to_string(),
+        "run-id".to_string(),
+        "run-attempt".to_string(),
+    ]);
+    let helper_checkout =
+        yaml_step_by_name(job, "Check out immutable workflow helper").unwrap_or(&YamlValue::Null);
+    let source_checkout =
+        yaml_step_by_name(job, "Check out selected package source").unwrap_or(&YamlValue::Null);
+    let preflight = yaml_step_by_id(job, "preflight").unwrap_or(&YamlValue::Null);
+    let retention = yaml_step_by_name(job, "Retain successful crate preflight report")
+        .unwrap_or(&YamlValue::Null);
+    let preflight_steps = yaml_path(job, &["steps"]).and_then(YamlValue::as_sequence);
+    let run = yaml_path(preflight, &["run"])
+        .and_then(YamlValue::as_str)
+        .unwrap_or_default();
+    let report_artifact = yaml_path(retention, &["with", "name"]).and_then(YamlValue::as_str);
+    let artifact_path = yaml_path(retention, &["with", "path"]).and_then(YamlValue::as_str);
+    let preflight_outputs = yaml_path(job, &["outputs"]).unwrap_or(&YamlValue::Null);
+    let publish_assets =
+        yaml_path(release, &["jobs", "publish-release-assets"]).unwrap_or(&YamlValue::Null);
+    let publish_assets_run = yaml_step_by_name(publish_assets, "Create only the verified release")
+        .and_then(|step| yaml_path(step, &["run"]))
+        .and_then(YamlValue::as_str)
+        .unwrap_or_default();
+    let publish_crate = yaml_path(release, &["jobs", "publish-crate"]).unwrap_or(&YamlValue::Null);
+    let publish_crate_step =
+        yaml_step_by_name(publish_crate, "Publish crates.io package").unwrap_or(&YamlValue::Null);
+    let publish_crate_run = yaml_path(publish_crate_step, &["run"])
+        .and_then(YamlValue::as_str)
+        .unwrap_or_default();
+    let finalize = yaml_path(release, &["jobs", "finalize-release"]).unwrap_or(&YamlValue::Null);
+    let job_condition = yaml_path(job, &["if"]).and_then(YamlValue::as_str);
+    let publisher_condition = yaml_path(publish_assets, &["if"])
+        .and_then(YamlValue::as_str)
+        .unwrap_or_default();
+    let crate_condition = yaml_path(publish_crate, &["if"])
+        .and_then(YamlValue::as_str)
+        .unwrap_or_default();
+    let job_bound = job_condition
+        == Some("needs.release-target.outputs.should-publish == 'true' && needs.release-target.outputs.automatic == 'true'")
+        && yaml_path(job, &["needs"]).and_then(yaml_string_set) == Some(expected_needs)
+        && yaml_path(job, &["runs-on"]).and_then(YamlValue::as_str) == Some("ubuntu-latest")
+        && preflight_steps.is_some_and(|steps| steps.len() == 4)
+        && yaml_mapping_key_set(yaml_path(job, &["permissions"]))
+            == Some(BTreeSet::from(["contents".to_string()]))
+        && yaml_path(job, &["permissions", "contents"]).and_then(YamlValue::as_str) == Some("read")
+        && job.get("environment").is_none()
+        && job.get("env").is_none()
+        && job.get("continue-on-error").is_none()
+        && yaml_mapping_key_set(Some(preflight_outputs)) == Some(expected_outputs)
+        && yaml_path(preflight_outputs, &["artifact-name"]).and_then(YamlValue::as_str)
+            == Some("${{ steps.preflight.outputs.artifact-name }}")
+        && yaml_path(preflight_outputs, &["run-id"]).and_then(YamlValue::as_str)
+            == Some("${{ steps.preflight.outputs.run-id }}")
+        && yaml_path(preflight_outputs, &["run-attempt"]).and_then(YamlValue::as_str)
+            == Some("${{ steps.preflight.outputs.run-attempt }}");
+    let checkouts_valid = yaml_path(helper_checkout, &["uses"]).and_then(YamlValue::as_str)
+        == Some("actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10")
+        && yaml_path(helper_checkout, &["with", "ref"]).and_then(YamlValue::as_str)
+            == Some("${{ github.workflow_sha }}")
+        && yaml_path(helper_checkout, &["with", "path"]).and_then(YamlValue::as_str)
+            == Some("workflow-helper")
+        && yaml_path(helper_checkout, &["with", "persist-credentials"])
+            .and_then(YamlValue::as_bool)
+            == Some(false)
+        && yaml_path(source_checkout, &["uses"]).and_then(YamlValue::as_str)
+            == Some("actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10")
+        && yaml_path(source_checkout, &["with", "ref"]).and_then(YamlValue::as_str) == Some("main")
+        && yaml_path(source_checkout, &["with", "fetch-depth"]).and_then(YamlValue::as_i64)
+            == Some(0)
+        && yaml_path(source_checkout, &["with", "path"]).and_then(YamlValue::as_str)
+            == Some("selected-source")
+        && yaml_path(source_checkout, &["with", "persist-credentials"])
+            .and_then(YamlValue::as_bool)
+            == Some(false);
+    let preflight_valid = yaml_path(preflight, &["name"]).and_then(YamlValue::as_str)
+        == Some("Verify exact-source package and size")
+        && yaml_path(preflight, &["shell"]).and_then(YamlValue::as_str) == Some("bash")
+        && yaml_path(preflight, &["env", "SOURCE_SHA"]).and_then(YamlValue::as_str)
+            == Some("${{ needs.release-target.outputs.source-sha }}")
+        && yaml_path(preflight, &["env", "RELEASE_TAG"]).and_then(YamlValue::as_str)
+            == Some("${{ needs.release-target.outputs.tag-name }}")
+        && run.contains("[[ \"$SOURCE_SHA\" =~ ^[0-9a-f]{40}$ ]]")
+        && run.find("merge-base --is-ancestor \"$SOURCE_SHA\" HEAD")
+            .zip(run.find("checkout --detach \"$SOURCE_SHA\""))
+            .zip(run.find("cargo run --manifest-path"))
+            .is_some_and(|((admit, checkout), cargo)| admit < checkout && checkout < cargo)
+        && run.contains("cargo run --manifest-path \"$GITHUB_WORKSPACE/workflow-helper/crates/xtask/Cargo.toml\"")
+        && run.contains("release-package-preflight --source-dir \"$GITHUB_WORKSPACE/selected-source\"")
+        && run.contains("--source-sha \"$SOURCE_SHA\" --tag \"$RELEASE_TAG\"")
+        && run.contains("--output \"$report_dir/crate-preflight.json\"")
+        && run.contains("report_dir=\"$RUNNER_TEMP/crate-preflight-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT\"")
+        && run.contains("artifact-name=crate-preflight-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT")
+        && run.contains("run-id=$GITHUB_RUN_ID")
+        && run.contains("run-attempt=$GITHUB_RUN_ATTEMPT")
+        && preflight.get("continue-on-error").is_none()
+        && preflight.get("if").is_none();
+    let report_retained = yaml_path(retention, &["uses"]).and_then(YamlValue::as_str)
+        == Some("actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a")
+        && report_artifact == Some("${{ steps.preflight.outputs.artifact-name }}")
+        && artifact_path == Some("${{ runner.temp }}/${{ steps.preflight.outputs.artifact-name }}/crate-preflight.json")
+        && yaml_path(retention, &["with", "if-no-files-found"]).and_then(YamlValue::as_str)
+            == Some("error")
+        && yaml_path(retention, &["with", "retention-days"]).and_then(YamlValue::as_i64) == Some(7)
+        && retention.get("if").is_none();
+    let publisher_consumer = yaml_path(publish_assets, &["needs"])
+        .and_then(yaml_string_set)
+        .is_some_and(|needs| needs.contains("crate-preflight"))
+        && publisher_condition.contains("needs.crate-preflight.result == 'success'")
+        && publisher_condition.contains("needs.release-target.outputs.automatic == 'true'")
+        && publisher_condition.contains("needs.crate-preflight.result == 'skipped'")
+        && publisher_condition.contains("needs.release-target.outputs.automatic == 'false'")
+        && yaml_path(publish_assets, &["steps"])
+            .and_then(YamlValue::as_sequence)
+            .is_some_and(|steps| {
+                steps.iter().any(|step| {
+                    yaml_path(step, &["name"]).and_then(YamlValue::as_str)
+                        == Some("Download exact crate preflight report")
+                        && yaml_path(step, &["with", "name"]).and_then(YamlValue::as_str)
+                            == Some("${{ needs.crate-preflight.outputs.artifact-name }}")
+                        && yaml_path(step, &["if"]).and_then(YamlValue::as_str)
+                            == Some("needs.release-target.outputs.automatic == 'true'")
+                })
+            })
+        && yaml_path(
+            yaml_step_by_name(publish_assets, "Create only the verified release")
+                .unwrap_or(&YamlValue::Null),
+            &["env", "PREFLIGHT_RESULT"],
+        )
+        .and_then(YamlValue::as_str)
+            == Some("${{ needs.crate-preflight.result }}")
+        && publish_assets_run.contains("\"$PREFLIGHT_RUN_ID\" == \"$GITHUB_RUN_ID\"")
+        && publish_assets_run.contains("crate-preflight-$GITHUB_RUN_ID-$PREFLIGHT_ATTEMPT")
+        && publish_assets_run
+            .contains(".source_sha == $sha and .version == $version and .tag_name == $tag");
+    let crate_consumer = yaml_path(publish_crate, &["needs"])
+        .and_then(yaml_string_set)
+        .is_some_and(|needs| {
+            needs.contains("crate-preflight") && needs.contains("publish-release-assets")
+        })
+        && crate_condition.contains("needs.crate-preflight.result == 'success'")
+        && crate_condition.contains("needs.publish-release-assets.result == 'success'")
+        && crate_condition.contains("needs.release-target.outputs.automatic == 'true'")
+        && yaml_path(
+            yaml_step_by_name(publish_crate, "Download exact crate preflight report")
+                .unwrap_or(&YamlValue::Null),
+            &["with", "name"],
+        )
+        .and_then(YamlValue::as_str)
+            == Some("${{ needs.crate-preflight.outputs.artifact-name }}")
+        && yaml_path(publish_crate_step, &["env", "PREFLIGHT_RESULT"]).and_then(YamlValue::as_str)
+            == Some("${{ needs.crate-preflight.result }}")
+        && publish_crate_run.contains("\"$PREFLIGHT_RUN_ID\" == \"$GITHUB_RUN_ID\"")
+        && publish_crate_run.contains("git rev-parse HEAD")
+        && publish_crate_run.contains("cargo publish --locked");
+    let finalization_ordered = yaml_path(finalize, &["needs"])
+        .and_then(yaml_string_set)
+        .is_some_and(|needs| {
+            needs.contains("publish-crate") && needs.contains("publish-release-assets")
+        })
+        && yaml_path(finalize, &["if"])
+            .and_then(YamlValue::as_str)
+            .is_some_and(|condition| {
+                condition.contains("needs.publish-crate.result == 'success'")
+                    && condition.contains("needs.publish-release-assets.result == 'success'")
+            });
+    job_bound
+        && checkouts_valid
+        && preflight_valid
+        && report_retained
+        && publisher_consumer
+        && crate_consumer
+        && finalization_ordered
+}
+
+fn ci_mode_policy_valid(ci: &YamlValue, issues: &mut Vec<String>) {
+    let expected_bases = BTreeSet::from([
+        "main",
+        "cod103-stack/cod-105",
+        "cod103-stack/cod-106",
+        "cod103-stack/cod-56",
+        "cod103-stack/cod-107",
+        "cod103-stack/cod-108",
+    ])
+    .into_iter()
+    .map(str::to_string)
+    .collect::<BTreeSet<_>>();
+    let expected_events = BTreeSet::from([
+        "opened",
+        "synchronize",
+        "reopened",
+        "edited",
+        "labeled",
+        "unlabeled",
+    ])
+    .into_iter()
+    .map(str::to_string)
+    .collect::<BTreeSet<_>>();
+    if !yaml_matches_string_set(
+        yaml_path(ci, &["on", "pull_request", "branches"]),
+        &expected_bases,
+    ) || !yaml_matches_string_set(
+        yaml_path(ci, &["on", "pull_request", "types"]),
+        &expected_events,
+    ) || !yaml_matches_string_set(
+        yaml_path(ci, &["on", "push", "branches"]),
+        &BTreeSet::from(["main".to_string()]),
+    ) || yaml_mapping_key_set(yaml_path(ci, &["on"]))
+        != Some(BTreeSet::from([
+            "pull_request".to_string(),
+            "push".to_string(),
+        ]))
+    {
+        issues.push("FAIL: ci-mode-trigger-invalid: preserve main push and the exact approved pull request bases and activities.".to_string());
+    }
+
+    let jobs = yaml_path(ci, &["jobs"]).unwrap_or(&YamlValue::Null);
+    let classify = yaml_path(ci, &["jobs", "classify"]).unwrap_or(&YamlValue::Null);
+    let identity = workflow_step_id(classify, "identity").unwrap_or(&YamlValue::Null);
+    let trusted_base = workflow_step_id(classify, "trusted-base").unwrap_or(&YamlValue::Null);
+    let git_objects = workflow_step_id(classify, "git-objects").unwrap_or(&YamlValue::Null);
+    let decision = workflow_step_id(classify, "decision").unwrap_or(&YamlValue::Null);
+    let classify_outputs = yaml_path(classify, &["outputs"]).unwrap_or(&YamlValue::Null);
+    let classify_perms = yaml_path(classify, &["permissions"]).unwrap_or(&YamlValue::Null);
+    let trusted_run = yaml_path(trusted_base, &["with"]).unwrap_or(&YamlValue::Null);
+    let objects_run = yaml_path(git_objects, &["with"]).unwrap_or(&YamlValue::Null);
+    let identity_run = yaml_path(identity, &["run"])
+        .and_then(YamlValue::as_str)
+        .unwrap_or_default();
+    let decision_run = yaml_path(decision, &["run"])
+        .and_then(YamlValue::as_str)
+        .unwrap_or_default();
+    let expected_classify_outputs = BTreeSet::from(["mode".to_string(), "decision".to_string()]);
+    let classify_valid = yaml_path(classify, &["name"]).and_then(YamlValue::as_str)
+        == Some("classify CI mode")
+        && yaml_path(classify_perms, &["contents"]).and_then(YamlValue::as_str) == Some("read")
+        && yaml_path(classify_perms, &["pull-requests"]).and_then(YamlValue::as_str)
+            == Some("read")
+        && yaml_mapping_key_set(Some(classify_outputs)) == Some(expected_classify_outputs)
+        && yaml_path(classify_outputs, &["mode"]).and_then(YamlValue::as_str)
+            == Some("${{ steps.decision.outputs.mode }}")
+        && yaml_path(classify_outputs, &["decision"]).and_then(YamlValue::as_str)
+            == Some("${{ steps.decision.outputs.decision }}")
+        && yaml_path(identity, &["env", "GH_TOKEN"]).and_then(YamlValue::as_str)
+            == Some("${{ github.token }}")
+        && yaml_path(identity, &["env", "REPOSITORY_ID"]).and_then(YamlValue::as_str)
+            == Some("${{ github.repository_id }}")
+        && identity_run.contains(".user.id == 41898282")
+        && identity_run.contains("autorelease: pending")
+        && identity_run.contains("$main[0].object.sha")
+        && yaml_path(trusted_base, &["if"]).and_then(YamlValue::as_str)
+            == Some("steps.identity.outputs.candidate == 'true'")
+        && yaml_path(trusted_base, &["continue-on-error"]).and_then(YamlValue::as_bool)
+            == Some(true)
+        && yaml_path(trusted_run, &["ref"]).and_then(YamlValue::as_str)
+            == Some("${{ steps.identity.outputs.base_sha }}")
+        && yaml_path(trusted_run, &["path"]).and_then(YamlValue::as_str) == Some("trusted-base")
+        && yaml_path(trusted_run, &["persist-credentials"]).and_then(YamlValue::as_bool)
+            == Some(false)
+        && yaml_path(git_objects, &["if"]).and_then(YamlValue::as_str)
+            == Some("steps.identity.outputs.candidate == 'true'")
+        && yaml_path(git_objects, &["continue-on-error"]).and_then(YamlValue::as_bool)
+            == Some(true)
+        && yaml_path(objects_run, &["ref"]).and_then(YamlValue::as_str)
+            == Some("${{ steps.identity.outputs.base_sha }}")
+        && yaml_path(objects_run, &["path"]).and_then(YamlValue::as_str) == Some("git-objects")
+        && yaml_path(objects_run, &["persist-credentials"]).and_then(YamlValue::as_bool)
+            == Some(false)
+        && yaml_path(decision, &["env", "CANDIDATE"]).and_then(YamlValue::as_str)
+            == Some("${{ steps.identity.outputs.candidate }}")
+        && yaml_path(decision, &["env", "TRUSTED_BASE_OUTCOME"]).and_then(YamlValue::as_str)
+            == Some("${{ steps.trusted-base.outcome }}")
+        && yaml_path(decision, &["env", "OBJECT_STORE_OUTCOME"]).and_then(YamlValue::as_str)
+            == Some("${{ steps.git-objects.outcome }}")
+        && decision_run.contains("trusted-base/crates/xtask/src/ci.rs")
+        && decision_run.contains("git-objects")
+        && decision_run.contains("cargo run -p xtask --locked --")
+        && decision_run.contains("ci-mode --repo")
+        && decision_run.contains("classifier-invalid-output")
+        && decision_run.contains("positive_metadata");
+    if !classify_valid {
+        issues.push("FAIL: ci-mode-classifier-invalid: classify must bind current trusted identity, immutable B execution, separate H objects, and a validated full/lightweight decision.".to_string());
+    }
+
+    let policy = yaml_path(jobs, &["repository-policy"]).unwrap_or(&YamlValue::Null);
+    let policy_steps = yaml_path(policy, &["steps"]).and_then(YamlValue::as_sequence);
+    let policy_runs: Vec<&str> = policy_steps
+        .into_iter()
+        .flatten()
+        .filter_map(|step| yaml_path(step, &["run"]).and_then(YamlValue::as_str))
+        .collect();
+    let publication_job = yaml_path(jobs, &["publish-dry-run"]).unwrap_or(&YamlValue::Null);
+    let policy_gate = yaml_step_by_name(policy, "Check repository release policy")
+        .and_then(|step| yaml_path(step, &["run"]))
+        .and_then(YamlValue::as_str)
+        .unwrap_or_default();
+    let release_gate_steps = policy_steps
+        .into_iter()
+        .flatten()
+        .filter(|step| {
+            yaml_path(step, &["name"]).and_then(YamlValue::as_str)
+                == Some("Check repository release policy")
+                && yaml_path(step, &["run"])
+                    .and_then(YamlValue::as_str)
+                    .is_some_and(|run| run.contains("args=(release-gate --source-sha"))
+        })
+        .count();
+    let repository_policy_valid = ci_repository_policy_valid(ci)
+        && release_gate_steps == 1
+        && policy_runs.len() == 3
+        && policy_runs
+            .iter()
+            .filter(|run| **run == "cargo test -p xtask --locked")
+            .count()
+            == 1
+        && policy_gate.contains("args=(release-gate --source-sha")
+        && !yaml_contains_string(
+            publication_job,
+            "cargo run -p xtask --locked -- release-gate",
+        );
+    if !repository_policy_valid {
+        issues.push("FAIL: repository-policy-job-invalid: repository-policy must own exactly one release-gate and the bounded xtask regression suite.".to_string());
+    }
+
+    let full_jobs_valid = ["clippy", "publish-dry-run", "native"].iter().all(|job| {
+        yaml_path(jobs, &[job, "needs"])
+            .and_then(yaml_string_set)
+            .is_some_and(|needs| needs.contains("classify"))
+            && yaml_path(jobs, &[job, "if"]).and_then(YamlValue::as_str)
+                == Some("needs.classify.outputs.mode == 'full'")
+    });
+    if !full_jobs_valid {
+        issues.push("FAIL: ci-mode-full-jobs-invalid: each heavy job must require the explicit full selector result.".to_string());
+    }
+
+    let required = yaml_path(jobs, &["required"]).unwrap_or(&YamlValue::Null);
+    let required_step = yaml_step_by_name(required, "Require current mode and mandatory jobs")
+        .unwrap_or(&YamlValue::Null);
+    let required_run = yaml_path(required_step, &["run"])
+        .and_then(YamlValue::as_str)
+        .unwrap_or_default();
+    let required_needs = BTreeSet::from([
+        "classify",
+        "fmt",
+        "supply-chain",
+        "repository-policy",
+        "clippy",
+        "publish-dry-run",
+        "native",
+        "native_retention",
+    ])
+    .into_iter()
+    .map(str::to_string)
+    .collect::<BTreeSet<_>>();
+    let needs = yaml_path(required, &["needs"]).and_then(yaml_string_set);
+    let required_valid = needs == Some(required_needs)
+        && yaml_path(required, &["if"]).and_then(YamlValue::as_str) == Some("${{ always() }}")
+        && yaml_path(required_step, &["env", "RESULTS"]).and_then(YamlValue::as_str)
+            == Some("${{ toJSON(needs) }}")
+        && yaml_path(required_step, &["env", "DECISION"]).and_then(YamlValue::as_str)
+            == Some("${{ needs.classify.outputs.decision }}")
+        && yaml_path(required_step, &["env", "GH_TOKEN"]).and_then(YamlValue::as_str)
+            == Some("${{ github.token }}")
+        && required_run.contains("repository-policy")
+        && required_run.contains("native_retention")
+        && required_run.contains("positive_metadata")
+        && required_run.contains("GITHUB_STEP_SUMMARY")
+        && required_run.contains("git/ref/heads/main")
+        && required_run.contains("pulls/$number");
+    if !required_valid {
+        issues.push("FAIL: ci-mode-required-invalid: required must check the exact eight result keys, decision identity, mode-specific results, and final PR freshness.".to_string());
+    }
 }
 
 fn check_workflow_policy(
@@ -1020,15 +1966,62 @@ fn check_workflow_policy(
     release: &YamlValue,
     issues: &mut Vec<String>,
 ) {
-    for event in ["pull_request", "push"] {
-        let branches = yaml_path(ci, &["on", event, "branches"])
-            .and_then(yaml_string_set)
-            .unwrap_or_default();
-        if branches != BTreeSet::from(["main".to_string()]) {
-            issues.push(format!(
-                "FAIL: workflow-trigger-invalid: CI {event} branches must contain only main."
-            ));
-        }
+    ci_mode_policy_valid(ci, issues);
+    if !ci_repository_policy_valid(ci) {
+        issues.push("FAIL: repository-policy-job-invalid: the always-mandatory policy job must validate purpose, check out tested source, and run release-gate with its source identity.".into());
+    }
+    if !crate_preflight_policy_valid(release) {
+        issues.push("FAIL: release-crate-preflight-invalid: automatic crate publication must consume only a same-run exact-source preflight report; legacy assets-only mode may skip it.".into());
+    }
+    let pull_request_bases = BTreeSet::from([
+        "main",
+        "cod103-stack/cod-105",
+        "cod103-stack/cod-106",
+        "cod103-stack/cod-56",
+        "cod103-stack/cod-107",
+        "cod103-stack/cod-108",
+    ])
+    .into_iter()
+    .map(str::to_string)
+    .collect::<BTreeSet<_>>();
+    if !yaml_matches_string_set(
+        yaml_path(ci, &["on", "pull_request", "branches"]),
+        &pull_request_bases,
+    ) {
+        issues.push(
+            "FAIL: workflow-trigger-invalid: CI pull_request branches must contain exactly main and the five approved COD-103 stack bases.".to_string(),
+        );
+    }
+    let pull_request_types = BTreeSet::from([
+        "opened",
+        "synchronize",
+        "reopened",
+        "edited",
+        "labeled",
+        "unlabeled",
+    ])
+    .into_iter()
+    .map(str::to_string)
+    .collect();
+    if !yaml_matches_string_set(
+        yaml_path(ci, &["on", "pull_request", "types"]),
+        &pull_request_types,
+    ) {
+        issues.push(
+            "FAIL: workflow-trigger-invalid: CI pull_request activities must be opened, synchronize, reopened, edited, labeled, and unlabeled.".to_string(),
+        );
+    }
+    let ci_events = yaml_mapping_key_set(yaml_path(ci, &["on"])).unwrap_or_default();
+    if ci_events.contains("pull_request_target") {
+        issues.push(
+            "FAIL: workflow-privileged-pr-event: CI must not use pull_request_target.".to_string(),
+        );
+    }
+    let push_branches = BTreeSet::from(["main".to_string()]);
+    if !yaml_matches_string_set(yaml_path(ci, &["on", "push", "branches"]), &push_branches) {
+        issues.push(
+            "FAIL: workflow-trigger-invalid: CI push branches must contain only main.".to_string(),
+        );
     }
     if yaml_path(ci, &["jobs", "native", "uses"]).and_then(YamlValue::as_str)
         != Some("./.github/workflows/native.yml")
@@ -1037,17 +2030,68 @@ fn check_workflow_policy(
             "FAIL: workflow-native-reuse-missing: CI native job must call native.yml.".to_string(),
         );
     }
+    let supported: BTreeSet<String> = NATIVE_TARGETS
+        .iter()
+        .map(|t| t.as_str().to_owned())
+        .collect();
+    let ci_targets = yaml_path(ci, &["jobs", "native", "strategy", "matrix", "include"])
+        .and_then(YamlValue::as_sequence);
+    let actual: BTreeSet<String> = ci_targets
+        .into_iter()
+        .flatten()
+        .filter_map(|t| {
+            t.get("target")
+                .and_then(YamlValue::as_str)
+                .map(str::to_owned)
+        })
+        .collect();
+    if actual != supported
+        || ci_targets.is_none_or(|targets| {
+            targets.len() != supported.len()
+                || targets
+                    .iter()
+                    .any(|t| t.get("run-tests").and_then(YamlValue::as_bool) != Some(true))
+        })
+    {
+        issues.push(
+            "FAIL: native-target-support: CI must test exactly macos-arm64 and windows-x86_64."
+                .into(),
+        );
+    }
+    if yaml_path(
+        release,
+        &["jobs", "rebuild-artifacts", "strategy", "matrix", "target"],
+    )
+    .and_then(yaml_string_set)
+        != Some(supported)
+    {
+        issues.push("FAIL: native-target-support: release rebuilds must contain exactly macos-arm64 and windows-x86_64.".into());
+    }
     let required_needs = yaml_path(ci, &["jobs", "required", "needs"])
         .and_then(yaml_string_set)
         .unwrap_or_default();
-    let expected_needs: BTreeSet<String> =
-        ["fmt", "clippy", "supply-chain", "publish-dry-run", "native"]
-            .into_iter()
-            .map(str::to_string)
-            .collect();
+    let expected_needs: BTreeSet<String> = [
+        "classify",
+        "fmt",
+        "supply-chain",
+        "repository-policy",
+        "clippy",
+        "publish-dry-run",
+        "native",
+        "native_retention",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect();
     if required_needs != expected_needs {
         issues.push(
-            "FAIL: workflow-required-incomplete: required job must depend on every mandatory CI job."
+            "FAIL: workflow-required-incomplete: required job must depend on selector, every common job, and every full-mode job."
+                .to_string(),
+        );
+    }
+    if !native_retention_policy_valid(ci, native) {
+        issues.push(
+            "FAIL: native-retention-policy-invalid: retention must remain COD-107-only without skipping native verification."
                 .to_string(),
         );
     }
@@ -1088,6 +2132,18 @@ fn check_workflow_policy(
             "FAIL: workflow-native-permissions: native workflow must use contents: read."
                 .to_string(),
         );
+    }
+    if yaml_path(native, &["jobs", "tests", "if"]).and_then(YamlValue::as_str) != Some("inputs.run-tests")
+        || yaml_path(native, &["jobs", "tests", "strategy", "fail-fast"]).and_then(YamlValue::as_bool) != Some(false)
+        || yaml_path(native, &["jobs", "tests", "strategy", "matrix", "cohort"]).and_then(yaml_string_set)
+            != Some(BTreeSet::from(["unit".to_string(), "generation".to_string(), "integration".to_string()]))
+        || yaml_path(native, &["jobs", "tests", "strategy", "matrix", "shard"]).and_then(YamlValue::as_str)
+            != Some("${{ fromJSON(inputs.target == 'windows-x86_64' && '[1,2,3,4]' || '[0]') }}")
+        || yaml_path(native, &["jobs", "native", "needs"]).and_then(YamlValue::as_str) != Some("tests")
+        || yaml_path(native, &["jobs", "native", "if"]).and_then(YamlValue::as_str)
+            != Some("${{ always() && !cancelled() && (!inputs.run-tests || needs.tests.result == 'success') }}")
+    {
+        issues.push("FAIL: native-test-gate: require all three macOS cohorts and successful tests before artifact production; retain build-only callers.".into());
     }
 
     if yaml_path(release, &["on", "push"]).is_some() {
@@ -1365,19 +2421,11 @@ fn check_workflow_policy(
         );
     }
     let publish_crate = yaml_path(release, &["jobs", "publish-crate"]).unwrap_or(&YamlValue::Null);
-    if !yaml_contains_string(publish_crate, "cargo publish --dry-run --locked")
+    if !crate_preflight_policy_valid(release)
         || !yaml_contains_string(publish_crate, "cargo publish --locked")
     {
         issues.push(
-            "FAIL: release-publish-gate-missing: crate publication must retain dry-run and publish steps."
-                .to_string(),
-        );
-    }
-    if !yaml_contains_string(publish_crate, "cargo package --locked --no-verify")
-        || !yaml_contains_string(publish_crate, "verify-crate-size")
-    {
-        issues.push(
-            "FAIL: crates-io-package-size-gate-missing: Release must recheck the .crate file before upload."
+            "FAIL: release-publish-gate-missing: selected source must pass crate preflight before the ordinary locked crate upload."
                 .to_string(),
         );
     }
@@ -1407,6 +2455,13 @@ fn check_workflow_policy(
     }
 }
 
+#[cfg(test)]
+fn workflow_yaml_error(text: &str) -> Option<String> {
+    yaml_serde::from_str::<YamlValue>(text)
+        .err()
+        .map(|error| error.to_string())
+}
+
 fn yaml_path<'a>(value: &'a YamlValue, path: &[&str]) -> Option<&'a YamlValue> {
     let mut current = value;
     for key in path {
@@ -1425,6 +2480,22 @@ fn yaml_string_set(value: &YamlValue) -> Option<BTreeSet<String>> {
             .map(str::to_string)
             .collect()
     })
+}
+
+fn yaml_matches_string_set(value: Option<&YamlValue>, expected: &BTreeSet<String>) -> bool {
+    value.and_then(YamlValue::as_sequence).is_some_and(|items| {
+        items.len() == expected.len()
+            && items.iter().all(YamlValue::is_string)
+            && yaml_string_set(value.unwrap()) == Some(expected.clone())
+    })
+}
+
+fn yaml_mapping_key_set(value: Option<&YamlValue>) -> Option<BTreeSet<String>> {
+    value?
+        .as_mapping()?
+        .keys()
+        .map(|key| key.as_str().map(str::to_string))
+        .collect()
 }
 
 fn yaml_step_by_id<'a>(job: &'a YamlValue, id: &str) -> Option<&'a YamlValue> {
@@ -1524,6 +2595,9 @@ fn smoke_artifact(executable: &Path) -> Result<(), String> {
     if !executable.exists() {
         return Err(format!("binary does not exist: {}", executable.display()));
     }
+    let executable = executable
+        .canonicalize()
+        .map_err(|error| error.to_string())?;
     let temp = unique_temp_dir("codebase_graph_smoke")?;
     fs::create_dir_all(temp.join("sample")).map_err(|error| error.to_string())?;
     fs::write(
@@ -1532,12 +2606,12 @@ fn smoke_artifact(executable: &Path) -> Result<(), String> {
     )
     .map_err(|error| error.to_string())?;
 
-    run_checked(executable, ["--help"])?;
-    let schema = run_capture(executable, ["schema", "--json"])?;
-    serde_json::from_str::<Value>(&schema)
+    run_checked_in(&executable, ["--help"], &temp)?;
+    let schema = run_capture_in(&executable, ["schema", "--json"], &temp)?;
+    serde_json::from_slice::<Value>(&schema.stdout)
         .map_err(|error| format!("schema did not emit JSON: {error}"))?;
-    run_checked(
-        executable,
+    run_checked_in(
+        &executable,
         [
             "install",
             "--repo-root",
@@ -1549,9 +2623,10 @@ fn smoke_artifact(executable: &Path) -> Result<(), String> {
             "--dry-run",
             "--json",
         ],
+        &temp,
     )?;
-    run_checked(
-        executable,
+    run_checked_in(
+        &executable,
         [
             "install",
             "--repo-root",
@@ -1562,18 +2637,20 @@ fn smoke_artifact(executable: &Path) -> Result<(), String> {
             "skip",
             "--json",
         ],
+        &temp,
     )?;
-    run_checked(
-        executable,
+    run_checked_in(
+        &executable,
         [
             "check-health",
             "--repo-root",
             temp.join("sample").to_str().ok_or("invalid temp path")?,
             "--json",
         ],
+        &temp,
     )?;
-    run_checked(
-        executable,
+    run_checked_in(
+        &executable,
         [
             "codebase-search",
             "helper",
@@ -1581,8 +2658,105 @@ fn smoke_artifact(executable: &Path) -> Result<(), String> {
             temp.join("sample").to_str().ok_or("invalid temp path")?,
             "--no-refresh",
         ],
+        &temp,
     )?;
-    smoke_mcp_stdio(executable, &temp.join("sample"))?;
+    if cfg!(target_os = "macos") {
+        verify_bundled_extension_smoke(&executable, &temp)?;
+    }
+    smoke_mcp_stdio(&executable, &temp.join("sample"), &temp)?;
+    Ok(())
+}
+
+fn verify_bundled_extension_smoke(executable: &Path, fixture: &Path) -> Result<(), String> {
+    let sample = fixture.join("sample");
+    let database = fixture.join("extension-smoke.ldb");
+    let manifest = fixture.join("extension-manifest.json");
+    run_checked_in(
+        executable,
+        [
+            "build",
+            "--repo-root",
+            sample.to_str().ok_or("invalid sample path")?,
+            "--db",
+            database.to_str().ok_or("invalid database path")?,
+            "--manifest",
+            manifest.to_str().ok_or("invalid manifest path")?,
+            "--no-git",
+            "--json",
+        ],
+        fixture,
+    )?;
+    let search = run_capture_in(
+        executable,
+        [
+            "codebase-search",
+            "helper",
+            "--repo-root",
+            sample.to_str().ok_or("invalid sample path")?,
+            "--db",
+            database.to_str().ok_or("invalid database path")?,
+            "--manifest",
+            manifest.to_str().ok_or("invalid manifest path")?,
+            "--no-refresh",
+            "--json",
+        ],
+        fixture,
+    )?;
+    let search: Value =
+        serde_json::from_slice(&search.stdout).map_err(|error| error.to_string())?;
+    if search["results"].as_array().is_none_or(Vec::is_empty) {
+        return Err("installed graph search did not find the smoke fixture".into());
+    }
+
+    // A legacy manifest selects Ladybug FTS rather than the current sidecar backend.
+    let mut legacy: Value =
+        serde_json::from_slice(&fs::read(&manifest).map_err(|error| error.to_string())?)
+            .map_err(|error| error.to_string())?;
+    legacy["search_backend"] = Value::Null;
+    let legacy_manifest = fixture.join("legacy-extension-manifest.json");
+    fs::write(
+        &legacy_manifest,
+        serde_json::to_vec(&legacy).map_err(|error| error.to_string())?,
+    )
+    .map_err(|error| error.to_string())?;
+    run_checked_in(
+        executable,
+        [
+            "codebase-search",
+            "helper",
+            "--repo-root",
+            sample.to_str().ok_or("invalid sample path")?,
+            "--db",
+            database.to_str().ok_or("invalid database path")?,
+            "--manifest",
+            legacy_manifest
+                .to_str()
+                .ok_or("invalid legacy manifest path")?,
+            "--no-refresh",
+            "--json",
+        ],
+        fixture,
+    )?;
+    let cache = fixture.join("smoke-home/.lbdb/extension/0.19.0/osx_arm64");
+    for (extension, digest) in [
+        (
+            "json",
+            "e6482a025de31d662ee4b32a39c991706b8cc3c2ec49673ef5d8ce45cc23ce7a",
+        ),
+        (
+            "fts",
+            "83ae4be9fa718577ca971f27ff890b3aea5789c9dd908784e28f52917febbfdb",
+        ),
+    ] {
+        let path = cache
+            .join(extension)
+            .join(format!("lib{extension}.lbug_extension"));
+        if sha256_file(&path)? != digest {
+            return Err(format!(
+                "installed smoke did not seed the official {extension} bytes"
+            ));
+        }
+    }
     Ok(())
 }
 
@@ -1608,7 +2782,7 @@ fn smoke_wiki_artifact(executable: &Path) -> Result<(), String> {
     .map_err(|error| error.to_string())?;
     fs::write(
         concepts.join("welcome.md"),
-        "---\ntype: guide\ntitle: Welcome\ntags: [smoke]\n---\n# Welcome\n\nPackaged wiki smoke.\n",
+        "---\ntype: guide\ntitle: Welcome\ndescription: Packaged wiki smoke fixture.\ntags: [smoke]\n---\n# Welcome\n\nPackaged wiki smoke.\n",
     )
     .map_err(|error| error.to_string())?;
     let repo_root = temp.join("repo");
@@ -1622,7 +2796,7 @@ fn smoke_wiki_artifact(executable: &Path) -> Result<(), String> {
 
     let bundle_text = bundle.to_str().ok_or("invalid bundle path")?;
     let site_text = site.to_str().ok_or("invalid site path")?;
-    assert_version_surface(&executable, Path::new("crates/k-wiki/Cargo.toml"))?;
+    assert_version_surface(&executable, Path::new("crates/k-wiki/Cargo.toml"), &temp)?;
     run_checked_in(&executable, ["--help"], &temp)?;
     run_checked_in(&executable, ["validate", bundle_text, "--json"], &temp)?;
     run_checked_in(
@@ -1640,7 +2814,7 @@ fn smoke_wiki_artifact(executable: &Path) -> Result<(), String> {
 }
 
 fn smoke_wiki_http(executable: &Path, bundle: &Path, current_dir: &Path) -> Result<(), String> {
-    let mut child = Command::new(executable)
+    let mut child = smoke_command(executable, current_dir)?
         .args(["serve"])
         .arg(bundle)
         .args(["--host", "127.0.0.1", "--port", "0"])
@@ -1706,7 +2880,7 @@ fn smoke_wiki_mcp_stdio(
     bundle: &Path,
     current_dir: &Path,
 ) -> Result<(), String> {
-    let mut child = Command::new(executable)
+    let mut child = smoke_command(executable, current_dir)?
         .arg("mcp")
         .arg(bundle)
         .current_dir(current_dir)
@@ -1759,9 +2933,13 @@ fn smoke_wiki_mcp_stdio(
     Ok(())
 }
 
-fn assert_version_surface(executable: &Path, manifest: &Path) -> Result<(), String> {
+fn assert_version_surface(
+    executable: &Path,
+    manifest: &Path,
+    fixture: &Path,
+) -> Result<(), String> {
     let expected = cargo_version(manifest)?;
-    let output = run_capture_in(executable, ["--version"], Path::new("."))?;
+    let output = run_capture_in(executable, ["--version"], fixture)?;
     let stdout = String::from_utf8(output.stdout).map_err(|error| error.to_string())?;
     let actual = stdout.trim();
     let expected_line = format!("k-wiki {expected}");
@@ -1955,8 +3133,8 @@ fn assert_wiki_codex_project_install(
     Ok(())
 }
 
-fn smoke_mcp_stdio(executable: &Path, repo_root: &Path) -> Result<(), String> {
-    let mut child = Command::new(executable)
+fn smoke_mcp_stdio(executable: &Path, repo_root: &Path, fixture: &Path) -> Result<(), String> {
+    let mut child = smoke_command(executable, fixture)?
         .args(["mcp", "start", "--repo-root"])
         .arg(repo_root)
         .stdin(Stdio::piped())
@@ -1964,8 +3142,10 @@ fn smoke_mcp_stdio(executable: &Path, repo_root: &Path) -> Result<(), String> {
         .stderr(Stdio::piped())
         .spawn()
         .map_err(|error| format!("failed to spawn MCP server: {error}"))?;
-    {
-        let mut stdin = child.stdin.take().ok_or("missing MCP stdin")?;
+    let write_result = (|| {
+        let mut stdin = child.stdin.take().ok_or_else(|| {
+            std::io::Error::new(std::io::ErrorKind::BrokenPipe, "missing MCP stdin")
+        })?;
         let initialize = json!({
             "jsonrpc": "2.0",
             "id": 1,
@@ -1976,54 +3156,172 @@ fn smoke_mcp_stdio(executable: &Path, repo_root: &Path) -> Result<(), String> {
                 "clientInfo": {"name": "xtask-smoke", "version": "0"}
             }
         });
-        writeln!(stdin, "{}", initialize).map_err(|error| error.to_string())?;
+        writeln!(stdin, "{initialize}")?;
         let tools = json!({"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}});
-        writeln!(stdin, "{}", tools).map_err(|error| error.to_string())?;
+        writeln!(stdin, "{tools}")?;
+        Ok::<(), std::io::Error>(())
+    })();
+    if let Err(error) = write_result {
+        let _ = child.kill();
+        let _ = child.wait();
+        return Err(format!("failed to write MCP smoke requests: {error}"));
     }
-    let mut output = String::new();
-    if let Some(mut stdout) = child.stdout.take() {
-        stdout.read_to_string(&mut output).ok();
+
+    let output = child
+        .wait_with_output()
+        .map_err(|error| format!("failed to collect MCP smoke output: {error}"))?;
+    validate_mcp_smoke_output(&output)
+}
+
+fn validate_mcp_smoke_output(output: &std::process::Output) -> Result<(), String> {
+    if !output.status.success() {
+        return Err(format!(
+            "MCP stdio smoke child exited with status {}\nstdout:\n{}\nstderr:\n{}",
+            output.status,
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        ));
     }
-    let status = child.wait().map_err(|error| error.to_string())?;
-    if !status.success() && output.is_empty() {
-        return Err(format!("MCP stdio smoke failed with status {status}"));
+    let stdout = std::str::from_utf8(&output.stdout).map_err(|error| {
+        format!(
+            "MCP stdio smoke stdout is not valid UTF-8: {error}; stderr: {}",
+            String::from_utf8_lossy(&output.stderr)
+        )
+    })?;
+    let mut seen_ids = Vec::new();
+    let mut initialize_result = None;
+    let mut tools_result = None;
+
+    for (index, line) in stdout.lines().enumerate() {
+        if line.trim().is_empty() {
+            continue;
+        }
+        let message: Value = serde_json::from_str(line).map_err(|error| {
+            format!(
+                "MCP stdio smoke received malformed JSON on stdout line {}: {error}; stdout: {stdout:?}; stderr: {}",
+                index + 1,
+                String::from_utf8_lossy(&output.stderr)
+            )
+        })?;
+        let Some(object) = message.as_object() else {
+            return Err(format!(
+                "MCP stdio smoke stdout line {} is not a JSON-RPC object: {message}; stderr: {}",
+                index + 1,
+                String::from_utf8_lossy(&output.stderr)
+            ));
+        };
+        if object.get("jsonrpc").and_then(Value::as_str) != Some("2.0") {
+            return Err(format!(
+                "MCP stdio smoke stdout line {} is not a JSON-RPC 2.0 message: {message}",
+                index + 1
+            ));
+        }
+        let Some(id) = object.get("id") else {
+            let valid_params = object
+                .get("params")
+                .is_none_or(|params| params.is_object() || params.is_array());
+            if object
+                .get("method")
+                .and_then(Value::as_str)
+                .is_some_and(|method| !method.is_empty())
+                && valid_params
+                && !object.contains_key("error")
+                && !object.contains_key("result")
+            {
+                continue;
+            }
+            return Err(format!(
+                "MCP stdio smoke stdout line {} is not a valid JSON-RPC notification: {message}",
+                index + 1
+            ));
+        };
+        if object.contains_key("method") || object.contains_key("params") {
+            return Err(format!(
+                "MCP stdio smoke response {id} contains request fields: {message}"
+            ));
+        }
+        if !(id.is_number() || id.is_string()) {
+            return Err(format!(
+                "MCP stdio smoke response id is not a string or number: {id}"
+            ));
+        }
+        if id.as_i64() == Some(1) || id.as_i64() == Some(2) {
+            if seen_ids.iter().any(|seen| seen == id) {
+                return Err(format!(
+                    "MCP stdio smoke received duplicate response id {id}"
+                ));
+            }
+            seen_ids.push(id.clone());
+        }
+        if object.contains_key("error") {
+            return Err(format!(
+                "MCP stdio smoke response {id} contains an error: {message}"
+            ));
+        }
+        let Some(result) = object.get("result").and_then(Value::as_object) else {
+            return Err(format!(
+                "MCP stdio smoke response {id} has no object result: {message}"
+            ));
+        };
+        match id {
+            Value::Number(number) if number.as_i64() == Some(1) => {
+                if !result.get("protocolVersion").is_some_and(Value::is_string)
+                    || !result.get("capabilities").is_some_and(Value::is_object)
+                    || !result.get("serverInfo").is_some_and(Value::is_object)
+                {
+                    return Err(format!(
+                        "MCP initialize response is missing protocolVersion, capabilities, or serverInfo: {message}"
+                    ));
+                }
+                initialize_result = Some(());
+            }
+            Value::Number(number) if number.as_i64() == Some(2) => {
+                let has_graph_search =
+                    result
+                        .get("tools")
+                        .and_then(Value::as_array)
+                        .is_some_and(|tools| {
+                            tools.iter().any(|tool| {
+                                tool.as_object()
+                                    .and_then(|tool| tool.get("name"))
+                                    .and_then(Value::as_str)
+                                    == Some("graph_search")
+                            })
+                        });
+                if !has_graph_search {
+                    return Err(format!(
+                        "MCP tools/list response does not contain a graph_search tool: {message}"
+                    ));
+                }
+                tools_result = Some(());
+            }
+            _ => {
+                return Err(format!(
+                    "MCP stdio smoke received unexpected response id {id}: {message}"
+                ));
+            }
+        }
     }
-    if !output.contains("graph_search") {
-        return Err("MCP stdio smoke did not list graph_search".to_string());
+
+    if initialize_result.is_none() {
+        return Err(format!(
+            "MCP stdio smoke did not receive initialize response id 1; stdout: {stdout:?}; stderr: {}",
+            String::from_utf8_lossy(&output.stderr)
+        ));
+    }
+    if tools_result.is_none() {
+        return Err(format!(
+            "MCP stdio smoke did not receive tools/list response id 2; stdout: {stdout:?}; stderr: {}",
+            String::from_utf8_lossy(&output.stderr)
+        ));
     }
     Ok(())
 }
 
 fn verify_release_version(tag: &str) -> Result<(), String> {
-    let expected = tag
-        .strip_prefix('v')
-        .ok_or_else(|| format!("release tag must match vX.Y.Z, got {tag:?}"))?;
-    if expected.split('.').count() != 3
-        || !expected
-            .chars()
-            .all(|item| item.is_ascii_digit() || item == '.')
-    {
-        return Err(format!("release tag must match vX.Y.Z, got {tag:?}"));
-    }
-    let actual = cargo_version(Path::new("Cargo.toml"))?;
-    if actual != expected {
-        return Err(format!(
-            "Cargo package version {actual} does not match release tag {tag}"
-        ));
-    }
-    let wiki = cargo_version(Path::new("crates/k-wiki/Cargo.toml"))?;
-    if wiki != expected {
-        return Err(format!(
-            "Knowledge Wiki package version {wiki} does not match release tag {tag}"
-        ));
-    }
-    let dependency = dependency_version(Path::new("crates/k-wiki/Cargo.toml"), "codebase-graph")?;
-    if dependency != expected {
-        return Err(format!(
-            "Knowledge Wiki depends on codebase-graph {dependency} but release tag is {tag}"
-        ));
-    }
-    println!("{actual}");
+    let expected = ci::validate_release_tag(tag)?;
+    let candidate = ci::validate_release_candidate(Path::new("."), Some(&expected))?;
+    println!("{}", candidate.version);
     Ok(())
 }
 
@@ -2064,25 +3362,22 @@ fn dependency_version(manifest: &Path, dependency: &str) -> Result<String, Strin
     ))
 }
 
-fn run_checked<'a, I>(executable: &Path, args: I) -> Result<(), String>
-where
-    I: IntoIterator<Item = &'a str>,
-{
-    let output = Command::new(executable)
-        .args(args)
-        .output()
-        .map_err(|error| error.to_string())?;
-    if output.status.success() {
-        Ok(())
-    } else {
-        Err(format!(
-            "command failed with status {}: {}\nstdout:\n{}\nstderr:\n{}",
-            output.status,
-            executable.display(),
-            String::from_utf8_lossy(&output.stdout),
-            String::from_utf8_lossy(&output.stderr)
-        ))
+fn smoke_command(executable: &Path, fixture: &Path) -> Result<Command, String> {
+    let mut command = Command::new(executable);
+    if cfg!(target_os = "macos") {
+        let home = fixture.join("smoke-home");
+        fs::create_dir_all(&home).map_err(|error| error.to_string())?;
+        for (key, _) in env::vars_os() {
+            let name = key.to_string_lossy();
+            if name.starts_with("DYLD_") || name.starts_with("OPENSSL_") {
+                command.env_remove(key);
+            }
+        }
+        command
+            .env("HOME", home)
+            .env("PATH", "/usr/bin:/bin:/usr/sbin:/sbin");
     }
+    Ok(command)
 }
 
 fn run_capture_in<'a, I>(
@@ -2093,7 +3388,7 @@ fn run_capture_in<'a, I>(
 where
     I: IntoIterator<Item = &'a str>,
 {
-    Command::new(executable)
+    smoke_command(executable, current_dir)?
         .args(args)
         .current_dir(current_dir)
         .output()
@@ -2122,7 +3417,7 @@ fn run_capture_in_with_env<'a, I>(
 where
     I: IntoIterator<Item = &'a str>,
 {
-    let mut command = Command::new(executable);
+    let mut command = smoke_command(executable, current_dir)?;
     command.args(args).current_dir(current_dir);
     for (key, value) in env_pairs {
         command.env(key, value);
@@ -2149,7 +3444,7 @@ fn run_checked_in<'a, I>(executable: &Path, args: I, current_dir: &Path) -> Resu
 where
     I: IntoIterator<Item = &'a str>,
 {
-    let output = Command::new(executable)
+    let output = smoke_command(executable, current_dir)?
         .args(args)
         .current_dir(current_dir)
         .output()
@@ -2165,26 +3460,6 @@ where
             String::from_utf8_lossy(&output.stderr)
         ))
     }
-}
-
-fn run_capture<'a, I>(executable: &Path, args: I) -> Result<String, String>
-where
-    I: IntoIterator<Item = &'a str>,
-{
-    let output = Command::new(executable)
-        .args(args)
-        .output()
-        .map_err(|error| error.to_string())?;
-    if !output.status.success() {
-        return Err(format!(
-            "command failed with status {}: {}\nstdout:\n{}\nstderr:\n{}",
-            output.status,
-            executable.display(),
-            String::from_utf8_lossy(&output.stdout),
-            String::from_utf8_lossy(&output.stderr)
-        ));
-    }
-    String::from_utf8(output.stdout).map_err(|error| error.to_string())
 }
 
 fn unique_temp_dir(prefix: &str) -> Result<PathBuf, String> {
@@ -2223,13 +3498,275 @@ fn files_under(root: &Path) -> Vec<PathBuf> {
 #[cfg(test)]
 mod tests {
     use super::{
-        check_workflow_policy, create_native_archive, extract_and_validate_native_archive,
-        native_test_command, release_version_from_tag, sha256_file, validate_commit_sha,
-        validate_crate_size, validate_native_artifact_set, workflow_yaml_error, NativeProvenance,
-        NativeTarget, YamlValue, CRATES_IO_PACKAGE_LIMIT_BYTES, NATIVE_TARGETS,
+        cargo_version, check_workflow_policy, crate_preflight_policy_valid, create_native_archive,
+        dependency_version, extract_and_validate_native_archive, native_retention_policy_valid,
+        native_test_command, release_version_from_tag, sha256_file, unique_temp_dir,
+        validate_commit_sha, validate_crate_size, validate_native_artifact_set,
+        workflow_yaml_error, NativeProvenance, NativeTarget, YamlValue,
+        CRATES_IO_PACKAGE_LIMIT_BYTES, NATIVE_TARGETS,
     };
+    #[cfg(unix)]
+    use super::{yaml_path, yaml_step_by_id, yaml_step_by_name};
+    use serde_json::{json, Value};
+    use std::collections::BTreeSet;
     use std::fs;
-    use std::path::Path;
+    #[cfg(unix)]
+    use std::os::unix::fs::PermissionsExt;
+    use std::path::{Path, PathBuf};
+    use std::process::{Command, ExitStatus, Output};
+
+    const GATE_FIXTURE_CHILD_MARKER: &str = ".cod107-gate-fixture-mode";
+    #[cfg(unix)]
+    const CI_REQUIRED_SHA: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    #[cfg(unix)]
+    const CI_REQUIRED_BASE: &str = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    #[cfg(unix)]
+    const CI_REQUIRED_RUN_SHA: &str = "cccccccccccccccccccccccccccccccccccccccc";
+
+    fn release_gate_fixture() -> PathBuf {
+        let root = super::unique_temp_dir("cod107_release_gate_fixture").unwrap();
+        let project = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../..")
+            .canonicalize()
+            .unwrap();
+        for relative in [
+            "SECURITY.md",
+            "Cargo.toml",
+            "crates/k-wiki/Cargo.toml",
+            "release-please-config.json",
+            ".github/workflows/ci.yml",
+            ".github/workflows/native.yml",
+            ".github/workflows/release.yml",
+            "src/lib.rs",
+            "src/adapters/cli/mod.rs",
+        ] {
+            let source = project.join(relative);
+            let destination = root.join(relative);
+            fs::create_dir_all(destination.parent().unwrap()).unwrap();
+            fs::copy(&source, &destination).unwrap_or_else(|error| {
+                panic!(
+                    "could not copy gate fixture file {}: {error}",
+                    source.display()
+                )
+            });
+        }
+        fs::create_dir_all(root.join("docs")).unwrap();
+        root
+    }
+
+    fn write_gate_fixture_file(root: &Path, relative: &str, contents: &str) {
+        let path = root.join(relative);
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(path, contents).unwrap();
+    }
+
+    fn execute_gate_fixture_child() -> bool {
+        let Ok(mode) = fs::read_to_string(GATE_FIXTURE_CHILD_MARKER) else {
+            return false;
+        };
+        let mode = mode.trim();
+        let (route, outcome) = mode.split_once(':').expect("valid gate fixture child mode");
+        let production = match route {
+            "ordinary" => false,
+            "production" => true,
+            _ => panic!("unknown gate fixture route {route}"),
+        };
+        let expected_success = match outcome {
+            "pass" => true,
+            "reject" => false,
+            _ => panic!("unknown gate fixture outcome {outcome}"),
+        };
+        let args = if production {
+            [
+                "--production".to_string(),
+                "--confirm".to_string(),
+                "release-environment".to_string(),
+                "--confirm".to_string(),
+                "private-vulnerability-reporting".to_string(),
+            ]
+            .to_vec()
+        } else {
+            Vec::new()
+        };
+        let result = super::release_gate(args);
+        assert_eq!(
+            result.is_ok(),
+            expected_success,
+            "release_gate returned {result:?} for {route}:{outcome}"
+        );
+        true
+    }
+
+    fn run_gate_fixture_route(
+        test_name: &str,
+        root: &Path,
+        production: bool,
+        expected_success: bool,
+        expected_diagnostics: &[&str],
+        forbidden_diagnostics: &[&str],
+    ) -> String {
+        let route = if production { "production" } else { "ordinary" };
+        let outcome = if expected_success { "pass" } else { "reject" };
+        fs::write(
+            root.join(GATE_FIXTURE_CHILD_MARKER),
+            format!("{route}:{outcome}"),
+        )
+        .unwrap();
+        let output = Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", test_name, "--nocapture"])
+            .current_dir(root)
+            .output()
+            .unwrap_or_else(|error| panic!("could not run gate fixture child: {error}"));
+        let report = format!(
+            "{}\n{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert!(
+            output.status.success(),
+            "gate fixture child failed for {route}:\n{report}"
+        );
+        if expected_success {
+            assert!(report.contains("release gate passed"), "{report}");
+        }
+        for diagnostic in expected_diagnostics {
+            assert!(
+                report.contains(diagnostic),
+                "missing {diagnostic:?}:\n{report}"
+            );
+        }
+        for diagnostic in forbidden_diagnostics {
+            assert!(
+                !report.contains(diagnostic),
+                "unexpected {diagnostic:?}:\n{report}"
+            );
+        }
+        report
+    }
+
+    fn symlink_privilege_unavailable(error: &std::io::Error) -> bool {
+        #[cfg(windows)]
+        {
+            return error.raw_os_error() == Some(1314);
+        }
+        #[cfg(not(windows))]
+        {
+            let _ = error;
+            false
+        }
+    }
+
+    fn symlink_file(target: &Path, link: &Path) -> std::io::Result<()> {
+        #[cfg(unix)]
+        {
+            std::os::unix::fs::symlink(target, link)
+        }
+        #[cfg(windows)]
+        {
+            std::os::windows::fs::symlink_file(target, link)
+        }
+        #[cfg(not(any(unix, windows)))]
+        {
+            let _ = (target, link);
+            Err(std::io::Error::new(
+                std::io::ErrorKind::Unsupported,
+                "symlinks are unsupported on this host",
+            ))
+        }
+    }
+
+    fn symlink_dir(target: &Path, link: &Path) -> std::io::Result<()> {
+        #[cfg(unix)]
+        {
+            std::os::unix::fs::symlink(target, link)
+        }
+        #[cfg(windows)]
+        {
+            std::os::windows::fs::symlink_dir(target, link)
+        }
+        #[cfg(not(any(unix, windows)))]
+        {
+            let _ = (target, link);
+            Err(std::io::Error::new(
+                std::io::ErrorKind::Unsupported,
+                "symlinks are unsupported on this host",
+            ))
+        }
+    }
+
+    fn mcp_smoke_output(exit_code: i32, stdout: &str) -> Output {
+        #[cfg(unix)]
+        fn status(exit_code: i32) -> ExitStatus {
+            use std::os::unix::process::ExitStatusExt;
+            ExitStatus::from_raw(exit_code << 8)
+        }
+
+        #[cfg(windows)]
+        fn status(exit_code: i32) -> ExitStatus {
+            use std::os::windows::process::ExitStatusExt;
+            ExitStatus::from_raw(exit_code as u32)
+        }
+
+        Output {
+            status: status(exit_code),
+            stdout: stdout.as_bytes().to_vec(),
+            stderr: Vec::new(),
+        }
+    }
+
+    fn valid_mcp_smoke_stdout() -> String {
+        concat!(
+            r#"{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2025-11-25","capabilities":{},"serverInfo":{"name":"codebase-graph","version":"4.0.3"}}}"#,
+            "\n",
+            r#"{"jsonrpc":"2.0","id":2,"result":{"tools":[{"name":"graph_search","description":"Search graph"}]}}"#,
+        )
+        .to_string()
+    }
+
+    #[test]
+    fn mcp_smoke_accepts_valid_initialize_and_tools() {
+        assert!(
+            super::validate_mcp_smoke_output(&mcp_smoke_output(0, &valid_mcp_smoke_stdout()))
+                .is_ok()
+        );
+    }
+
+    #[test]
+    fn mcp_smoke_rejects_nonzero_child_with_success_payload() {
+        let error = super::validate_mcp_smoke_output(&mcp_smoke_output(
+            7,
+            &format!(
+                "{}\nMCP server stopped with an error",
+                valid_mcp_smoke_stdout()
+            ),
+        ))
+        .unwrap_err();
+        assert!(error.contains("status"));
+        assert!(error.contains("graph_search"));
+    }
+
+    #[test]
+    fn mcp_smoke_rejects_errors_missing_malformed_duplicate_and_decoy_responses() {
+        let valid = valid_mcp_smoke_stdout();
+        let initialize = valid.lines().next().unwrap();
+        let tools = valid.lines().nth(1).unwrap();
+        let cases = [
+            ("zero-status JSON-RPC error", format!("{initialize}\n{{\"jsonrpc\":\"2.0\",\"id\":2,\"error\":{{\"message\":\"graph_search failed\"}}}}")),
+            ("missing initialize", tools.to_string()),
+            ("missing tools response", initialize.to_string()),
+            ("malformed JSON", format!("{initialize}\n{{\"jsonrpc\":\"2.0\",")),
+            ("non-object protocol data", format!("{initialize}\n[]\n{tools}")),
+            ("wrong response ID", format!("{initialize}\n{{\"jsonrpc\":\"2.0\",\"id\":3,\"result\":{{\"tools\":[{{\"name\":\"graph_search\"}}]}}}}")),
+            ("duplicate response ID", format!("{initialize}\n{initialize}\n{tools}")),
+            ("description-only decoy", format!("{initialize}\n{{\"jsonrpc\":\"2.0\",\"id\":2,\"result\":{{\"tools\":[{{\"name\":\"not_graph_search\",\"description\":\"graph_search\"}}]}}}}")),
+        ];
+        for (label, stdout) in cases {
+            assert!(
+                super::validate_mcp_smoke_output(&mcp_smoke_output(0, &stdout)).is_err(),
+                "accepted {label}"
+            );
+        }
+    }
 
     #[test]
     fn workflow_yaml_validation_rejects_unindented_heredoc_body() {
@@ -2244,7 +3781,7 @@ mod tests {
     #[test]
     fn native_target_contract_maps_names_and_binaries() {
         assert_eq!(
-            NativeTarget::parse("linux-x86_64").unwrap().binary_names(),
+            NativeTarget::parse("macos-arm64").unwrap().binary_names(),
             ("codebase-graph", "k-wiki")
         );
         assert_eq!(
@@ -2254,6 +3791,8 @@ mod tests {
             ("codebase-graph.exe", "k-wiki.exe")
         );
         assert!(NativeTarget::parse("linux-arm64").is_err());
+        assert!(NativeTarget::parse("linux-x86_64").is_err());
+        assert!(NativeTarget::parse("macos-x86_64").is_err());
     }
 
     #[test]
@@ -2267,16 +3806,203 @@ mod tests {
             &"codebase-graph/bundled-windows-extensions,k-wiki/bundled-windows-extensions"
         ));
 
-        for target in [
-            NativeTarget::LinuxX86_64,
-            NativeTarget::MacosArm64,
-            NativeTarget::MacosX86_64,
-        ] {
-            let unix = native_test_command(target);
-            assert!(!unix.contains(&"--features"));
-            assert!(!unix.contains(&"--release"));
-            assert!(!unix.contains(&"--profile"));
+        let macos = native_test_command(NativeTarget::MacosArm64);
+        assert!(!macos.contains(&"--features"));
+        assert!(!macos.contains(&"--release"));
+        assert!(macos.contains(&"--profile"));
+    }
+
+    #[test]
+    fn native_capture_reuses_the_exact_test_profile_and_features() {
+        for target in super::NATIVE_TARGETS {
+            let test = native_test_command(target);
+            let capture = super::native_test_capture_command(target);
+            assert_eq!(&capture[..test.len()], test);
+            assert_eq!(
+                &capture[test.len()..],
+                ["--no-run", "--message-format=json-render-diagnostics"]
+            );
         }
+    }
+
+    #[test]
+    fn native_capture_requires_unique_source_bound_normal_cli_artifact() {
+        let root = super::unique_temp_dir("native_cli_capture").unwrap();
+        let manifest = root.join("Cargo.toml");
+        let unrelated = root.join("other.toml");
+        let executable = root.join("normal-cli");
+        let second = root.join("second-cli");
+        for path in [&manifest, &unrelated, &executable, &second] {
+            fs::write(path, b"fixture").unwrap();
+        }
+        let manifest = fs::canonicalize(manifest).unwrap();
+        let mut candidates = BTreeSet::new();
+        let valid = json!({"reason":"compiler-artifact","manifest_path":manifest,
+            "target":{"name":"codebase-graph","kind":["bin"]},
+            "profile":{"test":false},"executable":executable});
+        let mut harness = valid.clone();
+        harness["profile"]["test"] = json!(true);
+        let mut wrong = valid.clone();
+        wrong["manifest_path"] = json!(unrelated);
+        for message in [&harness, &wrong, &json!({"reason":"build-finished"})] {
+            super::record_native_test_cli_artifact(message, &manifest, &mut candidates).unwrap();
+        }
+        assert!(super::unique_native_test_cli(candidates.clone()).is_err());
+        super::record_native_test_cli_artifact(&valid, &manifest, &mut candidates).unwrap();
+        super::record_native_test_cli_artifact(&valid, &manifest, &mut candidates).unwrap();
+        assert_eq!(
+            super::unique_native_test_cli(candidates.clone()).unwrap(),
+            fs::canonicalize(&executable).unwrap()
+        );
+        let mut missing = valid.clone();
+        missing["executable"] = Value::Null;
+        assert!(
+            super::record_native_test_cli_artifact(&missing, &manifest, &mut candidates).is_err()
+        );
+        let mut ambiguous = valid;
+        ambiguous["executable"] = json!(second);
+        super::record_native_test_cli_artifact(&ambiguous, &manifest, &mut candidates).unwrap();
+        assert!(super::unique_native_test_cli(candidates).is_err());
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    fn release_gate_source_sha_fixture() -> (PathBuf, String) {
+        let root = release_gate_fixture();
+        let project = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        for relative in [
+            ".release-please-manifest.json",
+            "Cargo.lock",
+            "CHANGELOG.md",
+            "crates/xtask/Cargo.toml",
+        ] {
+            let source = project.join(relative);
+            let destination = root.join(relative);
+            fs::create_dir_all(destination.parent().unwrap()).unwrap();
+            fs::copy(source, destination).unwrap();
+        }
+        for args in [
+            vec!["init", "--quiet", "-b", "main"],
+            vec!["add", "--all"],
+            vec![
+                "-c",
+                "user.name=COD-110 tests",
+                "-c",
+                "user.email=cod110@example.invalid",
+                "commit",
+                "--quiet",
+                "-m",
+                "release gate source fixture",
+            ],
+        ] {
+            let output = Command::new("git")
+                .arg("-C")
+                .arg(&root)
+                .args(args)
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "git command failed: {}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+        let head = Command::new("git")
+            .args(["-C", root.to_str().unwrap(), "rev-parse", "HEAD"])
+            .output()
+            .unwrap();
+        assert!(head.status.success());
+        let sha = String::from_utf8(head.stdout).unwrap().trim().to_string();
+        (root, sha)
+    }
+
+    #[test]
+    fn release_gate_source_sha_binding_uses_current_process_checkout() {
+        if let Ok(source_sha) = std::env::var("COD110_GATE_CHILD_SHA") {
+            let argument = if source_sha == "mismatch" {
+                "0".repeat(40)
+            } else {
+                source_sha.clone()
+            };
+            let result = super::release_gate(vec!["--source-sha".to_string(), argument]);
+            if source_sha == "invalid" {
+                assert!(result
+                    .unwrap_err()
+                    .contains("full 40-character hexadecimal commit"));
+            } else if source_sha == "mismatch" {
+                assert!(result
+                    .unwrap_err()
+                    .contains("HEAD does not match --source-sha"));
+            } else {
+                assert!(
+                    result.is_ok() || result.as_ref().unwrap_err() == "release gate failed",
+                    "release-gate source binding failed: {result:?}"
+                );
+            }
+            return;
+        }
+
+        let (root, sha) = release_gate_source_sha_fixture();
+        for case in [&sha, "mismatch", "invalid"] {
+            let output = Command::new(std::env::current_exe().unwrap())
+                .args([
+                    "--exact",
+                    "tests::release_gate_source_sha_binding_uses_current_process_checkout",
+                    "--nocapture",
+                ])
+                .current_dir(&root)
+                .env("COD110_GATE_CHILD_SHA", case)
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "source SHA child failed for {case}:\n{}\n{}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn release_gate_candidate_requires_source_sha() {
+        assert!(super::release_gate(vec!["--release-candidate".to_string()])
+            .unwrap_err()
+            .contains("--release-candidate requires --source-sha"));
+    }
+
+    #[test]
+    fn release_gate_source_sha_option_rejects_missing_and_duplicate_values() {
+        assert!(super::release_gate(vec!["--source-sha".to_string()])
+            .unwrap_err()
+            .contains("--source-sha requires a value"));
+        let sha = "a".repeat(40);
+        assert!(super::release_gate(vec![
+            "--source-sha".to_string(),
+            sha.clone(),
+            "--source-sha".to_string(),
+            sha,
+        ])
+        .unwrap_err()
+        .contains("may only be provided once"));
+    }
+
+    #[test]
+    fn ordinary_release_version_readers_keep_existing_permissive_manifest_behavior() {
+        let root = unique_temp_dir("cod110_ordinary_version_readers").unwrap();
+        let manifest = root.join("Cargo.toml");
+        fs::write(&manifest, "version = \"01.2.3\"\n").unwrap();
+        assert_eq!(cargo_version(&manifest).unwrap(), "01.2.3");
+        let dependency_manifest = root.join("wiki-Cargo.toml");
+        fs::write(
+            &dependency_manifest,
+            "codebase-graph = { version = \"01.2.3\", path = \"../..\" }\n",
+        )
+        .unwrap();
+        assert_eq!(
+            dependency_version(&dependency_manifest, "codebase-graph").unwrap(),
+            "01.2.3"
+        );
+        fs::remove_dir_all(root).unwrap();
     }
 
     #[test]
@@ -2284,6 +4010,7 @@ mod tests {
         assert_eq!(release_version_from_tag("v1.2.3").unwrap(), "1.2.3");
         assert!(release_version_from_tag("1.2.3").is_err());
         assert!(release_version_from_tag("v1.2").is_err());
+        assert!(release_version_from_tag("v01.2.3").is_err());
         assert!(validate_commit_sha("0123456789abcdef0123456789abcdef01234567").is_ok());
         assert!(validate_commit_sha("abc").is_err());
     }
@@ -2293,22 +4020,56 @@ mod tests {
         let temp = super::unique_temp_dir("xtask_archive_contract").unwrap();
         let package = temp.join("package");
         fs::create_dir_all(&package).unwrap();
-        for name in [
-            "codebase-graph",
-            "k-wiki",
-            "checksums.txt",
-            "install.sh",
-            "install.ps1",
-        ] {
+        for (name, _) in NativeTarget::MacosArm64.package_files() {
             fs::write(package.join(name), name).unwrap();
         }
         let archive = temp.join("artifact.tar.gz");
-        create_native_archive(&package, &archive, NativeTarget::LinuxX86_64).unwrap();
+        create_native_archive(&package, &archive, NativeTarget::MacosArm64).unwrap();
         let extracted = temp.join("extracted");
         let error =
-            extract_and_validate_native_archive(&archive, NativeTarget::LinuxX86_64, &extracted)
+            extract_and_validate_native_archive(&archive, NativeTarget::MacosArm64, &extracted)
                 .unwrap_err();
         assert!(error.contains("checksums.txt") || error.contains("SHA256"));
+        fs::remove_dir_all(temp).unwrap();
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn macos_smoke_commands_use_a_fixture_home_and_system_path() {
+        let fixture = super::unique_temp_dir("xtask_smoke_env").unwrap();
+        let command = super::smoke_command(Path::new("/usr/bin/true"), &fixture).unwrap();
+        let environment = command
+            .get_envs()
+            .collect::<std::collections::BTreeMap<_, _>>();
+        assert_eq!(
+            environment.get(std::ffi::OsStr::new("HOME")),
+            Some(&Some(fixture.join("smoke-home").as_os_str()))
+        );
+        assert_eq!(
+            environment.get(std::ffi::OsStr::new("PATH")),
+            Some(&Some(std::ffi::OsStr::new("/usr/bin:/bin:/usr/sbin:/sbin")))
+        );
+        fs::remove_dir_all(fixture).unwrap();
+    }
+
+    #[test]
+    fn native_payload_integrity_covers_runtime_files_and_preserves_windows_inventory() {
+        let temp = super::unique_temp_dir("xtask_payload_integrity").unwrap();
+        let target = NativeTarget::MacosArm64;
+        for name in target.payload_files() {
+            fs::write(temp.join(name), name).unwrap();
+        }
+        super::write_internal_checksums(&temp, target).unwrap();
+        super::validate_internal_checksums(&temp, target).unwrap();
+        for name in super::macos::PAYLOAD_FILES {
+            fs::write(temp.join(name), b"corrupt").unwrap();
+            assert!(super::validate_internal_checksums(&temp, target).is_err());
+            fs::write(temp.join(name), name).unwrap();
+        }
+        assert_eq!(
+            NativeTarget::WindowsX86_64.payload_files(),
+            ["codebase-graph.exe", "k-wiki.exe"]
+        );
         fs::remove_dir_all(temp).unwrap();
     }
 
@@ -2322,7 +4083,7 @@ mod tests {
         }
         validate_native_artifact_set(&temp, version, commit_sha).unwrap();
 
-        let provenance_path = temp.join("native-linux-x86_64/provenance.json");
+        let provenance_path = temp.join("native-macos-arm64/provenance.json");
         let mut provenance: NativeProvenance =
             serde_json::from_slice(&fs::read(&provenance_path).unwrap()).unwrap();
         provenance.commit_sha = "ffffffffffffffffffffffffffffffffffffffff".to_string();
@@ -2345,15 +4106,12 @@ mod tests {
         fs::write(package.join(wiki_name), b"wiki").unwrap();
         fs::write(package.join("install.sh"), b"installer").unwrap();
         fs::write(package.join("install.ps1"), b"installer").unwrap();
-        fs::write(
-            package.join("checksums.txt"),
-            format!(
-                "{}  {graph_name}\n{}  {wiki_name}\n",
-                sha256_file(&package.join(graph_name)).unwrap(),
-                sha256_file(&package.join(wiki_name)).unwrap()
-            ),
-        )
-        .unwrap();
+        if target == NativeTarget::MacosArm64 {
+            for name in super::macos::PAYLOAD_FILES {
+                fs::write(package.join(name), name).unwrap();
+            }
+        }
+        super::write_internal_checksums(&package, target).unwrap();
         let archive_name = target.archive_name(version);
         let archive_path = artifact_dir.join(&archive_name);
         create_native_archive(&package, &archive_path, target).unwrap();
@@ -2379,22 +4137,2303 @@ mod tests {
         .unwrap();
     }
 
-    fn valid_ci_workflow() -> YamlValue {
-        yaml_serde::from_str(
-            "on:\n  pull_request: {branches: [main]}\n  push: {branches: [main]}\njobs:\n  native: {uses: './.github/workflows/native.yml'}\n  publish-dry-run:\n    steps: [{run: 'cargo package --locked --no-verify && cargo run -p xtask -- verify-crate-size package.crate'}]\n  required:\n    if: '${{ always() }}'\n    needs: [fmt, clippy, supply-chain, publish-dry-run, native]\n",
+    #[cfg(unix)]
+    struct NativeRetentionInput<'a> {
+        event_name: Option<&'a str>,
+        git_ref: Option<&'a str>,
+        repository: Option<&'a str>,
+        event_json: Option<&'a [u8]>,
+        missing_event_file: bool,
+        missing_event_path: bool,
+        missing_output: bool,
+        output_path_is_directory: bool,
+    }
+
+    #[cfg(unix)]
+    fn run_native_retention_script(
+        script: &str,
+        input: NativeRetentionInput<'_>,
+    ) -> (Output, String) {
+        let NativeRetentionInput {
+            event_name,
+            git_ref,
+            repository,
+            event_json,
+            missing_event_file,
+            missing_event_path,
+            missing_output,
+            output_path_is_directory,
+        } = input;
+        let root = super::unique_temp_dir("native_retention_step").unwrap();
+        let event_path = root.join("event.json");
+        if let Some(payload) = event_json {
+            fs::write(&event_path, payload).unwrap();
+        }
+        let output_path = root.join("github-output");
+        if output_path_is_directory {
+            fs::create_dir(&output_path).unwrap();
+        }
+        let event_path = if missing_event_file {
+            root.join("missing-event.json")
+        } else {
+            event_path
+        };
+        let mut command = Command::new("bash");
+        command
+            .arg("-c")
+            .arg(script)
+            .current_dir(&root)
+            .env_clear()
+            .env("PATH", std::env::var_os("PATH").unwrap())
+            .env_remove("BASH_ENV");
+        if missing_event_path {
+            command.env_remove("GITHUB_EVENT_PATH");
+        } else {
+            command.env("GITHUB_EVENT_PATH", &event_path);
+        }
+        if let Some(value) = event_name {
+            command.env("GITHUB_EVENT_NAME", value);
+        } else {
+            command.env_remove("GITHUB_EVENT_NAME");
+        }
+        if let Some(value) = git_ref {
+            command.env("GITHUB_REF", value);
+        } else {
+            command.env_remove("GITHUB_REF");
+        }
+        if let Some(value) = repository {
+            command.env("GITHUB_REPOSITORY", value);
+        } else {
+            command.env_remove("GITHUB_REPOSITORY");
+        }
+        if missing_output {
+            command.env_remove("GITHUB_OUTPUT");
+        } else {
+            command.env("GITHUB_OUTPUT", &output_path);
+        }
+        let output = command.output().unwrap();
+        let output_text = fs::read_to_string(&output_path).unwrap_or_default();
+        fs::remove_dir_all(root).unwrap();
+        (output, output_text)
+    }
+
+    #[cfg(unix)]
+    fn native_retention_step(ci: &YamlValue) -> &str {
+        yaml_step_by_id(
+            yaml_path(ci, &["jobs", "native_retention"]).unwrap(),
+            "decision",
         )
+        .and_then(|step| yaml_path(step, &["run"]))
+        .and_then(YamlValue::as_str)
         .unwrap()
     }
 
-    fn valid_native_workflow() -> YamlValue {
-        yaml_serde::from_str(
-            "on:\n  workflow_call:\n    inputs:\n      target: {}\n      source-sha: {}\n      run-tests: {}\n      upload-artifact: {}\n      artifact-retention-days: {}\njobs:\n  native:\n    permissions: {contents: read}\n",
+    #[cfg(unix)]
+    fn retention_pr_event(
+        action: &str,
+        head: &str,
+        base: &str,
+        head_repo: &str,
+        base_repo: &str,
+    ) -> Value {
+        json!({
+            "action": action,
+            "pull_request": {
+                "head": {"ref": head, "repo": {"full_name": head_repo}},
+                "base": {"ref": base, "repo": {"full_name": base_repo}}
+            }
+        })
+    }
+
+    #[cfg(unix)]
+    fn assert_retention_result(
+        script: &str,
+        event_name: &str,
+        git_ref: &str,
+        event_json: &[u8],
+        expected: bool,
+    ) {
+        let (output, value) = run_native_retention_script(
+            script,
+            NativeRetentionInput {
+                event_name: Some(event_name),
+                git_ref: Some(git_ref),
+                repository: Some("rabii-chaarani/codebaseGraph"),
+                event_json: Some(event_json),
+                missing_event_file: false,
+                missing_event_path: false,
+                missing_output: false,
+                output_path_is_directory: false,
+            },
+        );
+        assert!(
+            output.status.success(),
+            "retention selector failed: {}{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert_eq!(
+            value,
+            format!("retain={}\n", if expected { "true" } else { "false" }),
+            "event={event_name} ref={git_ref} expected={expected} payload={}",
+            String::from_utf8_lossy(event_json)
+        );
+    }
+
+    #[cfg(unix)]
+    struct WorkflowStepRun {
+        output: Output,
+        calls: String,
+        stdout_files: Vec<(String, Vec<u8>)>,
+    }
+
+    #[cfg(unix)]
+    fn run_ci_step(
+        script: &str,
+        envs: &[(&str, &str)],
+        files: &[(&str, &[u8])],
+        gh_cases: &[(&str, &str, i32)],
+        git_cases: &[(&str, &str, i32)],
+        cargo_case: Option<(&str, &str, i32)>,
+    ) -> WorkflowStepRun {
+        let root = crate::unique_temp_dir("cod108_workflow_step").unwrap();
+        let bin = root.join("bin");
+        fs::create_dir_all(&bin).unwrap();
+        let calls_path = root.join("calls");
+        fs::write(&calls_path, "").unwrap();
+        fs::create_dir_all(root.join("cod108")).unwrap();
+        let write_stub = |name: &str, header: &str, cases: &[(&str, &str, i32)]| {
+            let mut body = header.to_string();
+            for (index, (request, response, exit)) in cases.iter().enumerate() {
+                let path = root.join(format!("{name}-response-{index}"));
+                fs::write(&path, response.as_bytes()).unwrap();
+                let _ = path;
+                if request.contains(' ') {
+                    body.push_str(&format!(
+                        "  '{request}') cat \"$RUNNER_TEMP/{name}-response-{index}\"; exit {exit} ;;\n"
+                    ));
+                } else {
+                    body.push_str(&format!(
+                        "  *{request}*) cat \"$RUNNER_TEMP/{name}-response-{index}\"; exit {exit} ;;\n"
+                    ));
+                }
+            }
+            body.push_str(&format!(
+                "  *) echo \"Unexpected {name} request: $*\" >&2; exit 97 ;;\nesac\n"
+            ));
+            let path = bin.join(name);
+            fs::write(&path, body).unwrap();
+            fs::set_permissions(&path, fs::Permissions::from_mode(0o755)).unwrap();
+        };
+        write_stub("gh", "#!/bin/bash\nset -euo pipefail\nprintf 'gh %s\\n' \"$*\" >> \"$RUNNER_TEMP/calls\"\ncase \"$*\" in\n", gh_cases);
+        write_stub("git", "#!/bin/bash\nset -euo pipefail\nprintf 'git %s\\n' \"$*\" >> \"$RUNNER_TEMP/calls\"\ncase \"$*\" in\n", git_cases);
+        if let Some((request, response, exit)) = cargo_case {
+            write_stub("cargo", "#!/bin/bash\nset -euo pipefail\nprintf 'cargo cwd=%s argv=%s\\n' \"$PWD\" \"$*\" >> \"$RUNNER_TEMP/calls\"\ncase \"$*\" in\n", &[ (request,response,exit) ]);
+        } else {
+            write_stub("cargo", "#!/bin/bash\nset -euo pipefail\nprintf 'cargo cwd=%s argv=%s\\n' \"$PWD\" \"$*\" >> \"$RUNNER_TEMP/calls\"\ncase \"$*\" in\n", &[]);
+        }
+        let workspace = root.join("workspace");
+        fs::create_dir_all(workspace.join("trusted-base/crates/xtask/src")).unwrap();
+        fs::create_dir_all(workspace.join("git-objects")).unwrap();
+        fs::write(
+            workspace.join("trusted-base/crates/xtask/src/ci.rs"),
+            b"fixture trusted classifier path",
         )
-        .unwrap()
+        .unwrap();
+        for (relative, contents) in files {
+            let path = root.join(relative);
+            fs::create_dir_all(path.parent().unwrap()).unwrap();
+            fs::write(path, contents).unwrap();
+        }
+        let events_path = root.join("event.json");
+        let event = envs
+            .iter()
+            .find(|(key, _)| *key == "GITHUB_EVENT_JSON")
+            .map(|(_, value)| *value)
+            .unwrap_or("{}");
+        fs::write(&events_path, event).unwrap();
+        let mut command = Command::new("bash");
+        command
+            .arg("-c")
+            .arg(script)
+            .current_dir(&workspace)
+            .env_clear()
+            .env(
+                "PATH",
+                std::env::join_paths(
+                    std::iter::once(bin.clone())
+                        .chain(std::env::split_paths(&std::env::var_os("PATH").unwrap())),
+                )
+                .unwrap(),
+            )
+            .env("RUNNER_TEMP", &root)
+            .env("GITHUB_EVENT_PATH", &events_path)
+            .env("GITHUB_OUTPUT", root.join("output"))
+            .env("GITHUB_STEP_SUMMARY", root.join("summary"))
+            .env("GITHUB_WORKSPACE", &workspace)
+            .env("GITHUB_REPOSITORY", "owner/repo")
+            .env("GITHUB_REPOSITORY_ID", "12345")
+            .env("REPOSITORY_ID", "12345")
+            .env("GITHUB_EVENT_NAME", "pull_request")
+            .env("GITHUB_SHA", CI_REQUIRED_SHA)
+            .env("GITHUB_REF", "refs/pull/124/merge")
+            .env("BASH_ENV", "")
+            .env("GH_TOKEN", "fixture-token");
+        for (key, value) in envs {
+            if *key != "GITHUB_EVENT_JSON" {
+                command.env(key, value);
+            }
+        }
+        let output = command.output().unwrap();
+        let calls = fs::read_to_string(&calls_path).unwrap_or_default();
+        let stdout_files = [
+            "output",
+            "summary",
+            "cod108/decision.json",
+            "cod108/decision.next",
+            "cod108/pr.json",
+            "cod108/main.json",
+            "cod108/classifier.json",
+        ]
+        .into_iter()
+        .filter_map(|relative| {
+            fs::read(root.join(relative))
+                .ok()
+                .map(|bytes| (relative.to_string(), bytes))
+        })
+        .collect();
+        let _ = fs::remove_dir_all(root);
+        WorkflowStepRun {
+            output,
+            calls,
+            stdout_files,
+        }
+    }
+
+    #[cfg(unix)]
+    struct RepositoryPolicyRun {
+        purpose: Output,
+        policy: Option<Output>,
+        calls: String,
+        output: String,
+    }
+
+    #[cfg(unix)]
+    struct RepositoryPolicyCase<'a> {
+        event_name: &'a str,
+        github_ref: &'a str,
+        repository: &'a str,
+        repository_id: &'a str,
+        tested_sha: &'a str,
+        event: &'a Value,
+        live_pr: Option<&'a Value>,
+        gh_exit: i32,
+        purpose_override: Option<&'a str>,
+    }
+
+    #[cfg(unix)]
+    fn run_repository_policy_body(
+        ci: &YamlValue,
+        case: RepositoryPolicyCase<'_>,
+    ) -> RepositoryPolicyRun {
+        let RepositoryPolicyCase {
+            event_name,
+            github_ref,
+            repository,
+            repository_id,
+            tested_sha,
+            event,
+            live_pr,
+            gh_exit,
+            purpose_override,
+        } = case;
+        let root = super::unique_temp_dir("repository_policy_body").unwrap();
+        let bin = root.join("bin");
+        fs::create_dir_all(&bin).unwrap();
+        fs::write(root.join("calls"), "").unwrap();
+        fs::write(root.join("output"), "").unwrap();
+        fs::write(root.join("event.json"), serde_json::to_vec(event).unwrap()).unwrap();
+        if let Some(live_pr) = live_pr {
+            fs::write(
+                root.join("live-pr.json"),
+                serde_json::to_vec(live_pr).unwrap(),
+            )
+            .unwrap();
+        }
+        let gh = "#!/bin/bash\nset -euo pipefail\nprintf 'gh %s\\n' \"$*\" >> \"$RUNNER_TEMP/calls\"\ncase \"$*\" in\n  \"api repos/$GITHUB_REPOSITORY/pulls/124\")\n    [[ \"$MOCK_GH_EXIT\" == 0 ]] || { echo 'mock API failure' >&2; exit \"$MOCK_GH_EXIT\"; }\n    cat \"$RUNNER_TEMP/live-pr.json\" ;;\n  *) echo \"Unexpected GitHub request: $*\" >&2; exit 97 ;;\nesac\n";
+        let cargo = "#!/bin/bash\nset -euo pipefail\nprintf 'cargo cwd=%s argv=%s\\n' \"$PWD\" \"$*\" >> \"$RUNNER_TEMP/calls\"\n[[ \"$*\" == \"run -p xtask --locked -- release-gate --source-sha $TESTED_SHA\" || \"$*\" == \"run -p xtask --locked -- release-gate --source-sha $TESTED_SHA --release-candidate\" ]] || { echo \"Unexpected Cargo invocation: $*\" >&2; exit 97; }\nexit \"$MOCK_CARGO_EXIT\"\n";
+        for (name, body) in [("gh", gh), ("cargo", cargo)] {
+            let path = bin.join(name);
+            fs::write(&path, body).unwrap();
+            fs::set_permissions(&path, fs::Permissions::from_mode(0o755)).unwrap();
+        }
+        let purpose = yaml_step_by_id(
+            yaml_path(ci, &["jobs", "repository-policy"]).unwrap(),
+            "purpose",
+        )
+        .and_then(|step| yaml_path(step, &["run"]))
+        .and_then(YamlValue::as_str)
+        .unwrap();
+        let policy_step = yaml_step_by_name(
+            yaml_path(ci, &["jobs", "repository-policy"]).unwrap(),
+            "Check repository release policy",
+        )
+        .unwrap();
+        let policy = yaml_path(policy_step, &["run"])
+            .and_then(YamlValue::as_str)
+            .unwrap();
+        let base_path =
+            std::env::split_paths(&std::env::var_os("PATH").unwrap()).collect::<Vec<_>>();
+        let path = std::env::join_paths(std::iter::once(bin).chain(base_path)).unwrap();
+        let run_step = |script: &str, candidate: &str| {
+            Command::new("bash")
+                .arg("-c")
+                .arg(script)
+                .current_dir(&root)
+                .env_clear()
+                .env("PATH", &path)
+                .env("BASH_ENV", "")
+                .env("RUNNER_TEMP", &root)
+                .env("GITHUB_EVENT_PATH", root.join("event.json"))
+                .env("GITHUB_OUTPUT", root.join("output"))
+                .env("GITHUB_EVENT_NAME", event_name)
+                .env("GITHUB_REPOSITORY", repository)
+                .env("REPOSITORY_ID", repository_id)
+                .env("GITHUB_REPOSITORY_ID", repository_id)
+                .env("GITHUB_SHA", tested_sha)
+                .env("GITHUB_REF", github_ref)
+                .env("GH_TOKEN", "fixture-only")
+                .env("MOCK_GH_EXIT", gh_exit.to_string())
+                .env("MOCK_CARGO_EXIT", "0")
+                .env("TESTED_SHA", tested_sha)
+                .env("RELEASE_CANDIDATE", candidate)
+                .output()
+                .unwrap()
+        };
+        let purpose_output = run_step(purpose, "false");
+        let candidate = purpose_override.map(str::to_string).or_else(|| {
+            fs::read_to_string(root.join("output"))
+                .ok()?
+                .lines()
+                .find_map(|line| line.strip_prefix("release-candidate=").map(str::to_string))
+        });
+        let policy_output = if purpose_output.status.success() {
+            candidate
+                .as_deref()
+                .map(|candidate| run_step(policy, candidate))
+        } else {
+            None
+        };
+        let calls = fs::read_to_string(root.join("calls")).unwrap_or_default();
+        let output = fs::read_to_string(root.join("output")).unwrap_or_default();
+        let result = RepositoryPolicyRun {
+            purpose: purpose_output,
+            policy: policy_output,
+            calls,
+            output,
+        };
+        let _ = fs::remove_dir_all(root);
+        result
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn repository_policy_executes_actual_purpose_and_tested_source_bodies() {
+        let ci = valid_ci_workflow();
+        let mut event = github_pr(124, CI_REQUIRED_BASE, CI_REQUIRED_SHA, "labeled");
+        event["pull_request"]["user"]["id"] = json!(123);
+        event["pull_request"]["user"]["login"] = json!("not-release-bot");
+        event["pull_request"]["labels"] = json!([]);
+        let untrusted_live = event["pull_request"].clone();
+        let mixed = run_repository_policy_body(
+            &ci,
+            RepositoryPolicyCase {
+                event_name: "pull_request",
+                github_ref: "refs/pull/124/merge",
+                repository: "owner/repo",
+                repository_id: "12345",
+                tested_sha: CI_REQUIRED_SHA,
+                event: &event,
+                live_pr: Some(&untrusted_live),
+                gh_exit: 0,
+                purpose_override: None,
+            },
+        );
+        assert!(
+            mixed.purpose.status.success(),
+            "{}",
+            String::from_utf8_lossy(&mixed.purpose.stderr)
+        );
+        assert!(
+            mixed.output.contains("release-candidate=true\n"),
+            "{}",
+            mixed.output
+        );
+        assert!(
+            mixed.policy.as_ref().unwrap().status.success(),
+            "{}",
+            String::from_utf8_lossy(&mixed.policy.as_ref().unwrap().stderr)
+        );
+        assert!(
+            mixed.calls.contains("gh api repos/owner/repo/pulls/124"),
+            "{}",
+            mixed.calls
+        );
+        assert!(
+            mixed.calls.contains("--release-candidate"),
+            "{}",
+            mixed.calls
+        );
+        assert!(mixed.calls.contains(CI_REQUIRED_SHA), "{}", mixed.calls);
+
+        let mut ordinary = event.clone();
+        ordinary["pull_request"]["head"]["ref"] = json!("ordinary-feature");
+        let ordinary_live = ordinary["pull_request"].clone();
+        let result = run_repository_policy_body(
+            &ci,
+            RepositoryPolicyCase {
+                event_name: "pull_request",
+                github_ref: "refs/pull/124/merge",
+                repository: "owner/repo",
+                repository_id: "12345",
+                tested_sha: CI_REQUIRED_SHA,
+                event: &ordinary,
+                live_pr: Some(&ordinary_live),
+                gh_exit: 0,
+                purpose_override: None,
+            },
+        );
+        assert!(
+            result.purpose.status.success(),
+            "{}",
+            String::from_utf8_lossy(&result.purpose.stderr)
+        );
+        assert!(
+            result.output.contains("release-candidate=false\n"),
+            "{}",
+            result.output
+        );
+        assert!(result.policy.as_ref().unwrap().status.success());
+        assert!(
+            !result.calls.contains("--release-candidate"),
+            "{}",
+            result.calls
+        );
+
+        let mut fork = event.clone();
+        fork["pull_request"]["head"]["repo"]["full_name"] = json!("fork/repo");
+        fork["pull_request"]["head"]["repo"]["id"] = json!(67890);
+        let fork_live = fork["pull_request"].clone();
+        let result = run_repository_policy_body(
+            &ci,
+            RepositoryPolicyCase {
+                event_name: "pull_request",
+                github_ref: "refs/pull/124/merge",
+                repository: "owner/repo",
+                repository_id: "12345",
+                tested_sha: CI_REQUIRED_SHA,
+                event: &fork,
+                live_pr: Some(&fork_live),
+                gh_exit: 0,
+                purpose_override: None,
+            },
+        );
+        assert!(
+            result.purpose.status.success(),
+            "{}",
+            String::from_utf8_lossy(&result.purpose.stderr)
+        );
+        assert!(
+            result.output.contains("release-candidate=false\n"),
+            "{}",
+            result.output
+        );
+        assert!(result.policy.as_ref().unwrap().status.success());
+        assert!(
+            !result.calls.contains("--release-candidate"),
+            "{}",
+            result.calls
+        );
+
+        let mut mismatch_live = event["pull_request"].clone();
+        mismatch_live["base"]["sha"] = json!(CI_REQUIRED_SHA);
+        let failed = run_repository_policy_body(
+            &ci,
+            RepositoryPolicyCase {
+                event_name: "pull_request",
+                github_ref: "refs/pull/124/merge",
+                repository: "owner/repo",
+                repository_id: "12345",
+                tested_sha: CI_REQUIRED_SHA,
+                event: &event,
+                live_pr: Some(&mismatch_live),
+                gh_exit: 0,
+                purpose_override: None,
+            },
+        );
+        assert!(
+            !failed.purpose.status.success(),
+            "stale API base was accepted"
+        );
+        assert!(
+            failed.policy.is_none(),
+            "Cargo ran after stale purpose failure: {}",
+            failed.calls
+        );
+        assert!(!failed.calls.contains("cargo "), "{}", failed.calls);
+
+        let unavailable = run_repository_policy_body(
+            &ci,
+            RepositoryPolicyCase {
+                event_name: "pull_request",
+                github_ref: "refs/pull/124/merge",
+                repository: "owner/repo",
+                repository_id: "12345",
+                tested_sha: CI_REQUIRED_SHA,
+                event: &event,
+                live_pr: Some(&event["pull_request"]),
+                gh_exit: 23,
+                purpose_override: None,
+            },
+        );
+        assert!(
+            !unavailable.purpose.status.success(),
+            "API error was demoted to ordinary"
+        );
+        assert!(unavailable.policy.is_none());
+        assert!(
+            !unavailable.calls.contains("cargo "),
+            "{}",
+            unavailable.calls
+        );
+
+        let push_event = json!({"ref":"refs/heads/main","after":CI_REQUIRED_SHA,"repository":{"full_name":"owner/repo","id":12345}});
+        let invalid_output = run_repository_policy_body(
+            &ci,
+            RepositoryPolicyCase {
+                event_name: "push",
+                github_ref: "refs/heads/main",
+                repository: "owner/repo",
+                repository_id: "12345",
+                tested_sha: CI_REQUIRED_SHA,
+                event: &push_event,
+                live_pr: None,
+                gh_exit: 0,
+                purpose_override: Some("garbage"),
+            },
+        );
+        assert!(invalid_output.purpose.status.success());
+        assert!(invalid_output
+            .policy
+            .as_ref()
+            .is_some_and(|output| !output.status.success()));
+        assert!(
+            !invalid_output.calls.contains("cargo "),
+            "invalid output invoked Cargo: {}",
+            invalid_output.calls
+        );
+    }
+
+    #[cfg(unix)]
+    fn github_pr(number: u64, base_sha: &str, head_sha: &str, action: &str) -> Value {
+        json!({"action":action,"number":number,"repository":{"full_name":"owner/repo","id":12345},
+            "pull_request":{"number":number,"state":"open","draft":false,
+                "user":{"id":41898282,"login":"github-actions[bot]","type":"Bot"},
+                "base":{"ref":"main","sha":base_sha,"repo":{"full_name":"owner/repo","id":12345}},
+                "head":{"ref":"release-please--branches--main--components--codebase-graph","sha":head_sha,"repo":{"full_name":"owner/repo","id":12345}},
+                "labels":[{"name":"autorelease: pending"}]}})
+    }
+
+    #[cfg(unix)]
+    fn extract_ci_step<'a>(ci: &'a YamlValue, id: &str) -> &'a str {
+        yaml_step_by_id(yaml_path(ci, &["jobs", "classify"]).unwrap(), id)
+            .and_then(|step| yaml_path(step, &["run"]))
+            .and_then(YamlValue::as_str)
+            .unwrap()
+    }
+
+    #[cfg(unix)]
+    #[derive(Clone)]
+    struct ApiReply {
+        request: &'static str,
+        body: Vec<u8>,
+        exit: i32,
+    }
+
+    #[cfg(unix)]
+    struct RequiredRun {
+        output: Output,
+        calls: String,
+        summary: String,
+    }
+
+    #[cfg(unix)]
+    fn run_required_result(
+        run: &str,
+        results: &Value,
+        decision: &Value,
+        event_name: &str,
+        event: &Value,
+        github_ref: &str,
+        replies: &[ApiReply],
+    ) -> RequiredRun {
+        let root = super::unique_temp_dir("ci_required_body").unwrap();
+        let bin = root.join("bin");
+        fs::create_dir_all(&bin).unwrap();
+        fs::write(root.join("calls"), "").unwrap();
+        let mut gh = String::from("#!/bin/bash\nset -euo pipefail\nprintf '%s\\n' \"$*\" >> \"$RUNNER_TEMP/calls\"\ncase \"$*\" in\n");
+        for (index, reply) in replies.iter().enumerate() {
+            let response = root.join(format!("api-{index}.json"));
+            fs::write(&response, &reply.body).unwrap();
+            gh.push_str(&format!(
+                "  {:?}) cat \"{}\"; exit {} ;;\n",
+                reply.request,
+                response.display(),
+                reply.exit
+            ));
+        }
+        gh.push_str("  *) echo \"Unexpected GitHub request: $*\" >&2; exit 97 ;;\nesac\n");
+        fs::write(bin.join("gh"), gh).unwrap();
+        fs::set_permissions(bin.join("gh"), fs::Permissions::from_mode(0o755)).unwrap();
+        fs::write(root.join("event.json"), serde_json::to_vec(event).unwrap()).unwrap();
+        fs::write(root.join("summary"), "").unwrap();
+        let output = Command::new("bash")
+            .arg("-c")
+            .arg(run)
+            .current_dir(&root)
+            .env_clear()
+            .env(
+                "PATH",
+                std::env::join_paths(
+                    std::iter::once(bin)
+                        .chain(std::env::split_paths(&std::env::var_os("PATH").unwrap())),
+                )
+                .unwrap(),
+            )
+            .env("BASH_ENV", "")
+            .env("RESULTS", results.to_string())
+            .env("DECISION", decision.to_string())
+            .env("GITHUB_EVENT_NAME", event_name)
+            .env("GITHUB_REPOSITORY", "owner/repo")
+            .env(
+                "GITHUB_SHA",
+                decision["run_sha"].as_str().unwrap_or(CI_REQUIRED_SHA),
+            )
+            .env("GITHUB_REF", github_ref)
+            .env("GITHUB_EVENT_PATH", root.join("event.json"))
+            .env("REPOSITORY_ID", "12345")
+            .env("RUNNER_TEMP", &root)
+            .env("GITHUB_STEP_SUMMARY", root.join("summary"))
+            .env("GH_TOKEN", "fixture-token")
+            .output()
+            .unwrap();
+        let calls = fs::read_to_string(root.join("calls")).unwrap_or_default();
+        let summary = fs::read_to_string(root.join("summary")).unwrap_or_default();
+        fs::remove_dir_all(root).unwrap();
+        RequiredRun {
+            output,
+            calls,
+            summary,
+        }
+    }
+
+    #[test]
+    fn workflow_policy_retention_wiring_is_closed() {
+        let ci = valid_ci_workflow();
+        let native = valid_native_workflow();
+        assert!(native_retention_policy_valid(&ci, &native));
+
+        type CiMutation = (&'static str, Box<dyn Fn(&mut YamlValue)>);
+        let mutations: Vec<CiMutation> = vec![
+            (
+                "selector-output-mapping",
+                Box::new(|ci| {
+                    ci["jobs"]["native_retention"]["outputs"]["retain"] =
+                        YamlValue::String("${{ steps.other.outputs.retain }}".into())
+                }),
+            ),
+            (
+                "native-prerequisite",
+                Box::new(|ci| {
+                    ci["jobs"]["native"]["needs"] = yaml_serde::from_str("[fmt]").unwrap()
+                }),
+            ),
+            (
+                "upload-boolean-binding",
+                Box::new(|ci| {
+                    ci["jobs"]["native"]["with"]["upload-artifact"] =
+                        YamlValue::String("true".into())
+                }),
+            ),
+            (
+                "source-sha-binding",
+                Box::new(|ci| {
+                    ci["jobs"]["native"]["with"]["source-sha"] =
+                        YamlValue::String("${{ github.event.pull_request.head.sha }}".into())
+                }),
+            ),
+            (
+                "artifact-retention-days",
+                Box::new(|ci| {
+                    ci["jobs"]["native"]["with"]["artifact-retention-days"] =
+                        YamlValue::Number(3.into())
+                }),
+            ),
+            (
+                "required-dependency",
+                Box::new(|ci| {
+                    ci["jobs"]["required"]["needs"]
+                        .as_sequence_mut()
+                        .unwrap()
+                        .retain(|need| need.as_str() != Some("native_retention"))
+                }),
+            ),
+            (
+                "selector-skips-native",
+                Box::new(|ci| {
+                    ci["jobs"]["native"]["if"] =
+                        YamlValue::String("needs.native_retention.outputs.retain == 'true'".into())
+                }),
+            ),
+            (
+                "selector-extra-permission",
+                Box::new(|ci| {
+                    ci["jobs"]["native_retention"]["permissions"]["contents"] =
+                        YamlValue::String("write".into())
+                }),
+            ),
+            (
+                "selector-checkout-action",
+                Box::new(|ci| {
+                    ci["jobs"]["native_retention"]["steps"]
+                        .as_sequence_mut()
+                        .unwrap()
+                        .push(yaml_serde::from_str("uses: actions/checkout@v6").unwrap())
+                }),
+            ),
+            (
+                "selector-step-condition",
+                Box::new(|ci| {
+                    ci["jobs"]["native_retention"]["steps"][0]["if"] =
+                        YamlValue::String("always()".into())
+                }),
+            ),
+            (
+                "selector-step-environment",
+                Box::new(|ci| {
+                    ci["jobs"]["native_retention"]["steps"][0]["env"]["GITHUB_REF"] =
+                        YamlValue::String("main".into())
+                }),
+            ),
+        ];
+        for (label, mutate) in mutations {
+            let mut changed = ci.clone();
+            mutate(&mut changed);
+            assert!(
+                !native_retention_policy_valid(&changed, &native),
+                "accepted retention wiring mutation {label}"
+            );
+        }
+
+        let mut selector_without_decision = ci.clone();
+        selector_without_decision["jobs"]["native_retention"]["steps"] =
+            YamlValue::Sequence(Vec::new());
+        assert!(!native_retention_policy_valid(
+            &selector_without_decision,
+            &native
+        ));
+        let mut extra_step_env = ci.clone();
+        extra_step_env["jobs"]["native_retention"]["steps"][0]["env"]["GITHUB_REF"] =
+            YamlValue::String("refs/heads/main".into());
+        assert!(!native_retention_policy_valid(&extra_step_env, &native));
+        let mut no_tests_on_native = native.clone();
+        no_tests_on_native["jobs"]["native"]["needs"] = YamlValue::Sequence(Vec::new());
+        let mut issues = Vec::new();
+        check_workflow_policy(
+            &ci,
+            &no_tests_on_native,
+            &yaml_serde::from_str(&valid_release_workflow_text()).unwrap(),
+            &mut issues,
+        );
+        assert!(
+            issues
+                .iter()
+                .any(|issue| issue.contains("native-test-gate")),
+            "native test gate mutation escaped policy: {issues:?}"
+        );
+
+        let native_mutations: Vec<CiMutation> = vec![
+            (
+                "upload-not-boolean",
+                Box::new(|native| {
+                    native["on"]["workflow_call"]["inputs"]["upload-artifact"]["type"] =
+                        YamlValue::String("string".into())
+                }),
+            ),
+            (
+                "upload-guard",
+                Box::new(|native| {
+                    native["jobs"]["native"]["steps"]
+                        .as_sequence_mut()
+                        .unwrap()
+                        .iter_mut()
+                        .find(|step| {
+                            step.get("name").and_then(YamlValue::as_str)
+                                == Some("Upload internal artifact")
+                        })
+                        .unwrap()["if"] = YamlValue::String("always()".into())
+                }),
+            ),
+            (
+                "upload-path",
+                Box::new(|native| {
+                    native["jobs"]["native"]["steps"]
+                        .as_sequence_mut()
+                        .unwrap()
+                        .iter_mut()
+                        .find(|step| {
+                            step.get("name").and_then(YamlValue::as_str)
+                                == Some("Upload internal artifact")
+                        })
+                        .unwrap()["with"]["path"] = YamlValue::String(".".into())
+                }),
+            ),
+            (
+                "upload-target-name",
+                Box::new(|native| {
+                    native["jobs"]["native"]["steps"]
+                        .as_sequence_mut()
+                        .unwrap()
+                        .iter_mut()
+                        .find(|step| {
+                            step.get("name").and_then(YamlValue::as_str)
+                                == Some("Upload internal artifact")
+                        })
+                        .unwrap()["with"]["name"] = YamlValue::String("shared".into())
+                }),
+            ),
+            (
+                "missing-files-policy",
+                Box::new(|native| {
+                    native["jobs"]["native"]["steps"]
+                        .as_sequence_mut()
+                        .unwrap()
+                        .iter_mut()
+                        .find(|step| {
+                            step.get("name").and_then(YamlValue::as_str)
+                                == Some("Upload internal artifact")
+                        })
+                        .unwrap()["with"]["if-no-files-found"] = YamlValue::String("warn".into())
+                }),
+            ),
+            (
+                "retention-input-binding",
+                Box::new(|native| {
+                    native["jobs"]["native"]["steps"]
+                        .as_sequence_mut()
+                        .unwrap()
+                        .iter_mut()
+                        .find(|step| {
+                            step.get("name").and_then(YamlValue::as_str)
+                                == Some("Upload internal artifact")
+                        })
+                        .unwrap()["with"]["retention-days"] = YamlValue::String("3".into())
+                }),
+            ),
+        ];
+        for (label, mutate) in native_mutations {
+            let mut changed = native.clone();
+            mutate(&mut changed);
+            assert!(
+                !native_retention_policy_valid(&ci, &changed),
+                "accepted reusable native workflow mutation {label}"
+            );
+        }
+
+        let mut required_body = ci.clone();
+        required_body["jobs"]["required"]["steps"][0]["run"] =
+            YamlValue::String("echo success".into());
+        assert!(!native_retention_policy_valid(&required_body, &native));
+        let mut absent_required_key = ci;
+        absent_required_key["jobs"]["required"]["needs"]
+            .as_sequence_mut()
+            .unwrap()
+            .retain(|need| need.as_str() != Some("native_retention"));
+        assert!(!native_retention_policy_valid(
+            &absent_required_key,
+            &native
+        ));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn native_retention_actual_body_is_cod107_only() {
+        let ci = valid_ci_workflow();
+        let script = native_retention_step(&ci);
+        let repository = "rabii-chaarani/codebaseGraph";
+        let mut positives = 0;
+        let push = json!({"ref":"refs/heads/main"});
+        assert_retention_result(
+            script,
+            "push",
+            "refs/heads/main",
+            &serde_json::to_vec(&push).unwrap(),
+            true,
+        );
+        positives += 1;
+        for action in ["opened", "synchronize", "reopened", "edited"] {
+            for base in ["cod103-stack/cod-56", "main"] {
+                let event = retention_pr_event(
+                    action,
+                    "cod103-stack/cod-107",
+                    base,
+                    repository,
+                    repository,
+                );
+                assert_retention_result(
+                    script,
+                    "pull_request",
+                    "refs/pull/107/merge",
+                    &serde_json::to_vec(&event).unwrap(),
+                    true,
+                );
+                positives += 1;
+            }
+        }
+        assert_eq!(positives, 9);
+
+        let mut negatives: Vec<(&str, &str, Value)> = Vec::new();
+        for (label, git_ref) in [
+            ("non-main push", "refs/heads/cod103-stack/cod-107"),
+            ("tag push", "refs/tags/v4.0.5"),
+            ("case-variant main push", "refs/heads/Main"),
+        ] {
+            negatives.push((label, "push", json!({"ref":git_ref})));
+        }
+        for head in [
+            "cod103-stack/cod-105",
+            "cod103-stack/cod-106",
+            "cod103-stack/cod-56",
+            "cod103-stack/cod-108",
+            "cod103-stack/cod-110",
+            "main",
+            "cod103-stack/cod-107-extra",
+            "cod103-stack/cod-107/child",
+            "COD103-stack/cod-107",
+        ] {
+            negatives.push((
+                "disallowed head",
+                "pull_request",
+                retention_pr_event("opened", head, "main", repository, repository),
+            ));
+        }
+        for base in [
+            "cod103-stack/cod-105",
+            "cod103-stack/cod-106",
+            "cod103-stack/cod-107",
+            "cod103-stack/cod-108",
+            "unknown",
+            "Main",
+        ] {
+            negatives.push((
+                "disallowed base",
+                "pull_request",
+                retention_pr_event(
+                    "opened",
+                    "cod103-stack/cod-107",
+                    base,
+                    repository,
+                    repository,
+                ),
+            ));
+        }
+        for action in ["closed", "labeled", "ready_for_review"] {
+            negatives.push((
+                "disallowed action",
+                "pull_request",
+                retention_pr_event(
+                    action,
+                    "cod103-stack/cod-107",
+                    "main",
+                    repository,
+                    repository,
+                ),
+            ));
+        }
+        let mut different_head = retention_pr_event(
+            "opened",
+            "cod103-stack/cod-107",
+            "main",
+            repository,
+            repository,
+        );
+        different_head["pull_request"]["head"]["repo"]["full_name"] =
+            json!("fork-owner/codebaseGraph");
+        negatives.push(("fork head repository", "pull_request", different_head));
+        let mut different_base = retention_pr_event(
+            "opened",
+            "cod103-stack/cod-107",
+            "main",
+            repository,
+            repository,
+        );
+        different_base["pull_request"]["base"]["repo"]["full_name"] =
+            json!("someone/codebaseGraph");
+        negatives.push(("different base repository", "pull_request", different_base));
+        let mut missing_head_repo = retention_pr_event(
+            "opened",
+            "cod103-stack/cod-107",
+            "main",
+            repository,
+            repository,
+        );
+        missing_head_repo["pull_request"]["head"]["repo"] = Value::Null;
+        negatives.push(("missing head repository", "pull_request", missing_head_repo));
+        let mut missing_base = retention_pr_event(
+            "opened",
+            "cod103-stack/cod-107",
+            "main",
+            repository,
+            repository,
+        );
+        missing_base["pull_request"]["base"]
+            .as_object_mut()
+            .unwrap()
+            .remove("ref");
+        negatives.push(("missing base ref", "pull_request", missing_base));
+        let mut missing_action = retention_pr_event(
+            "opened",
+            "cod103-stack/cod-107",
+            "main",
+            repository,
+            repository,
+        );
+        missing_action.as_object_mut().unwrap().remove("action");
+        negatives.push(("missing action", "pull_request", missing_action));
+        for event_name in [
+            "pull_request_target",
+            "workflow_run",
+            "workflow_dispatch",
+            "schedule",
+            "unknown",
+        ] {
+            negatives.push(("unknown event", event_name, json!({"action":"opened","pull_request":{"head":{"ref":"cod103-stack/cod-107","repo":{"full_name":repository}},"base":{"ref":"main","repo":{"full_name":repository}}}})));
+        }
+        for (label, event_name, payload) in &negatives {
+            let git_ref = if *event_name == "push" {
+                payload["ref"].as_str().unwrap_or("refs/heads/main")
+            } else {
+                "refs/pull/107/merge"
+            };
+            assert_retention_result(
+                script,
+                event_name,
+                git_ref,
+                &serde_json::to_vec(payload).unwrap(),
+                false,
+            );
+            assert!(!label.is_empty());
+        }
+
+        let semantic_mutants = [
+            (
+                "missing same-repository guard",
+                script.replace(
+                    concat!(
+                        ".pull_request.head.repo.full_name == $repository and\n",
+                        "     .pull_request.base.repo.full_name == $repository and\n",
+                        "     ",
+                    ),
+                    "",
+                ),
+                retention_pr_event(
+                    "opened",
+                    "cod103-stack/cod-107",
+                    "main",
+                    "fork-owner/codebaseGraph",
+                    repository,
+                ),
+            ),
+            (
+                "broadened base guard",
+                script.replace(
+                    concat!(
+                        "(.pull_request.base.ref == \"cod103-stack/cod-56\" or\n",
+                        "      .pull_request.base.ref == \"main\")",
+                    ),
+                    "true",
+                ),
+                retention_pr_event(
+                    "opened",
+                    "cod103-stack/cod-107",
+                    "cod103-stack/cod-108",
+                    repository,
+                    repository,
+                ),
+            ),
+            (
+                "case-folded head guard",
+                script.replace(
+                    ".pull_request.head.ref == \"cod103-stack/cod-107\"",
+                    "(.pull_request.head.ref | ascii_downcase) == \"cod103-stack/cod-107\"",
+                ),
+                retention_pr_event(
+                    "opened",
+                    "COD103-stack/cod-107",
+                    "main",
+                    repository,
+                    repository,
+                ),
+            ),
+        ];
+        for (label, mutant, event) in semantic_mutants {
+            assert_ne!(
+                mutant, script,
+                "mutation did not alter selector for {label}"
+            );
+            let (output, value) = run_native_retention_script(
+                &mutant,
+                NativeRetentionInput {
+                    event_name: Some("pull_request"),
+                    git_ref: Some("refs/pull/107/merge"),
+                    repository: Some(repository),
+                    event_json: Some(&serde_json::to_vec(&event).unwrap()),
+                    missing_event_file: false,
+                    missing_event_path: false,
+                    missing_output: false,
+                    output_path_is_directory: false,
+                },
+            );
+            assert!(
+                output.status.success(),
+                "mutant failed before the oracle for {label}"
+            );
+            assert_eq!(
+                value, "retain=true\n",
+                "negative fixture did not kill semantic mutant {label}"
+            );
+        }
+
+        let wrong_runner_ref = json!({"ref":"refs/heads/main"});
+        assert_retention_result(
+            script,
+            "push",
+            "refs/heads/CODE-107",
+            &serde_json::to_vec(&wrong_runner_ref).unwrap(),
+            false,
+        );
+        for (payload, name) in [
+            (b"{".as_slice(), "malformed JSON"),
+            (b"[]", "array event"),
+            (b"null", "null event"),
+            (b"{} {}", "multiple JSON values"),
+        ] {
+            let (output, result) = run_native_retention_script(
+                script,
+                NativeRetentionInput {
+                    event_name: Some("push"),
+                    git_ref: Some("refs/heads/main"),
+                    repository: Some(repository),
+                    event_json: Some(payload),
+                    missing_event_file: false,
+                    missing_event_path: false,
+                    missing_output: false,
+                    output_path_is_directory: false,
+                },
+            );
+            assert!(!output.status.success(), "accepted {name}");
+            assert!(result.is_empty(), "wrote output for {name}: {result:?}");
+        }
+        for (
+            event_name,
+            git_ref,
+            repo,
+            payload,
+            missing_event_file,
+            missing_event_path,
+            missing_output,
+            output_path_is_directory,
+            label,
+        ) in [
+            (
+                None,
+                Some("refs/heads/main"),
+                Some(repository),
+                Some(br#"{"ref":"refs/heads/main"}"#.as_slice()),
+                false,
+                false,
+                false,
+                false,
+                "missing event name",
+            ),
+            (
+                Some("push"),
+                None,
+                Some(repository),
+                Some(br#"{"ref":"refs/heads/main"}"#.as_slice()),
+                false,
+                false,
+                false,
+                false,
+                "missing runner ref",
+            ),
+            (
+                Some("push"),
+                Some("refs/heads/main"),
+                None,
+                Some(br#"{"ref":"refs/heads/main"}"#.as_slice()),
+                false,
+                false,
+                false,
+                false,
+                "missing repository",
+            ),
+            (
+                Some("push"),
+                Some("refs/heads/main"),
+                Some(repository),
+                Some(br#"{"ref":"refs/heads/main"}"#.as_slice()),
+                true,
+                false,
+                false,
+                false,
+                "missing event file",
+            ),
+            (
+                Some("push"),
+                Some("refs/heads/main"),
+                Some(repository),
+                Some(br#"{"ref":"refs/heads/main"}"#.as_slice()),
+                false,
+                true,
+                false,
+                false,
+                "missing event path input",
+            ),
+            (
+                Some("push"),
+                Some("refs/heads/main"),
+                Some(repository),
+                Some(br#"{"ref":"refs/heads/main"}"#.as_slice()),
+                false,
+                false,
+                true,
+                false,
+                "missing output input",
+            ),
+            (
+                Some("push"),
+                Some("refs/heads/main"),
+                Some(repository),
+                Some(br#"{"ref":"refs/heads/main"}"#.as_slice()),
+                false,
+                false,
+                false,
+                true,
+                "output path failure",
+            ),
+        ] {
+            let (output, result) = run_native_retention_script(
+                script,
+                NativeRetentionInput {
+                    event_name,
+                    git_ref,
+                    repository: repo,
+                    event_json: payload,
+                    missing_event_file,
+                    missing_event_path,
+                    missing_output,
+                    output_path_is_directory,
+                },
+            );
+            assert!(!output.status.success(), "accepted {label}");
+            assert!(result.is_empty(), "wrote output for {label}: {result:?}");
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn native_retention_invalid_input_cannot_succeed() {
+        let script = native_retention_step(&valid_ci_workflow()).to_string();
+        let repository = "rabii-chaarani/codebaseGraph";
+        for (payload, label) in [
+            (b"{".as_slice(), "malformed JSON"),
+            (b"[]", "array event"),
+            (b"null", "null event"),
+            (b"{} {}", "multiple JSON values"),
+        ] {
+            let (output, result) = run_native_retention_script(
+                &script,
+                NativeRetentionInput {
+                    event_name: Some("push"),
+                    git_ref: Some("refs/heads/main"),
+                    repository: Some(repository),
+                    event_json: Some(payload),
+                    missing_event_file: false,
+                    missing_event_path: false,
+                    missing_output: false,
+                    output_path_is_directory: false,
+                },
+            );
+            assert!(!output.status.success(), "accepted {label}");
+            assert!(result.is_empty(), "wrote output for {label}: {result:?}");
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn ci_identity_body_executes_trusted_release_pr_and_fails_closed() {
+        let ci = valid_ci_workflow();
+        let script = extract_ci_step(&ci, "identity");
+        let base = CI_REQUIRED_BASE;
+        let head = CI_REQUIRED_SHA;
+        let event = github_pr(124, base, head, "labeled");
+        let event_text = event.to_string();
+        let live = event["pull_request"].to_string();
+        let main =
+            json!({"ref":"refs/heads/main","object":{"type":"commit","sha":base}}).to_string();
+        let requests = [
+            ("api repos/owner/repo/pulls/124", live.as_str(), 0),
+            ("api repos/owner/repo/git/ref/heads/main", main.as_str(), 0),
+        ];
+        let accepted = run_ci_step(
+            script,
+            &[("GITHUB_EVENT_JSON", event_text.as_str())],
+            &[],
+            &requests,
+            &[],
+            None,
+        );
+        assert!(
+            accepted.output.status.success(),
+            "{}{}",
+            String::from_utf8_lossy(&accepted.output.stdout),
+            String::from_utf8_lossy(&accepted.output.stderr)
+        );
+        assert_eq!(
+            accepted.calls.lines().collect::<Vec<_>>(),
+            [
+                "gh api repos/owner/repo/pulls/124",
+                "gh api repos/owner/repo/git/ref/heads/main"
+            ],
+            "calls={} stderr={}",
+            accepted.calls,
+            String::from_utf8_lossy(&accepted.output.stderr)
+        );
+        let outputs = String::from_utf8(
+            accepted
+                .stdout_files
+                .iter()
+                .find(|(path, _)| path == "output")
+                .unwrap()
+                .1
+                .clone(),
+        )
+        .unwrap();
+        assert!(outputs.contains("candidate=true\n"), "{outputs}");
+        assert!(outputs.contains(&format!("base_sha={base}\n")), "{outputs}");
+        assert!(outputs.contains(&format!("head_sha={head}\n")), "{outputs}");
+        let decision_bytes = &accepted
+            .stdout_files
+            .iter()
+            .find(|(path, _)| path == "cod108/decision.json")
+            .unwrap()
+            .1;
+        let decision: Value = serde_json::from_slice(decision_bytes).unwrap();
+        assert_eq!(decision["schema_version"], 1);
+        assert_eq!(decision["mode"], "full");
+        assert_eq!(decision["reason_code"], "eligibility-pending");
+        assert_eq!(decision["repository_id"], "12345");
+        assert_eq!(decision["pr_number"], 124);
+
+        for mutation in [
+            "draft", "creator", "label", "head_sha", "base_sha", "repo_id", "action",
+        ] {
+            let mut changed = serde_json::from_str::<Value>(&live).unwrap();
+            match mutation {
+                "draft" => changed["draft"] = json!(true),
+                "creator" => changed["user"]["id"] = json!(17),
+                "label" => changed["labels"] = json!([]),
+                "head_sha" => changed["head"]["sha"] = json!(CI_REQUIRED_BASE),
+                "base_sha" => changed["base"]["sha"] = json!(CI_REQUIRED_SHA),
+                "repo_id" => changed["head"]["repo"]["id"] = json!(77),
+                "action" => changed["state"] = json!("closed"),
+                _ => unreachable!(),
+            }
+            let changed_text = changed.to_string();
+            let changed_requests = [(requests[0].0, changed_text.as_str(), 0), requests[1]];
+            let rejected = run_ci_step(
+                script,
+                &[("GITHUB_EVENT_JSON", event_text.as_str())],
+                &[],
+                &changed_requests,
+                &[],
+                None,
+            );
+            assert!(
+                rejected.output.status.success(),
+                "untrusted {mutation} should select full: {}",
+                String::from_utf8_lossy(&rejected.output.stderr)
+            );
+            let output = String::from_utf8(
+                rejected
+                    .stdout_files
+                    .iter()
+                    .find(|(path, _)| path == "output")
+                    .unwrap()
+                    .1
+                    .clone(),
+            )
+            .unwrap();
+            assert!(
+                output.contains("candidate=false\n"),
+                "accepted {mutation}: {output}"
+            );
+            assert!(
+                output.contains("base_sha=") && output.contains("head_sha="),
+                "{output}"
+            );
+        }
+
+        let no_replies = run_ci_step(
+            script,
+            &[("GITHUB_EVENT_JSON", event_text.as_str())],
+            &[],
+            &[],
+            &[],
+            None,
+        );
+        assert!(
+            no_replies.output.status.success(),
+            "identity API failure must select full: {}",
+            String::from_utf8_lossy(&no_replies.output.stderr)
+        );
+        let failed_output = String::from_utf8(
+            no_replies
+                .stdout_files
+                .iter()
+                .find(|(path, _)| path == "output")
+                .unwrap()
+                .1
+                .clone(),
+        )
+        .unwrap();
+        assert!(
+            failed_output.contains("candidate=false\n"),
+            "{failed_output}"
+        );
+        let bad_event = event.to_string().replace("owner/repo", "fork/repo");
+        let rejected = run_ci_step(
+            script,
+            &[("GITHUB_EVENT_JSON", bad_event.as_str())],
+            &[],
+            &[],
+            &[],
+            None,
+        );
+        assert!(!rejected.output.status.success());
+        assert!(
+            rejected.calls.is_empty(),
+            "repository identity failure must precede API calls: {}",
+            rejected.calls
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn ci_decision_body_executes_protected_classifier_and_falls_back_full() {
+        let ci = valid_ci_workflow();
+        let script = extract_ci_step(&ci, "decision");
+        let base = CI_REQUIRED_BASE;
+        let head = CI_REQUIRED_SHA;
+        let initial = json!({
+            "schema_version": 1, "mode": "full", "reason_code": "eligibility-pending",
+            "base_sha": base, "head_sha": head, "repository": "owner/repo",
+            "repository_id": "12345", "event_name": "pull_request", "run_sha": head,
+            "pr_number": 124, "positive_metadata": false
+        })
+        .to_string();
+        let core = json!({"schema_version":1,"mode":"lightweight","reason_code":"metadata-only-version-bump","base_sha":base,"head_sha":head}).to_string();
+        let git_fetch = "protocol.file.allow=never";
+        let workspace_ci = "ci-mode";
+        let success = run_ci_step(
+            script,
+            &[
+                ("CANDIDATE", "true"),
+                ("TRUSTED_BASE_OUTCOME", "success"),
+                ("OBJECT_STORE_OUTCOME", "success"),
+            ],
+            &[
+                ("cod108/decision.json", initial.as_bytes()),
+                (
+                    "workspace/trusted-base/crates/xtask/src/ci.rs",
+                    b"trusted code",
+                ),
+            ],
+            &[],
+            &[(git_fetch, "", 0)],
+            Some((workspace_ci, &core, 0)),
+        );
+        assert!(
+            success.output.status.success(),
+            "{}{}",
+            String::from_utf8_lossy(&success.output.stdout),
+            String::from_utf8_lossy(&success.output.stderr)
+        );
+        assert_eq!(
+            success.calls.lines().count(),
+            2,
+            "calls={} stderr={}",
+            success.calls,
+            String::from_utf8_lossy(&success.output.stderr)
+        );
+        let git_calls: Vec<&str> = success
+            .calls
+            .lines()
+            .filter(|line| line.starts_with("git "))
+            .collect();
+        let cargo_calls: Vec<&str> = success
+            .calls
+            .lines()
+            .filter(|line| line.starts_with("cargo "))
+            .collect();
+        assert_eq!(git_calls.len(), 1, "{}", success.calls);
+        assert_eq!(cargo_calls.len(), 1, "{}", success.calls);
+        let object_store = git_calls[0].split_whitespace().nth(2).unwrap();
+        assert_eq!(
+            git_calls[0],
+            format!("git -C {object_store} -c protocol.file.allow=never fetch --no-tags --no-recurse-submodules https://github.com/owner/repo.git {head}")
+        );
+        let trusted_root = object_store
+            .strip_suffix("/git-objects")
+            .unwrap()
+            .to_string()
+            + "/trusted-base";
+        assert_eq!(
+            cargo_calls[0],
+            format!("cargo cwd={trusted_root} argv=run -p xtask --locked -- ci-mode --repo {object_store} --base-sha {base} --head-sha {head}")
+        );
+        let output = String::from_utf8(
+            success
+                .stdout_files
+                .iter()
+                .find(|(p, _)| p == "output")
+                .unwrap()
+                .1
+                .clone(),
+        )
+        .unwrap();
+        assert!(
+            output.contains("mode=lightweight\n"),
+            "{output}; calls={}; stderr={}",
+            success.calls,
+            String::from_utf8_lossy(&success.output.stderr)
+        );
+        let summary = String::from_utf8(
+            success
+                .stdout_files
+                .iter()
+                .find(|(p, _)| p == "summary")
+                .unwrap()
+                .1
+                .clone(),
+        )
+        .unwrap();
+        assert!(summary.contains("CI mode: lightweight"), "{summary}");
+        let final_decision: Value = serde_json::from_slice(
+            &success
+                .stdout_files
+                .iter()
+                .find(|(p, _)| p == "cod108/decision.json")
+                .unwrap()
+                .1,
+        )
+        .unwrap();
+        assert_eq!(final_decision["positive_metadata"], true);
+        assert_eq!(final_decision["base_sha"], base);
+        assert_eq!(final_decision["head_sha"], head);
+
+        for (label, base_outcome, object_outcome, git_cases, cargo_case) in [
+            ("B checkout failed", "failure", "success", Vec::new(), None),
+            (
+                "H fetch failed",
+                "success",
+                "success",
+                vec![(git_fetch, "failed", 1)],
+                None,
+            ),
+        ] {
+            let fallback = run_ci_step(
+                script,
+                &[
+                    ("CANDIDATE", "true"),
+                    ("TRUSTED_BASE_OUTCOME", base_outcome),
+                    ("OBJECT_STORE_OUTCOME", object_outcome),
+                ],
+                &[
+                    ("cod108/decision.json", initial.as_bytes()),
+                    (
+                        "workspace/trusted-base/crates/xtask/src/ci.rs",
+                        b"trusted code",
+                    ),
+                ],
+                &[],
+                &git_cases,
+                cargo_case,
+            );
+            assert!(
+                fallback.output.status.success(),
+                "{label}: {}{}",
+                String::from_utf8_lossy(&fallback.output.stdout),
+                String::from_utf8_lossy(&fallback.output.stderr)
+            );
+            assert!(
+                !fallback.calls.contains("cargo "),
+                "{label} must not invoke compiler/helper: {}",
+                fallback.calls
+            );
+            let final_decision: Value = serde_json::from_slice(
+                &fallback
+                    .stdout_files
+                    .iter()
+                    .find(|(p, _)| p == "cod108/decision.json")
+                    .unwrap()
+                    .1,
+            )
+            .unwrap();
+            assert_eq!(final_decision["mode"], "full", "{label}");
+            assert_eq!(final_decision["positive_metadata"], false, "{label}");
+            assert_eq!(final_decision["base_sha"], base, "{label}");
+            assert_eq!(final_decision["head_sha"], head, "{label}");
+        }
+
+        let invalid_core = json!({"schema_version":1,"mode":"lightweight","reason_code":"lightweight","base_sha":base,"head_sha":head}).to_string();
+        let invalid = run_ci_step(
+            script,
+            &[
+                ("CANDIDATE", "true"),
+                ("TRUSTED_BASE_OUTCOME", "success"),
+                ("OBJECT_STORE_OUTCOME", "success"),
+            ],
+            &[
+                ("cod108/decision.json", initial.as_bytes()),
+                (
+                    "workspace/trusted-base/crates/xtask/src/ci.rs",
+                    b"trusted code",
+                ),
+            ],
+            &[],
+            &[(git_fetch, "", 0)],
+            Some((workspace_ci, &invalid_core, 0)),
+        );
+        assert!(
+            invalid.output.status.success(),
+            "invalid helper output must fall back: {}",
+            String::from_utf8_lossy(&invalid.output.stderr)
+        );
+        let final_decision: Value = serde_json::from_slice(
+            &invalid
+                .stdout_files
+                .iter()
+                .find(|(p, _)| p == "cod108/decision.json")
+                .unwrap()
+                .1,
+        )
+        .unwrap();
+        assert_eq!(final_decision["mode"], "full");
+        assert_eq!(final_decision["reason_code"], "classifier-invalid-output");
+        assert!(!final_decision["positive_metadata"].as_bool().unwrap());
+    }
+
+    #[cfg(unix)]
+    fn required_body(ci: &YamlValue) -> &str {
+        let job = yaml_path(ci, &["jobs", "required"]).unwrap();
+        yaml_step_by_name(job, "Require current mode and mandatory jobs")
+            .and_then(|step| yaml_path(step, &["run"]))
+            .and_then(YamlValue::as_str)
+            .unwrap()
+    }
+
+    #[cfg(unix)]
+    fn required_decision(mode: &str, base: &str, head: &str, positive_metadata: bool) -> Value {
+        json!({
+            "schema_version":1,
+            "mode":mode,
+            "reason_code":if positive_metadata {"metadata-only-version-bump"} else {"changed-path-set"},
+            "base_sha":base,
+            "head_sha":head,
+            "repository":"owner/repo",
+            "repository_id":"12345",
+            "event_name":"pull_request",
+            "run_sha":CI_REQUIRED_RUN_SHA,
+            "pr_number":124,
+            "positive_metadata":positive_metadata
+        })
+    }
+
+    #[cfg(unix)]
+    fn required_results(mode: &str) -> Value {
+        let heavy = if mode == "full" { "success" } else { "skipped" };
+        json!({
+            "classify":{"result":"success"},
+            "fmt":{"result":"success"},
+            "supply-chain":{"result":"success"},
+            "repository-policy":{"result":"success"},
+            "clippy":{"result":heavy},
+            "publish-dry-run":{"result":heavy},
+            "native":{"result":heavy},
+            "native_retention":{"result":"success"}
+        })
+    }
+
+    #[cfg(unix)]
+    fn required_pr_event(base: &str, head: &str, action: &str) -> Value {
+        json!({
+            "action":action,
+            "number":124,
+            "repository":{"full_name":"owner/repo","id":12345},
+            "pull_request":{
+                "number":124,
+                "state":"open",
+                "draft":false,
+                "user":{"id":41898282,"login":"github-actions[bot]","type":"Bot"},
+                "base":{"ref":"main","sha":base,"repo":{"full_name":"owner/repo","id":12345}},
+                "head":{"ref":"release-please--branches--main--components--codebase-graph","sha":head,"repo":{"full_name":"owner/repo","id":12345}},
+                "labels":[{"name":"autorelease: pending"}]
+            }
+        })
+    }
+
+    #[cfg(unix)]
+    fn required_pr_api(base: &str, head: &str, state: &str, action: &str) -> (Value, Value) {
+        let event = required_pr_event(base, head, action);
+        let mut pr = event["pull_request"].clone();
+        pr["base"]["sha"] = json!(base);
+        pr["head"]["sha"] = json!(head);
+        pr["state"] = json!(state);
+        (
+            pr,
+            json!({"ref":"refs/heads/main","object":{"type":"commit","sha":base}}),
+        )
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn required_executes_current_full_and_lightweight_bodies_with_eight_exact_results() {
+        let ci = valid_ci_workflow();
+        let run = required_body(&ci);
+        let base = CI_REQUIRED_BASE;
+        let head = CI_REQUIRED_SHA;
+        let (pr, main) = required_pr_api(base, head, "open", "labeled");
+        let event = required_pr_event(base, head, "labeled");
+        let replies = [
+            ApiReply {
+                request: "api repos/owner/repo/pulls/124",
+                body: serde_json::to_vec(&pr).unwrap(),
+                exit: 0,
+            },
+            ApiReply {
+                request: "api repos/owner/repo/git/ref/heads/main",
+                body: serde_json::to_vec(&main).unwrap(),
+                exit: 0,
+            },
+        ];
+        let full_decision = required_decision("full", base, head, false);
+        let full = run_required_result(
+            run,
+            &required_results("full"),
+            &full_decision,
+            "pull_request",
+            &event,
+            "refs/pull/124/merge",
+            &replies,
+        );
+        assert!(
+            full.output.status.success(),
+            "full: {}{}",
+            String::from_utf8_lossy(&full.output.stdout),
+            String::from_utf8_lossy(&full.output.stderr)
+        );
+        assert_eq!(
+            full.calls.lines().collect::<Vec<_>>(),
+            [
+                "api repos/owner/repo/pulls/124",
+                "api repos/owner/repo/git/ref/heads/main"
+            ]
+        );
+        assert!(
+            full.summary.contains("Required CI: full"),
+            "{}",
+            full.summary
+        );
+        assert!(
+            full.summary.contains("Intentional skips:"),
+            "{}",
+            full.summary
+        );
+
+        let light_decision = required_decision("lightweight", base, head, true);
+        let mut trusted_pr = pr.clone();
+        trusted_pr["base"]["ref"] = json!("main");
+        trusted_pr["base"]["repo"]["full_name"] = json!("owner/repo");
+        trusted_pr["head"]["ref"] =
+            json!("release-please--branches--main--components--codebase-graph");
+        trusted_pr["head"]["repo"]["full_name"] = json!("owner/repo");
+        trusted_pr["labels"] = json!([{"name":"autorelease: pending"}]);
+        let light_replies = [
+            ApiReply {
+                request: "api repos/owner/repo/pulls/124",
+                body: serde_json::to_vec(&trusted_pr).unwrap(),
+                exit: 0,
+            },
+            ApiReply {
+                request: "api repos/owner/repo/git/ref/heads/main",
+                body: serde_json::to_vec(&main).unwrap(),
+                exit: 0,
+            },
+        ];
+        let light_event = required_pr_event(base, head, "labeled");
+        let light = run_required_result(
+            run,
+            &required_results("lightweight"),
+            &light_decision,
+            "pull_request",
+            &light_event,
+            "refs/pull/124/merge",
+            &light_replies,
+        );
+        assert!(
+            light.output.status.success(),
+            "lightweight: {}{}",
+            String::from_utf8_lossy(&light.output.stdout),
+            String::from_utf8_lossy(&light.output.stderr)
+        );
+        assert_eq!(
+            light.calls.lines().collect::<Vec<_>>(),
+            [
+                "api repos/owner/repo/pulls/124",
+                "api repos/owner/repo/git/ref/heads/main"
+            ]
+        );
+        assert!(
+            light.summary.contains("Required CI: lightweight"),
+            "{}",
+            light.summary
+        );
+        assert!(
+            light
+                .summary
+                .contains("Intentional skips: clippy, native, publish-dry-run"),
+            "{}",
+            light.summary
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn required_accepts_main_push_only_in_full_mode_and_rejects_stale_full_pr() {
+        let ci = valid_ci_workflow();
+        let run = required_body(&ci);
+        let base = CI_REQUIRED_BASE;
+        let head = CI_REQUIRED_SHA;
+        let push = json!({"before":base,"after":head,"ref":"refs/heads/main","repository":{"full_name":"owner/repo","id":12345}});
+        let full = required_decision("full", base, head, false);
+        let mut full = full;
+        full["event_name"] = json!("push");
+        full["run_sha"] = json!(head);
+        full["pr_number"] = json!(0);
+        let success = run_required_result(
+            run,
+            &required_results("full"),
+            &full,
+            "push",
+            &push,
+            "refs/heads/main",
+            &[],
+        );
+        assert!(
+            success.output.status.success(),
+            "main push full must succeed: stdout={} stderr={} calls={}",
+            String::from_utf8_lossy(&success.output.stdout),
+            String::from_utf8_lossy(&success.output.stderr),
+            success.calls
+        );
+        assert!(
+            success.calls.is_empty(),
+            "push must not call PR APIs: {}",
+            success.calls
+        );
+        assert!(
+            success.summary.contains("Required CI: full"),
+            "{}",
+            success.summary
+        );
+
+        let event = required_pr_event(base, head, "synchronize");
+        let (mut live, main) = required_pr_api(base, head, "open", "synchronize");
+        live["head"]["sha"] = json!(CI_REQUIRED_BASE);
+        let live_text = live.to_string();
+        let main_text = main.to_string();
+        let replies = [
+            ApiReply {
+                request: "api repos/owner/repo/pulls/124",
+                body: live_text.into_bytes(),
+                exit: 0,
+            },
+            ApiReply {
+                request: "api repos/owner/repo/git/ref/heads/main",
+                body: main_text.into_bytes(),
+                exit: 0,
+            },
+        ];
+        let stale = run_required_result(
+            run,
+            &required_results("full"),
+            &required_decision("full", base, head, false),
+            "pull_request",
+            &event,
+            "refs/pull/124/merge",
+            &replies,
+        );
+        assert!(
+            !stale.output.status.success(),
+            "full mode must fail when final current PR SHA differs from tested SHA"
+        );
+        assert_eq!(stale.calls.lines().count(), 2, "{}", stale.calls);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn required_rejects_malformed_decision_schema_and_selector_output() {
+        let ci = valid_ci_workflow();
+        let run = required_body(&ci);
+        let base = CI_REQUIRED_BASE;
+        let head = CI_REQUIRED_SHA;
+        let event = required_pr_event(base, head, "synchronize");
+        let (live, main) = required_pr_api(base, head, "open", "synchronize");
+        let replies = [
+            ApiReply {
+                request: "api repos/owner/repo/pulls/124",
+                body: serde_json::to_vec(&live).unwrap(),
+                exit: 0,
+            },
+            ApiReply {
+                request: "api repos/owner/repo/git/ref/heads/main",
+                body: serde_json::to_vec(&main).unwrap(),
+                exit: 0,
+            },
+        ];
+        for decision in [
+            Value::Null,
+            json!({"schema_version":2}),
+            json!({"schema_version":1,"mode":"unknown"}),
+        ] {
+            let result = run_required_result(
+                run,
+                &required_results("full"),
+                &decision,
+                "pull_request",
+                &event,
+                "refs/pull/124/merge",
+                &replies,
+            );
+            assert!(
+                !result.output.status.success(),
+                "accepted malformed selector: {decision}"
+            );
+        }
+        let light = required_decision("lightweight", base, head, true);
+        let mut invalid_reason = light.clone();
+        invalid_reason["reason_code"] = json!("lightweight");
+        assert!(!run_required_result(
+            run,
+            &required_results("lightweight"),
+            &invalid_reason,
+            "pull_request",
+            &event,
+            "refs/pull/124/merge",
+            &replies
+        )
+        .output
+        .status
+        .success());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn required_rejects_missing_malformed_or_wrong_mode_results_and_stale_identity() {
+        let ci = valid_ci_workflow();
+        let run = required_body(&ci);
+        let base = CI_REQUIRED_BASE;
+        let head = CI_REQUIRED_SHA;
+        let event = required_pr_event(base, head, "synchronize");
+        let (pr, main) = required_pr_api(base, head, "open", "synchronize");
+        let replies = [
+            ApiReply {
+                request: "api repos/owner/repo/pulls/124",
+                body: serde_json::to_vec(&pr).unwrap(),
+                exit: 0,
+            },
+            ApiReply {
+                request: "api repos/owner/repo/git/ref/heads/main",
+                body: serde_json::to_vec(&main).unwrap(),
+                exit: 0,
+            },
+        ];
+        let full_decision = required_decision("full", base, head, false);
+        let valid = required_results("full");
+        let pass = run_required_result(
+            run,
+            &valid,
+            &full_decision,
+            "pull_request",
+            &event,
+            "refs/pull/124/merge",
+            &replies,
+        );
+        assert!(
+            pass.output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&pass.output.stderr)
+        );
+
+        for absent in ["classify", "repository-policy", "native_retention"] {
+            let mut results = valid.clone();
+            results.as_object_mut().unwrap().remove(absent);
+            let rejected = run_required_result(
+                run,
+                &results,
+                &full_decision,
+                "pull_request",
+                &event,
+                "refs/pull/124/merge",
+                &replies,
+            );
+            assert!(
+                !rejected.output.status.success(),
+                "accepted missing result {absent}: {}",
+                String::from_utf8_lossy(&rejected.output.stderr)
+            );
+        }
+        for (job, state) in [
+            ("classify", "skipped"),
+            ("fmt", "cancelled"),
+            ("supply-chain", "failure"),
+            ("repository-policy", "skipped"),
+            ("native_retention", "failure"),
+            ("clippy", "skipped"),
+            ("native", "cancelled"),
+        ] {
+            let mut results = valid.clone();
+            results[job]["result"] = json!(state);
+            let rejected = run_required_result(
+                run,
+                &results,
+                &full_decision,
+                "pull_request",
+                &event,
+                "refs/pull/124/merge",
+                &replies,
+            );
+            assert!(
+                !rejected.output.status.success(),
+                "accepted {job}={state}: {}",
+                String::from_utf8_lossy(&rejected.output.stderr)
+            );
+        }
+        let mut extra = valid.clone();
+        extra["unexpected"] = json!({"result":"success"});
+        assert!(!run_required_result(
+            run,
+            &extra,
+            &full_decision,
+            "pull_request",
+            &event,
+            "refs/pull/124/merge",
+            &replies
+        )
+        .output
+        .status
+        .success());
+
+        let light = required_decision("lightweight", base, head, true);
+        for (job, state) in [
+            ("clippy", "success"),
+            ("publish-dry-run", "failure"),
+            ("native", "cancelled"),
+        ] {
+            let mut results = required_results("lightweight");
+            results[job]["result"] = json!(state);
+            assert!(
+                !run_required_result(
+                    run,
+                    &results,
+                    &light,
+                    "pull_request",
+                    &event,
+                    "refs/pull/124/merge",
+                    &replies
+                )
+                .output
+                .status
+                .success(),
+                "accepted unexpected {job}={state}"
+            );
+        }
+        for mutation in ["draft", "creator", "label", "head", "base"] {
+            let mut changed = pr.clone();
+            match mutation {
+                "draft" => changed["draft"] = json!(true),
+                "creator" => changed["user"]["id"] = json!(123),
+                "label" => changed["labels"] = json!([]),
+                "head" => changed["head"]["sha"] = json!(CI_REQUIRED_BASE),
+                "base" => changed["base"]["sha"] = json!(CI_REQUIRED_SHA),
+                _ => unreachable!(),
+            }
+            let changed_replies = [
+                ApiReply {
+                    request: "api repos/owner/repo/pulls/124",
+                    body: serde_json::to_vec(&changed).unwrap(),
+                    exit: 0,
+                },
+                replies[1].clone(),
+            ];
+            assert!(
+                !run_required_result(
+                    run,
+                    &required_results("lightweight"),
+                    &light,
+                    "pull_request",
+                    &event,
+                    "refs/pull/124/merge",
+                    &changed_replies
+                )
+                .output
+                .status
+                .success(),
+                "accepted stale/mutated {mutation}"
+            );
+        }
+        let unavailable = [ApiReply {
+            request: "api repos/owner/repo/pulls/124",
+            body: b"{}".to_vec(),
+            exit: 1,
+        }];
+        assert!(!run_required_result(
+            run,
+            &valid,
+            &full_decision,
+            "pull_request",
+            &event,
+            "refs/pull/124/merge",
+            &unavailable
+        )
+        .output
+        .status
+        .success());
+    }
+
+    fn valid_ci_workflow() -> YamlValue {
+        yaml_serde::from_str(include_str!("../../../.github/workflows/ci.yml")).unwrap()
+    }
+
+    #[test]
+    fn workflows_reject_removed_platform_targets() {
+        for removed in ["linux-x86_64", "macos-x86_64"] {
+            let mut ci = valid_ci_workflow();
+            ci["jobs"]["native"]["strategy"]["matrix"]["include"]
+                .as_sequence_mut()
+                .unwrap()
+                .push(
+                    yaml_serde::from_str(&format!("target: {removed}\nrun-tests: true")).unwrap(),
+                );
+            let mut issues = Vec::new();
+            check_workflow_policy(
+                &ci,
+                &valid_native_workflow(),
+                &yaml_serde::from_str(&valid_release_workflow_text()).unwrap(),
+                &mut issues,
+            );
+            assert!(
+                issues.iter().any(|s| s.contains("native-target-support")),
+                "{issues:?}"
+            );
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn installer_rejects_removed_hosts_before_reading_archives_or_writing_destinations() {
+        let root = super::unique_temp_dir("unsupported_installer_hosts").unwrap();
+        let bin = root.join("bin");
+        fs::create_dir(&bin).unwrap();
+        let uname = bin.join("uname");
+        let target = root.join("installed");
+        let path = std::env::join_paths(
+            std::iter::once(bin.clone())
+                .chain(std::env::split_paths(&std::env::var_os("PATH").unwrap())),
+        )
+        .unwrap();
+        let installer =
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../release/install/install.sh");
+        for system in ["Linux", "Darwin"] {
+            fs::write(
+                &uname,
+                format!("#!/bin/sh\ncase \"$1\" in -s) echo {system} ;; -m) echo x86_64 ;; esac\n"),
+            )
+            .unwrap();
+            super::set_executable(&uname).unwrap();
+            let output = std::process::Command::new("bash")
+                .arg(&installer)
+                .arg("--bin-dir")
+                .arg(&target)
+                .arg("--dry-run")
+                .env("PATH", &path)
+                .output()
+                .unwrap();
+            assert!(!output.status.success());
+            assert!(String::from_utf8_lossy(&output.stderr).contains("Supported platforms"));
+            assert!(!target.exists());
+        }
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    fn valid_native_workflow() -> YamlValue {
+        yaml_serde::from_str(include_str!("../../../.github/workflows/native.yml")).unwrap()
+    }
+
+    #[test]
+    fn native_test_failure_cannot_authorize_artifact_production() {
+        for replacement in ["${{ always() }}", "${{ !inputs.run-tests }}"] {
+            let mut native = valid_native_workflow();
+            native["jobs"]["native"]["if"] = YamlValue::String(replacement.into());
+            let mut issues = Vec::new();
+            check_workflow_policy(
+                &valid_ci_workflow(),
+                &native,
+                &yaml_serde::from_str(&valid_release_workflow_text()).unwrap(),
+                &mut issues,
+            );
+            assert!(
+                issues.iter().any(|i| i.contains("native-test-gate")),
+                "{issues:?}"
+            );
+        }
     }
 
     fn valid_release_workflow_text() -> String {
         include_str!("../../../.github/workflows/release.yml").to_string()
+    }
+
+    fn workflow_policy_issues_for_ci(ci: &YamlValue) -> Vec<String> {
+        let mut issues = Vec::new();
+        check_workflow_policy(
+            ci,
+            &valid_native_workflow(),
+            &yaml_serde::from_str(&valid_release_workflow_text()).unwrap(),
+            &mut issues,
+        );
+        issues
     }
 
     fn workflow_policy_issues(release_text: &str) -> Vec<String> {
@@ -2407,6 +6446,230 @@ mod tests {
             &mut issues,
         );
         issues
+    }
+
+    #[test]
+    fn ci_mode_policy_rejects_missing_selector_wiring_and_repository_gate_ownership() {
+        let valid = valid_ci_workflow();
+        type CiMutation = (&'static str, Box<dyn Fn(&mut YamlValue)>);
+        let cases: Vec<CiMutation> = vec![
+            (
+                "missing selector",
+                Box::new(|ci| {
+                    ci["jobs"]
+                        .as_mapping_mut()
+                        .unwrap()
+                        .remove(YamlValue::String("classify".into()));
+                }),
+            ),
+            (
+                "unexpected event",
+                Box::new(|ci| {
+                    ci["on"]["workflow_dispatch"] = yaml_serde::from_str("{}").unwrap();
+                }),
+            ),
+            (
+                "wrong protected checkout ref",
+                Box::new(|ci| {
+                    ci["jobs"]["classify"]["steps"][1]["with"]["ref"] =
+                        YamlValue::String("github.sha".into());
+                }),
+            ),
+            (
+                "head helper path",
+                Box::new(|ci| {
+                    let step = ci["jobs"]["classify"]["steps"]
+                        .as_sequence_mut()
+                        .unwrap()
+                        .iter_mut()
+                        .find(|step| step.get("id").and_then(YamlValue::as_str) == Some("decision"))
+                        .unwrap();
+                    let run = step["run"].as_str().unwrap().replace(
+                        "trusted-base/crates/xtask/src/ci.rs",
+                        "git-objects/crates/xtask/src/ci.rs",
+                    );
+                    step["run"] = YamlValue::String(run);
+                }),
+            ),
+            (
+                "missing common policy gate",
+                Box::new(|ci| {
+                    ci["jobs"]["required"]["needs"]
+                        .as_sequence_mut()
+                        .unwrap()
+                        .retain(|need| need.as_str() != Some("repository-policy"));
+                }),
+            ),
+            (
+                "heavy job unconditional",
+                Box::new(|ci| {
+                    ci["jobs"]["native"]["if"] = YamlValue::String("always()".into());
+                }),
+            ),
+            (
+                "decision output unbound",
+                Box::new(|ci| {
+                    ci["jobs"]["classify"]["outputs"]["decision"] =
+                        YamlValue::String("${{ steps.identity.outputs.decision }}".into());
+                }),
+            ),
+            (
+                "required skips results",
+                Box::new(|ci| {
+                    ci["jobs"]["required"]["steps"][0]["run"] =
+                        YamlValue::String("echo success".into());
+                }),
+            ),
+        ];
+        for (label, mutate) in cases {
+            let mut changed = valid.clone();
+            mutate(&mut changed);
+            let issues = workflow_policy_issues_for_ci(&changed);
+            assert!(!issues.is_empty(), "accepted {label}");
+        }
+        let missing_release_gate = workflow_policy_issues_for_ci(&valid);
+        assert!(
+            missing_release_gate.is_empty(),
+            "actual consumer baseline rejected: {missing_release_gate:?}"
+        );
+        let mut without_gate = valid;
+        without_gate["jobs"]["repository-policy"]["steps"]
+            .as_sequence_mut()
+            .unwrap()
+            .retain(|step| {
+                step.get("name").and_then(YamlValue::as_str)
+                    != Some("Check repository release policy")
+            });
+        let issues = workflow_policy_issues_for_ci(&without_gate);
+        assert!(
+            issues
+                .iter()
+                .any(|issue| issue.contains("repository-release-gate-missing")
+                    || issue.contains("repository-policy-job-invalid")),
+            "missing repository gate not detected: {issues:?}"
+        );
+    }
+
+    #[test]
+    fn workflow_policy_accepts_actual_repository_purpose_and_preflight_wiring() {
+        let ci = valid_ci_workflow();
+        let issues = workflow_policy_issues_for_ci(&ci);
+        assert!(issues.is_empty(), "actual CI YAML rejected: {issues:?}");
+        let release = yaml_serde::from_str::<YamlValue>(&valid_release_workflow_text()).unwrap();
+        assert!(crate_preflight_policy_valid(&release));
+    }
+
+    #[test]
+    fn workflow_policy_rejects_mutated_purpose_and_preflight_consumers() {
+        type CiMutation = (&'static str, Box<dyn Fn(&mut YamlValue)>);
+        let ci_mutations: Vec<CiMutation> = vec![
+            (
+                "conditional common policy job",
+                Box::new(|ci| {
+                    ci["jobs"]["repository-policy"]["if"] = YamlValue::String("always()".into())
+                }),
+            ),
+            (
+                "purpose output not used",
+                Box::new(|ci| {
+                    ci["jobs"]["repository-policy"]["steps"][2]["env"]["RELEASE_CANDIDATE"] =
+                        YamlValue::String("true".into())
+                }),
+            ),
+            (
+                "tested checkout sha not used",
+                Box::new(|ci| {
+                    ci["jobs"]["repository-policy"]["steps"][1]["with"]["ref"] =
+                        YamlValue::String("${{ steps.purpose.outputs.base_sha }}".into())
+                }),
+            ),
+            (
+                "credentials persist",
+                Box::new(|ci| {
+                    ci["jobs"]["repository-policy"]["steps"][1]["with"]["persist-credentials"] =
+                        YamlValue::Bool(true)
+                }),
+            ),
+            (
+                "candidate purpose invocation missing",
+                Box::new(|ci| {
+                    let run = ci["jobs"]["repository-policy"]["steps"][2]["run"]
+                        .as_str()
+                        .unwrap()
+                        .replace("true) args+=(--release-candidate) ;;", "true) ;; ");
+                    ci["jobs"]["repository-policy"]["steps"][2]["run"] = YamlValue::String(run);
+                }),
+            ),
+            (
+                "untrusted purpose demotes on identity failure",
+                Box::new(|ci| {
+                    let run = ci["jobs"]["repository-policy"]["steps"][0]["run"].as_str().unwrap().replace("gh api \"repos/$GITHUB_REPOSITORY/pulls/$number\" > \"$current\"", "gh api \"repos/$GITHUB_REPOSITORY/pulls/$number\" > \"$current\" || candidate=false");
+                    ci["jobs"]["repository-policy"]["steps"][0]["run"] = YamlValue::String(run);
+                }),
+            ),
+        ];
+        for (label, mutate) in ci_mutations {
+            let mut changed = valid_ci_workflow();
+            mutate(&mut changed);
+            let issues = workflow_policy_issues_for_ci(&changed);
+            assert!(
+                issues
+                    .iter()
+                    .any(|issue| issue.contains("repository-policy-job-invalid")),
+                "accepted {label}: {issues:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn workflow_policy_accepts_exact_cod103_stack_bases() {
+        assert!(workflow_policy_issues_for_ci(&valid_ci_workflow()).is_empty());
+    }
+
+    #[test]
+    fn workflow_policy_rejects_unknown_stack_base_and_push_namespace() {
+        for (event, branch) in [
+            ("pull_request", "cod103-stack/cod-110"),
+            ("pull_request", "*"),
+            ("push", "cod103-stack/cod-105"),
+            ("push", "*"),
+        ] {
+            let mut ci = valid_ci_workflow();
+            ci["on"][event]["branches"] = yaml_serde::from_str(&format!("- '{branch}'\n")).unwrap();
+            let issues = workflow_policy_issues_for_ci(&ci);
+            assert!(
+                issues
+                    .iter()
+                    .any(|issue| issue.contains("workflow-trigger-invalid")),
+                "accepted {event} branch {branch}: {issues:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn workflow_policy_rejects_privileged_pr_event() {
+        let mut ci = valid_ci_workflow();
+        ci["on"]["pull_request_target"] = yaml_serde::from_str("branches: [main]").unwrap();
+        let issues = workflow_policy_issues_for_ci(&ci);
+        assert!(
+            issues
+                .iter()
+                .any(|issue| issue.contains("workflow-privileged-pr-event")),
+            "{issues:?}"
+        );
+    }
+
+    #[test]
+    fn workflow_policy_rejects_unapproved_pull_request_activity() {
+        let mut ci = valid_ci_workflow();
+        ci["on"]["pull_request"]["types"] = yaml_serde::from_str("[opened, closed]").unwrap();
+        let issues = workflow_policy_issues_for_ci(&ci);
+        assert!(
+            issues
+                .iter()
+                .any(|issue| issue.contains("workflow-trigger-invalid")),
+            "{issues:?}"
+        );
     }
 
     #[test]
@@ -2579,15 +6842,101 @@ mod tests {
     }
 
     #[test]
+    fn workflow_policy_rejects_missing_repository_release_gate() {
+        let mut ci = valid_ci_workflow();
+        let steps = ci["jobs"]["repository-policy"]["steps"]
+            .as_sequence_mut()
+            .unwrap();
+        let original_steps = steps.len();
+        steps.retain(|step| {
+            step.get("name").and_then(YamlValue::as_str) != Some("Check repository release policy")
+        });
+        assert_eq!(
+            steps.len() + 1,
+            original_steps,
+            "repository policy gate mutation did not apply"
+        );
+        let mut issues = Vec::new();
+        check_workflow_policy(
+            &ci,
+            &valid_native_workflow(),
+            &yaml_serde::from_str(&valid_release_workflow_text()).unwrap(),
+            &mut issues,
+        );
+        assert!(
+            issues.iter().any(|issue| {
+                issue.contains(
+                    "repository-policy-job-invalid: the always-mandatory policy job must validate purpose, check out tested source, and run release-gate with its source identity.",
+                )
+            }),
+            "missing current repository-policy rejection: {issues:?}"
+        );
+    }
+
+    #[test]
+    fn workflow_policy_requires_protected_main_preflight_admission() {
+        let release: YamlValue = yaml_serde::from_str(&valid_release_workflow_text()).unwrap();
+        assert!(crate_preflight_policy_valid(&release));
+        for (field, value) in [
+            (
+                "ref",
+                YamlValue::String("${{ needs.release-target.outputs.source-sha }}".into()),
+            ),
+            ("fetch-depth", YamlValue::Number(1.into())),
+        ] {
+            let mut broken = release.clone();
+            broken["jobs"]["crate-preflight"]["steps"][1]["with"][field] = value;
+            assert!(
+                !crate_preflight_policy_valid(&broken),
+                "accepted checkout {field}"
+            );
+        }
+        let run = release["jobs"]["crate-preflight"]["steps"][2]["run"]
+            .as_str()
+            .unwrap();
+        for removed in [
+            "git -C \"$GITHUB_WORKSPACE/selected-source\" merge-base --is-ancestor \"$SOURCE_SHA\" HEAD",
+            "[[ \"$SOURCE_SHA\" =~ ^[0-9a-f]{40}$ ]]",
+        ] {
+            let mut broken = release.clone();
+            broken["jobs"]["crate-preflight"]["steps"][2]["run"] = YamlValue::String(run.replace(removed, "true"));
+            assert!(!crate_preflight_policy_valid(&broken), "accepted missing admission {removed}");
+        }
+    }
+
+    #[test]
     fn workflow_policy_rejects_missing_crate_size_gates() {
-        let broken_release = valid_release_workflow_text()
-            .replace("cargo package --locked --no-verify", "echo size unchecked");
-        let issues = workflow_policy_issues(&broken_release);
+        let release = yaml_serde::from_str::<YamlValue>(&valid_release_workflow_text()).unwrap();
+        let mut broken_release = release.clone();
+        let preflight_run = broken_release["jobs"]["crate-preflight"]["steps"][2]["run"]
+            .as_str()
+            .unwrap()
+            .replace(
+                "release-package-preflight --source-dir \"$GITHUB_WORKSPACE/selected-source\"",
+                "echo size unchecked",
+            );
+        assert_ne!(
+            preflight_run, "echo size unchecked",
+            "preflight command mutation did not apply"
+        );
+        broken_release["jobs"]["crate-preflight"]["steps"][2]["run"] =
+            YamlValue::String(preflight_run);
+        assert_ne!(
+            broken_release, release,
+            "crate preflight mutation did not apply"
+        );
+        let mut issues = Vec::new();
+        check_workflow_policy(
+            &valid_ci_workflow(),
+            &valid_native_workflow(),
+            &broken_release,
+            &mut issues,
+        );
         assert!(
             issues
                 .iter()
-                .any(|issue| issue.contains("crates-io-package-size-gate-missing")),
-            "{issues:?}"
+                .any(|issue| issue.contains("release-crate-preflight-invalid")),
+            "missing actual release-package-preflight invocation was accepted: {issues:?}"
         );
 
         let broken_ci: YamlValue = yaml_serde::from_str(
@@ -2610,5 +6959,207 @@ mod tests {
         assert!(validate_crate_size(CRATES_IO_PACKAGE_LIMIT_BYTES).is_ok());
         let error = validate_crate_size(CRATES_IO_PACKAGE_LIMIT_BYTES + 1).unwrap_err();
         assert!(error.contains("exceeding the crates.io limit"), "{error}");
+    }
+
+    #[test]
+    fn docs_python_gate_accepts_root_and_nested_helpers_in_both_modes() {
+        if execute_gate_fixture_child() {
+            return;
+        }
+        let root = release_gate_fixture();
+        write_gate_fixture_file(&root, "docs/helper.py", "# documentation helper\n");
+        write_gate_fixture_file(
+            &root,
+            "docs/qualification/reproduce.py",
+            "# qualification helper\n",
+        );
+        for generated in [".git", "target", ".codebaseGraph", ".kwiki"] {
+            write_gate_fixture_file(&root, &format!("{generated}/ignored.py"), "");
+            write_gate_fixture_file(&root, &format!("docs/{generated}/ignored.py"), "");
+        }
+
+        let test_name = "tests::docs_python_gate_accepts_root_and_nested_helpers_in_both_modes";
+        for production in [false, true] {
+            run_gate_fixture_route(test_name, &root, production, true, &[], &[]);
+        }
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn docs_python_gate_rejects_neighbors_root_tooling_and_workflow_python() {
+        if execute_gate_fixture_child() {
+            return;
+        }
+        let root = release_gate_fixture();
+        write_gate_fixture_file(&root, "docs/allowed.py", "# optional local helper\n");
+        write_gate_fixture_file(&root, "docs-extra/neighbor.py", "");
+        write_gate_fixture_file(&root, "src/docs/neighbor.py", "");
+        write_gate_fixture_file(&root, "root.py", "");
+        write_gate_fixture_file(&root, "pyproject.toml", "");
+        write_gate_fixture_file(&root, "requirements-dev.txt", "");
+        write_gate_fixture_file(&root, "scripts/helper.py", "");
+        write_gate_fixture_file(&root, "src/codebase_graph/helper.py", "");
+        fs::remove_file(root.join("SECURITY.md")).unwrap();
+        let ci_path = root.join(".github/workflows/ci.yml");
+        let mut ci = fs::read_to_string(&ci_path).unwrap();
+        ci.push_str("\n# python -m is not an approved workflow step\n");
+        fs::write(ci_path, ci).unwrap();
+
+        let test_name =
+            "tests::docs_python_gate_rejects_neighbors_root_tooling_and_workflow_python";
+        let expected = [
+            "security-policy-missing".to_string(),
+            "python-tooling-present: pyproject.toml".to_string(),
+            "python-tooling-present: requirements-dev.txt".to_string(),
+            "python-surface-present: scripts".to_string(),
+            "python-surface-present: src/codebase_graph".to_string(),
+            format!(
+                "python-file-present: {}",
+                Path::new("docs-extra").join("neighbor.py").display()
+            ),
+            format!(
+                "python-file-present: {}",
+                Path::new("src").join("docs").join("neighbor.py").display()
+            ),
+            "python-file-present: root.py".to_string(),
+            format!(
+                "python-file-present: {}",
+                Path::new("scripts").join("helper.py").display()
+            ),
+            format!(
+                "python-file-present: {}",
+                Path::new("src")
+                    .join("codebase_graph")
+                    .join("helper.py")
+                    .display()
+            ),
+            "workflow-python-tooling-present: .github/workflows/ci.yml".to_string(),
+        ];
+        let docs_helper_path = Path::new("docs").join("allowed.py");
+        let docs_helper_rejection = format!("python-file-present: {}", docs_helper_path.display());
+        for production in [false, true] {
+            run_gate_fixture_route(
+                test_name,
+                &root,
+                production,
+                false,
+                &expected.iter().map(String::as_str).collect::<Vec<_>>(),
+                &[docs_helper_rejection.as_str()],
+            );
+        }
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn docs_python_exception_rejects_component_aliases_and_symlinks() {
+        if execute_gate_fixture_child() {
+            return;
+        }
+        let aliases = release_gate_fixture();
+        write_gate_fixture_file(&aliases, "docs/helper.py", "");
+        assert!(super::is_docs_helper_path(&aliases, &aliases.join("docs/helper.py")).unwrap());
+        for candidate in [
+            aliases.join("docs/../docs/helper.py"),
+            PathBuf::from("./docs/helper.py"),
+            aliases.join("docs-extra/helper.py"),
+            aliases.join("src/docs/helper.py"),
+            aliases.parent().unwrap().join("outside/docs/helper.py"),
+        ] {
+            assert!(
+                !super::is_docs_helper_path(&aliases, &candidate).unwrap(),
+                "accepted alias {}",
+                candidate.display()
+            );
+        }
+        let missing =
+            super::is_docs_helper_path(&aliases, &aliases.join("docs/missing.py")).unwrap_err();
+        assert!(
+            missing.contains("cannot inspect docs Python exception path"),
+            "{missing}"
+        );
+        #[cfg(windows)]
+        assert!(!super::is_docs_helper_path(&aliases, Path::new(r"C:\docs\helper.py")).unwrap());
+        fs::remove_dir_all(&aliases).unwrap();
+
+        let test_name = "tests::docs_python_exception_rejects_component_aliases_and_symlinks";
+
+        let root = release_gate_fixture();
+        let outside = super::unique_temp_dir("cod107_docs_link_target").unwrap();
+        write_gate_fixture_file(&outside, "helper.py", "");
+        if let Err(error) = symlink_file(&outside.join("helper.py"), &root.join("docs/linked.py")) {
+            if symlink_privilege_unavailable(&error) {
+                eprintln!("Windows symlink privilege unavailable; symlink gate cases not executed: {error}");
+                fs::remove_dir_all(&root).unwrap();
+                fs::remove_dir_all(&outside).unwrap();
+                return;
+            }
+            panic!("could not create docs-to-outside symlink: {error}");
+        }
+        for production in [false, true] {
+            run_gate_fixture_route(
+                test_name,
+                &root,
+                production,
+                false,
+                &["docs Python exception rejects symlink path"],
+                &[],
+            );
+        }
+        fs::remove_dir_all(&root).unwrap();
+        fs::remove_dir_all(&outside).unwrap();
+
+        let root = release_gate_fixture();
+        write_gate_fixture_file(&root, "docs/inside.py", "");
+        let outside_link = root.join("outside/linked.py");
+        fs::create_dir_all(outside_link.parent().unwrap()).unwrap();
+        if let Err(error) = symlink_file(&root.join("docs/inside.py"), &outside_link) {
+            if symlink_privilege_unavailable(&error) {
+                eprintln!("Windows symlink privilege unavailable; remaining symlink gate cases not executed: {error}");
+                fs::remove_dir_all(&root).unwrap();
+                return;
+            }
+            panic!("could not create outside-to-docs symlink: {error}");
+        }
+        let outside_link_rejection = format!(
+            "python-file-present: {}",
+            Path::new("outside").join("linked.py").display()
+        );
+        for production in [false, true] {
+            run_gate_fixture_route(
+                test_name,
+                &root,
+                production,
+                false,
+                &[outside_link_rejection.as_str()],
+                &[],
+            );
+        }
+        fs::remove_dir_all(&root).unwrap();
+
+        let root = release_gate_fixture();
+        let outside = super::unique_temp_dir("cod107_docs_directory_target").unwrap();
+        write_gate_fixture_file(&outside, "helper.py", "");
+        fs::remove_dir_all(root.join("docs")).unwrap();
+        if let Err(error) = symlink_dir(&outside, &root.join("docs")) {
+            if symlink_privilege_unavailable(&error) {
+                eprintln!("Windows symlink privilege unavailable; docs-directory symlink case not executed: {error}");
+                fs::remove_dir_all(&root).unwrap();
+                fs::remove_dir_all(&outside).unwrap();
+                return;
+            }
+            panic!("could not create symlinked docs directory: {error}");
+        }
+        for production in [false, true] {
+            run_gate_fixture_route(
+                test_name,
+                &root,
+                production,
+                false,
+                &["docs Python exception rejects symlink path"],
+                &[],
+            );
+        }
+        fs::remove_dir_all(&root).unwrap();
+        fs::remove_dir_all(&outside).unwrap();
     }
 }

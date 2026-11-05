@@ -426,3 +426,81 @@ fn mcp_tool_calls_dispatch_exactly_once_and_preserve_error_codes() {
         .unwrap()
         .contains("Unknown Knowledge Wiki MCP tool"));
 }
+
+#[test]
+fn cli_run_preserves_completed_command_output_and_exit_status() {
+    for exit_code in [0, 1] {
+        for json_output in [false, true] {
+            let mut args = vec!["validate".into(), "bundle".into()];
+            if json_output {
+                args.push("--json".into());
+            }
+            let structured =
+                json!({"accepted": exit_code == 0, "diagnostics": [{"code": "example"}]});
+            let mut stdout = Vec::new();
+            let mut stderr = Vec::new();
+            let actual = cli::run(&args, &mut stdout, &mut stderr, |_| {
+                Ok(
+                    TransportPayload::structured("validation outcome", structured.clone())
+                        .with_exit_code(exit_code),
+                )
+            })
+            .unwrap();
+            assert_eq!(actual, exit_code);
+            assert!(stderr.is_empty());
+            if json_output {
+                assert_eq!(
+                    serde_json::from_slice::<serde_json::Value>(&stdout).unwrap(),
+                    structured
+                );
+            } else {
+                assert_eq!(String::from_utf8(stdout).unwrap(), "validation outcome\n");
+            }
+        }
+    }
+}
+
+#[test]
+fn mcp_protocol_errors_and_success_envelopes_remain_compatible() {
+    let mut session = McpSession::default();
+    let message = json!({"jsonrpc": "2.0", "id": 4, "method": "tools/call", "params": {"name": "wiki_list_bundles", "arguments": {}}});
+    let response = mcp::handle_message(
+        message.clone(),
+        &mut session,
+        &mut |_| json!({}),
+        &mut |_, _| panic!("uninitialized call dispatched"),
+    )
+    .unwrap();
+    assert_eq!(
+        response,
+        json!({"jsonrpc": "2.0", "id": 4, "error": {"code": -32002, "message": "MCP session is not initialized"}})
+    );
+    assert_eq!(
+        mcp::rpc_error(serde_json::Value::Null, -32700, "Invalid JSON"),
+        json!({"jsonrpc": "2.0", "id": null, "error": {"code": -32700, "message": "Invalid JSON"}})
+    );
+    session.protocol_version = Some(mcp::protocol_version().into());
+    let response = mcp::handle_message(message, &mut session, &mut |_| json!({}), &mut |_, _| {
+        Ok(TransportPayload::structured(
+            "bundles",
+            json!({"bundles": []}),
+        ))
+    })
+    .unwrap();
+    assert_eq!(
+        response,
+        json!({"jsonrpc": "2.0", "id": 4, "result": {"content": [{"type": "text", "text": "bundles"}], "isError": false}})
+    );
+    let response = mcp::handle_message(
+        json!({"id": 5, "method": "unsupported"}),
+        &mut session,
+        &mut |_| json!({}),
+        &mut |_, _| panic!("unsupported method dispatched"),
+    )
+    .unwrap();
+    assert_eq!(response["error"]["code"], -32601);
+    assert_eq!(
+        response["error"]["message"],
+        "Unsupported MCP method: unsupported"
+    );
+}

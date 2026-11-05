@@ -1,0 +1,19 @@
+{
+  "source_sha": "855c7e282a27de4afbad2d4252d7692de4b42ecb",
+  "command": "cargo run -p xtask --locked -- native-artifact --target macos-arm64 --commit-sha 855c7e282a27de4afbad2d4252d7692de4b42ecb --output /private/tmp/codebasegraph-cod54-macos-distribution/dist/cod54-source-bound",
+  "exit": 0,
+  "duration_seconds": 309.5025947499089,
+  "archive_sha256": "e5f32abbf8124584d5f6f2df403091c3323d16a1359a70f387fc99eeeb6e4282",
+  "environment": {
+    "os": "macOS26.6.2",
+    "build": "25G83",
+    "arch": "arm64"
+  },
+  "preserved_archive": "/private/tmp/codebasegraph-cod54-review/final-archive/codebase-graph-4.0.0-macos-arm64.tar.gz",
+  "preserved_installed": "/private/tmp/codebasegraph-cod54-review/final-archive/installed bin",
+  "limits": [
+    "ActualcleanMac13.3/currentunexecuted",
+    "FTSLOADnotpopulatednativeFTSindex",
+    "AdhocnotDeveloperIDnotarization"
+  ]
+}

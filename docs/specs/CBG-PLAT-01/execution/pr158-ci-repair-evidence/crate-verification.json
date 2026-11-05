@@ -1,0 +1,37 @@
+[
+  {
+    "path": "/private/tmp/codebasegraph-pr158-ci-merge/target/package/codebase-graph-4.0.2.crate",
+    "bytes": 8458182,
+    "sha256": "9f273128955240df50a9e043ac3fb203f20b39a88a7094025b6f621d9bc9871c",
+    "members": 207,
+    "assets": [
+      {
+        "path": "assets/ladybug-extensions/0.19.0/osx_arm64/fts/libfts.lbug_extension.xz",
+        "sha256": "e34b00df38ced0b09993112a6d3a2d76735ecea639bb7deaf4e804351343f891",
+        "matches_source": true
+      },
+      {
+        "path": "assets/ladybug-extensions/0.19.0/osx_arm64/json/libjson.lbug_extension.xz",
+        "sha256": "7d39d0ba2fe3eb41364febc09fb45aca02b37bb64a06e3a3666bfb70f49792cd",
+        "matches_source": true
+      },
+      {
+        "path": "assets/ladybug-extensions/0.19.0/win_amd64/fts/libfts.lbug_extension.xz",
+        "sha256": "a8a9d74be93a54482b6bb6df7c44ead6cb751f398b87b10c990d63e2da77910d",
+        "matches_source": true
+      },
+      {
+        "path": "assets/ladybug-extensions/0.19.0/win_amd64/json/libjson.lbug_extension.xz",
+        "sha256": "adf5e05d5a63c181a1be3e1e6c90a8ffb9901118171e7caf8f860af055868ada",
+        "matches_source": true
+      }
+    ]
+  },
+  {
+    "path": "/private/tmp/codebasegraph-pr158-ci-merge/target/package/k-wiki-4.0.2.crate",
+    "bytes": 140452,
+    "sha256": "3ec816b0da0dba1cc4b9e1e4be36317c0a6b27dc85063257aa383fa8921852a5",
+    "members": 64,
+    "assets": []
+  }
+]

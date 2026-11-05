@@ -1,0 +1,79 @@
+{
+  "base": "7038e66ff8271ffddc511f879cf8d28353a09b2d",
+  "approval": "eaa430c849094078bb4c228ea03136dde5587e91",
+  "source_snapshot": "subset-source-snapshot.json",
+  "checks": [
+    {
+      "command": "cargo nextest run --locked -p codebase-graph --lib --config-file /private/tmp/codebasegraph-cod53-analysis/nextest.toml --profile cod53 -E 'test(db_writer::extensions::) | test(native_writer_loads_json_staging_through_ladybug_copy) | test(graph_search_reads_native_fts_indexes)' --test-threads 1",
+      "exit": 0,
+      "passed": 4,
+      "filtered": 838,
+      "log": "subset-focused-tests.log",
+      "junit": "subset-focused.junit.xml",
+      "limits": "macOS ARM64 default feature build, not Windows"
+    },
+    {
+      "command": "cargo nextest run --locked -p codebase-graph --lib --no-default-features --config-file /private/tmp/codebasegraph-cod53-analysis/nextest.toml --profile cod53 -E 'test(db_writer::extensions::)' --test-threads 1",
+      "exit": 0,
+      "passed": 2,
+      "filtered": 840,
+      "log": "subset-optout-tests.log",
+      "junit": "subset-optout.junit.xml",
+      "limits": "macOS explicit no-default; Windows cfg remains unexecuted"
+    },
+    {
+      "command": "cargo fmt --all --check",
+      "exit": 0,
+      "log": "subset-format.log"
+    },
+    {
+      "command": "cargo metadata --locked --filter-platform x86_64-pc-windows-msvc --format-version 1",
+      "exit": 0,
+      "limits": "feature resolution only"
+    },
+    {
+      "command": "cargo tree --locked -p codebase-graph -e features -i codebase-graph",
+      "exit": 0,
+      "log": "default-feature-tree.txt"
+    },
+    {
+      "command": "cargo tree --locked -p codebase-graph --no-default-features -e features -i codebase-graph",
+      "exit": 0,
+      "log": "explicit-optout-feature-tree.txt"
+    },
+    {
+      "command": "cargo tree --locked -p k-wiki -e features -i codebase-graph",
+      "exit": 0,
+      "log": "wiki-default-feature-tree.txt"
+    },
+    {
+      "command": "cargo clippy --locked --workspace --all-targets --all-features -- -D warnings",
+      "exit": 0,
+      "log": "subset-clippy.log",
+      "warnings": "none"
+    },
+    {
+      "command": "cargo nextest run --locked -p xtask --config-file /private/tmp/codebasegraph-cod53-analysis/nextest.toml --profile cod53 --test-threads 1",
+      "exit": 0,
+      "passed": 42,
+      "filtered": 0,
+      "log": "subset-xtask-tests.log",
+      "junit": "subset-xtask.junit.xml"
+    },
+    {
+      "command": "cargo package --locked --allow-dirty",
+      "exit": 0,
+      "log": "subset-final-package-verify.log",
+      "measure": "subset-final-package-measure.json"
+    }
+  ],
+  "partial_package_evidence": {
+    "bytes": 8451643,
+    "sha256": "8615dd48a7abcfbf1dd38770d52769edd49ea8fcb5a72384898cd7bcc0666bd2",
+    "command": "cargo package --locked --allow-dirty",
+    "result": 0,
+    "scope": "normal extracted compile on macOS with verified0.19native library; not Windows source install; may precede pending testworker final edits"
+  },
+  "full_scope_blockers": "full-scope-blockers.json",
+  "junit_ingest_limit": "MCP Scryer root older checkout; resp-113 no attached tests, no exactworktree verdict fabricated. Global unrelated stale radius retained."
+}

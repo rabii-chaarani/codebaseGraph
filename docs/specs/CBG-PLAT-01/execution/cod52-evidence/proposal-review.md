@@ -1,0 +1,37 @@
+# COD-52 / CBG-PLAT-01 S01 — proposal review
+
+## Recommendation: GREEN — proceed with the bounded implementation
+
+No decision-blocking or material defect was found in the proposed production change. This is approval of the approach for implementation review, **not passing acceptance, native qualification, release approval or aggregate closure**.
+
+Reviewer: fresh read-only session; GPT-6.1 Sol, High reasoning effort (launch settings supplied by the coordinator). Skill: `adversarial-proposal-review-engineer`. Baseline supplied: `7038e66ff8271ffddc511f879cf8d28353a09b2d`. No implementation edits, builds, tests, Git operations or external record writes were performed. Only this report was written.
+
+## Authority and evidence inspected
+
+- Approved spec revision 0.10, R01 / A01–A02 / S01, supplied as `approved-spec.md`; exact-scope approval `docs/specs/CBG-PLAT-01/approvals/cod52-macos-nested-scans.md` pins spec SHA `1a9db7b558b60248888408daa6268a3b45f2f0df` and records the user's “approved” response for COD-52 only.
+- Coordinator's target-scoped `graph-discovery.txt`: both source files discovered; explicit change-impact context for `visit_entries`. The configured root graph/model is not SHA-bound evidence for the detached worktree.
+- Scryer read-only `orient`, binding rules and Graph Store `node-88`: existing resp-232/233 apply; no changed claim or new topology is needed for restoring enumeration correctness. Broader model drift/pending resp-274 is outside this fix and does not grant additional scope.
+- Wiki memory recall and canonical `architecture/graph-disk-cleanup-contract`. The recalled canonical-temp-parent fixture warning is relevant to genuine workspace-origin tests; it does not authorize weakening ownership checks.
+- Worktree `src/storage/locks.rs` and `src/storage/maintenance_candidate.rs` after graph discovery.
+- Apple SDK primary documentation: `/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/share/man/man2/open.2` (also referenced by `openat.2`), DESCRIPTION/HISTORY; `getattrlistbulk.2`, DESCRIPTION/RETURN VALUES. `openat` resolves a relative name against the retained directory FD; a successful open begins at offset zero; `getattrlistbulk` state is associated with its input descriptor and may be restarted by reopening. `openat` predates the approved macOS 13.3 minimum. These establish API suitability, not runtime qualification.
+
+## Why the minimal fix is sound
+
+The current macOS implementation seeks and enumerates `self.directory` (`locks.rs:2541–2559`). A callback that scans the same RootedDirectory resets and consumes that same cursor. The outer scratch still contains its first batch, but its next native query sees the cursor advanced by the inner scan. This matches the supplied multi-batch failure description.
+
+Opening the literal NUL-terminated `.` relative to the retained FD with `O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC` obtains an independent open file description without using a public pathname or `dup`/`try_clone`. Adopt the successful FD into `File` immediately, compare `file_identity(&directory)` to `self.identity` using the existing native-I/O conversion, and call `getattrlistbulk` on that local File. Remove the shared-FD seek. RAII closes the descriptor on identity failure, callback interruption, native/parser error and success. No shared helper, new trait or public contract is justified.
+
+This preserves the pinned namespace authority (`locks.rs:1299–1305`) even if its public name is renamed/replaced. Literal `.` is an internal trusted operation; do not relax the existing child-name validator, which intentionally rejects `.` (`locks.rs:1438–1446`). Identity/open failures must return errors, not fall back to the public root or another cursor mechanism. The extra FD is held only for the active scan, not per returned entry; existing bounded maintenance and fixed scratch remain intact. Windows already obtains a distinct directory file object (`locks.rs:2688–2692`) and should remain unchanged. Linux is explicitly outside S01.
+
+## Test conditions to preserve during implementation
+
+These are concrete verification requirements, not established defects in an unwritten test patch.
+
+1. **A01 must cross a native batch and detect duplicates.** Broaden the existing Windows-only nested test (`locks.rs:2103–2125`) to macOS+Windows. Use e.g. 200+ entries with unchanged 4096-byte scratch; the current macOS parser admits no record shorter than 32 bytes, so that exceeds any single accepted batch without assuming the incidental 85 count. Compare sorted vectors against the independently generated expected vector for the outer and inner scans; counts or sets alone miss duplicate/substitution failures. Repeated scans and an inner callback returning `Interrupted`, followed by a complete scan, are proportionate checks for local cursor lifetime. The existing filtered-directory test already verifies repeated hints (`locks.rs:2219–2255`); extend or reuse it rather than duplicate a framework.
+2. **A02 must reach the nested production path.** `prepare_terminal_output` scans files first and stops before the directory pass if it selects a file (`maintenance_candidate.rs:2717,2752,2824–2825`). A fixture with many ordinary selectable file receipts can pass without exercising `workspace_has_child_receipts` at all. Arrange genuine receipts so directory selection actually runs, an early parent is vetoed by a child receipt, and a later eligible directory receipt is observed across batches. Receipt hashes/native order must not be presumed lexicographically ordered: Apple's documented order is unspecified. An old-source failure/new-source pass is strong evidence that the test reaches this bug rather than only checking eventual cleanup. A direct helper regression alone is not the specified actual selection regression.
+3. **Preserve authority, not just progress.** The child check is a conservative receipt veto even if the child payload has gone (`maintenance_candidate.rs:2688–2691,2780–2793`). Verify the parent remains protected while that child receipt exists. Create receipts through existing genuine origin/nonce fixtures, with a canonical temporary parent on macOS, and assert registration succeeded. Do not manufacture weaker production admission or add hooks to force selection. A retained-anchor rename plus foreign public replacement test is proportionate proof against accidental pathname reopen; compare original/foreign contents and perform no deletion through an observed name alone.
+4. **Honest qualification.** Run native macOS regressions and the affected storage radius; retain Windows nested-scan execution as pending until native Windows evidence exists. Source cfg inspection or macOS compilation cannot satisfy that Windows gate. No supported-platform expansion or minimum/current consumer qualification is established by these tests.
+
+## Limits and reusable knowledge assessment
+
+This is a source/API feasibility review of a small repair, not an executed behavior review. The eventual diff and actual receipt fixture still require final review. The report assumes the coordinator's supplied baseline/approval provenance and graph-discovery evidence are accurate; no Git commands were used to independently reverify them. No constants were changed. Existing fixed scratch stays 4096; suggested fixture counts are test data, not production policy. Reusable knowledge was assessed: no new repository memory is warranted before executed evidence; the canonical-temp-parent warning already exists in active memory.

@@ -1,0 +1,9 @@
+{
+  "command": "cargo test -p xtask --locked",
+  "revision": "71dc27e92857c4215bbbe583f104de7f341dc816",
+  "product_source": "34eac4f8644adc046093babd84ee1fdbffdae853",
+  "exit": 0,
+  "passed": 43,
+  "failed": 0,
+  "ignored": 0
+}

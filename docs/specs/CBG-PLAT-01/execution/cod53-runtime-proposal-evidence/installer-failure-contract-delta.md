@@ -1,0 +1,11 @@
+# COD-53 installer failure-contract clarification
+
+**Verdict:** no stronger user question is required by the currently approved A04 failure cases. Coordinator's reading is sound: missing/corrupt/wrong-machine/incompatible candidate inputs are rejected wholly in staging before any destination mutation; sidecar staging/copy failure leaves both EXEs unchanged; post-preflight per-file replacement errors are reported honestly, including partial sidecar state. Neither whole-install byte identity on arbitrary filesystem failure nor multi-DLL/pair/power-loss atomicity is approved or inferred. Do not reopen that scope merely because sequential updates can fail.
+
+The previous delta's old/new/intermediate-set condition concerns *compatibility of a deliberately accepted update*, not a new rollback guarantee. If the settled installer adopts the proposed compatible-forward/reuse-identical/refuse-foreign-or-downgrade rule, prove the accepted intermediate prefix sets or reject that upgrade before mutation. This can remain a routine conservative implementation choice within A04; do not add a transaction framework.
+
+One concrete detail for that proof: future older packaged EXEs with embedded exact runtime hashes may intentionally reject changed sidecars even when ABI-compatible. Their real validation behavior must be included in the old-binary compatibility oracle; Microsoft ABI compatibility alone cannot override that check. This does not establish a present defect or require a user decision. First inspect actual supported upgrade bases and exact EXE imports. Refusing an unsupported base clearly is preferable to asserting unproved compatibility.
+
+**Only if a real conflict emerges:** if supporting an existing approved upgrade base requires weakening fail-closed identity, destructive overwrite, public command relocation/launcher, or a new recovery guarantee, surface that specific contract decision then. No such unavoidable conflict has yet been established. Full gate still waits for concrete supply/import/manifest/cache/installer brief; missing Windows11 qualification is a separate later gate.
+
+Read-only assessment of `installer-layout-followup.md`, `full-runtime-proposal.md` and approved A04/exclusions. GPT-6.1 Sol High. No product edits/tests/builds/Git/tracking mutations, constants or policy changes.

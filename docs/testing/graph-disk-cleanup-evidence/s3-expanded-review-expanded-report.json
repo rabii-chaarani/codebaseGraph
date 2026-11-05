@@ -1,0 +1,106 @@
+{
+  "scope": "DC-S3 expanded frozen partial: journal fixes, gated parser/cursor/job foundations. Canonical GC and aggregate DC-S3 closure remain pending.",
+  "reviewer": {
+    "model": "gpt-6.1-sol",
+    "reasoning_effort": "max",
+    "fresh_independent_session": true,
+    "role": "continued original S3 reviewer, no implementation"
+  },
+  "head": "c0741ce137e09dac309ac72f5a2c2243a92ef070",
+  "snapshot_sha256": "ac4f8016de83c8a3cd156d24cd7b2b3d24f2d816fb64b3b45318f207b2464cf8",
+  "source_sha256": {
+    "src/storage/maintenance.rs": "2548f04eb3a911d43910eac63fc3eb5651cab17a63d648aebc5a6d71f45e3b1d",
+    "src/artifact_store.rs": "7e0fbf42a98a3ab64a97624db9cf782f8ead0db4a82abde2f40b4ee26028e7da",
+    "src/storage/mod.rs": "68db9239927733a14f0853d5b7330ba19c9114fe8c3cac3d56d67ed2cf3ff981",
+    "src/storage/maintenance_scheduler.rs": "480df68088b7ab2e01936c9e07733a8a70b1380eda38a65c929bfebc297ac9bf"
+  },
+  "original_review_resolution": {
+    "P2 state-lock revalidation": "Resolved in current helper: full revalidate outside state.lock, bounded stamp/record checks inside. Final producer/reference seal and associated final tests still pending S2.",
+    "foreign child/payload concern": "Addressed at reviewed boundaries with source/payload stamps and durable unlink stage; new crash window in stage publication is separately reported.",
+    "journal argument concern": "Addressed with exact .maintenance path, id-to-tombstone binding, journal inode/link/content checks and bounded read."
+  },
+  "confirmed_findings": [
+    {
+      "id": "S3-EXP-R1",
+      "priority": "P1",
+      "location": "src/artifact_store.rs:319-325",
+      "title": "Authority-required GC error becomes a post-publication build failure",
+      "trigger": "A normal source change leaves a formerly referenced valid key outside the new manifest.",
+      "trace": "delete_key now always returns authority-required for valid keys; existing garbage_collect_artifacts propagates it at materialization.rs:1197-1199; Direct/Managed post-publication callers propagate at 1016-1023 and 1070.",
+      "evidence": "Existing artifact_gc_retains_active_manifest_keys_and_removes_stale_keys fails in isolated frozen copy with the authority-required error; the call trace establishes post-publication consequence. The old deletion assertion itself is superseded by guarded GC.",
+      "remedy": "Keep deletion fail-closed. Route these cleanup outcomes to separate pending reporting without failing a completed publication or masking the primary result. Coordinate the S4 caller change before integrated readiness.",
+      "regression": "Exercise two real source revisions: second publication succeeds, active queries/cache survive, and cleanup pending is reported while the reference seal is unavailable."
+    },
+    {
+      "id": "S3-EXP-R2",
+      "priority": "P2",
+      "location": "src/storage/maintenance.rs:877-880",
+      "title": "A torn progress marker blocks replay permanently",
+      "trigger": "Process death/write failure after create_new_file(.unlinked) succeeds but before complete marker content is written, after payload unlink has synced.",
+      "trace": "Final .unlinked name is visible before contents are complete. Subsequent read_unlinked_stage parses the empty/partial marker at935 and returns an error. Retry never rewrites or atomically replaces it.",
+      "evidence": "Exact on-disk crash-state probes with empty and one-byte markers, then two retries under freshly acquired leases, consistently return EOF and leave private directory, stage and journal.",
+      "remedy": "Publish progress atomically from a fully synced temporary, or use another recoverable bounded transition that distinguishes interrupted own writes from foreign state. Preserve unknown files.",
+      "regression": "Fault each progress create/write/fsync/publish boundary, restart/reacquire, and verify eventual cleanup plus preservation of newly introduced foreign payloads."
+    },
+    {
+      "id": "S3-EXP-R3",
+      "priority": "P2",
+      "location": "src/artifact_store.rs:366-382",
+      "title": "The new validation memory limit does not bound retained decoded state",
+      "trigger": "A valid artifact includes a metadata array with many small JSON values.",
+      "trace": "Admission uses 2*file_bytes+64KiB; serde Value/Vec allocation can exceed that estimate, before row-validation index allocations. New retained maintenance jobs reuse the pre-existing loader heuristic.",
+      "evidence": {
+        "valid_file_bytes": 853653,
+        "admitted_memory_limit_bytes": 1772842,
+        "single_decoded_metadata_vec_capacity_bytes": 2097152,
+        "result": "Maintenance validation succeeds, although one field alone exceeds the supplied ceiling."
+      },
+      "remedy": "Use enforced decoding/accounting limits or a justified conservative structural bound, including temporary validation indices and concurrent retained jobs. Do not infer a memory ceiling from encoded bytes alone.",
+      "regression": "Admit/reject dense small JSON values, large maps, partial parses, and concurrent retained jobs against the actual configured total budget."
+    },
+    {
+      "id": "S3-EXP-R4",
+      "priority": "P3",
+      "location": "src/storage/maintenance.rs:874-887",
+      "title": "Marker housekeeping bypasses the work allowance",
+      "trigger": "Replay an empty detached artifact with zero entries or zero duration.",
+      "trace": "The payload branch and its budget take are skipped. Marker create/write/fsync occurs before the first take at887. remove_retirement_journal also unlinks both stage and journal under one allowance.",
+      "evidence": "Executed zero-entry and zero-duration probes both create .unlinked. Separate probe confirms one final allowance removes both journal entries.",
+      "remedy": "Check/reserve allowance before every independent housekeeping mutation and preserve a resumable boundary; define/charge bounded atomic bookkeeping explicitly. Zero allowance should make no filesystem mutation.",
+      "regression": "Snapshot tree/metadata around max_entries=0 and max_duration=ZERO; verify no mutation. Verify the declared one-entry unlink bound including auxiliary records."
+    }
+  ],
+  "conditional_limits": [
+    "Gated reads/writes, hashing and manual row comparisons cooperate, but ordinary serde BTreeMap<String,...> insertion/comparison and decoded-value disposal do not consult the gate. AdvisoryArtifactJob::Drop synchronously joins; cancellation can therefore wait for those CPU/disposal atoms. No measured 100ms miss is claimed. Constrain largest atoms/resource caps or keep joining/reclamation off the foreground path before enabling the controller.",
+    "The two-slot cap covers live worker threads, not aggregate completed-result/job memory. Configured budget selection and controller retention policy are not wired; enforce a total resource bound there.",
+    "Parser job descriptor persistence is not restart-controller implementation. Canonical references, backup restore and final fast-seal authority remain fail-closed/pending, as declared in the frozen manifest.",
+    "Cursor results remain advisory; retained prefix handles do not independently authorize paths after between-grant mutations. Existing job capture revalidates real path and stamp under fresh authority. No deletion finding was established from the cursor alone."
+  ],
+  "checks": {
+    "supplied_junit": "31/31 actual nextest JUnit inspected; sha256 e00f773cf313ef6575f4fdcf79486dc865dd19ee634888b5b4cf3e1d427e0627",
+    "probe_checkout": "/private/tmp/codebasegraph-s3-expanded-review-axcpl_ww",
+    "commands": [
+      {
+        "command": "CARGO_TARGET_DIR=/Users/rabii/Projects/Repositories/codebaseGraph/target cargo test --offline --locked --lib reviewer_expanded_ -- --nocapture --test-threads=1",
+        "result": "3/3 observation probes passed"
+      },
+      {
+        "command": "CARGO_TARGET_DIR=/Users/rabii/Projects/Repositories/codebaseGraph/target cargo test --offline --locked --lib api::materialization::tests::artifact_gc_retains_active_manifest_keys_and_removes_stale_keys -- --exact --nocapture --test-threads=1",
+        "result": "1 failed; authority-required error at materialization.rs:1450"
+      },
+      {
+        "command": "CARGO_TARGET_DIR=/Users/rabii/Projects/Repositories/codebaseGraph/target cargo test --offline --locked --lib reviewer_expanded_zero_budget -- --nocapture --test-threads=1",
+        "result": "1/1 observation probe passed; actual captured output in zero-budget-probe-output.txt"
+      }
+    ],
+    "toolchain": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+    "warning": "Separately owned SystemMaintenanceClock unused warning remains in this partial snapshot."
+  },
+  "limitations": [
+    "No full graph-query execution during paused parsing; existing test proves state-lock/writer-admission accessibility.",
+    "No full suite, MSRV 1.82, native Linux or native Windows execution.",
+    "No production-source, Git, wiki, model or live-graph mutations; only isolated probe-copy test code written.",
+    "No new memory candidate: partial findings and pending fixes are not a settled reusable outcome."
+  ],
+  "recommendation": "Address the confirmed findings before adopting the expanded primitives/integrated runtime. Original P2 is fixed. Full DC-S3 closure remains pending."
+}

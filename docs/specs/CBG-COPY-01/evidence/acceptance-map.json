@@ -1,0 +1,51 @@
+{
+  "A1": {
+    "method": "actual isolated scheduler injected phase errors + native result propagation",
+    "passing": [
+      "db_writer::write::tests::isolated_phase_schedule_stops_after_first_error_without_replay",
+      "both duplicate-DDL helpers"
+    ],
+    "limits": "native engine disk-full rollback is not claimed"
+  },
+  "A2": {
+    "method": "normalCLI realCOPY+checkpoint success then debug acknowledgement fault",
+    "result": "native-profile-copy-final2/2passed ManagedandDirect",
+    "proof": "schema+firstcopytrace; originalcause; no laterphases; activebundleunchanged"
+  },
+  "A3": {
+    "method": "normalCLI1MiBsequentialchunks/readOnlyreopen/exact1400Functionlabels/allFunctionPK +allIDsrepeatedtables+actualPKplan+ModuleDefinesFunctionendpoints",
+    "result": "optimizednative2/2passed",
+    "limits": "smallfixtureoracle notgeneralnativeintegrityvalidator"
+  },
+  "A4": {
+    "method": "exactframing/header/UTF8sinktests+all1MiBproducedfilebytesfromrealCLItrace",
+    "result": "focusedunitpassed/optimizednativepassed"
+  },
+  "A5": {
+    "method": "realCOPYackfailureManagedDirect priorbundlehashes+query/search; schedulerunit stopsindex/postcopy; existingAPIfailurecleanup and native lifecycle cases",
+    "result": "COPYcasepassed; lifecycleexecutionpending",
+    "limits": "not a single native in-flightcheckpoint/index/full-disk faultmatrix; layeredpolicy/owneroracles stated separately"
+  },
+  "A6": {
+    "method": "separatelaternormalCLIinvocation afterfailedManagedDirect; existingownedcleanup/churn/lifecycle tests",
+    "result": "laterinvocationpassed; aggregatecleanup pendingfullsuite",
+    "limits": "PR153boundedmaintenance notinstantrecursivecleanup; no unsafe deletedirs"
+  },
+  "A7": {
+    "method": "128/256/384phase-pass-through tests15/15, realnormal384poolchunkbuildsuccessful, existingnativeactualRSSbudgetfault",
+    "result": "normal+matrixpassed; RSSfaultpending",
+    "limits": "sampledcharges notmathematicalpeaks; notperpoolmeasuredbenchmark"
+  },
+  "A8": {
+    "method": "boundedreadinstrumentation+oversizedUTF8actualerrorhelpers/reader/assemblerqueryVscheckpoint+cleanupsecondarytest",
+    "result": "final15/15andfullsuitecleanupsecondarypassed"
+  },
+  "A9": {
+    "method": "same-sourcefreshbuildspill1vs32 allsortednode/stringJSON+connectorendpoints+base/lastsearch parity; existingcachedclean/churn",
+    "result": "optimized2/2passed; fullchurnpending"
+  },
+  "A10": {
+    "method": "fmt,strictclippy,fullworkspace,doctests,optimizednative/lifecycle,currentplatformCI",
+    "result": "fmt+clippy+doctests+nativepassed; full/lifecycleinprogress; WindowsCIpending"
+  }
+}

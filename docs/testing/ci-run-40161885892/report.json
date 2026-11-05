@@ -1,0 +1,27 @@
+{
+  "source_commit": "c1c6b06c8663bd5e904efcff8d8e12f6f78171e0",
+  "run_id": 40161885892,
+  "windows_unit_preflight": {
+    "passed": 43,
+    "failed": 1,
+    "raw_rejection": "Invalid(Busy)",
+    "collector_case": "artifact use lease convergence"
+  },
+  "macos": {
+    "unit": "passed",
+    "generation": "passed",
+    "integration": "coordinator quiescence fixture failed"
+  },
+  "follow_up": {
+    "windows_directory_scans": "independent pinned-directory handles prevent recursive enumeration consuming the outer cursor",
+    "coordinator_fixture": "canonical paths and retained shared artifact observation lease",
+    "local_verification": {
+      "coordinator_process": "passed; twenty clients and existing RSS assertions",
+      "msvc_test_cross_check": "passed; compile-only",
+      "clippy": "passed",
+      "xtask_tests_passed": 37,
+      "package_bytes": 10485565
+    }
+  },
+  "native_verification": "pending on follow-up commit"
+}

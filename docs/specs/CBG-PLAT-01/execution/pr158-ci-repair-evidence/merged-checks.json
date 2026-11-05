@@ -1,0 +1,15 @@
+{
+  "tree": "baselineCImergef49fbb5 + frozenrepairdiff + additivecanonicalevidence",
+  "command": "cargo nextest run --locked -p xtask --config-file /private/tmp/codebasegraph-pr158-ci-40798473142/merged-nextest.toml --profile pr158-merge",
+  "exit": 0,
+  "passed": 44,
+  "failed": 0,
+  "skipped": 0,
+  "log": "merged-xtask-tests.log",
+  "junit": "merged-xtask.junit.xml",
+  "unchanged_release_gate_after_evidence": {
+    "exit": 0,
+    "log": "combined-evidence-release-gate.log"
+  },
+  "product_or_archival_bytes_changed": false
+}

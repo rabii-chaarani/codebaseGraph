@@ -1,0 +1,152 @@
+{
+  "reviewer": {
+    "model": "gpt-6.1-sol",
+    "reasoning_effort": "max",
+    "independent": true,
+    "skill": "adversarial-review-engineer"
+  },
+  "scope": "Read-only Windows-prefix static follow-up on same frozen wrapper fix before commit; no new product/ownership decision.",
+  "snapshot": {
+    "baseline": "88a369f5820c7c21e05a4336f061887cc5f5d52f",
+    "repo": "/private/tmp/cleanup-s2-pathfix-review-wt1kmbw3/repo",
+    "root": "/private/tmp/cleanup-s2-pathfix-review-wt1kmbw3",
+    "patch": "/private/tmp/cleanup-s2-wrapper-pathfix-yowgkj08/wrapper.patch",
+    "patch_sha256": "2b5b80a40079b6aeda0d640a0a0cff153d76dbbd863749351103cbe1e815a7cb",
+    "source": {
+      "src/db_writer/access.rs": "9098e549d34caefff87ad99d214336d63bed67d7c042a1dd50386b20c7a9227d",
+      "src/db_writer/mod.rs": "519f8c9c5f0482d0ca4d9cea6430fe831ea753b3a13b7ba5af06499f91a0f81e",
+      "src/db_writer/tests.rs": "19f5a967050d727238b51bf15d537720b18fff154afe08968b98e74d9f8503ce",
+      "src/api/graph_read.rs": "759863fd6b8d19b4701fa5357f48404251d9fb3b603a62d3bc0be8b9333c778b"
+    }
+  },
+  "findings": [
+    {
+      "id": "WRAPPER-WINDOWS-1",
+      "priority": "P1",
+      "classification": "Confirmed by complete source trace and primary platform documentation; not runtime-reproduced.",
+      "title": "Rejecting verbatim prefixes blocks ordinary canonicalized Windows database paths",
+      "location": {
+        "path": "src/db_writer/access.rs",
+        "start": 202,
+        "end": 213,
+        "additional_gate": [
+          227,
+          232
+        ]
+      },
+      "trigger": "A valid Windows managed installation uses the default storage root or a storage/database path relative to its install configuration. Root/config binding canonicalizes those existing paths, producing an extended-length VerbatimDisk or VerbatimUNC prefix, retained into the active generation database path.",
+      "consequence": "Graph search, context, graph query and health database reads fail with database_path_prefix_unsupported before native opening, despite using ordinary program-generated paths. This affects normal internal resolver output, not merely unsupported caller aliases.",
+      "trace": [
+        {
+          "path": "src/api/context.rs",
+          "lines": "421-430,748-758,769-775",
+          "claim": "bind_repo_selector canonicalizes repository root/config using fs::canonicalize."
+        },
+        {
+          "external": "https://doc.rust-lang.org/std/fs/fn.canonicalize.html",
+          "claim": "Rust documents that Windows canonicalize returns extended-length syntax."
+        },
+        {
+          "path": "src/api/context.rs",
+          "lines": "231-245,501-507,627-651,797-805",
+          "claim": "RepoPaths derives state beneath canonical root; default managed storage and relative configured paths inherit the prefix. Runtime clones active snapshot db_path."
+        },
+        {
+          "path": "src/storage/layout.rs",
+          "lines": "75-88,128-129,144-153,183-199",
+          "claim": "ManagedLayout and generation/database joins preserve the storage-root prefix."
+        },
+        {
+          "path": "src/storage/managed.rs",
+          "lines": "428-445,1015-1017",
+          "claim": "GraphStorage preserves supplied ManagedLayout and active snapshot carries generation.db_path."
+        },
+        {
+          "path": "src/api/core.rs",
+          "lines": "861-877,908-912,957-958",
+          "claim": "Search/context/query pass runtime.db_path unchanged to graph_read."
+        },
+        {
+          "path": "src/api/graph_read.rs",
+          "lines": "23-25,53-59,227-237,436-443",
+          "claim": "All native read entry points use the guarded opener."
+        },
+        {
+          "path": "src/db_writer/access.rs",
+          "lines": "146-148,194-213,226-232",
+          "claim": "The Windows allowlist accepts Disk/UNC only; both VerbatimDisk and VerbatimUNC reject before the native constructor."
+        }
+      ],
+      "baseline_distinction": "The baseline and original wrapper did not contain this Windows prefix rejection; this deterministic guard failure is introduced by the path-fix helper.",
+      "counterevidence_scope": "Explicit ordinary absolute Disk/UNC storage paths may bypass this trigger. That does not cover default root-derived or relative-config paths. The approved strict alias restriction does not establish permission to reject normal resolver-produced Windows paths.",
+      "sdk_assessment": {
+        "rust": "lbug0.19.0 database.rs137-154 converts Path display text and forwards the full string.",
+        "native": "StorageUtils::expandPath72-107 treats leading double backslash as a Windows UNC path for avoiding CWD, and lexically_normalizes without an explicit verbatim-prefix rejection. LocalFileSystem::openFile89-134 passes its resulting string to CreateFileA.",
+        "support_limit": "The source does not establish that stripping all extended prefixes is lossless. Extended namespace parsing and length behavior differ; the SDK uses a narrow ANSI API, so arbitrary Unicode/code-page equivalence is also not demonstrated. No universal projection or arbitrary verbatim acceptance is asserted.",
+        "correction_target": "Preserve ordinary program-generated canonicalized Windows disk/UNC paths using a demonstrably exact supported representation consistently for both guard and native open. Keep unsupported/device/ambiguous forms strict and preserve raw Direct writer/journal address keys. Do not change those persisted identities as a prefix repair.",
+        "verification_needed": "Run Windows-native public runtime search/query/materialization through fs::canonicalize-derived disk paths, with appropriate UNC coverage where available, and verify actual resource-family exclusion for the chosen representation. Include relevant normalization, long-path and encoding boundaries. No Windows support conclusion should be drawn from Darwin-only cfg exclusion."
+      },
+      "documentation": [
+        "https://doc.rust-lang.org/std/fs/fn.canonicalize.html",
+        "https://doc.rust-lang.org/std/path/enum.Prefix.html",
+        "https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-createfilea",
+        "https://learn.microsoft.com/en-us/windows/win32/fileio/naming-a-file"
+      ],
+      "status": "Open; correction and focused qualification pending."
+    }
+  ],
+  "source_identities": {
+    "src/db_writer/access.rs": {
+      "path": "/private/tmp/cleanup-s2-pathfix-review-wt1kmbw3/repo/src/db_writer/access.rs",
+      "sha256": "9098e549d34caefff87ad99d214336d63bed67d7c042a1dd50386b20c7a9227d"
+    },
+    "src/db_writer/tests.rs": {
+      "path": "/private/tmp/cleanup-s2-pathfix-review-wt1kmbw3/repo/src/db_writer/tests.rs",
+      "sha256": "19f5a967050d727238b51bf15d537720b18fff154afe08968b98e74d9f8503ce"
+    },
+    "src/api/context.rs": {
+      "path": "/private/tmp/cleanup-s2-pathfix-review-wt1kmbw3/repo/src/api/context.rs",
+      "sha256": "b038192e4cc8258c94c7c524f9ed565017e45d7e28092b09e5490d4836db0eed"
+    },
+    "src/api/core.rs": {
+      "path": "/private/tmp/cleanup-s2-pathfix-review-wt1kmbw3/repo/src/api/core.rs",
+      "sha256": "b60db09be603ec16ab1ee03354c3c1e41607784032cf986fedbb46ee0ceeb462"
+    },
+    "src/api/graph_read.rs": {
+      "path": "/private/tmp/cleanup-s2-pathfix-review-wt1kmbw3/repo/src/api/graph_read.rs",
+      "sha256": "759863fd6b8d19b4701fa5357f48404251d9fb3b603a62d3bc0be8b9333c778b"
+    },
+    "src/storage/layout.rs": {
+      "path": "/private/tmp/cleanup-s2-pathfix-review-wt1kmbw3/repo/src/storage/layout.rs",
+      "sha256": "30ca57a967b8f3ff5e72e0af6e4edc63e5ad6bb191dc80e3894bb64966038987"
+    },
+    "src/storage/managed.rs": {
+      "path": "/private/tmp/cleanup-s2-pathfix-review-wt1kmbw3/repo/src/storage/managed.rs",
+      "sha256": "aee08a9c6f09640bde3d2d0a3b50690391e294d308561544e94079c9abe2041d"
+    },
+    "lbug/src/database.rs": {
+      "path": "/Users/rabii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/lbug-0.19.0/src/database.rs",
+      "sha256": "f44a1eae3231774d632b39d895b324982670d4f548c1cb5b43aa73c0f5df1766"
+    },
+    "lbug/lbug-src/src/storage/storage_utils.cpp": {
+      "path": "/Users/rabii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/lbug-0.19.0/lbug-src/src/storage/storage_utils.cpp",
+      "sha256": "d1505503398f15c1bc94b01afdc3351fbef44053bfaed9aa66b5cfc7d8ab33c5"
+    },
+    "lbug/lbug-src/src/common/file_system/local_file_system.cpp": {
+      "path": "/Users/rabii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/lbug-0.19.0/lbug-src/src/common/file_system/local_file_system.cpp",
+      "sha256": "dd02f6018a2065d67d8c637cc2a5fb19b0c8c57998488d0a8bdad2a210d752ad"
+    }
+  },
+  "preserved_evidence": {
+    "darwin_verification": "/private/tmp/cleanup-s2-pathfix-review-wt1kmbw3/verification-report.json",
+    "darwin_status": "Existing 28-runtime-test/3-doctest/format results and original P1 correction remain valid for their exact Darwin scope; no report was overwritten."
+  },
+  "limitations": [
+    "No Cargo invoked; no native Windows compilation or execution; no Linux runtime execution.",
+    "Configured graph indexes older checkout; explicit frozen files and fetched existing architecture intent supplied newer ownership context.",
+    "Safe projection or general native handling of all verbatim/Unicode/long paths is not proved by this static trace.",
+    "Full wrapper acceptance is pending the new Windows finding; whole-S2 and collector/native-platform/aggregate gates remain pending."
+  ],
+  "mutations": "Only this isolated report and source-hash evidence were written; no source/test/wiki/Scryer/Git mutation.",
+  "cargo": "Not acquired or used; S3 retains ownership."
+}

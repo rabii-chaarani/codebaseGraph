@@ -1,0 +1,37 @@
+{
+  "source_sha": "47808ac34bcff79882abee4ab796c16c0621ed05",
+  "host": "Windows11 Enterprise23H2 x86_64 build22631.7652",
+  "rust": "1.96.0 x86_64-pc-windows-msvc",
+  "cargo": "1.96.0",
+  "msvc": "cl19.39.33523.0 toolset14.39.33519",
+  "sdk": "10.0.22621.0",
+  "powershell": "5.1.22621.7649",
+  "native_library": "official Ladybug0.19.0 shared archive; source source/native ZIP identities in shared-native-inputs.json and tested-artifacts.json",
+  "openssl": "existing AnacondaOpenSSL3.3.2 x64 import libs+DLLs; hashes loaded-module-audit.json and source-build-inputs.json",
+  "link_aliases": {
+    "ssl.lib": "copy of existing Library/lib/libssl.lib",
+    "crypto.lib": "copy of existing Library/lib/libcrypto.lib"
+  },
+  "compiler_setup": "vcvars64.bat from existing VS2022 Community; explicit CC,CXX and Cargo MSVC linker avoid Git link.exe",
+  "build_variables": {
+    "CARGO_HOME": "C:\\Users\\rcha0053\\pr158-qualification\\cargo-home",
+    "CARGO_TARGET_DIR": "C:\\Users\\rcha0053\\pr158-qualification\\target",
+    "LBUG_SHARED": "1",
+    "LBUG_LIBRARY_DIR": "C:\\Users\\rcha0053\\pr158-qualification\\ladybug-shared-0.19.0",
+    "LBUG_INCLUDE_DIR": "C:\\Users\\rcha0053\\pr158-qualification\\ladybug-shared-0.19.0",
+    "LIBCLANG_PATH": "C:\\Users\\rcha0053\\AppData\\Local\\anaconda3\\Library\\bin",
+    "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.39.33519\\bin\\Hostx64\\x64\\link.exe",
+    "CC": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.39.33519\\bin\\Hostx64\\x64\\cl.exe",
+    "CXX": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.39.33519\\bin\\Hostx64\\x64\\cl.exe",
+    "CARGO_BUILD_JOBS": "2"
+  },
+  "runtime_PATH": "C:\\Users\\rcha0053\\pr158-qualification\\ladybug-shared-0.19.0;C:\\Users\\rcha0053\\AppData\\Local\\anaconda3\\Library\\bin;C:\\Windows\\System32;C:\\Windows;C:\\Windows\\System32\\WindowsPowerShell\\v1.0",
+  "install_command": "cargo install --path \"C:/Users/rcha0053/Repositories/cbg-pr158\" --locked --offline --root \"C:/Users/rcha0053/pr158-qualification/installed\" --bin codebase-graph",
+  "limits": [
+    "private --path exact-head install, not published crates.io install",
+    "supplied native shared prerequisite; not C++ Ladybug source compile or self-contained package",
+    "runtime PATH process-local only; system VC DLLs used",
+    "no native DLL bytes copied into repository or distributed",
+    "unchanged dependency/ABI/extension assets and no numeric product constant changes"
+  ]
+}

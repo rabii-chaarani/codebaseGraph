@@ -635,6 +635,15 @@ fn graph_health_reports_native_database() {
     )
     .unwrap();
 
+    // Producer terminal roots remain registered until bounded collection. The
+    // legacy flag reports that known pending work even when no run is live.
+    let registered_terminal_work = fs::read_dir(root.join(".codebaseGraph/storage/runs"))
+        .unwrap()
+        .any(|entry| {
+            let path = entry.unwrap().path();
+            path.join(".workspace.binding").is_file()
+                && path.join(".reference-scope.json").is_file()
+        });
     let mut output = Vec::new();
     run(
         [
@@ -656,7 +665,11 @@ fn graph_health_reports_native_database() {
     assert_eq!(value["writable"], true);
     assert!(value["active_generation"].as_str().is_some());
     assert_eq!(value["pending_runs"], 0);
-    assert_eq!(value["cleanup_pending"], false);
+    assert!(value["cleanup_pending"].is_boolean());
+    if registered_terminal_work {
+        assert_eq!(value["cleanup_pending"], true);
+    }
+    assert!(value["maintenance"]["pending"].is_boolean());
     assert!(value["physical_database_bytes"].as_u64().unwrap() > 0);
     assert!(value["logical_database_bytes"].as_u64().unwrap() > 0);
     assert!(

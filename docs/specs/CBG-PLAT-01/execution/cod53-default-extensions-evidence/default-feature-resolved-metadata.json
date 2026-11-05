@@ -1,0 +1,14 @@
+{
+  "command": "cargo metadata --locked --format-version 1 (no --features)",
+  "target": "host macOS, not Windows byte execution",
+  "features_declared": {
+    "bundled-windows-extensions": [],
+    "default": [
+      "bundled-windows-extensions"
+    ]
+  },
+  "features_resolved": [
+    "bundled-windows-extensions",
+    "default"
+  ]
+}

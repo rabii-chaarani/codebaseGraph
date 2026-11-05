@@ -1,0 +1,13 @@
+{
+  "source_sha": "855c7e282a27de4afbad2d4252d7692de4b42ecb",
+  "command": "cargo clippy --workspace --all-targets --all-features --locked -- -D warnings",
+  "exit": 0,
+  "duration_seconds": 6.04125641589053,
+  "environment": {
+    "os": "macOS26.6.2",
+    "build": "25G83",
+    "arch": "arm64"
+  },
+  "toolchain": "rustc1.96.0",
+  "limits": "nativeMacdeveloperhost; notcleanconsumerqualification"
+}

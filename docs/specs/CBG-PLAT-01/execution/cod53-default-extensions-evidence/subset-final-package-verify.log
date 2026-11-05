@@ -1,0 +1,6 @@
+   Packaging codebase-graph v4.0.0 (/private/tmp/codebasegraph-cod53-windows-runtimes)
+    Updating crates.io index
+    Packaged 205 files, 14.0MiB (8.1MiB compressed)
+   Verifying codebase-graph v4.0.0 (/private/tmp/codebasegraph-cod53-windows-runtimes)
+   Compiling codebase-graph v4.0.0 (/private/tmp/codebasegraph-cod53-windows-runtimes/target/package/codebase-graph-4.0.0)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 7.48s

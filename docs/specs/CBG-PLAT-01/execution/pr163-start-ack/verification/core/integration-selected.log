@@ -1,0 +1,14 @@
+    Finished `native-tests` profile [optimized] target(s) in 0.08s
+────────────
+ Nextest run ID 5a2de630-81bd-4656-b678-f073e08ba333 with nextest profile: pr163-verification
+    Starting 4 tests across 1 binary (20 tests skipped)
+        SLOW [> 60.000s] (───) codebase-graph::refresh_recovery_process lifecycle_faults::authenticated_cancellation_cleans_loader_and_retries_pending_edit
+        PASS [ 107.295s] (1/4) codebase-graph::refresh_recovery_process lifecycle_faults::authenticated_cancellation_cleans_loader_and_retries_pending_edit
+        SLOW [> 60.000s] (───) codebase-graph::refresh_recovery_process lifecycle_faults::owner_exit_after_state_before_start_cleans_gated_tree
+        PASS [  90.445s] (2/4) codebase-graph::refresh_recovery_process lifecycle_faults::owner_exit_after_state_before_start_cleans_gated_tree
+        SLOW [> 60.000s] (───) codebase-graph::refresh_recovery_process lifecycle_faults::paused_database_loader_exits_after_outer_worker_failure_and_refresh_recovers
+        PASS [ 110.549s] (3/4) codebase-graph::refresh_recovery_process lifecycle_faults::paused_database_loader_exits_after_outer_worker_failure_and_refresh_recovers
+        SLOW [> 60.000s] (───) codebase-graph::refresh_recovery_process lifecycle_faults::unavailable_guardian_preserves_paused_tree_evidence_until_emptiness_is_proven
+        PASS [ 109.299s] (4/4) codebase-graph::refresh_recovery_process lifecycle_faults::unavailable_guardian_preserves_paused_tree_evidence_until_emptiness_is_proven
+────────────
+     Summary [ 417.589s] 4 tests run: 4 passed (4 slow), 20 skipped

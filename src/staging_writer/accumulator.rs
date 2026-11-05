@@ -1,17 +1,20 @@
-use super::files::{copy_path, stage_file_stem, write_csv_field};
+use super::files::{
+    copy_path, create_staging_directory, finish_output, stage_file_stem, write_csv_field,
+    StagingOutputFile,
+};
 use super::merge::{merge_edge_value, merge_node_value};
 use super::result::StagingResult;
 use super::rows::{edge_fields, node_fields, EdgeStagedRow, NodeStagedRow};
 use super::spill::{
-    encode_bounded, encode_output_bounded, RecordFileReader, RecordFileWriter, SortedSpool,
-    SpillMetrics, SpillRecord,
+    encode_output, encode_record, RecordFileReader, RecordFileWriter, SortedSpool, SpillMetrics,
+    SpillRecord,
 };
-use crate::error::{MemoryBudgetExceeded, NativeError};
+use crate::error::NativeError;
 use crate::partition_builder::GraphPartition;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};
-use std::fs::{self, File};
+use std::fs;
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -30,6 +33,11 @@ pub(crate) struct StagingAccumulator {
     pending_error: Option<NativeError>,
     relation_constraints: RelationConstraints,
     metrics: SpillMetrics,
+    // Last owner: actual legacy source admission survives all spool/output
+    // owners and transfers to StagingResult through native COPY/loader close.
+    legacy_staging: Option<
+        std::sync::Arc<crate::storage::maintenance_legacy_guard::LegacyStagingProducerGuard>,
+    >,
 }
 
 #[derive(Debug, Default)]
@@ -60,13 +68,18 @@ impl StagingAccumulator {
         output_chunk_limit: usize,
     ) -> Result<Self, NativeError> {
         let staging_dir = PathBuf::from(staging_dir);
+        let legacy_staging =
+            crate::storage::maintenance_legacy_guard::before_staging_producer(&staging_dir)?
+                .map(std::sync::Arc::new);
         let sequence = RUN_SEQUENCE.fetch_add(1, Ordering::Relaxed);
         let run_root = staging_dir.join(format!(".runs-{}-{sequence}", std::process::id()));
         let metrics = SpillMetrics::default();
         let raw_records = SortedSpool::new(&run_root, "staged", chunk_limit, metrics.clone())?;
+        let mut run_workspace = RunWorkspace::new(run_root);
+        run_workspace.defer_disposal |= legacy_staging.is_some();
         Ok(Self {
             staging_dir,
-            run_workspace: RunWorkspace::new(run_root),
+            run_workspace,
             chunk_limit,
             output_chunk_limit,
             raw_records: Some(raw_records),
@@ -74,6 +87,7 @@ impl StagingAccumulator {
             pending_error: None,
             relation_constraints: RelationConstraints::from_declared_schema(),
             metrics,
+            legacy_staging,
         })
     }
 
@@ -82,9 +96,11 @@ impl StagingAccumulator {
         let staging_dir = PathBuf::from(staging_dir);
         let sequence = RUN_SEQUENCE.fetch_add(1, Ordering::Relaxed);
         Self {
-            run_workspace: RunWorkspace::new(
-                staging_dir.join(format!(".runs-{}-{sequence}", std::process::id())),
-            ),
+            run_workspace: RunWorkspace {
+                path: staging_dir.join(format!(".runs-{}-{sequence}", std::process::id())),
+                // Failed initialization created no outputs to own or remove.
+                defer_disposal: true,
+            },
             staging_dir,
             chunk_limit,
             output_chunk_limit: chunk_limit,
@@ -93,6 +109,7 @@ impl StagingAccumulator {
             pending_error: Some(error),
             relation_constraints: RelationConstraints::from_declared_schema(),
             metrics: SpillMetrics::default(),
+            legacy_staging: None,
         }
     }
 
@@ -169,7 +186,7 @@ impl StagingAccumulator {
         if let Some(error) = self.pending_error.take() {
             return Err(error);
         }
-        fs::create_dir_all(&self.staging_dir)?;
+        create_staging_directory(&self.staging_dir)?;
         let raw_records = self.raw_records.take().ok_or_else(|| {
             NativeError::InvalidInput("staging record spool was not initialized".to_string())
         })?;
@@ -177,18 +194,8 @@ impl StagingAccumulator {
         let run_root = self.run_workspace.path();
         let merged_edges_path = run_root.join("merged-edges.bin");
         let node_types_path = run_root.join("node-types.bin");
-        let mut merged_edges = RecordFileWriter::create(
-            &merged_edges_path,
-            self.chunk_limit,
-            "staging_edges",
-            self.metrics.clone(),
-        )?;
-        let mut node_types = RecordFileWriter::create(
-            &node_types_path,
-            self.chunk_limit,
-            "staging_node_types",
-            self.metrics.clone(),
-        )?;
+        let mut merged_edges = RecordFileWriter::create(&merged_edges_path, self.metrics.clone())?;
+        let mut node_types = RecordFileWriter::create(&node_types_path, self.metrics.clone())?;
         let mut endpoints = SortedSpool::new(
             run_root,
             "endpoints",
@@ -197,7 +204,6 @@ impl StagingAccumulator {
         )?;
         let mut nodes = JsonTableSink::new(
             &self.staging_dir,
-            self.chunk_limit,
             self.output_chunk_limit,
             self.metrics.clone(),
         );
@@ -305,7 +311,6 @@ impl StagingAccumulator {
         let mut merged_edge_reader = RecordFileReader::<MergedEdge>::open(&merged_edges_path)?;
         let mut edges = JsonTableSink::new(
             &self.staging_dir,
-            self.chunk_limit,
             self.output_chunk_limit,
             self.metrics.clone(),
         );
@@ -381,7 +386,6 @@ impl StagingAccumulator {
 
         let mut connector_sink = ConnectorSink::new(
             &self.staging_dir,
-            self.chunk_limit,
             self.output_chunk_limit,
             self.metrics.clone(),
         );
@@ -411,19 +415,16 @@ impl StagingAccumulator {
             unique_edge_count,
             spill_bytes,
             high_water_bytes,
+            _legacy_staging: self.legacy_staging.take(),
         })
     }
 
     fn take_source_order(&mut self) -> Result<u64, NativeError> {
         let order = self.next_source_order;
-        self.next_source_order = self.next_source_order.checked_add(1).ok_or_else(|| {
-            NativeError::MemoryBudgetExceeded(MemoryBudgetExceeded::new(
-                "staging_order",
-                u64::MAX,
-                u64::MAX,
-                0,
-            ))
-        })?;
+        self.next_source_order = self
+            .next_source_order
+            .checked_add(1)
+            .ok_or_else(|| NativeError::InvalidInput("staging source order overflow".into()))?;
         Ok(order)
     }
 
@@ -684,12 +685,11 @@ impl SpillRecord for ConnectorRecord {
 
 struct JsonTableSink {
     staging_dir: PathBuf,
-    record_limit: usize,
     chunk_limit: usize,
     metrics: SpillMetrics,
     current_table: Option<String>,
     chunk_index: usize,
-    writer: Option<BufWriter<File>>,
+    writer: Option<BufWriter<StagingOutputFile>>,
     first_row: bool,
     current_bytes: usize,
     copy_statements: Vec<String>,
@@ -697,15 +697,9 @@ struct JsonTableSink {
 }
 
 impl JsonTableSink {
-    fn new(
-        staging_dir: &Path,
-        record_limit: usize,
-        chunk_limit: usize,
-        metrics: SpillMetrics,
-    ) -> Self {
+    fn new(staging_dir: &Path, chunk_limit: usize, metrics: SpillMetrics) -> Self {
         Self {
             staging_dir: staging_dir.to_path_buf(),
-            record_limit,
             chunk_limit,
             metrics,
             current_table: None,
@@ -719,18 +713,8 @@ impl JsonTableSink {
     }
 
     fn push<T: Serialize>(&mut self, table: &str, row: &T) -> Result<(), NativeError> {
-        let encoded = encode_bounded(row, self.record_limit, "staging_json_output")?;
+        let encoded = encode_record(row)?;
         let _charge = self.metrics.charge(encoded.capacity());
-        let single_row_bytes = encoded.len().checked_add(3).ok_or_else(|| {
-            output_budget_error("staging_json_output", self.record_limit, usize::MAX)
-        })?;
-        if single_row_bytes > self.record_limit {
-            return Err(output_budget_error(
-                "staging_json_output",
-                self.record_limit,
-                single_row_bytes,
-            ));
-        }
         if self.current_table.as_deref() != Some(table) {
             self.close_chunk()?;
             self.current_table = Some(table.to_string());
@@ -743,9 +727,7 @@ impl JsonTableSink {
             .checked_add(separator_bytes)
             .and_then(|bytes| bytes.checked_add(encoded.len()))
             .and_then(|bytes| bytes.checked_add(2))
-            .ok_or_else(|| {
-                output_budget_error("staging_json_output", self.chunk_limit, usize::MAX)
-            })?;
+            .ok_or_else(|| NativeError::InvalidInput("staging JSON size overflow".into()))?;
         if !self.first_row && projected_bytes > self.chunk_limit {
             self.close_chunk()?;
             self.chunk_index = self.chunk_index.checked_add(1).ok_or_else(|| {
@@ -792,7 +774,7 @@ impl JsonTableSink {
             "json",
             self.chunk_index,
         );
-        let mut writer = BufWriter::new(File::create(&path)?);
+        let mut writer = BufWriter::new(StagingOutputFile::create(&path)?);
         writer.write_all(b"[")?;
         self.copy_statements
             .push(format!("COPY `{}` FROM \"{}\";", table, copy_path(&path)));
@@ -805,7 +787,7 @@ impl JsonTableSink {
     fn close_chunk(&mut self) -> Result<(), NativeError> {
         if let Some(mut writer) = self.writer.take() {
             writer.write_all(b"]\n")?;
-            writer.flush()?;
+            finish_output(writer)?;
         }
         self.current_bytes = 0;
         Ok(())
@@ -814,12 +796,11 @@ impl JsonTableSink {
 
 struct ConnectorSink {
     staging_dir: PathBuf,
-    record_limit: usize,
     chunk_limit: usize,
     metrics: SpillMetrics,
     current_group: Option<(String, EndpointSide, String, String)>,
     chunk_index: usize,
-    writer: Option<BufWriter<File>>,
+    writer: Option<BufWriter<StagingOutputFile>>,
     current_bytes: usize,
     rows_in_chunk: usize,
     copy_statements: Vec<String>,
@@ -827,15 +808,9 @@ struct ConnectorSink {
 }
 
 impl ConnectorSink {
-    fn new(
-        staging_dir: &Path,
-        record_limit: usize,
-        chunk_limit: usize,
-        metrics: SpillMetrics,
-    ) -> Self {
+    fn new(staging_dir: &Path, chunk_limit: usize, metrics: SpillMetrics) -> Self {
         Self {
             staging_dir: staging_dir.to_path_buf(),
-            record_limit,
             chunk_limit,
             metrics,
             current_group: None,
@@ -861,35 +836,19 @@ impl ConnectorSink {
             self.chunk_index = 0;
             self.open_chunk()?;
         }
-        let encoded =
-            encode_output_bounded(self.record_limit, "staging_connector_output", |writer| {
-                write_csv_field(writer, &connector.from_id)?;
-                writer.write_all(b",")?;
-                write_csv_field(writer, &connector.to_id)?;
-                writer.write_all(b",")?;
-                write_csv_field(writer, &connector.role)?;
-                writer.write_all(b"\r\n")
-            })?;
+        let encoded = encode_output(|writer| {
+            write_csv_field(writer, &connector.from_id)?;
+            writer.write_all(b",")?;
+            write_csv_field(writer, &connector.to_id)?;
+            writer.write_all(b",")?;
+            write_csv_field(writer, &connector.role)?;
+            writer.write_all(b"\r\n")
+        })?;
         let _charge = self.metrics.charge(encoded.capacity());
-        let single_row_bytes = CONNECTOR_HEADER
-            .len()
-            .checked_add(encoded.len())
-            .ok_or_else(|| {
-                output_budget_error("staging_connector_output", self.record_limit, usize::MAX)
-            })?;
-        if single_row_bytes > self.record_limit {
-            return Err(output_budget_error(
-                "staging_connector_output",
-                self.record_limit,
-                single_row_bytes,
-            ));
-        }
         let projected_bytes = self
             .current_bytes
             .checked_add(encoded.len())
-            .ok_or_else(|| {
-                output_budget_error("staging_connector_output", self.chunk_limit, usize::MAX)
-            })?;
+            .ok_or_else(|| NativeError::InvalidInput("staging connector size overflow".into()))?;
         if self.rows_in_chunk > 0 && projected_bytes > self.chunk_limit {
             self.close_chunk()?;
             self.chunk_index = self.chunk_index.checked_add(1).ok_or_else(|| {
@@ -937,7 +896,7 @@ impl ConnectorSink {
             stage_file_stem(to_type)
         );
         let path = chunked_output_path(&self.staging_dir, &stem, "csv", self.chunk_index);
-        let mut writer = BufWriter::new(File::create(&path)?);
+        let mut writer = BufWriter::new(StagingOutputFile::create(&path)?);
         writer.write_all(CONNECTOR_HEADER)?;
         self.copy_statements.push(format!(
             "COPY `{}` FROM \"{}\" (header=true, from=\"{}\", to=\"{}\");",
@@ -953,8 +912,8 @@ impl ConnectorSink {
     }
 
     fn close_chunk(&mut self) -> Result<(), NativeError> {
-        if let Some(mut writer) = self.writer.take() {
-            writer.flush()?;
+        if let Some(writer) = self.writer.take() {
+            finish_output(writer)?;
         }
         self.current_bytes = 0;
         self.rows_in_chunk = 0;
@@ -972,22 +931,21 @@ fn chunked_output_path(root: &Path, stem: &str, extension: &str, index: usize) -
     }
 }
 
-fn output_budget_error(phase: &str, limit: usize, accounted: usize) -> NativeError {
-    NativeError::MemoryBudgetExceeded(MemoryBudgetExceeded::new(
-        phase,
-        u64::try_from(limit).unwrap_or(u64::MAX),
-        u64::try_from(accounted).unwrap_or(u64::MAX),
-        0,
-    ))
-}
-
 struct RunWorkspace {
     path: PathBuf,
+    defer_disposal: bool,
 }
 
 impl RunWorkspace {
     fn new(path: PathBuf) -> Self {
-        Self { path }
+        // This predicate only restricts cleanup; it grants no Origin or
+        // authority over this directory or any injected child.
+        let defer_disposal = crate::db_writer::phase_has_parent_workspace()
+            || crate::storage::maintenance_controls::workspace_retention_required(&path);
+        Self {
+            path,
+            defer_disposal,
+        }
     }
 
     fn path(&self) -> &Path {
@@ -997,6 +955,11 @@ impl RunWorkspace {
 
 impl Drop for RunWorkspace {
     fn drop(&mut self) {
+        if self.defer_disposal {
+            // Genuine directory/leaf receipts let the bounded terminal lane
+            // dispose owned entries. Recursive Drop cannot infer child Origin.
+            return;
+        }
         if self.path.is_dir() {
             let _ = fs::remove_dir_all(&self.path);
         }
@@ -1054,9 +1017,86 @@ mod output_tests {
     use serde::Serialize;
     use std::time::{SystemTime, UNIX_EPOCH};
 
-    #[derive(Serialize)]
+    #[derive(Serialize, serde::Deserialize)]
     struct OutputRow {
         id: String,
+    }
+
+    #[test]
+    fn unregistered_preexisting_output_preserves_plain_write_behavior_without_adoption() {
+        let root = temp_root("untracked-existing-output");
+        let path = root.join("caller-owned.csv");
+        fs::write(&path, b"previous caller bytes").unwrap();
+        let output = StagingOutputFile::create(&path).unwrap();
+        assert!(matches!(&output, StagingOutputFile::Plain(_)));
+        let mut buffered = BufWriter::new(output);
+        buffered.write_all(b"new accepted bytes").unwrap();
+        finish_output(buffered).unwrap();
+        assert_eq!(fs::read(&path).unwrap(), b"new accepted bytes");
+        assert_eq!(
+            fs::read_dir(&root).unwrap().count(),
+            1,
+            "unknown output gained origin metadata"
+        );
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn registered_spool_drop_preserves_unreceipted_injected_child_for_terminal_collection() {
+        let root = temp_root("registered-spool-retention");
+        let store = crate::storage::managed::GraphStorage::managed(root.join("storage"));
+        let session = store.begin_write().unwrap();
+        assert!(
+            session.phase_owner_scope().is_some(),
+            "real fresh run was not registered"
+        );
+        let spool = session
+            .staging_root()
+            .unwrap()
+            .join(".runs-retention-probe");
+        create_staging_directory(&spool).unwrap();
+        let child = spool.join("injected-unknown");
+        fs::write(&child, b"must remain untouched").unwrap();
+        drop(RunWorkspace::new(spool));
+        assert_eq!(fs::read(&child).unwrap(), b"must remain untouched");
+        session.abort(None).unwrap();
+        assert_eq!(fs::read(&child).unwrap(), b"must remain untouched");
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn legacy_staging_gate_survives_finish_and_result_clones_until_loader_owner_drops() {
+        use crate::storage::locks::{try_open_existing_locked, LockMode};
+        let root = temp_root("legacy-staging-result-lifetime");
+        let state = root.join(".codebaseGraph");
+        fs::create_dir(&state).unwrap();
+        let staging = state.join("native-staging");
+        let accumulator =
+            StagingAccumulator::with_limits(staging.to_str().unwrap(), 4096, 4096).unwrap();
+        let gate = state.join(".legacy-staging.use.lock");
+        assert!(try_open_existing_locked(&gate, LockMode::Exclusive)
+            .unwrap()
+            .is_none());
+        let result = accumulator.finish().unwrap();
+        assert!(
+            try_open_existing_locked(&gate, LockMode::Exclusive)
+                .unwrap()
+                .is_none(),
+            "finish released source admission before the returned CSV paths were consumed"
+        );
+        let clone = result.clone();
+        drop(result);
+        assert!(try_open_existing_locked(&gate, LockMode::Exclusive)
+            .unwrap()
+            .is_none());
+        drop(clone);
+        assert!(
+            try_open_existing_locked(&gate, LockMode::Exclusive)
+                .unwrap()
+                .is_some(),
+            "last internal loader owner failed to release the actual source gate"
+        );
+        fs::remove_dir_all(root).unwrap();
     }
 
     #[test]
@@ -1067,7 +1107,7 @@ mod output_tests {
         };
         let encoded_len = serde_json::to_vec(&row).unwrap().len();
         let chunk_limit = encoded_len + 3;
-        let mut sink = JsonTableSink::new(&root, chunk_limit, chunk_limit, SpillMetrics::default());
+        let mut sink = JsonTableSink::new(&root, chunk_limit, SpillMetrics::default());
 
         sink.push("Symbol", &row).unwrap();
         sink.push("Symbol", &row).unwrap();
@@ -1087,42 +1127,92 @@ mod output_tests {
     }
 
     #[test]
-    fn final_outputs_reject_single_rows_larger_than_the_chunk() {
-        let root = temp_root("oversized-output");
-        let row = OutputRow {
-            id: "x".repeat(128),
+    fn final_output_limits_include_json_framing_and_csv_header() {
+        let root = temp_root("exact-output-boundaries");
+        let json_row = OutputRow {
+            id: "naïve,\"line\n".to_string(),
         };
-        let encoded_len = serde_json::to_vec(&row).unwrap().len();
-        let mut json = JsonTableSink::new(
-            &root,
-            encoded_len + 2,
-            encoded_len + 2,
-            SpillMetrics::default(),
+        let json_row_bytes = serde_json::to_vec(&json_row).unwrap().len();
+        let json_limit = json_row_bytes + 3;
+        let mut json = JsonTableSink::new(&root, json_limit, SpillMetrics::default());
+        json.push("Symbol", &json_row).unwrap();
+        let (statements, rows) = json.finish().unwrap();
+        assert_eq!(rows, 1);
+        assert_eq!(statements.len(), 1);
+        assert_eq!(
+            fs::read(root.join("symbol.json")).unwrap().len(),
+            json_limit
         );
-        let error = json.push("Symbol", &row).unwrap_err();
-        assert_budget_error(error, "staging_json_output", encoded_len + 2);
 
         let connector = ConnectorRecord {
             relation: "Contains".to_string(),
             side: EndpointSide::Source,
             from_type: "File".to_string(),
             to_type: "Contains".to_string(),
-            from_id: "source".repeat(64),
+            from_id: "naïve,\"source\n".to_string(),
             to_id: "edge:one".to_string(),
             role: "source".to_string(),
         };
-        let mut connector_sink = ConnectorSink::new(&root, 64, 64, SpillMetrics::default());
-        let error = connector_sink.push(&connector).unwrap_err();
-        assert_budget_error(error, "staging_connector_output", 64);
+        let encoded = encode_output(|writer| {
+            write_csv_field(writer, &connector.from_id)?;
+            writer.write_all(b",")?;
+            write_csv_field(writer, &connector.to_id)?;
+            writer.write_all(b",")?;
+            write_csv_field(writer, &connector.role)?;
+            writer.write_all(b"\r\n")
+        })
+        .unwrap();
+        let csv_limit = CONNECTOR_HEADER.len() + encoded.len();
+        let mut csv = ConnectorSink::new(&root, csv_limit, SpillMetrics::default());
+        csv.push(&connector).unwrap();
+        let (statements, rows) = csv.finish().unwrap();
+        assert_eq!(rows, 1);
+        assert_eq!(statements.len(), 1);
+        let csv_path = root.join("from_contains__file__contains.csv");
+        assert_eq!(fs::read(csv_path).unwrap().len(), csv_limit);
     }
 
-    fn assert_budget_error(error: NativeError, phase: &str, limit: usize) {
-        let NativeError::MemoryBudgetExceeded(error) = error else {
-            panic!("expected structured memory budget error");
+    #[test]
+    fn oversized_rows_use_individual_chunks_without_rejection() {
+        let root = temp_root("oversized-output");
+        let row = OutputRow {
+            id: "x".repeat(512),
         };
-        assert_eq!(error.phase, phase);
-        assert_eq!(error.limit_bytes, limit as u64);
-        assert!(error.accounted_bytes > error.limit_bytes);
+        let mut json = JsonTableSink::new(&root, 64, SpillMetrics::default());
+        json.push("Symbol", &row).unwrap();
+        json.push("Symbol", &row).unwrap();
+        let (statements, rows) = json.finish().unwrap();
+        assert_eq!(rows, 2);
+        assert_eq!(statements.len(), 2);
+        for file in ["symbol.json", "symbol__000001.json"] {
+            let decoded: Vec<OutputRow> =
+                serde_json::from_slice(&fs::read(root.join(file)).unwrap()).unwrap();
+            assert_eq!(decoded.len(), 1);
+            assert_eq!(decoded[0].id, row.id);
+        }
+        let connector = ConnectorRecord {
+            relation: "Contains".into(),
+            side: EndpointSide::Source,
+            from_type: "File".into(),
+            to_type: "Contains".into(),
+            from_id: "naïve,\"source\n".repeat(64),
+            to_id: "edge:one".into(),
+            role: "source".into(),
+        };
+        let mut csv = ConnectorSink::new(&root, 64, SpillMetrics::default());
+        csv.push(&connector).unwrap();
+        csv.push(&connector).unwrap();
+        let (statements, rows) = csv.finish().unwrap();
+        assert_eq!(rows, 2);
+        assert_eq!(statements.len(), 2);
+        for file in [
+            "from_contains__file__contains.csv",
+            "from_contains__file__contains__000001.csv",
+        ] {
+            let contents = fs::read(root.join(file)).unwrap();
+            assert!(contents.starts_with(CONNECTOR_HEADER));
+            assert!(contents.len() > 64);
+        }
     }
 
     fn temp_root(name: &str) -> PathBuf {
@@ -1130,7 +1220,7 @@ mod output_tests {
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        let root = std::env::temp_dir().join(format!(
+        let root = std::env::temp_dir().canonicalize().unwrap().join(format!(
             "codebase_graph_output_{name}_{}_{nanos}",
             std::process::id()
         ));

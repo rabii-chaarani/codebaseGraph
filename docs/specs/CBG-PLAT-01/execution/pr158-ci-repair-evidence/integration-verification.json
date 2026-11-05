@@ -1,0 +1,89 @@
+{
+  "repair_parent": "359d946e91c6cb3ee7e170b73c6e9bab577b0b04",
+  "main_parent": "9f69a0bd4b468eaa8652d933d518fafb8c596b6a",
+  "manual_resolution": [
+    "crates/k-wiki/Cargo.toml: codebase-graph4.0.2 + pulldown-cmark0.13.5"
+  ],
+  "expected_file_hash_matches": {
+    "Cargo.toml": true,
+    "Cargo.lock": true,
+    "crates/k-wiki/Cargo.toml": true,
+    "crates/xtask/Cargo.toml": true,
+    "crates/xtask/src/main.rs": true,
+    ".github/workflows/ci.yml": true,
+    "docs/release.md": true,
+    "docs/specs/CBG-PLAT-01/execution/cod53-windows-qualification-evidence/historical-reject-proxy.tar.gz": true,
+    "docs/specs/CBG-PLAT-01/execution/cod53-windows-qualification-evidence/archived-inputs.json": true
+  },
+  "historical_records_verified": 65,
+  "historical_index_bytes_unchanged": true,
+  "core_changes": "Same intended pretestedcombinedcontents; no manual runtime source change.",
+  "reviewers": {
+    "proposal": {
+      "model": "openai-codex/gpt-6.1-sol",
+      "thinking": "high",
+      "fresh": true,
+      "forked_transcript": false
+    },
+    "final": {
+      "model": "openai-codex/gpt-6.1-sol",
+      "thinking": "max",
+      "fresh": true,
+      "forked_transcript": false
+    }
+  },
+  "limits": [
+    "Whole merge diff has preexisting rawlog whitespace from upstream/oldPR; newCargo resolution passes scoped diffcheck.",
+    "Final corrected pushed-head nativeCI remains required.",
+    "No PRmerge/release/desktopqualification/COD53closure."
+  ],
+  "executed_checks": [
+    {
+      "command": "cargo nextest run --locked -p k-wiki -p xtask --config-file integrated-nextest.toml --profile pr158-integrated",
+      "exit": 0,
+      "passed": 176,
+      "failed": 0,
+      "skipped": 0,
+      "junit": "integrated-wiki-xtask.junit.xml",
+      "log": "integrated-wiki-xtask-tests.log"
+    },
+    {
+      "command": "cargo fmt --all -- --check; cargo clippy --workspace --all-targets --all-features --locked -- -D warnings",
+      "exit": 0,
+      "logs": [
+        "integrated-fmt.log",
+        "integrated-clippy.log"
+      ]
+    },
+    {
+      "command": "cargo run -p xtask --locked -- release-gate; guarded cargo-audit0.22.2 unchanged exception",
+      "exit": 0,
+      "logs": [
+        "integrated-release-gate.log",
+        "integrated-audit.log",
+        "integrated-time-feature-tree.log"
+      ]
+    },
+    {
+      "command": "cargo publish --dry-run --locked --allow-dirty; cargo package root; verify-crate-size; cargo package wiki with CI path patch",
+      "exit": 0,
+      "logs": [
+        "integrated-package-dry-run.log",
+        "integrated-crate-size.log",
+        "integrated-wiki-package.log"
+      ],
+      "root_crate_bytes": 8458173,
+      "limit": 10485760,
+      "limits": "Unchanged SDK supplied; no upload. Wiki archive creation, not isolated compile."
+    },
+    {
+      "command": "Windows-filtered default/root optout feature trees",
+      "exit": 0,
+      "logs": [
+        "integrated-windows-default-feature-tree.log",
+        "integrated-windows-optout-feature-tree.log"
+      ],
+      "limits": "Resolution only."
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+   Compiling codebase-graph v4.0.0 (/private/tmp/codebasegraph-cod53-windows-runtimes)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 6.02s
+────────────
+ Nextest run ID 6b2274ab-c61d-4796-a352-a52cb554289a with nextest profile: cod53
+    Starting 2 tests across 1 binary (840 tests skipped)
+        PASS [   0.319s] (1/2) codebase-graph db_writer::extensions::tests::bundled_extension_archives_decompress_before_cache_seed
+        PASS [   0.020s] (2/2) codebase-graph db_writer::extensions::tests::supports_prebuilt_and_source_built_ladybug_extension_cache_versions
+────────────
+     Summary [   0.340s] 2 tests run: 2 passed, 840 skipped

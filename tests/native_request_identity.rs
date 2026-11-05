@@ -5,8 +5,10 @@ use std::{
     process::{Command, Output},
 };
 
-fn bin() -> &'static str {
-    env!("CARGO_BIN_EXE_codebase-graph")
+fn bin() -> PathBuf {
+    std::env::var_os("CARGO_BIN_EXE_codebase-graph")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from(env!("CARGO_BIN_EXE_codebase-graph")))
 }
 
 fn unique_temp_dir(prefix: &str) -> PathBuf {

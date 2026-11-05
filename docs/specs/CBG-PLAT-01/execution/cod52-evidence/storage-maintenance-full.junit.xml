@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="nextest-run" tests="11" failures="0" errors="0" uuid="d13ac886-31c1-4353-b47a-1042b3990734" timestamp="2026-10-27T13:26:27.854+09:30" time="338.450">
+    <testsuite name="codebase-graph::storage_maintenance" tests="11" disabled="0" errors="0" failures="0">
+        <testcase name="fixture::process::tests::covered_epoch_observer_propagates_missing_serial_lock" classname="codebase-graph::storage_maintenance" timestamp="2026-10-27T13:26:27.854+09:30" time="0.018">
+            <system-out>
+running 1 test
+test fixture::process::tests::covered_epoch_observer_propagates_missing_serial_lock ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 10 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="fixture::workload::tests::independent_control_matches_twenty_source_updates_without_rewriting_stable_input" classname="codebase-graph::storage_maintenance" timestamp="2026-10-27T13:26:27.873+09:30" time="0.050">
+            <system-out>
+running 1 test
+test fixture::workload::tests::independent_control_matches_twenty_source_updates_without_rewriting_stable_input ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 10 filtered out; finished in 0.03s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="fixture::workload::tests::oracle_rejects_missing_response_fields_and_preserves_context_multiplicity" classname="codebase-graph::storage_maintenance" timestamp="2026-10-27T13:26:27.923+09:30" time="0.017">
+            <system-out>
+running 1 test
+test fixture::workload::tests::oracle_rejects_missing_response_fields_and_preserves_context_multiplicity ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 10 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="fixture::workload::tests::schedule_covers_twenty_updates_and_each_required_interruption_boundary" classname="codebase-graph::storage_maintenance" timestamp="2026-10-27T13:26:27.940+09:30" time="0.016">
+            <system-out>
+running 1 test
+test fixture::workload::tests::schedule_covers_twenty_updates_and_each_required_interruption_boundary ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 10 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="fixture::workload::tests::search_oracle_omits_only_incarnation_ids_and_keeps_rank_spans_and_content" classname="codebase-graph::storage_maintenance" timestamp="2026-10-27T13:26:27.956+09:30" time="0.016">
+            <system-out>
+running 1 test
+test fixture::workload::tests::search_oracle_omits_only_incarnation_ids_and_keeps_rank_spans_and_content ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 10 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="health_preserves_legacy_fields_and_marks_unobserved_maintenance_unknown" classname="codebase-graph::storage_maintenance" timestamp="2026-10-27T13:26:27.972+09:30" time="0.021">
+            <system-out>
+running 1 test
+test health_preserves_legacy_fields_and_marks_unobserved_maintenance_unknown ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 10 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="isolated_worker_first_creation_and_followup_keep_same_covered_publication_birth" classname="codebase-graph::storage_maintenance" timestamp="2026-10-27T13:26:27.993+09:30" time="65.946">
+            <system-out>
+running 1 test
+test isolated_worker_first_creation_and_followup_keep_same_covered_publication_birth ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 10 filtered out; finished in 65.92s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="native_phase_owner_death_preserves_prior_graph_and_retries_without_source_edit" classname="codebase-graph::storage_maintenance" timestamp="2026-10-27T13:27:33.940+09:30" time="28.272">
+            <system-out>
+running 1 test
+test native_phase_owner_death_preserves_prior_graph_and_retries_without_source_edit ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 10 filtered out; finished in 28.25s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="nonboolean_quiescence_confirmation_is_rejected_before_repository_effects" classname="codebase-graph::storage_maintenance" timestamp="2026-10-27T13:28:02.212+09:30" time="0.023">
+            <system-out>
+running 1 test
+test nonboolean_quiescence_confirmation_is_rejected_before_repository_effects ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 10 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="repeated_health_entries_preserve_source_and_foreign_sentinels" classname="codebase-graph::storage_maintenance" timestamp="2026-10-27T13:28:02.235+09:30" time="0.023">
+            <system-out>
+running 1 test
+test repeated_health_entries_preserve_source_and_foreign_sentinels ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 10 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="twenty_public_builds_match_clean_control_and_preserve_unchanged_artifact" classname="codebase-graph::storage_maintenance" timestamp="2026-10-27T13:28:02.258+09:30" time="244.046">
+            <system-out>
+running 1 test
+test twenty_public_builds_match_clean_control_and_preserve_unchanged_artifact ... revision 1: published with stable artifact reuse; watch event=refreshed event_count=0 changed_paths=0 rebuilt=0 deleted=0 skipped=true database_written=false
+revision 2: published with stable artifact reuse; watch event=refreshed event_count=0 changed_paths=0 rebuilt=0 deleted=0 skipped=true database_written=false
+revision 3: published with stable artifact reuse; watch event=refreshed event_count=0 changed_paths=0 rebuilt=0 deleted=0 skipped=true database_written=false
+revision 4: published with stable artifact reuse; watch event=refreshed event_count=0 changed_paths=0 rebuilt=0 deleted=0 skipped=true database_written=false
+revision 5: published with stable artifact reuse; watch event=refreshed event_count=0 changed_paths=0 rebuilt=0 deleted=0 skipped=true database_written=false
+revision 6: published with stable artifact reuse; watch event=refreshed event_count=0 changed_paths=0 rebuilt=0 deleted=0 skipped=true database_written=false
+revision 7: published with stable artifact reuse; watch event=refreshed event_count=0 changed_paths=0 rebuilt=0 deleted=0 skipped=true database_written=false
+revision 8: published with stable artifact reuse; watch event=refreshed event_count=0 changed_paths=0 rebuilt=0 deleted=0 skipped=true database_written=false
+revision 9: published with stable artifact reuse; watch event=refreshed event_count=0 changed_paths=0 rebuilt=0 deleted=0 skipped=true database_written=false
+revision 10: published with stable artifact reuse; watch event=refreshed event_count=0 changed_paths=0 rebuilt=0 deleted=0 skipped=true database_written=false
+revision 11: published with stable artifact reuse; watch event=refreshed event_count=0 changed_paths=0 rebuilt=0 deleted=0 skipped=true database_written=false
+revision 12: published with stable artifact reuse; watch event=refreshed event_count=0 changed_paths=0 rebuilt=0 deleted=0 skipped=true database_written=false
+revision 13: published with stable artifact reuse; watch event=refreshed event_count=0 changed_paths=0 rebuilt=0 deleted=0 skipped=true database_written=false
+revision 14: published with stable artifact reuse; watch event=refreshed event_count=0 changed_paths=0 rebuilt=0 deleted=0 skipped=true database_written=false
+revision 15: published with stable artifact reuse; watch event=refreshed event_count=0 changed_paths=0 rebuilt=0 deleted=0 skipped=true database_written=false
+revision 16: published with stable artifact reuse; watch event=refreshed event_count=0 changed_paths=0 rebuilt=0 deleted=0 skipped=true database_written=false
+revision 17: published with stable artifact reuse; watch event=refreshed event_count=0 changed_paths=0 rebuilt=0 deleted=0 skipped=true database_written=false
+revision 18: published with stable artifact reuse; watch event=refreshed event_count=0 changed_paths=0 rebuilt=0 deleted=0 skipped=true database_written=false
+revision 19: published with stable artifact reuse; watch event=refreshed event_count=0 changed_paths=0 rebuilt=0 deleted=0 skipped=true database_written=false
+revision 20: published with stable artifact reuse; watch event=refreshed event_count=0 changed_paths=0 rebuilt=0 deleted=0 skipped=true database_written=false
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 10 filtered out; finished in 244.02s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+    </testsuite>
+</testsuites>

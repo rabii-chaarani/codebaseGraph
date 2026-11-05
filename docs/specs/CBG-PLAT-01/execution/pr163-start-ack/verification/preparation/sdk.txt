@@ -1,0 +1,3 @@
+$ xcrun --show-sdk-path
+exit_code=0
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk

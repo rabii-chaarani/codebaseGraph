@@ -1,0 +1,17 @@
+{
+  "command": [
+    "/private/tmp/pr157-ci-fix-evidence/native-bin/lib-tests",
+    "--exact",
+    "storage::maintenance_collector_tests::dc_s5_artifact_use_lease_defers_obsolete_key_until_release",
+    "storage::maintenance_collector_tests::dc_s5_canonical_only_durable_detach_interruption_resumes_without_source_edit",
+    "--test-threads=1",
+    "--nocapture"
+  ],
+  "results": [
+    {
+      "iteration": 0,
+      "result": 0,
+      "seconds": 153.331854667
+    }
+  ]
+}

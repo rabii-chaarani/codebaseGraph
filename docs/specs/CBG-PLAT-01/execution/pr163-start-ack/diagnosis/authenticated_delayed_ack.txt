@@ -1,0 +1,4 @@
+ack_budget_ms=250 elapsed_ms=251 result=Err("Resource temporarily unavailable (os error 35)")
+server authenticated=true committed=1 ack=Ok(())
+server authenticated=true committed=1 ack=Ok(())
+ack_budget_ms=5000 elapsed_ms=355 result=Ok([79, 75])

@@ -1,0 +1,22 @@
+{
+  "new_distribution_source": "OpenSSL3.6.2 official source pin, noexistingdependencyversionchanged",
+  "new_source_sha256": "aaf51a1fe064384f811daeaeb4ec4dce7340ec8bd893027eee676af31e83a04f",
+  "deployment_target": "13.3 already approved/existingworkflow, nowartifactdependenciesandbothbinarycommandsenforced",
+  "native_payload_count": {
+    "macOS": 5,
+    "previousmacOS": 2,
+    "Windows": 2
+  },
+  "archive_entries": {
+    "macOS": 8,
+    "previousmacOS": 5,
+    "Windows": 5
+  },
+  "unmodified": [
+    "Ladybug0.19ABI",
+    "extensionbytes",
+    "Cargo/lock/dependencyversions",
+    "Windowsarchive",
+    "processcontainment"
+  ]
+}

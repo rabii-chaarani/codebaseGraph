@@ -1,0 +1,103 @@
+{
+  "review_kind": "fresh_read_only_integrated_foundation_review",
+  "reviewer_profile": {
+    "model": "gpt-6.1-sol",
+    "reasoning_effort": "max"
+  },
+  "baseline": "018df35e72447fc3e014e950d1d3c6648bbd4820",
+  "reviewed_commit": "e96893e025eda512b13f2a9ba754adbac45f4a49",
+  "snapshot_path": "/private/tmp/codebasegraph-cleanup-review-e968-integrated",
+  "snapshot_head": "e96893e025eda512b13f2a9ba754adbac45f4a49",
+  "source_tree_clean": true,
+  "scope": "Committed foundations only; automatic collector/scheduler, public native handle choice, canonical fast seal, legacy migration and full qualification remain pending.",
+  "findings": [
+    {
+      "priority": "P2",
+      "title": "Advisory Direct registration failures block committed reads",
+      "location": {
+        "file": "src/storage/direct.rs",
+        "line": 157
+      },
+      "secondary_location": {
+        "file": "src/storage/maintenance_ownership.rs",
+        "lines": [
+          1597,
+          1599,
+          1604
+        ]
+      },
+      "trigger": "No journal/candidate; readable committed DB/manifest, writable preexisting writer lock and readable preexisting family/resource guards; registration is either corrupt or absent while its parent is chmod555.",
+      "mechanism": "begin_read propagates register_direct_pair parse/create errors before admission. resolve_direct_read propagates this into runtime resolution.",
+      "consequence": "Existing graph queries/health lose access because optional future-cleanup overlap metadata is unavailable.",
+      "baseline": "All three isolated probes pass; registration metadata is not a committed-read prerequisite.",
+      "reviewed": "Writable first read passes; corrupt registration fails JSON parse; readonly missing-registration fails EACCES. DB/manifest bytes preserved.",
+      "remedy": "Retain real writer/resource guards and mandatory ambiguous publication replay; preserve/report failed overlap registration as unknown maintenance instead of failing a committed read. Ensure collection never treats failed registration as proven idle or overwrite corrupt evidence.",
+      "verification": "Promote the three isolated admission probes into regressions; verify runtime resolution still reads a real graph and maintenance stays unknown/pending for invalid or unwritable registration."
+    }
+  ],
+  "executed_focused_evidence": {
+    "reviewed": {
+      "snapshot": "/private/tmp/codebasegraph-cleanup-review-e968-integrated",
+      "command": [
+        "cargo",
+        "test",
+        "--offline",
+        "--locked",
+        "--test",
+        "direct_read_metadata",
+        "integrated_probe_direct_",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "environment": {
+        "REVIEW_SNAPSHOT": "/private/tmp/codebasegraph-cleanup-review-e968-integrated",
+        "CARGO_TARGET_DIR": "/Users/rabii/Projects/Repositories/codebaseGraph/target"
+      },
+      "returncode": 101,
+      "source_hashes_unchanged": true,
+      "binary": "/Users/rabii/Projects/Repositories/codebaseGraph/target/debug/deps/direct_read_metadata-4bce9bdfddc3e313",
+      "binary_sha256": "f6790e8d6b07dcdd20437bc0baf216d5989e60c87f8fc6514871797cb3c50d48"
+    },
+    "baseline": {
+      "snapshot": "/private/tmp/codebasegraph-integrated-availability-probe/baseline",
+      "command": [
+        "cargo",
+        "test",
+        "--offline",
+        "--locked",
+        "--test",
+        "direct_read_metadata",
+        "integrated_probe_direct_",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "environment": {
+        "REVIEW_SNAPSHOT": "/private/tmp/codebasegraph-integrated-availability-probe/baseline",
+        "CARGO_TARGET_DIR": "/Users/rabii/Projects/Repositories/codebaseGraph/target"
+      },
+      "returncode": 0,
+      "source_hashes_unchanged": true,
+      "binary": "/Users/rabii/Projects/Repositories/codebaseGraph/target/debug/deps/direct_read_metadata-4bce9bdfddc3e313",
+      "binary_sha256": "38e6947b1ea4d8e2319459bc95daa5553cacd479d9e0440c293959ce70f77273"
+    },
+    "distinct_probe_count": 3,
+    "counts_must_not_be_summed_with_prior_or_coordinator_runs": true
+  },
+  "probe_files": {
+    "probe.rs": "ace66a175f8774b89ff3f960929aa69ed6d9c4804b1f193fda8c48a41420a10c",
+    "Cargo.toml": "acf85ab74d690566d7f0f340e503607e18d15fe851df657e72bb78d5628ecb5b",
+    "Cargo.lock": "2eb043ceac36eeb2aa62090ca1558175f046d76b21478c7df1527be3fc500c28",
+    "run_probe.py": "49be1301056ee0ddfa8295d51f04e4e4b04d964b3b9f7cc80ec05ba0adcf7329",
+    "baseline-dependency-versions.json": "a46d4361b463c6e599a288a1e93b92ce070bcaa7a46ea6c246bcaa308bec5592"
+  },
+  "limitations": [
+    "Only deterministic local storage admission probes were executed by this reviewer; native DB bytes were synthetic because failure occurs before opening/inspecting native contents. Reachability into runtime resolution established statically.",
+    "Coordinator-reported295pass combined run and checks were not rerun or counted as this reviewer execution.",
+    "Configured graph indexes older original checkout; existing files located through it, new foundation files/test fixtures mapped using frozen commit and Scryer.",
+    "No live cleanup, daemon operation, source/test/wiki/Scryer mutation, native Linux/Windows qualification or full five-step closure.",
+    "No second confirmed defect found; pending runtime and qualification work remains a gate."
+  ],
+  "memory_recording_decision": "Do not create memory during this read-only review; the confirmed unfixed defect and probe are concrete fix evidence. Coordinator should decide durable memory after verified resolution."
+}

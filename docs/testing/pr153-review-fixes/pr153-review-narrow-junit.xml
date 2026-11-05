@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="nextest-run" tests="7" failures="0" errors="0" uuid="fa216d78-5b4d-40ed-bab7-71aa0c0e3fa0" timestamp="2026-10-26T09:33:11.433+09:30" time="0.582">
+    <testsuite name="codebase-graph" tests="7" disabled="0" errors="0" failures="0">
+        <testcase name="storage::maintenance_candidate::tests::retirement_control_roundtrip_does_not_certify_whole_pass" classname="codebase-graph" timestamp="2026-10-26T09:33:11.436+09:30" time="0.027">
+        </testcase>
+        <testcase name="storage::maintenance_candidate::tests::prepared_candidate_crossings_keep_large_state_indirect" classname="codebase-graph" timestamp="2026-10-26T09:33:11.437+09:30" time="0.026">
+        </testcase>
+        <testcase name="storage::maintenance_candidate::tests::candidate_reason_codes_are_fixed_and_reports_do_not_invent_measurements" classname="codebase-graph" timestamp="2026-10-26T09:33:11.436+09:30" time="0.027">
+        </testcase>
+        <testcase name="storage::maintenance_candidate::tests::managed_confirmation_remains_pending_until_legacy_enrollment" classname="codebase-graph" timestamp="2026-10-26T09:33:11.436+09:30" time="0.337">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_generations_engine::tests::legacy_generation_advisory_scan_exceeds_one_hundred_entries" classname="codebase-graph" timestamp="2026-10-26T09:33:11.436+09:30" time="0.534">
+        </testcase>
+        <testcase name="storage::maintenance_candidate::tests::direct_confirmation_does_not_block_modern_metadata_recovery" classname="codebase-graph" timestamp="2026-10-26T09:33:11.436+09:30" time="0.534">
+        </testcase>
+        <testcase name="storage::maintenance_candidate::tests::candidate_recovers_interrupted_role_control_before_parsing_legacy_payload" classname="codebase-graph" timestamp="2026-10-26T09:33:11.436+09:30" time="0.579">
+        </testcase>
+    </testsuite>
+</testsuites>

@@ -1,0 +1,95 @@
+   Compiling xtask v4.0.0 (/private/tmp/codebasegraph-fix-release-python-40453997235/crates/xtask)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.87s
+     Running unittests src/main.rs (target/debug/deps/xtask-3ae50130c6c7ac02)
+
+running 43 tests
+test native_tests::shards::tests::empty_shard_never_runs_an_unfiltered_suite ... ok
+test native_tests::shards::tests::selected_exact_filters_execute_the_expected_real_harness_cases ... ok
+test native_tests::shards::tests::shards_cover_every_listed_case_once_and_bound_windows_arguments ... ok
+test native_tests::tests::captured_cli_survives_cargo_replacing_its_output ... ok
+test native_tests::tests::partitions_every_test_target_and_keeps_new_integration_targets ... ok
+test native_tests::tests::windows_regressions_precede_the_complete_unfiltered_suite ... ok
+test release::tests::metadata_rejects_inconsistent_versions ... ok
+test release::tests::notes_only_include_the_exact_release ... ok
+test release::tests::notes_reject_missing_duplicate_and_empty_sections ... ok
+test release::workflow_tests::ci_run_recovery_dry_run_validates_without_authorizing_publication ... ok
+test release::workflow_tests::ordinary_commit_cannot_authorize_release_and_tagged_retry_still_can ... ok
+test release::workflow_tests::proposal_reports_pending_release_then_proceeds_after_finalization ... ok
+test release::workflow_tests::publisher_rejects_conflicting_tags_and_does_not_regress_latest ... ok
+test release::workflow_tests::publisher_targets_original_sha_and_is_idempotent ... ok
+test release::workflow_tests::recovery_requires_one_target_and_forbids_ci_run_rebuilds ... ok
+test release::workflow_tests::verified_release_rejects_failed_ci_and_untrusted_run_identity ... ok
+test release::workflow_tests::verified_release_rejects_untrusted_prs_and_removed_history ... ok
+test release::workflow_tests::verified_release_survives_main_advancing_and_ignores_other_pending_releases ... ok
+test tests::archive_contract_rejects_unexpected_entries ... ok
+test tests::complete_artifact_set_rejects_mixed_provenance ... ok
+test tests::crate_size_validation_enforces_the_registry_limit ... ok
+test tests::installer_rejects_removed_hosts_before_reading_archives_or_writing_destinations ... ok
+test tests::native_capture_requires_unique_source_bound_normal_cli_artifact ... ok
+test tests::native_capture_reuses_the_exact_test_profile_and_features ... ok
+test tests::native_target_contract_maps_names_and_binaries ... ok
+test tests::native_test_failure_cannot_authorize_artifact_production ... ok
+test tests::release_identity_validation_is_strict ... ok
+test tests::windows_native_tests_forward_bundled_extensions ... ok
+test tests::workflow_policy_rejects_automatic_rebuild_recovery ... ok
+test tests::workflow_policy_rejects_direct_release_push_trigger ... ok
+test tests::workflow_policy_rejects_github_sha_for_release_identity ... ok
+test tests::workflow_policy_rejects_missing_ci_success_guard ... ok
+test tests::workflow_policy_rejects_missing_crate_publish_retry ... ok
+test tests::workflow_policy_rejects_missing_crate_size_gates ... ok
+test tests::workflow_policy_rejects_missing_repository_release_gate ... ok
+test tests::workflow_policy_rejects_missing_triggering_run_binding ... ok
+test tests::workflow_policy_rejects_release_queue_replacement ... ok
+test tests::workflow_policy_rejects_unconditional_release_publication ... ok
+test tests::workflow_policy_rejects_unvalidated_publishers ... ok
+test tests::workflow_policy_requires_ci_completion_release_trigger ... ok
+test tests::workflow_policy_requires_publication_revalidation ... ok
+test tests::workflow_yaml_validation_rejects_unindented_heredoc_body ... ok
+test tests::workflows_reject_removed_platform_targets ... ok
+
+test result: ok. 43 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 7.02s
+
+    Checking typenum v1.20.1
+    Checking cfg-if v1.0.4
+    Checking libc v0.2.189
+    Checking bitflags v2.13.0
+    Checking serde_core v1.0.228
+    Checking itoa v1.0.18
+    Checking equivalent v1.0.2
+    Checking hashbrown v0.15.5
+    Checking adler2 v2.0.1
+    Checking simd-adler32 v0.3.10
+    Checking crc32fast v1.5.0
+    Checking zmij v1.0.21
+    Checking libyaml-rs v0.3.0
+    Checking ryu v1.0.23
+    Checking memchr v2.8.2
+    Checking miniz_oxide v0.9.1
+    Checking flate2 v1.1.10
+    Checking errno v0.3.14
+    Checking filetime v0.2.29
+    Checking cpufeatures v0.2.17
+    Checking indexmap v2.7.1
+    Checking rustix v1.1.4
+    Checking generic-array v0.14.7
+    Checking block-buffer v0.10.4
+    Checking crypto-common v0.1.7
+    Checking digest v0.10.7
+    Checking sha2 v0.10.9
+    Checking xattr v1.6.1
+    Checking tar v0.4.46
+    Checking serde v1.0.228
+    Checking serde_json v1.0.150
+    Checking yaml_serde v0.10.7
+    Checking xtask v4.0.0 (/private/tmp/codebasegraph-fix-release-python-40453997235/crates/xtask)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.50s
+   Compiling xtask v4.0.0 (/private/tmp/codebasegraph-fix-release-python-40453997235/crates/xtask)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.68s
+     Running `target/debug/xtask check-workflows`
+workflow policy passed
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.05s
+     Running `target/debug/xtask release-gate`
+release gate passed
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.06s
+     Running `target/debug/xtask release-gate --production --confirm release-environment --confirm private-vulnerability-reporting`
+release gate passed

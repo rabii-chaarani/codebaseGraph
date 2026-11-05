@@ -1,0 +1,11 @@
+{
+  "source_channel": {
+    "url": "https://download.visualstudio.microsoft.com/download/pr/4bc08c27-bd31-470c-9a30-3b62707fbf0f/1786d42a74c7ba31aa2670316eda6a9c9de755ce1ca87b8f7ed8766dcdf9b4e3/VisualStudio.17.Release.chman",
+    "sha256": "9312f33527b6f89ee6290ac59190584d137959dadd0a3334c40ea3de188ab5c4"
+  },
+  "catalog_url": "https://download.visualstudio.microsoft.com/download/pr/4bc08c27-bd31-470c-9a30-3b62707fbf0f/5bd3b0b2ae509af2e9559b852f78545df0bf2c081dd850caed76f1dc134c511e/VisualStudio.vsman",
+  "declared_sha256": "5bd3b0b2ae509af2e9559b852f78545df0bf2c081dd850caed76f1dc134c511e",
+  "actual_sha256": "87791000b1d6357e174f039ce9c2f03d150d4e90b45e8e52468d797dac62022c",
+  "status": "MISMATCH - NOT accepted as pinned source",
+  "limits": "OfficialHTTPS catalog discovery only; no installer or payload executed/copied/shipped. No silent trust fallback."
+}

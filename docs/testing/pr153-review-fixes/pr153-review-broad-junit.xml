@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="nextest-run" tests="30" failures="0" errors="0" uuid="5722dd8f-be72-4df1-85a8-631ebc8c57f0" timestamp="2026-10-26T09:33:18.815+09:30" time="34.768">
+    <testsuite name="codebase-graph" tests="30" disabled="0" errors="0" failures="0">
+        <testcase name="storage::maintenance_candidate::tests::candidate_reason_codes_are_fixed_and_reports_do_not_invent_measurements" classname="codebase-graph" timestamp="2026-10-26T09:33:18.816+09:30" time="0.018">
+        </testcase>
+        <testcase name="storage::maintenance_candidate::tests::candidate_recovers_interrupted_role_control_before_parsing_legacy_payload" classname="codebase-graph" timestamp="2026-10-26T09:33:18.834+09:30" time="0.280">
+        </testcase>
+        <testcase name="storage::maintenance_candidate::tests::direct_confirmation_does_not_block_modern_metadata_recovery" classname="codebase-graph" timestamp="2026-10-26T09:33:19.114+09:30" time="0.252">
+        </testcase>
+        <testcase name="storage::maintenance_candidate::tests::managed_confirmation_remains_pending_until_legacy_enrollment" classname="codebase-graph" timestamp="2026-10-26T09:33:19.365+09:30" time="0.109">
+        </testcase>
+        <testcase name="storage::maintenance_candidate::tests::prepared_candidate_crossings_keep_large_state_indirect" classname="codebase-graph" timestamp="2026-10-26T09:33:19.475+09:30" time="0.019">
+        </testcase>
+        <testcase name="storage::maintenance_candidate::tests::retirement_control_roundtrip_does_not_certify_whole_pass" classname="codebase-graph" timestamp="2026-10-26T09:33:19.494+09:30" time="0.016">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_association::checkpoint_tests::dc_legacy_fixed_certificate_rejects_reserved_and_torn_frames" classname="codebase-graph" timestamp="2026-10-26T09:33:19.510+09:30" time="0.019">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_association::checkpoint_tests::dc_legacy_streaming_native_schema_matches_current_assets" classname="codebase-graph" timestamp="2026-10-26T09:33:19.529+09:30" time="0.018">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_association::tests::dc_legacy_actual_native_association_restart_and_backup_keep_three_payload_fds" classname="codebase-graph" timestamp="2026-10-26T09:33:19.547+09:30" time="4.501">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_association::tests::dc_legacy_cache_change_after_certification_invalidates_final_join" classname="codebase-graph" timestamp="2026-10-26T09:33:24.049+09:30" time="3.470">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_association::tests::dc_legacy_database_catalog_and_source_root_substitution_are_unknown" classname="codebase-graph" timestamp="2026-10-26T09:33:27.519+09:30" time="6.607">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_association::tests::dc_legacy_durable_checkpoint_resumes_after_one_payload_without_relabeling_epoch" classname="codebase-graph" timestamp="2026-10-26T09:33:34.126+09:30" time="3.459">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_association::tests::dc_legacy_manifest_and_cache_substitution_never_mint_association" classname="codebase-graph" timestamp="2026-10-26T09:33:37.584+09:30" time="3.122">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_association::tests::dc_legacy_original_epoch_cancellation_and_cap_fail_closed" classname="codebase-graph" timestamp="2026-10-26T09:33:40.707+09:30" time="3.240">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_association::tests::dc_legacy_real_public_producer_without_receipts_has_complete_native_association" classname="codebase-graph" timestamp="2026-10-26T09:33:43.946+09:30" time="3.366">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_bootstrap::cohort_preparation_layout_tests::accepted_administrative_cohort_keeps_binding_image_out_of_fixed_owner_layout" classname="codebase-graph" timestamp="2026-10-26T09:33:47.313+09:30" time="0.018">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_bootstrap::retained_source_observation_layout_tests::retained_source_observer_keeps_snapshot_image_out_of_fixed_owner_layout" classname="codebase-graph" timestamp="2026-10-26T09:33:47.331+09:30" time="0.016">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_bootstrap::source_recovery_tests::dc_legacy_staging_owned_commit_recovers_without_another_confirmation" classname="codebase-graph" timestamp="2026-10-26T09:33:47.347+09:30" time="0.118">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_bootstrap::source_recovery_tests::dc_legacy_staging_owned_intent_recovers_without_another_confirmation" classname="codebase-graph" timestamp="2026-10-26T09:33:47.466+09:30" time="0.098">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_bootstrap::source_recovery_tests::dc_legacy_staging_owned_slot_recovers_without_another_confirmation" classname="codebase-graph" timestamp="2026-10-26T09:33:47.564+09:30" time="0.099">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_bootstrap::staging_scope_layout_tests::prepared_staging_scope_keeps_binding_and_scratch_images_boxed" classname="codebase-graph" timestamp="2026-10-26T09:33:47.663+09:30" time="0.017">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_bootstrap::tests::dc_legacy_real_dispatcher_claim_closes_and_aborts_only_staging_scope" classname="codebase-graph" timestamp="2026-10-26T09:33:47.679+09:30" time="0.097">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_bootstrap::tests::dc_legacy_real_dispatcher_claim_enrolls_and_explicit_rebuild_invalidates_original_owner" classname="codebase-graph" timestamp="2026-10-26T09:33:47.777+09:30" time="0.101">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_generations_engine::tests::legacy_generation_advisory_scan_exceeds_one_hundred_entries" classname="codebase-graph" timestamp="2026-10-26T09:33:47.878+09:30" time="0.043">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_guard::source_observation_layout_tests::prepared_source_observation_keeps_snapshot_and_recovery_images_boxed" classname="codebase-graph" timestamp="2026-10-26T09:33:47.921+09:30" time="0.016">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_guard::tests::dc_legacy_staging_closed_record_refuses_new_actual_producer" classname="codebase-graph" timestamp="2026-10-26T09:33:47.938+09:30" time="0.035">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_guard::tests::dc_legacy_staging_custom_root_is_not_enrolled_or_created" classname="codebase-graph" timestamp="2026-10-26T09:33:47.972+09:30" time="0.016">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_guard::tests::dc_legacy_staging_retains_actual_shared_gate_through_arc_result_lifetime" classname="codebase-graph" timestamp="2026-10-26T09:33:47.989+09:30" time="0.021">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_staging::tests::dc_staging_actual_public_copy_json_csv_profiles_and_streamed_certificates" classname="codebase-graph" timestamp="2026-10-26T09:33:48.010+09:30" time="5.554">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_staging::tests::dc_staging_filenames_select_only_exact_known_profiles" classname="codebase-graph" timestamp="2026-10-26T09:33:53.564+09:30" time="0.019">
+        </testcase>
+    </testsuite>
+</testsuites>

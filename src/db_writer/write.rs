@@ -5,18 +5,12 @@ use super::phase::{
 use super::request::{LadybugWriteMetrics, LadybugWriteRequest};
 use super::rss::release_unused_allocator_pages;
 use super::schema::statement_phases;
-use super::{
-    connect_ladybug_database, open_ladybug_database_with_limits, retry_transient_database,
-    WRITE_RETRY_POLICY,
-};
+use super::{connect_ladybug_database, open_ladybug_database_with_threads};
 use crate::error::NativeError;
 use lbug::Connection;
 use std::collections::BTreeSet;
 use std::fs;
 use std::path::Path;
-
-const INITIAL_DATABASE_BUFFER_POOL_BYTES: u64 = 256 * 1024 * 1024;
-const DATABASE_BUFFER_POOL_STEP_BYTES: u64 = 64 * 1024 * 1024;
 
 pub fn write_database(request: LadybugWriteRequest) -> Result<(), NativeError> {
     write_database_with_metrics(request).map(|_| ())
@@ -25,20 +19,22 @@ pub fn write_database(request: LadybugWriteRequest) -> Result<(), NativeError> {
 pub fn write_database_with_metrics(
     request: LadybugWriteRequest,
 ) -> Result<LadybugWriteMetrics, NativeError> {
+    let _database_use = crate::storage::maintenance_ownership::DatabaseUseLease::acquire_shared(
+        Path::new(&request.db_path),
+    )?;
     if phase_worker_available() {
         write_database_isolated(&request)
     } else {
-        retry_transient_database(WRITE_RETRY_POLICY, || write_database_once(&request))?;
+        write_database_once(&request)?;
         Ok(LadybugWriteMetrics::default())
     }
 }
 
 fn write_database_once(request: &LadybugWriteRequest) -> Result<(), NativeError> {
     prepare_candidate(request)?;
-    let database = open_ladybug_database_with_limits(
+    let database = open_ladybug_database_with_threads(
         Path::new(&request.db_path),
         false,
-        request.buffer_pool_bytes,
         request.max_num_threads,
     )?;
     let connection = connect_ladybug_database(&database)?;
@@ -53,7 +49,7 @@ fn write_database_once(request: &LadybugWriteRequest) -> Result<(), NativeError>
     }
     let phases = statement_phases(request.include_fts, &request.schema_statements);
     for statement in phases.pre_copy {
-        query_ignoring_existing(&connection, statement)?;
+        run_schema_query(&connection, statement)?;
     }
     if request.defer_hash_indexes {
         execute_deferred_index_copy(&connection, request)?;
@@ -63,13 +59,20 @@ fn write_database_once(request: &LadybugWriteRequest) -> Result<(), NativeError>
         }
     }
     for statement in phases.post_copy {
-        query_ignoring_existing(&connection, statement)?;
+        run_schema_query(&connection, statement)?;
     }
     Ok(())
 }
 
 fn write_database_isolated(
     request: &LadybugWriteRequest,
+) -> Result<LadybugWriteMetrics, NativeError> {
+    write_database_isolated_with(request, run_phase)
+}
+
+fn write_database_isolated_with(
+    request: &LadybugWriteRequest,
+    mut execute: impl FnMut(&LadybugWriteRequest, LadybugWritePhase) -> Result<u64, NativeError>,
 ) -> Result<LadybugWriteMetrics, NativeError> {
     prepare_candidate(request)?;
     let phases = statement_phases(request.include_fts, &request.schema_statements);
@@ -92,7 +95,7 @@ fn write_database_isolated(
     // resident in the parent allocator. Return them before the first Ladybug
     // child so the combined parent+child RSS supervisor measures live work.
     release_unused_allocator_pages();
-    let mut high_water_bytes = run_phase(
+    let mut high_water_bytes = execute(
         request,
         LadybugWritePhase::Schema {
             defer_hash_indexes: request.defer_hash_indexes,
@@ -117,8 +120,10 @@ fn write_database_isolated(
         .iter()
         .enumerate()
     {
-        high_water_bytes =
-            high_water_bytes.max(run_copy_phase(request, index, statement, &runtime_loads)?);
+        high_water_bytes = high_water_bytes.max(execute(
+            request,
+            copy_phase(request, index, statement, &runtime_loads),
+        )?);
         if request.defer_hash_indexes {
             let table = node_table_name(statement).ok_or_else(|| {
                 NativeError::InvalidInput(format!(
@@ -128,7 +133,7 @@ fn write_database_isolated(
             })?;
             if early_index_tables.contains(table) {
                 if indexed_tables.insert(table.to_string()) {
-                    high_water_bytes = high_water_bytes.max(run_phase(
+                    high_water_bytes = high_water_bytes.max(execute(
                         request,
                         LadybugWritePhase::Index {
                             table: table.to_string(),
@@ -142,21 +147,19 @@ fn write_database_isolated(
     }
     for table in node_tables {
         high_water_bytes =
-            high_water_bytes.max(run_phase(request, LadybugWritePhase::Index { table })?);
+            high_water_bytes.max(execute(request, LadybugWritePhase::Index { table })?);
     }
     for (offset, statement) in request.copy_statements[connector_start..]
         .iter()
         .enumerate()
     {
-        high_water_bytes = high_water_bytes.max(run_copy_phase(
+        high_water_bytes = high_water_bytes.max(execute(
             request,
-            connector_start + offset,
-            statement,
-            &[],
+            copy_phase(request, connector_start + offset, statement, &[]),
         )?);
     }
     for statement in phases.post_copy {
-        high_water_bytes = high_water_bytes.max(run_phase(
+        high_water_bytes = high_water_bytes.max(execute(
             request,
             LadybugWritePhase::PostCopy {
                 statement: statement.to_string(),
@@ -183,66 +186,27 @@ fn prepare_candidate(request: &LadybugWriteRequest) -> Result<(), NativeError> {
 
 fn phase_request(
     request: &LadybugWriteRequest,
-    buffer_pool_bytes: u64,
     phase: LadybugWritePhase,
 ) -> LadybugWritePhaseRequest {
-    LadybugWritePhaseRequest::new(
-        &request.db_path,
-        request.worker_memory_bytes,
-        buffer_pool_bytes,
-        request.max_num_threads,
-        phase,
-    )
+    LadybugWritePhaseRequest::new(&request.db_path, request.max_num_threads, phase)
 }
 
-fn run_copy_phase(
+fn copy_phase(
     request: &LadybugWriteRequest,
     index: usize,
     statement: &str,
     runtime_loads: &[String],
-) -> Result<u64, NativeError> {
-    run_phase(
-        request,
-        LadybugWritePhase::Copy {
-            index,
-            total: request.copy_statements.len(),
-            statement: statement.to_string(),
-            runtime_loads: runtime_loads.to_vec(),
-        },
-    )
-}
-
-fn run_phase(request: &LadybugWriteRequest, phase: LadybugWritePhase) -> Result<u64, NativeError> {
-    let mut buffer_pool_bytes = request
-        .buffer_pool_bytes
-        .min(INITIAL_DATABASE_BUFFER_POOL_BYTES);
-    loop {
-        match run_isolated_phase(&phase_request(request, buffer_pool_bytes, phase.clone())) {
-            Ok(high_water_bytes) => return Ok(high_water_bytes),
-            Err(error)
-                if is_retryable_buffer_pool_exhaustion(&error)
-                    && buffer_pool_bytes < request.buffer_pool_bytes =>
-            {
-                buffer_pool_bytes =
-                    next_buffer_pool_bytes(buffer_pool_bytes, request.buffer_pool_bytes);
-            }
-            Err(error) => return Err(error),
-        }
+) -> LadybugWritePhase {
+    LadybugWritePhase::Copy {
+        index,
+        total: request.copy_statements.len(),
+        statement: statement.to_string(),
+        runtime_loads: runtime_loads.to_vec(),
     }
 }
 
-fn next_buffer_pool_bytes(current: u64, maximum: u64) -> u64 {
-    current
-        .saturating_add(DATABASE_BUFFER_POOL_STEP_BYTES)
-        .min(maximum)
-}
-
-fn is_retryable_buffer_pool_exhaustion(error: &NativeError) -> bool {
-    let NativeError::Database(message) = error else {
-        return false;
-    };
-    let message = message.to_ascii_lowercase();
-    message.contains("buffer pool is full") && !message.contains("checkpoint after")
+fn run_phase(request: &LadybugWriteRequest, phase: LadybugWritePhase) -> Result<u64, NativeError> {
+    run_isolated_phase(&phase_request(request, phase))
 }
 
 fn execute_deferred_index_copy(
@@ -373,63 +337,116 @@ fn node_table_name(statement: &str) -> Option<&str> {
         .then_some(table)
 }
 
-fn query_ignoring_existing(
-    connection: &Connection<'_>,
-    statement: &str,
-) -> Result<(), NativeError> {
-    match connection.query(statement) {
-        Ok(_) => Ok(()),
-        Err(error) => {
-            let message = error.to_string().to_lowercase();
-            if message.contains("already exists")
-                || message.contains("exists already")
-                || message.contains("already installed")
-            {
-                Ok(())
-            } else {
-                Err(NativeError::Database(error.to_string()))
-            }
-        }
-    }
+fn run_schema_query(connection: &Connection<'_>, statement: &str) -> Result<(), NativeError> {
+    connection
+        .query(statement)
+        .map(|_| ())
+        .map_err(|error| NativeError::Database(error.to_string()))
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        is_retryable_buffer_pool_exhaustion, next_buffer_pool_bytes,
-        DATABASE_BUFFER_POOL_STEP_BYTES, INITIAL_DATABASE_BUFFER_POOL_BYTES,
-    };
-    use crate::error::{MemoryBudgetExceeded, NativeError};
+    use super::*;
+    use std::cell::RefCell;
+    use std::path::PathBuf;
 
-    #[test]
-    fn database_pool_escalation_is_bounded_and_incremental() {
-        let maximum = 384 * 1024 * 1024;
-        let second = next_buffer_pool_bytes(INITIAL_DATABASE_BUFFER_POOL_BYTES, maximum);
-        let third = next_buffer_pool_bytes(second, maximum);
-
-        assert_eq!(second, 320 * 1024 * 1024);
-        assert_eq!(third, maximum);
-        assert_eq!(next_buffer_pool_bytes(third, maximum), maximum);
-        assert_eq!(DATABASE_BUFFER_POOL_STEP_BYTES, 64 * 1024 * 1024);
+    fn request(copy_count: usize) -> (PathBuf, LadybugWriteRequest) {
+        let root = std::env::temp_dir().join(format!(
+            "writer-phase-order-{}-{}-{}",
+            std::process::id(),
+            copy_count,
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let mut statements = (0..copy_count)
+            .map(|i| format!("COPY `Thing` FROM 'rows{i}.csv'"))
+            .collect::<Vec<_>>();
+        statements.push("COPY `FROM_Links` FROM 'links.csv'".into());
+        let request = LadybugWriteRequest {
+            db_path: root.join("candidate.lbug").to_string_lossy().to_string(),
+            max_num_threads: 3,
+            defer_hash_indexes: true,
+            include_fts: true,
+            schema_statements: vec![
+                "CREATE NODE TABLE IF NOT EXISTS `Thing`(`id` STRING PRIMARY KEY)".into(),
+                "CALL CREATE_FTS_INDEX('Thing', 'thing', ['id'])".into(),
+            ],
+            copy_statements: statements,
+        };
+        (root, request)
     }
 
     #[test]
-    fn only_failed_database_operations_retry_pool_exhaustion() {
-        let copy_failure = NativeError::Database(
-            "COPY failed: Buffer manager exception: the buffer pool is full".to_string(),
-        );
-        let checkpoint_failure = NativeError::Database(
-            "checkpoint after COPY failed: the buffer pool is full".to_string(),
-        );
-        let budget_failure = NativeError::MemoryBudgetExceeded(MemoryBudgetExceeded::new(
-            "ladybug_copy",
-            768 * 1024 * 1024,
-            760 * 1024 * 1024,
-            760 * 1024 * 1024,
-        ));
+    fn isolated_phase_schedule_stops_after_first_error_without_replay() {
+        let successful_schedule = ["schema", "copy0", "index", "copy1", "copy2", "postcopy"];
+        for failure_index in 0..successful_schedule.len() {
+            let (root, request) = request(2);
+            fs::create_dir_all(&root).unwrap();
+            let calls = RefCell::new(Vec::new());
+            let result = write_database_isolated_with(&request, |request, phase| {
+                let ordinal = calls.borrow().len();
+                let phase_request = phase_request(request, phase.clone());
+                let encoded = serde_json::to_value(&phase_request).unwrap();
+                assert!(encoded.get("buffer_pool_bytes").is_none());
+                assert!(encoded.get("worker_memory_bytes").is_none());
+                calls.borrow_mut().push(phase);
+                if ordinal == failure_index {
+                    Err(NativeError::Database(
+                        "first failure: buffer pool is full".into(),
+                    ))
+                } else {
+                    Ok(1)
+                }
+            });
+            assert_eq!(
+                result.unwrap_err().to_string(),
+                "first failure: buffer pool is full"
+            );
+            let phases = calls.into_inner();
+            assert_eq!(phases.len(), failure_index + 1);
+            for (ordinal, phase) in phases.iter().enumerate() {
+                match (successful_schedule[ordinal], phase) {
+                    ("schema", LadybugWritePhase::Schema { .. }) => {}
+                    ("copy0", LadybugWritePhase::Copy { index: 0, .. }) => {}
+                    ("copy1", LadybugWritePhase::Copy { index: 1, .. }) => {}
+                    ("copy2", LadybugWritePhase::Copy { index: 2, .. }) => {}
+                    ("index", LadybugWritePhase::Index { .. }) => {}
+                    ("postcopy", LadybugWritePhase::PostCopy { .. }) => {}
+                    other => panic!("unexpected phase schedule row: {other:?}"),
+                }
+            }
+            let _ = fs::remove_dir_all(root);
+        }
+    }
 
-        assert!(is_retryable_buffer_pool_exhaustion(&copy_failure));
-        assert!(!is_retryable_buffer_pool_exhaustion(&checkpoint_failure));
-        assert!(!is_retryable_buffer_pool_exhaustion(&budget_failure));
+    #[test]
+    fn query_errors_are_not_suppressed_by_duplicate_ddl_wording() {
+        let root = std::env::temp_dir().join(format!("writer-query-test-{}", std::process::id()));
+        fs::create_dir_all(&root).unwrap();
+        let path = root.join("db.lbug");
+        let database = open_ladybug_database_with_threads(&path, false, 1).unwrap();
+        let connection = connect_ladybug_database(&database).unwrap();
+        run_schema_query(
+            &connection,
+            "CREATE NODE TABLE IF NOT EXISTS `Thing`(`id` STRING PRIMARY KEY)",
+        )
+        .unwrap();
+        run_schema_query(
+            &connection,
+            "CREATE NODE TABLE IF NOT EXISTS `Thing`(`id` STRING PRIMARY KEY)",
+        )
+        .unwrap();
+        let error = run_schema_query(
+            &connection,
+            "CREATE NODE TABLE `Thing`(`id` STRING PRIMARY KEY)",
+        )
+        .unwrap_err();
+        let message = error.to_string().to_lowercase();
+        assert!(message.contains("already exists") || message.contains("exists already"));
+        drop(connection);
+        drop(database);
+        fs::remove_dir_all(root).unwrap();
     }
 }

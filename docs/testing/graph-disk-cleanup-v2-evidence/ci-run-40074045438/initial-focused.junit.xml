@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="nextest-run" tests="31" failures="0" errors="0" uuid="bd69e0f9-45b0-46d4-9dc4-eaea0bb61a5c" timestamp="2026-10-24T19:03:45.740+09:30" time="11.892">
+    <testsuite name="codebase-graph" tests="31" disabled="0" errors="0" failures="0">
+        <testcase name="api::materialization::tests::prepublication_failures_close_managed_runs_and_clean_legacy_direct_run_state" classname="codebase-graph" timestamp="2026-10-24T19:03:45.742+09:30" time="2.362">
+        </testcase>
+        <testcase name="materialization_worker::tests::empty_worker_cancellation_and_setup_failure_publish_terminal_owner" classname="codebase-graph" timestamp="2026-10-24T19:03:48.106+09:30" time="0.403">
+        </testcase>
+        <testcase name="staging_writer::accumulator::output_tests::registered_spool_drop_preserves_unreceipted_injected_child_for_terminal_collection" classname="codebase-graph" timestamp="2026-10-24T19:03:48.509+09:30" time="0.486">
+        </testcase>
+        <testcase name="storage::locks::fixed_control_tests::dc_control_scratch_uses_small_worker_frame_and_retains_reserved_path_storage" classname="codebase-graph" timestamp="2026-10-24T19:03:48.996+09:30" time="0.028">
+        </testcase>
+        <testcase name="storage::locks::fixed_control_tests::dc_coordination_nonce_initializes_only_exclusive_empty_creation_and_is_immutable" classname="codebase-graph" timestamp="2026-10-24T19:03:49.023+09:30" time="0.024">
+        </testcase>
+        <testcase name="storage::locks::fixed_control_tests::dc_fixed_stamp_facts_cross_threads_but_actual_authority_cannot" classname="codebase-graph" timestamp="2026-10-24T19:03:49.048+09:30" time="0.017">
+        </testcase>
+        <testcase name="storage::locks::fixed_control_tests::dc_fixed_stamp_open_read_and_recheck_are_noncreating_and_bounded" classname="codebase-graph" timestamp="2026-10-24T19:03:49.065+09:30" time="0.020">
+        </testcase>
+        <testcase name="storage::locks::fixed_control_tests::dc_fixed_stamp_path_free_lock_release_and_identity_composition" classname="codebase-graph" timestamp="2026-10-24T19:03:49.085+09:30" time="0.020">
+        </testcase>
+        <testcase name="storage::locks::fixed_control_tests::dc_fixed_stamp_rejects_in_place_change_and_new_public_incarnation" classname="codebase-graph" timestamp="2026-10-24T19:03:49.106+09:30" time="0.023">
+        </testcase>
+        <testcase name="storage::locks::fixed_control_tests::dc_fixed_stamp_rejects_symlinks_hardlinks_and_nonregular_controls" classname="codebase-graph" timestamp="2026-10-24T19:03:49.129+09:30" time="0.019">
+        </testcase>
+        <testcase name="storage::locks::fixed_control_tests::dc_fixed_stamp_same_length_write_with_restored_mtime_stays_changed" classname="codebase-graph" timestamp="2026-10-24T19:03:49.148+09:30" time="0.027">
+        </testcase>
+        <testcase name="storage::locks::fixed_control_tests::dc_fixed_stamp_scratch_uses_shared_reservation_and_releases_it" classname="codebase-graph" timestamp="2026-10-24T19:03:49.175+09:30" time="0.017">
+        </testcase>
+        <testcase name="storage::maintenance_budget::tests::dc_grant_zero_entry101_deadline_and_atomic_transition" classname="codebase-graph" timestamp="2026-10-24T19:03:49.191+09:30" time="0.016">
+        </testcase>
+        <testcase name="storage::maintenance_budget::tests::dc_memory_box_alignment_exact_charge_and_drop_order" classname="codebase-graph" timestamp="2026-10-24T19:03:49.207+09:30" time="0.018">
+        </testcase>
+        <testcase name="storage::maintenance_budget::tests::dc_memory_box_failed_reservation_and_panicking_pointee_release" classname="codebase-graph" timestamp="2026-10-24T19:03:49.225+09:30" time="0.019">
+        </testcase>
+        <testcase name="storage::maintenance_budget::tests::dc_memory_box_fieldwise_large_initialization_is_charged_and_drops_once" classname="codebase-graph" timestamp="2026-10-24T19:03:49.245+09:30" time="0.018">
+        </testcase>
+        <testcase name="storage::maintenance_budget::tests::dc_memory_box_into_inner_transfers_drop_once_and_releases_exact_charge" classname="codebase-graph" timestamp="2026-10-24T19:03:49.262+09:30" time="0.017">
+        </testcase>
+        <testcase name="storage::maintenance_budget::tests::dc_memory_checks_layout_overflow_and_duplicate_buffers" classname="codebase-graph" timestamp="2026-10-24T19:03:49.280+09:30" time="0.017">
+        </testcase>
+        <testcase name="storage::maintenance_budget::tests::dc_memory_simultaneous_reservations_share_one_ceiling" classname="codebase-graph" timestamp="2026-10-24T19:03:49.297+09:30" time="0.017">
+        </testcase>
+        <testcase name="storage::maintenance_budget::tests::dc_memory_split_failure_and_account_lifetime" classname="codebase-graph" timestamp="2026-10-24T19:03:49.314+09:30" time="0.017">
+        </testcase>
+        <testcase name="storage::maintenance_budget::tests::dc_memory_work_types_cross_threads" classname="codebase-graph" timestamp="2026-10-24T19:03:49.331+09:30" time="0.017">
+        </testcase>
+        <testcase name="storage::managed::transaction_janitor_tests::managed_absent_read_probe_preserves_genuine_first_producer_root_creation" classname="codebase-graph" timestamp="2026-10-24T19:03:49.348+09:30" time="0.417">
+        </testcase>
+        <testcase name="storage::managed::transaction_janitor_tests::managed_read_recovery_closes_registered_run_without_replaying" classname="codebase-graph" timestamp="2026-10-24T19:03:49.766+09:30" time="1.391">
+        </testcase>
+        <testcase name="storage::managed::transaction_janitor_tests::managed_read_recovery_does_not_recreate_a_partially_retired_run_lease" classname="codebase-graph" timestamp="2026-10-24T19:03:51.156+09:30" time="1.118">
+        </testcase>
+        <testcase name="storage::managed::transaction_janitor_tests::managed_registered_owner_finish_retains_terminal_work_for_bounded_collection" classname="codebase-graph" timestamp="2026-10-24T19:03:52.275+09:30" time="0.550">
+        </testcase>
+        <testcase name="storage::managed::transaction_janitor_tests::managed_typed_ambiguous_pointer_error_retains_bytes_and_requires_durability_recovery" classname="codebase-graph" timestamp="2026-10-24T19:03:52.825+09:30" time="0.661">
+        </testcase>
+        <testcase name="storage::managed::transaction_janitor_tests::managed_typed_generation_issue_never_preempts_required_replay_or_its_error" classname="codebase-graph" timestamp="2026-10-24T19:03:53.486+09:30" time="1.131">
+        </testcase>
+        <testcase name="storage::managed::transaction_janitor_tests::managed_typed_merge_preserves_first_issue_with_a_complete_latest_report" classname="codebase-graph" timestamp="2026-10-24T19:03:54.618+09:30" time="0.021">
+        </testcase>
+        <testcase name="storage::managed::transaction_janitor_tests::managed_typed_recovered_publication_retains_run_until_persisted_barrier_resolves" classname="codebase-graph" timestamp="2026-10-24T19:03:54.639+09:30" time="0.634">
+        </testcase>
+        <testcase name="storage::managed::transaction_janitor_tests::managed_typed_recovery_accepts_staged_only_and_published_only_seams" classname="codebase-graph" timestamp="2026-10-24T19:03:55.273+09:30" time="1.209">
+        </testcase>
+        <testcase name="storage::managed::transaction_janitor_tests::managed_typed_required_corrupt_or_missing_evidence_is_not_an_absent_alternative" classname="codebase-graph" timestamp="2026-10-24T19:03:56.483+09:30" time="1.150">
+        </testcase>
+    </testsuite>
+</testsuites>

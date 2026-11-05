@@ -68,6 +68,7 @@ fn run_graph_health<W: Write>(args: &[String], stdout: &mut W) -> Result<(), Str
         return Ok(());
     }
     let response = execute_api_request(OperationRequest::Health(HealthRequest {
+        confirm_legacy_quiescence: options.confirm_legacy_quiescence,
         repo: repo_selector_from_options(
             options.repo_root,
             options.config,

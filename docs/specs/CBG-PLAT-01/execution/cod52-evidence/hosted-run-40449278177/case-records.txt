@@ -1,0 +1,31 @@
+job=122007920956 line=892 native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)	UNKNOWN STEP	2026-10-27T04:37:38.0004485Z test storage::locks::rooted_directory_tests::nested_directory_scans_do_not_consume_the_outer_cursor ... ok
+job=122007921364 line=1077 native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)	UNKNOWN STEP	2026-10-27T04:39:36.6026999Z test storage::locks::rooted_directory_tests::nested_directory_scans_do_not_consume_the_outer_cursor ... ok
+job=122007921553 line=1242 native (macos-arm64) / native tests (macos-arm64, unit)	UNKNOWN STEP	2026-10-27T04:32:26.2595620Z test storage::locks::rooted_directory_tests::interrupted_directory_scan_restarts_on_the_pinned_root_after_name_replacement ... ok
+job=122007921553 line=1245 native (macos-arm64) / native tests (macos-arm64, unit)	UNKNOWN STEP	2026-10-27T04:32:26.4023460Z test storage::locks::rooted_directory_tests::nested_directory_scans_do_not_consume_the_outer_cursor ... ok
+job=122007921553 line=1316 native (macos-arm64) / native tests (macos-arm64, unit)	UNKNOWN STEP	2026-10-27T04:33:31.6553580Z test storage::maintenance_candidate::tests::terminal_receipt_selection_reaches_late_directory_after_child_receipt_veto ... ok
+
+native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)	UNKNOWN STEP	2026-10-27T04:42:36.1503191Z 
+native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)	UNKNOWN STEP	2026-10-27T04:42:36.1503616Z      Running tests\copy_phase_process.rs (target\native-tests\deps\copy_phase_process-cda64781e6ef47db.exe)
+native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)	UNKNOWN STEP	2026-10-27T04:42:36.1504159Z 
+native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)	UNKNOWN STEP	2026-10-27T04:42:36.1504260Z running 1 test
+native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)	UNKNOWN STEP	2026-10-27T04:43:03.5429055Z test bounded_production_chunks_reopen_with_primary_keys_connectors_and_search ... chunked native build resources: {"database_write":191893504,"parse":23124171,"search_index":1048568,"staging":2053466}
+native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)	UNKNOWN STEP	2026-10-27T04:43:03.5429935Z 
+native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)	UNKNOWN STEP	2026-10-27T04:43:03.5430458Z thread 'bounded_production_chunks_reopen_with_primary_keys_connectors_and_search' (2604) panicked at tests\copy_phase_process.rs:417:5:
+native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)	UNKNOWN STEP	2026-10-27T04:43:03.5431176Z assertion `left == right` failed
+native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)	UNKNOWN STEP	2026-10-27T04:43:03.5431472Z   left: 55
+native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)	UNKNOWN STEP	2026-10-27T04:43:03.5431720Z  right: 56
+native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)	UNKNOWN STEP	2026-10-27T04:43:03.5432087Z note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)	UNKNOWN STEP	2026-10-27T04:43:03.5432543Z FAILED
+native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)	UNKNOWN STEP	2026-10-27T04:43:03.5432663Z 
+native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)	UNKNOWN STEP	2026-10-27T04:43:03.5432780Z failures:
+native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)	UNKNOWN STEP	2026-10-27T04:43:03.5432930Z 
+native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)	UNKNOWN STEP	2026-10-27T04:43:03.5433020Z failures:
+native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)	UNKNOWN STEP	2026-10-27T04:43:03.5433390Z     bounded_production_chunks_reopen_with_primary_keys_connectors_and_search
+native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)	UNKNOWN STEP	2026-10-27T04:43:03.5433760Z 
+native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)	UNKNOWN STEP	2026-10-27T04:43:03.5434080Z test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2 filtered out; finished in 27.38s
+native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)	UNKNOWN STEP	2026-10-27T04:43:03.5434498Z 
+native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)	UNKNOWN STEP	2026-10-27T04:43:03.5447023Z error: test failed, to rerun pass `-p codebase-graph --test copy_phase_process`
+native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)	UNKNOWN STEP	2026-10-27T04:43:03.5448048Z      Running tests\http_admission_process.rs (target\native-tests\deps\http_admission_process-8d922bafc1a44710.exe)
+native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)	UNKNOWN STEP	2026-10-27T04:43:03.5448886Z 
+native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)	UNKNOWN STEP	2026-10-27T04:43:03.5449085Z running 0 tests
+native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)	UNKNOWN STEP	2026-10-27T04:43:03.5449313Z 

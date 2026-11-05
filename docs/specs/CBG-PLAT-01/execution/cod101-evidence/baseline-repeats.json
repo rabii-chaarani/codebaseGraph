@@ -1,0 +1,72 @@
+{
+  "command": [
+    "/private/tmp/pr157-ci-fix-evidence/baseline-bin/lib-tests",
+    "--exact",
+    "storage::maintenance_collector_tests::dc_s5_canonical_only_durable_detach_interruption_resumes_without_source_edit",
+    "--nocapture"
+  ],
+  "cli_sha256": "c7c3ecc720699ec9b3d70ddabc8f107810955462fb1289065165cca95d2f150f",
+  "lib_sha256": "be155df810f9f2c81613b593df0925d7fe847e9f08e4483abff26f3e4bd8a587",
+  "results": [
+    {
+      "iteration": 0,
+      "result": 0,
+      "seconds": 16.929786999999997
+    },
+    {
+      "iteration": 1,
+      "result": 0,
+      "seconds": 14.533341500000002
+    },
+    {
+      "iteration": 2,
+      "result": 0,
+      "seconds": 14.786040624999998
+    },
+    {
+      "iteration": 3,
+      "result": 0,
+      "seconds": 14.586137749999999
+    },
+    {
+      "iteration": 4,
+      "result": 0,
+      "seconds": 14.546568792000002
+    },
+    {
+      "iteration": 5,
+      "result": 0,
+      "seconds": 14.693865916999997
+    },
+    {
+      "iteration": 6,
+      "result": 0,
+      "seconds": 14.587553832999987
+    },
+    {
+      "iteration": 7,
+      "result": 0,
+      "seconds": 14.802619917000001
+    },
+    {
+      "iteration": 8,
+      "result": 0,
+      "seconds": 15.733288625
+    },
+    {
+      "iteration": 9,
+      "result": 0,
+      "seconds": 15.725559292000014
+    },
+    {
+      "iteration": 10,
+      "result": 0,
+      "seconds": 16.251023790999994
+    },
+    {
+      "iteration": 11,
+      "result": 0,
+      "seconds": 17.55192308300002
+    }
+  ]
+}

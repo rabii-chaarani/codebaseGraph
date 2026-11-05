@@ -1,0 +1,19 @@
+{
+  "port": 53712,
+  "started_at": "2026-10-29T01:07:08.336475+00:00",
+  "proxy": "loopback rejecting502 never forwards",
+  "environment": {
+    "LADYBUG_HTTPS_PROXY": "http://127.0.0.1:53712",
+    "LADYBUG_HTTP_PROXY": "http://127.0.0.1:53712",
+    "LADYBUG_ALL_PROXY": "http://127.0.0.1:53712",
+    "HTTPS_PROXY": "http://127.0.0.1:53712",
+    "HTTP_PROXY": "http://127.0.0.1:53712",
+    "ALL_PROXY": "http://127.0.0.1:53712",
+    "LADYBUG_NO_PROXY": null,
+    "no_proxy": null,
+    "NO_PROXY": null,
+    "QUALIFICATION_NATIVE_PATH": "C:\\Users\\rcha0053\\pr158-qualification\\ladybug-shared-0.19.0;C:\\Users\\rcha0053\\AppData\\Local\\anaconda3\\Library\\bin;C:\\Windows\\System32;C:\\Windows;C:\\Windows\\System32\\WindowsPowerShell\\v1.0"
+  },
+  "requests": [],
+  "scope": "fresh-process search only; earlier build used prior proxy scope from recorded evidence"
+}

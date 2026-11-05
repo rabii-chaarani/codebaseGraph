@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="nextest-run" tests="4" failures="0" errors="0" uuid="528d2606-c317-4ccc-ac86-351e32fc0c41" timestamp="2026-10-24T21:14:45.326+09:30" time="3.192">
+    <testsuite name="codebase-graph" tests="4" disabled="0" errors="0" failures="0">
+        <testcase name="api::materialization::tests::prepublication_failures_close_managed_runs_and_clean_legacy_direct_run_state" classname="codebase-graph" timestamp="2026-10-24T21:14:45.327+09:30" time="2.296">
+        </testcase>
+        <testcase name="materialization_worker::tests::empty_worker_cancellation_and_setup_failure_publish_terminal_owner" classname="codebase-graph" timestamp="2026-10-24T21:14:47.623+09:30" time="0.372">
+        </testcase>
+        <testcase name="staging_writer::accumulator::output_tests::registered_spool_drop_preserves_unreceipted_injected_child_for_terminal_collection" classname="codebase-graph" timestamp="2026-10-24T21:14:47.995+09:30" time="0.493">
+        </testcase>
+        <testcase name="storage::maintenance_scheduler::allocation_boundary_test::dc_driver_real_requested_allocations_fit_tight_ceiling_and_aligned_factory" classname="codebase-graph" timestamp="2026-10-24T21:14:48.488+09:30" time="0.030">
+        </testcase>
+    </testsuite>
+</testsuites>

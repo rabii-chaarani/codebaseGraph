@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="nextest-run" tests="10" failures="0" errors="0" uuid="ca7ff1b0-0683-4ec5-8cc1-b671fc13e83f" timestamp="2026-10-21T02:42:42.149+09:30" time="0.157">
+    <testsuite name="codebase-graph" tests="10" disabled="0" errors="0" failures="0">
+        <testcase name="storage::maintenance_scheduler::tests::cached_report_retains_observation_time_nulls_and_age" classname="codebase-graph" timestamp="2026-10-21T02:42:42.150+09:30" time="0.017">
+        </testcase>
+        <testcase name="storage::maintenance_scheduler::tests::continuation_retries_even_when_report_pending_flag_is_clear" classname="codebase-graph" timestamp="2026-10-21T02:42:42.167+09:30" time="0.016">
+        </testcase>
+        <testcase name="storage::maintenance_scheduler::tests::deferred_work_resumes_without_new_events_and_never_hot_loops" classname="codebase-graph" timestamp="2026-10-21T02:42:42.182+09:30" time="0.015">
+        </testcase>
+        <testcase name="storage::maintenance_scheduler::tests::error_and_panic_release_permits_and_retry_with_unknown_allocation" classname="codebase-graph" timestamp="2026-10-21T02:42:42.197+09:30" time="0.016">
+        </testcase>
+        <testcase name="storage::maintenance_scheduler::tests::execution_contention_preserves_demand_without_fabricating_observation" classname="codebase-graph" timestamp="2026-10-21T02:42:42.213+09:30" time="0.015">
+        </testcase>
+        <testcase name="storage::maintenance_scheduler::tests::limits_and_completion_based_cooldown_are_explicit" classname="codebase-graph" timestamp="2026-10-21T02:42:42.229+09:30" time="0.015">
+        </testcase>
+        <testcase name="storage::maintenance_scheduler::tests::observation_from_a_future_wall_clock_has_unknown_age" classname="codebase-graph" timestamp="2026-10-21T02:42:42.244+09:30" time="0.015">
+        </testcase>
+        <testcase name="storage::maintenance_scheduler::tests::running_requests_coalesce_and_execution_permit_is_released_before_parking" classname="codebase-graph" timestamp="2026-10-21T02:42:42.259+09:30" time="0.015">
+        </testcase>
+        <testcase name="storage::maintenance_scheduler::tests::shutdown_during_callback_drains_then_rejects_all_new_grants" classname="codebase-graph" timestamp="2026-10-21T02:42:42.274+09:30" time="0.016">
+        </testcase>
+        <testcase name="storage::maintenance_scheduler::tests::startup_duplicates_periodic_and_new_events_coalesce" classname="codebase-graph" timestamp="2026-10-21T02:42:42.290+09:30" time="0.016">
+        </testcase>
+    </testsuite>
+</testsuites>

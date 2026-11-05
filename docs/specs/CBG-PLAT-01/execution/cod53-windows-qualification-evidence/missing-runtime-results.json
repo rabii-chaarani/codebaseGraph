@@ -1,0 +1,24 @@
+{
+  "installed_exe_sha256": "95ad3781beadab8842c137a884a1e8d8f534b1d3c1af1288bffd968ba3fdf665",
+  "tests": [
+    {
+      "log": "missing-native-runtime.log",
+      "absent_from_process_path": [
+        "Ladybug shared dir",
+        "Anaconda native dir"
+      ],
+      "native_status": -1073741515,
+      "shell_status": 127
+    },
+    {
+      "log": "missing-openssl-runtime.log",
+      "absent_from_process_path": [
+        "Anaconda native dir"
+      ],
+      "ladybug_shared_dir_retained": true,
+      "native_status": -1073741515,
+      "shell_status": 127
+    }
+  ],
+  "limitation": "Windows loader fails before application startup with STATUS_DLL_NOT_FOUND; no project-specific missing-DLL diagnostic is claimed. System VC DLLs remain installed."
+}

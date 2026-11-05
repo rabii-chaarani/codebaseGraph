@@ -1,0 +1,4 @@
+   Compiling xtask v4.0.2 (/private/tmp/codebasegraph-pr158-ci-fix/crates/xtask)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.33s
+     Running `target/debug/xtask release-gate`
+release gate passed

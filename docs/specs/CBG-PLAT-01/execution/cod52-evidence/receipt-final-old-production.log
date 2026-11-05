@@ -1,0 +1,29 @@
+   Compiling codebase-graph v4.0.0 (/private/tmp/codebasegraph-cod52-macos-scans)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.02s
+────────────
+ Nextest run ID d8b0323e-9a5d-4520-a9ae-e64fead090e8 with nextest profile: cod52
+    Starting 1 test across 1 binary (844 tests skipped)
+        FAIL [   4.725s] (1/1) codebase-graph storage::maintenance_candidate::tests::terminal_receipt_selection_reaches_late_directory_after_child_receipt_veto
+  stdout ───
+
+    running 1 test
+    test storage::maintenance_candidate::tests::terminal_receipt_selection_reaches_late_directory_after_child_receipt_veto ... FAILED
+
+    failures:
+
+    failures:
+        storage::maintenance_candidate::tests::terminal_receipt_selection_reaches_late_directory_after_child_receipt_veto
+
+    test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 844 filtered out; finished in 4.70s
+
+  stderr ───
+
+    thread 'storage::maintenance_candidate::tests::terminal_receipt_selection_reaches_late_directory_after_child_receipt_veto' (34455936) panicked at src/storage/maintenance_candidate.rs:2237:14:
+    selection must continue after the parent receipt is vetoed
+    note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+  Cancelling due to test failure: 
+────────────
+     Summary [   4.727s] 1 test run: 0 passed, 1 failed, 844 skipped
+        FAIL [   4.725s] (1/1) codebase-graph storage::maintenance_candidate::tests::terminal_receipt_selection_reaches_late_directory_after_child_receipt_veto
+error: test run failed

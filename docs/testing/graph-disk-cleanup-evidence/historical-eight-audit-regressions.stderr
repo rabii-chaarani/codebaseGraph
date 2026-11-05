@@ -1,0 +1,13 @@
+test_external_case_name_mismatch_rejected_despite_valid_hash (__main__.EvidenceMutationTests) ... ok
+test_external_claimed_failure_count_mismatch_rejected (__main__.EvidenceMutationTests) ... ok
+test_external_missing_case_rejected_despite_valid_hash (__main__.EvidenceMutationTests) ... ok
+test_external_run_identity_mismatch_rejected_despite_valid_hash (__main__.EvidenceMutationTests) ... ok
+test_external_skip_rejected_even_with_matching_manifest_counts (__main__.EvidenceMutationTests) ... ok
+test_external_skip_rejected_with_original_claimed_counts (__main__.EvidenceMutationTests) ... ok
+test_named_foundation_skip_rejected_even_with_matching_hash_and_counts (__main__.EvidenceMutationTests) ... ok
+test_original_actual_reports_pass (__main__.EvidenceMutationTests) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.156s
+
+OK

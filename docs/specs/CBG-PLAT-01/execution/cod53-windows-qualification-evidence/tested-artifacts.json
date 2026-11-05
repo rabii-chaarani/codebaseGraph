@@ -1,0 +1,27 @@
+[
+  {
+    "path": "C:\\Users\\rcha0053\\pr158-qualification\\installed\\bin\\codebase-graph.exe",
+    "sha256": "95ad3781beadab8842c137a884a1e8d8f534b1d3c1af1288bffd968ba3fdf665",
+    "size": 34350080
+  },
+  {
+    "path": "C:\\Users\\rcha0053\\pr158-qualification\\target\\release\\pr158-windows-probe.exe",
+    "sha256": "b98c93ac8b57353f8ba53e47f27043f0f767f3e9805e451f43ee52fce33dadb7",
+    "size": 23448064
+  },
+  {
+    "path": "C:\\Users\\rcha0053\\pr158-qualification\\probe\\src\\main.rs",
+    "sha256": "66015b12a528c8608f73c7afaf46c7ac1d52f724febe6415881b7e3623ccc604",
+    "size": 4554
+  },
+  {
+    "path": "C:\\Users\\rcha0053\\pr158-qualification\\probe\\Cargo.toml",
+    "sha256": "93416b3288160c0168c3dde8e676c582dbb0dfbfbf0455c19cb37bf84eab6b32",
+    "size": 184
+  },
+  {
+    "path": "C:\\Users\\rcha0053\\pr158-qualification\\probe\\Cargo.lock",
+    "sha256": "980de3dbbfee4f7769ae75903fb0f2f0d9d35c10f74dfca6c5af858ab1106477",
+    "size": 29528
+  }
+]

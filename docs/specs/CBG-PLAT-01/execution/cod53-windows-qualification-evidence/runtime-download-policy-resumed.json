@@ -1,0 +1,19 @@
+{
+  "created_at": "2026-10-28T11:34:25.911365+00:00",
+  "proxy_port": 59741,
+  "port_guard": "ephemeral loopback-only rejecting HTTP proxy; records CONNECT/GET and always returns502; never forwards",
+  "child_environment": {
+    "LADYBUG_HTTPS_PROXY": "http://127.0.0.1:59741",
+    "LADYBUG_HTTP_PROXY": "http://127.0.0.1:59741",
+    "LADYBUG_ALL_PROXY": "http://127.0.0.1:59741",
+    "HTTPS_PROXY": "http://127.0.0.1:59741",
+    "HTTP_PROXY": "http://127.0.0.1:59741",
+    "ALL_PROXY": "http://127.0.0.1:59741",
+    "LADYBUG_NO_PROXY": null,
+    "no_proxy": null,
+    "NO_PROXY": null,
+    "QUALIFICATION_NATIVE_PATH": "C:\\Users\\rcha0053\\pr158-qualification\\ladybug-shared-0.19.0;C:\\Users\\rcha0053\\AppData\\Local\\anaconda3\\Library\\bin;C:\\Windows\\System32;C:\\Windows;C:\\Windows\\System32\\WindowsPowerShell\\v1.0"
+  },
+  "scope": "verified Ladybug downloader path; not machine-wide isolation",
+  "reason_for_change": "native error omitted endpoint, so non-listening failure alone was inconclusive"
+}

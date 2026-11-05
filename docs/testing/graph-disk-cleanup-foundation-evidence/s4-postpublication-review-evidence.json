@@ -1,0 +1,31 @@
+{
+  "scope": "Independent narrow postpublication S4 review; full DC-S4 not qualified",
+  "reviewer": "GPT-6.1 Sol Max, independent initial reviewer continued read-only",
+  "manifest": "/private/tmp/codebasegraph-s4-postpublication-review-et3thm39/reconstructed-manifest.json",
+  "manifest_sha256": "d070b7c622cf49812d78fdf1d2249c2567fb63d1d51b1f5eaa8ff0d8134c704f",
+  "junit": "/private/tmp/codebasegraph-s4-postpublication-review-et3thm39/nextest/s4-postpublication-review/junit.xml",
+  "junit_sha256": "3df4dc85b9039e597ac040cfca0615d7e4e0cbb05b60b2c94ea7d321c66b6216",
+  "run": {
+    "name": "nextest-run",
+    "tests": "17",
+    "failures": "0",
+    "errors": "0",
+    "uuid": "ce7bf792-cc80-48fa-ac01-54ce87aba79e",
+    "timestamp": "2026-10-21T03:57:50.551+09:30",
+    "time": "21.397"
+  },
+  "command": "CARGO_TARGET_DIR=/Users/rabii/Projects/Repositories/codebaseGraph/target cargo nextest run --offline --locked --lib --config 'profile.test.package.codebase-graph.codegen-units=128' --config-file /private/tmp/codebasegraph-s4-postpublication-review-et3thm39/nextest.toml --profile s4-postpublication-review -E 'test(api::materialization::tests) | test(protocol::maintenance_summary_tests)' --test-threads 1",
+  "forced_root_package_rebuild": true,
+  "excluded_first_run": {
+    "junit": "/private/tmp/codebasegraph-s4-postpublication-review-et3thm39/first-reused-target-junit.xml",
+    "sha256": "ed70ff0327920ea194f4df6fd76ceac547cd67db2ccdc03b96c06f8c9c4d408c",
+    "reason": "No root rebuild; 559 total tests differed from frozen source. Forced rebuild restored expected 555 tests."
+  },
+  "confirmed_findings": [],
+  "limits": [
+    "Managed recover_and_gc error classification unchanged and pending typed handoff",
+    "No owned collector scheduling or registered-key convergence qualification",
+    "Existing SystemMaintenanceClock unused warning",
+    "No native Windows or MSRV qualification"
+  ]
+}

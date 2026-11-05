@@ -1,0 +1,64 @@
+# COD-53 proposal review — bounded D05d/A16 byte-default subset
+
+## Recommendation: proceed with specified conditions for this subset only
+
+The independent proposal gate is satisfied for the concrete minimal mechanism below. The full S02 prebuilt-runtime/loader/installer gate remains OPEN. This recommendation does not qualify A16, complete COD-53, authorize release/publication, or replace D01 with external prebuilt prerequisites. Missing Windows11 execution is a later qualification gate, not a reason this bounded source-default implementation is technically unviable.
+
+**Reviewed concrete implementation:** add root `[features]` `default = ["bundled-windows-extensions"]` in `Cargo.toml`; retain the existing empty feature and Windows-x86_64 `cfg` around the existing JSON/FTS `include_bytes!` branches. Retain `k-wiki` forwarding and existing typed native build/test arguments. Make only focused tests/documentation/evidence needed to establish this default and its limits. No ABI/dependency/extension-byte changes, runtime supply/loader/installer/archive changes, PATH changes, new opt-out semantics, or broader compatibility mechanism. A different target-cfg-only implementation has not been reviewed as the chosen proposal; return for a focused delta review if chosen instead.
+
+This is within the exact approval's express allowance that the Cargo feature mechanism is an implementation detail. Both ordinary root Cargo builds and `k-wiki`'s existing dependency enable the root default; the asset branch remains Windows-x86_64-only, so a globally named default feature does not compile Windows bytes on Mac or expand supported targets. Explicit `--no-default-features` is not the approved plain-install scenario and can retain its existing opt-out behavior. Do not remove the current feature to tidy up typed test contracts.
+
+## Concrete proposal recheck — approved for bounded implementation
+
+Reviewed `/private/tmp/codebasegraph-cod53-analysis/default-extensions-proposal.md`, SHA256 `0a497945e24f12df589f3b218788a79c3cd40d09cd3d9998f772743885a88161`, on2026-10-27. **Verdict: PROCEED for that bounded proposal with its stated evidence limits.** No blocking proposal revision is required. The root default-feature route, feature-enabled Windows-specific non-None/decompression assertion, and truthful source-prerequisite docs match the mechanism reviewed above. Re-read actual root/wiki manifests and extension-source hashes: unchanged baseline. Read actual docs/release.md after supplied graph discovery. Loader-design.md is NOT a prerequisite for this separable feature/docs/test change because it deliberately leaves loader/runtime supply/distribution unchanged; full S02 remains gated.
+
+Clarifications for execution (not new scope):
+- `cargo metadata --no-deps` establishes the declared default mapping, not target inclusion or resolved dependency activation. Attribute it exactly that way. Windows non-None/decompression tests must subsequently run through a no-extra-feature build to establish default behavior; existing forced-feature native tests alone cannot.
+- It is correct to put the Windows non-None assertion behind Windows-x64 plus the existing feature: explicit no-default opt-out need not fail that assertion. The default-mapping evidence and default-build invocation provide the other half of the proof. No new manifest parser, magic-string xtask hook, new dependency or command-contract layer is required.
+- Lack of an actual Windows11 host/source install prevents A16 qualification, not this implementation start. Preserve the planned/pending distinction already in the concrete proposal and verification matrix.
+- A documented external-runtime prerequisite applies only to source installs. Do not imply the current prebuilt archive satisfies D01 or replace D01 with that source route. Exact compiler/library/DLL recipe remains unverified until executed; keep docs explicit about that limitation.
+
+The one authored feature default is the only production setting changed. No numeric constants, dependency versions, asset bytes or ABI values should change. Coordinator Scryer brief/ownership remains a before-edit procedure; final code review and executed checks remain delivery gates. PR-01/PR-02 below apply only to the full packaging/loader-dependent work and do not block this subset.
+
+## Evidence and reasoning
+
+- Actual baseline `Cargo.toml:38–39` has no default and an empty opt-in feature. `src/db_writer/extensions.rs:98–124` already gates inclusion by Windows/x86_64 plus that feature. `crates/k-wiki/Cargo.toml` has a root dependency without `default-features = false`; its forwarding feature need not change.
+- Root `Cargo.toml:18` already includes all compressed0.19.0 extension assets independent of the feature. Supplied package-only evidence is8,451,625 compressed bytes (<10,485,760), leaving2,034,135bytes. Adding the feature default does not itself add new source assets. Recheck the actual final archive because docs/tests/source growth can consume headroom. Package --no-verify is not an extracted compile/source-install result.
+- Baseline `crates/xtask/src/main.rs:252–266,385–405,2397–2410` explicitly passes the feature for Windows native tests/releases. Preserve this typed contract/profile. Those existing feature-enabled checks cannot by themselves demonstrate a *default* feature, so include a distinct no-feature-flags check rather than merely rerun them.
+- Official Cargo reference confirms a package's `default` feature activates its listed features unless explicitly disabled. Primary source independently opened2026-10-27: https://doc.rust-lang.org/cargo/reference/features.html#the-default-feature
+- Supply report's exact-byte inspection confirms the existing compressed Windows assets and direct OpenSSL/VC imports. Enabling them by default neither redistributes new VC DLLs nor supplies the missing runtime DLLs. It preserves approved A16's separate documented compiler/native-library/runtime prerequisites. This subset cannot claim self-contained Windows runtimes or A03/A04 satisfaction.
+
+## Proceed conditions and acceptance evidence
+
+1. Coordinator records this exact bounded file ownership/brief and approval linkage in Scryer before coding, preserving the existing change/claim identities. No invented architecture nodes are required merely to restore `resp-113`.
+2. Keep product change to the root feature default plus focused tests/docs. Leave runtime procurement, licence files/redistribution, loading, installer, archive inventory, build/setup recipes, and dependencies unchanged. If implementation needs any of those, stop at that dependency and return for the full proposal gate.
+3. Add/execute a check that actually exercises default selection without `--features`. A narrow Cargo metadata/resolved-feature assertion can establish selection; a Windows default-build extension presence/decompression test establishes target byte inclusion. A Mac-only decompression pass or a feature-enabled native suite does not establish Windows default inclusion. Preserve `native-tests` profile/debug-assertion coverage and existing feature forwarding.
+4. Recheck final `.crate` inclusion/exact compressed size, normal extracted-package compilation where available, format/Clippy/affected tests. Record what ran and its exact source/toolchain. No new dependency or asset needed for the feature mechanism.
+5. Keep A16's real plain Windows11 source install with documented runtime prerequisites, isolated empty extension cache and downloads disabled as PENDING until actually executed. Do not infer success from static metadata, Mac tests, Server CI, or unchanged assets. Do not claim `cargo install k-wiki` is registry-supported: current k-wiki is `publish = false`; its workspace native build/feature propagation is relevant, while A16's named plain install is `cargo install codebase-graph`.
+
+No established blocking defect was found in this narrow mechanism. The condition about a no-feature-flags check addresses an otherwise misleading proof strategy, not a demonstrated implementation failure.
+
+## Full proposal findings retained
+
+### PR-01 — VC runtime redistribution entitlement is unverified
+**Type:** decision-critical permission evidence gap. **Priority:** blocks packaging/distribution commitment dependent on VC DLL copying, not the above source-feature work.
+
+The supply report proposes eligible unmodified files under VS2022 VC redist and correctly avoids claiming that a GitHub-hosted Enterprise installation establishes the publisher's rights. Independently opened Microsoft's VS2022 REDIST list and redistribution guidance. The REDIST page expressly conditions copying on a validly licensed copy and governing licence terms, allows eligible unmodified VC/redist files, and excludes debug_nonredist. The applicable facts about the distributor are not supplied. This is not a finding that app-local redistribution is prohibited or that the publisher lacks a licence.
+
+**Resolution:** user/distribution owner confirms the applicable entitlement/terms or supplies an authorized in-policy route. Keep D01 unchanged. Do not copy/package VC sidecars on the strength of build-host availability alone.
+Sources: https://learn.microsoft.com/en-us/visualstudio/releases/2022/redistribution ("Distributable Code Files"/"Visual C++ Runtime Files"); https://learn.microsoft.com/en-us/cpp/windows/redistributing-visual-cpp-files?view=msvc-170 . Accessed2026-10-27.
+
+### PR-02 — Exact runtime artifact and controlled-loader evidence still required
+**Type:** decision-critical design/evidence gap. **Priority:** blocks full loader/installer/prebuilt implementation commitment, not the narrow subset.
+
+The source-built OpenSSL3.5.9 provider is technically plausible. I independently opened its tagged VERSION.dat (SHLIB_VERSION=3), Apache2.0 LICENSE.txt and MSVC naming logic, plus OpenSSL3.5's same-major API/ABI statement. I also opened pinned Ladybug extension.cpp confirming LoadLibraryW of the extension. These support pursuing an in-policy provider without Ladybug/extension ABI change; they do not prove final DLL exports, transitive imports, native loading or permission for VC files. The report correctly makes those final artifact checks explicit. Exact source archive checksum and all44 import-to-export names have not been independently rederived by this reviewer; the supply worker's PE/source inspection remains attributed research evidence.
+
+Microsoft's DLL search-order reference confirms dependencies resolve by name even for an absolute parent path and that existing modules can satisfy names regardless of their origin. Full design still needs the concrete loader/entrypoint/lifetime policy and candidate sidecar installer flow; loader-design.md and settled coordinator proposal have not yet been received. No unsupported guarantee or observed native security failure is asserted.
+
+**Resolution:** final concrete loader proposal plus final artifact import/export checks and native test plan, with fail-before-either-EXE-replacement behavior kept inside A04 and no COD-56/pair-rollback expansion. Windows execution subsequently verifies the implementation; actual Windows11 desktop A03/A16 qualification may remain pending honestly.
+Sources: https://docs.openssl.org/3.5/man7/ossl-guide-migration/ ; https://raw.githubusercontent.com/openssl/openssl/openssl-3.5.9/VERSION.dat ; https://raw.githubusercontent.com/openssl/openssl/openssl-3.5.9/LICENSE.txt ; https://raw.githubusercontent.com/openssl/openssl/openssl-3.5.9/Configurations/platform/Windows/MSVC.pm ; https://raw.githubusercontent.com/LadybugDB/ladybug/c934f673b6b1c5b680bdae3295cbd909b5855cef/src/extension/extension.cpp ; https://learn.microsoft.com/en-us/windows/win32/dlls/dynamic-link-library-search-order . Accessed2026-10-27.
+
+## Reviewer, authority and limits
+Fresh independent read-only GPT-6.1 Sol, actual `openai-codex/gpt-6.1-sol`, coordinator-confirmed `thinking="high"`. Applied adversarial-proposal-review-engineer skill/references. Spec0.10 approved SHA `1a9db7b558b60248888408daa6268a3b45f2f0df`; source baseline `7038e66ff8271ffddc511f879cf8d28353a09b2d`; approval docs `eaa430c849094078bb4c228ea03136dde5587e91`. Read approval, proposal-review-input.md, runtime-supply.md, verification-matrix.md and baseline source after graph discovery, plus repository memory/wiki and Scryer rules/claims. All supplied baseline source hashes matched. Graph/wiki remain root-bound orientation, not exact-worktree evidence (wiki's old four-target prose does not expand approved scope).
+
+No product edits, Git, builds, tests, CI or tracking mutations by reviewer. Only review artifacts written. Supplied coordinator test results remain attributed. No desktop/native-load/source-install qualification claimed. No reusable durable memory recorded: this is an incomplete task-specific proposal decision, not a verified runbook.

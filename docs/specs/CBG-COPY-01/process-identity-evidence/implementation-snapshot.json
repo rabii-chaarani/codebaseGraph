@@ -1,0 +1,10 @@
+{
+  "baseline": "931c3ddaeccba9c3f94f75e3ae58be9e3016a4ef",
+  "files": {
+    "src/db_writer/phase.rs": "889b005587d1ce59a63ae35fdcbb1d799ae5248cc910e65cb102e23b80ffa9fa",
+    "tests/copy_phase_process.rs": "bd6d263acba7364a2846b9cb52a669a5281026adadd7b347689e3a5bc0fdbf94"
+  },
+  "approval": "931c3ddaeccba9c3f94f75e3ae58be9e3016a4ef",
+  "linear": "COD-98",
+  "scryer": "chg-k66bxx"
+}

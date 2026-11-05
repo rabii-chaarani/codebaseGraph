@@ -1,0 +1,5 @@
+    Blocking waiting for file lock on build directory
+   Compiling codebase-graph v4.0.2 (/private/tmp/codebasegraph-pr158-ci-fix)
+    Checking xtask v4.0.2 (/private/tmp/codebasegraph-pr158-ci-fix/crates/xtask)
+    Checking k-wiki v4.0.2 (/private/tmp/codebasegraph-pr158-ci-fix/crates/k-wiki)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 26.10s

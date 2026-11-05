@@ -1,0 +1,5 @@
+{
+  "exit": 0,
+  "stdout": "Evidence integrity passed: 62 traceability rows, 5 reports, 325 executions.\nExecution counts are not unique scenarios. This audit does not establish aggregate acceptance.\nSeparate narrow S5 health/request report: 2 passed; final integration remains pending.\n",
+  "stderr": ""
+}

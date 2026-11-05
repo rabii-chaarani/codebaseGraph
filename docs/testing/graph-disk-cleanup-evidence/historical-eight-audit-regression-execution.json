@@ -1,0 +1,20 @@
+{
+  "command": [
+    "python3",
+    "-B",
+    "docs/testing/graph-disk-cleanup-evidence/test_audit.py",
+    "-v"
+  ],
+  "executed_utc": "2026-10-20T17:55:36.307466+00:00",
+  "actual_exit_code": 0,
+  "actual_result": "8 unittest cases passed, including original-report control and7isolated evidence mutations",
+  "stdout": "audit-regressions.stdout",
+  "stderr": "audit-regressions.stderr",
+  "sha256": {
+    "audit.py": "03cb5168970c16f3691018510a1ad0c4b61f0bd2800ed4267d1869cb8fc57efe",
+    "test_audit.py": "a18988b8ed73c090b3b05337cf6f2150b619b403be2e3cd9cc7387971a02e9c9",
+    "audit-regressions.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "audit-regressions.stderr": "e4ed00080d9030eba59f6c9af6ac3d6b784e69ad1e9dcb2ce9107c19fb07be0d"
+  },
+  "limitations": "These are audit correctness regressions, not productioncollectorqualification and notJUnit."
+}

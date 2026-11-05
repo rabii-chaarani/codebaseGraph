@@ -533,3 +533,126 @@ fn unique_temp_dir(prefix: &str) -> PathBuf {
         .as_nanos();
     std::env::temp_dir().join(format!("{prefix}-{nonce}"))
 }
+
+#[test]
+fn authoring_frontmatter_delimiters_match_bundle_reader() {
+    let validator = ConformanceAuthoringValidator;
+    for content in ["---", "---\n", "---\r\n", "---\ntype: note\n"] {
+        let error = validator
+            .validate(ValidationTarget {
+                kind: ValidationTargetKind::ConceptPage,
+                bundle_id: "docs",
+                source_path: "page.md",
+                content,
+            })
+            .expect_err("missing closing delimiter must fail authoring");
+        assert_eq!(error.code(), "invalid_frontmatter");
+        assert!(error.message().contains("closing delimiter"), "{error}");
+    }
+    for content in [
+        "---\ntype: note\n---\nBody\n",
+        "---\r\ntype: note\r\n---\r\nBody\r\n",
+        "---\ntype: note\n---",
+    ] {
+        validator
+            .validate(ValidationTarget {
+                kind: ValidationTargetKind::ConceptPage,
+                bundle_id: "docs",
+                source_path: "page.md",
+                content,
+            })
+            .expect("closed frontmatter should validate");
+    }
+}
+
+#[test]
+fn malformed_existing_frontmatter_does_not_echo_source_values() {
+    let root = seeded_bundle_root("k-wiki-safe-existing-yaml");
+    let page = root.join("bundle/page.md");
+    let original = "---\nPRIVATE_SOURCE_MARKER\n---\nOriginal body.\n";
+    write_file(&page, original);
+    let service = service_with_existing_bundle(&root, "docs");
+    let error = service
+        .populate_page(PopulatePageRequest {
+            bundle_id: "docs".into(),
+            page_path: "page".into(),
+            frontmatter: PageFrontmatter {
+                concept_type: "note".into(),
+                ..Default::default()
+            },
+            body_markdown: "Replacement body.\n".into(),
+            expected_content_hash: None,
+        })
+        .expect_err("existing scalar YAML must reject population");
+    assert_eq!(error.code(), "invalid_frontmatter");
+    assert!(
+        !error.message().contains("PRIVATE_SOURCE_MARKER"),
+        "{error}"
+    );
+    assert!(error.message().contains("YAML"), "{error}");
+    assert!(error.message().contains("line 2"), "{error}");
+    assert_eq!(fs::read_to_string(page).unwrap(), original);
+    fs::remove_dir_all(root).expect("remove fixture");
+}
+
+#[test]
+fn authoring_io_errors_use_categories_without_raw_paths_or_dependency_text() {
+    let private_path = std::env::temp_dir().join("PRIVATE_HOST_MARKER/page.md");
+    let error = AuthoringError::io(
+        "read source",
+        private_path.to_str().unwrap(),
+        std::io::Error::new(
+            std::io::ErrorKind::PermissionDenied,
+            "PRIVATE_DEPENDENCY_MARKER",
+        ),
+    );
+    assert_eq!(error.code(), "invalid_request");
+    assert!(error.message().contains("read source"));
+    assert!(error.message().contains("permission denied"));
+    assert!(!error.message().contains("PRIVATE_HOST_MARKER"), "{error}");
+    assert!(
+        !error.message().contains("PRIVATE_DEPENDENCY_MARKER"),
+        "{error}"
+    );
+
+    let relative = AuthoringError::io(
+        "read source",
+        "guides/page.md",
+        std::io::Error::from(std::io::ErrorKind::NotFound),
+    );
+    assert!(relative.message().contains("guides/page.md"));
+    assert!(relative.message().contains("not found"));
+}
+
+#[test]
+fn unsupported_yaml_serialization_does_not_echo_tags_or_values() {
+    use yaml_serde::value::{Tag, TaggedValue};
+
+    let root = seeded_bundle_root("k-wiki-safe-yaml-serialization");
+    let nested_tag = YamlValue::Tagged(Box::new(TaggedValue {
+        tag: Tag::new("PRIVATE_TAG_MARKER"),
+        value: YamlValue::Tagged(Box::new(TaggedValue {
+            tag: Tag::new("PRIVATE_NESTED_TAG_MARKER"),
+            value: YamlValue::String("PRIVATE_SOURCE_MARKER".into()),
+        })),
+    }));
+    let error = service_with_existing_bundle(&root, "docs")
+        .create_page(CreatePageRequest {
+            bundle_id: "docs".into(),
+            page_path: "page".into(),
+            concept_type: "note".into(),
+            title: None,
+            description: None,
+            resource: None,
+            tags: Vec::new(),
+            timestamp: None,
+            extensions: [("custom".into(), nested_tag)].into_iter().collect(),
+            body_markdown: None,
+        })
+        .expect_err("nested tagged values cannot be serialized as YAML");
+    assert_eq!(error.code(), "invalid_frontmatter");
+    assert!(error.message().contains("YAML serialization"), "{error}");
+    assert!(!error.message().contains("PRIVATE_"), "{error}");
+    assert!(!root.join("bundle/page.md").exists());
+    fs::remove_dir_all(root).expect("remove fixture");
+}
