@@ -674,6 +674,55 @@ fn maintenance_test_job() -> ExecutionJob {
 }
 
 #[test]
+fn maintenance_busy_health_is_rejected_before_dispatch_and_recovers_after_release() {
+    let calls = Arc::new(AtomicU64::new(0));
+    let execute_calls = Arc::clone(&calls);
+    let root = temp_dir("maintenance-busy-health");
+    let client = test_client(&root, move |operation_id, invocation, _context| {
+        execute_calls.fetch_add(1, Ordering::Relaxed);
+        Ok(test_response(operation_id, invocation))
+    });
+    let dispatcher = Arc::clone(
+        &client
+            .inner
+            .route
+            .lock()
+            .unwrap()
+            .owner
+            .as_ref()
+            .unwrap()
+            .dispatcher,
+    );
+    let permit = dispatcher.try_acquire_maintenance().unwrap();
+
+    thread::scope(|scope| {
+        let (release, released) = std::sync::mpsc::channel::<()>();
+        let maintenance = scope.spawn(move || {
+            // Sender drop also releases the permit if an assertion unwinds.
+            let _ = released.recv();
+            drop(permit);
+        });
+        let busy = client
+            .execute_invocation("health", &test_invocation())
+            .unwrap_err();
+        assert_eq!(busy.code, "graph_busy");
+        assert!(busy.retryable);
+        assert_eq!(calls.load(Ordering::Relaxed), 0);
+
+        release.send(()).unwrap();
+        maintenance.join().unwrap();
+        let response = client
+            .execute_invocation("health", &test_invocation())
+            .unwrap();
+        assert_eq!(response.operation, "health");
+        assert_eq!(response.payload["ok"], true);
+        assert_eq!(calls.load(Ordering::Relaxed), 1);
+    });
+    drop(client);
+    fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
 fn maintenance_permit_blocks_real_execution_until_actual_drop() {
     let dispatcher = Arc::new(ExecutionDispatcher::default());
     let permit = dispatcher.try_acquire_maintenance().unwrap();
