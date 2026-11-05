@@ -11,6 +11,7 @@ use pulldown_cmark::{html, CowStr, Event, Options, Parser, Tag};
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    compiler::source_headings,
     diagnostic::{Diagnostic, DiagnosticSeverity},
     model::{
         Bundle, Citation, Concept, Directory, Heading, Link, LinkStatus, LogEntry, WikiProjection,
@@ -927,7 +928,11 @@ impl Renderer {
         bundle_index: &BundleIndex<'_>,
         directory: &Directory,
     ) -> Result<String, RenderError> {
-        let body = sanitize_markdown(&directory.body_markdown, &HashMap::new(), &[])?;
+        let body = sanitize_markdown(
+            &directory.body_markdown,
+            &HashMap::new(),
+            &bundle_index.directory_headings[directory.path.as_str()],
+        )?;
         let mut sections = String::new();
         sections.push_str(&format!(
             "<section aria-labelledby=\"directory-body\"><h2 id=\"directory-body\">Overview</h2><div class=\"prose\">{body}</div></section>",
@@ -1004,39 +1009,65 @@ impl Renderer {
         concept: &Concept,
         link: &Link,
     ) -> Result<String, RenderError> {
-        let Some(target_id) = link.normalized_target_id.as_deref() else {
-            let current = self
-                .routes
-                .concept(&bundle.id, &concept.id, link.fragment.as_deref())?;
-            return Ok(current.route);
+        let fallback = || -> Result<String, RenderError> {
+            Ok(format!(
+                "{}#{}",
+                self.routes.diagnostics(&bundle.id, None)?.route,
+                broken_link_anchor(&concept.id, &link.raw_href)
+            ))
         };
-
-        let diagnostics_route = self.routes.diagnostics(&bundle.id, None)?;
-        let target_concept = match bundle_index.concepts.get(target_id) {
-            Some(target) => *target,
-            None => {
-                return Ok(format!(
-                    "{}#{}",
-                    diagnostics_route.route,
-                    broken_link_anchor(&concept.id, &link.raw_href)
-                ))
+        let concept_prefix = format!("bundle:{}:concept:", bundle.id);
+        let directory_prefix = format!("bundle:{}:directory:", bundle.id);
+        let target_id = match link.normalized_target_id.as_deref() {
+            Some(target) => target,
+            None if link.raw_href.starts_with('#') => concept.id.as_str(),
+            None => return fallback(),
+        };
+        if let Some(path) = target_id.strip_prefix(&directory_prefix) {
+            let path = if path == "/" {
+                ""
+            } else if path.is_empty() {
+                return fallback();
+            } else {
+                path
+            };
+            let Some(headings) = bundle_index.directory_headings.get(path) else {
+                return fallback();
+            };
+            if link
+                .fragment
+                .as_ref()
+                .is_some_and(|fragment| !headings.iter().any(|heading| &heading.id == fragment))
+            {
+                return fallback();
             }
+            let mut route = if path.is_empty() {
+                self.routes.bundle(&bundle.id)?.route
+            } else {
+                self.routes.directory(&bundle.id, path)?.route
+            };
+            if let Some(fragment) = &link.fragment {
+                route.push('#');
+                route.push_str(&escape_fragment_identifier(fragment));
+            }
+            return Ok(route);
+        }
+        let target_id = match target_id.strip_prefix(&concept_prefix) {
+            Some(target) if !target.is_empty() => target,
+            _ if target_id.starts_with("bundle:") => return fallback(),
+            _ => target_id,
         };
-
-        if let Some(fragment) = link.fragment.as_deref() {
-            let fragment_exists = target_concept
+        let Some(target) = bundle_index.concepts.get(target_id) else {
+            return fallback();
+        };
+        if link.fragment.as_ref().is_some_and(|fragment| {
+            !target
                 .headings
                 .iter()
-                .any(|heading| heading.id == fragment);
-            if !fragment_exists {
-                return Ok(format!(
-                    "{}#{}",
-                    diagnostics_route.route,
-                    broken_link_anchor(&concept.id, &link.raw_href)
-                ));
-            }
+                .any(|heading| &heading.id == fragment)
+        }) {
+            return fallback();
         }
-
         Ok(self
             .routes
             .concept(&bundle.id, target_id, link.fragment.as_deref())?
@@ -1180,7 +1211,7 @@ impl Renderer {
             title: layout.title,
             route: layout.route.route,
             output_path: layout.route.output_path,
-            html: body,
+            html: protect_source_heading_ids(&body),
         }
     }
 }
@@ -1207,6 +1238,7 @@ struct RenderLayout<'a> {
 #[derive(Clone, Debug)]
 struct BundleIndex<'a> {
     directories: BTreeMap<&'a str, &'a Directory>,
+    directory_headings: BTreeMap<&'a str, Vec<Heading>>,
     concepts: BTreeMap<&'a str, &'a Concept>,
     sorted_concepts: Vec<&'a Concept>,
     concepts_by_type: BTreeMap<&'a str, Vec<&'a Concept>>,
@@ -1220,8 +1252,16 @@ struct BundleIndex<'a> {
 impl<'a> BundleIndex<'a> {
     fn new(bundle: &'a Bundle) -> Result<Self, RenderError> {
         let mut directories = BTreeMap::new();
+        let mut directory_headings = BTreeMap::new();
         for directory in &bundle.directories {
             directories.insert(directory.path.as_str(), directory);
+            directory_headings.insert(
+                directory.path.as_str(),
+                source_headings(&directory.body_markdown)
+                    .into_iter()
+                    .map(|(_, heading)| heading)
+                    .collect(),
+            );
         }
 
         let mut concepts = BTreeMap::new();
@@ -1312,6 +1352,7 @@ impl<'a> BundleIndex<'a> {
 
         Ok(Self {
             directories,
+            directory_headings,
             concepts,
             sorted_concepts,
             concepts_by_type,
@@ -1428,6 +1469,125 @@ impl fmt::Display for RenderError {
 
 impl std::error::Error for RenderError {}
 
+/// Iterate serialized HTML tags, respecting quoted attribute values. Text has
+/// already been escaped by the Markdown renderer and sanitizer.
+fn html_tags(html: &str) -> impl Iterator<Item = (usize, &str)> {
+    let mut offset = 0;
+    std::iter::from_fn(move || {
+        let start = offset + html[offset..].find('<')?;
+        let mut quote = None;
+        for (relative, character) in html[start..].char_indices() {
+            match character {
+                '\'' | '"' if quote == Some(character) => quote = None,
+                '\'' | '"' if quote.is_none() => quote = Some(character),
+                '>' if quote.is_none() => {
+                    offset = start + relative + 1;
+                    return Some((start, &html[start..offset]));
+                }
+                _ => {}
+            }
+        }
+        offset = html.len();
+        None
+    })
+}
+
+fn html_attribute<'a>(tag: &'a str, name: &str) -> Option<&'a str> {
+    tag.split_once(&format!(" {name}=\""))?
+        .1
+        .split_once('"')
+        .map(|(value, _)| value)
+}
+
+/// Keep source fragments distinct from generated page chrome. Sanitized prose
+/// cannot contain divs, so its wrapper provides an unambiguous boundary.
+fn protect_source_heading_ids(html: &str) -> String {
+    let mut parts = Vec::new();
+    let mut remaining = html;
+    let mut source_ids = HashSet::new();
+    while let Some((chrome, rest)) = remaining.split_once("<div class=\"prose\">") {
+        parts.push((false, chrome));
+        parts.push((false, "<div class=\"prose\">"));
+        let Some((prose, rest)) = rest.split_once("</div>") else {
+            return html.to_owned();
+        };
+        source_ids.extend(html_tags(prose).filter_map(|(_, tag)| html_attribute(tag, "id")));
+        parts.push((true, prose));
+        parts.push((false, "</div>"));
+        remaining = rest;
+    }
+    parts.push((false, remaining));
+    let mut occupied = html_tags(html)
+        .filter_map(|(_, tag)| html_attribute(tag, "id"))
+        .map(str::to_owned)
+        .collect::<HashSet<_>>();
+    let mut replacements = HashMap::new();
+    for (_, chrome) in parts.iter().filter(|(prose, _)| !prose) {
+        for id in html_tags(chrome).filter_map(|(_, tag)| html_attribute(tag, "id")) {
+            if source_ids.contains(id) && !replacements.contains_key(id) {
+                // Colons cannot occur in canonical slugs. Raw authored HTML may
+                // still use them, so reserve a fresh value against all page IDs.
+                let mut replacement = format!("wiki:{id}");
+                while occupied.contains(&replacement) {
+                    replacement.insert_str(0, "wiki:");
+                }
+                occupied.insert(replacement.clone());
+                replacements.insert(id, replacement);
+            }
+        }
+    }
+    if replacements.is_empty() {
+        return html.to_owned();
+    }
+    let mut result = String::with_capacity(html.len());
+    for (prose, part) in parts {
+        if prose {
+            result.push_str(part);
+            continue;
+        }
+        let mut offset = 0;
+        for (start, tag) in html_tags(part) {
+            result.push_str(&part[offset..start]);
+            let mut rewritten = tag.to_owned();
+            for attribute in ["id", "aria-labelledby", "aria-describedby", "for"] {
+                if let Some(value) = html_attribute(tag, attribute) {
+                    let replacement = value
+                        .split_ascii_whitespace()
+                        .map(|id| replacements.get(id).map(String::as_str).unwrap_or(id))
+                        .collect::<Vec<_>>()
+                        .join(" ");
+                    rewritten = rewritten.replace(
+                        &format!(" {attribute}=\"{value}\""),
+                        &format!(" {attribute}=\"{replacement}\""),
+                    );
+                }
+            }
+            // TOC links reference source headings; only the chrome skip link
+            // references the generated main landmark.
+            if html_attribute(tag, "class").is_some_and(|classes| {
+                classes
+                    .split_ascii_whitespace()
+                    .any(|class| class == "skip-link")
+            }) {
+                if let Some(fragment) =
+                    html_attribute(tag, "href").and_then(|href| href.strip_prefix('#'))
+                {
+                    if let Some(replacement) = replacements.get(fragment) {
+                        rewritten = rewritten.replace(
+                            &format!(" href=\"#{fragment}\""),
+                            &format!(" href=\"#{replacement}\""),
+                        );
+                    }
+                }
+            }
+            result.push_str(&rewritten);
+            offset = start + tag.len();
+        }
+        result.push_str(&part[offset..]);
+    }
+    result
+}
+
 fn sanitize_markdown(
     markdown: &str,
     link_targets: &HashMap<String, LinkTarget>,
@@ -1440,10 +1600,18 @@ fn sanitize_markdown(
     options.insert(Options::ENABLE_GFM);
 
     let parser = Parser::new_ext(markdown, options);
-    let mut heading_index = 0usize;
+    let declared_ids = headings
+        .iter()
+        .map(|heading| heading.id.as_str())
+        .collect::<HashSet<_>>();
+    let source_ids = source_headings(markdown)
+        .into_iter()
+        .filter(|(_, heading)| declared_ids.contains(heading.id.as_str()))
+        .map(|(offset, heading)| (offset, heading.id))
+        .collect::<HashMap<_, _>>();
     let mut rewritten_events = Vec::new();
 
-    for event in parser {
+    for (event, range) in parser.into_offset_iter() {
         let event = match event {
             Event::Start(Tag::Heading {
                 level,
@@ -1451,10 +1619,9 @@ fn sanitize_markdown(
                 attrs,
                 ..
             }) => {
-                let id = headings
-                    .get(heading_index)
-                    .map(|heading| CowStr::from(heading.id.clone()));
-                heading_index += 1;
+                let id = source_ids
+                    .get(&range.start)
+                    .map(|id| CowStr::from(id.clone()));
                 Event::Start(Tag::Heading {
                     level,
                     id,
@@ -2095,10 +2262,12 @@ fn escape_attribute(value: &str) -> String {
 
 fn escape_fragment_identifier(fragment: &str) -> String {
     fragment
-        .chars()
-        .map(|character| match character {
-            'A'..='Z' | 'a'..='z' | '0'..='9' | '-' | '_' | ':' | '.' => character.to_string(),
-            _ => format!("{:x}", character as u32),
+        .bytes()
+        .map(|byte| match byte {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b':' | b'.' => {
+                char::from(byte).to_string()
+            }
+            _ => format!("%{byte:02X}"),
         })
         .collect()
 }
