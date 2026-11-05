@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.2.1](https://github.com/rabii-chaarani/codebaseGraph/compare/v4.2.0...v4.2.1) (2026-11-05)
+
+
+### Bug Fixes
+
+* **mcp:** honor Windows client profiles and shim commands ([#164](https://github.com/rabii-chaarani/codebaseGraph/issues/164)) ([2f1fe10](https://github.com/rabii-chaarani/codebaseGraph/commit/2f1fe10f6fc5f275f61e4a9bc2d38b4b33a7b5a9))
+
 ## [4.2.0](https://github.com/rabii-chaarani/codebaseGraph/compare/v4.1.0...v4.2.0) (2026-11-04)
 
 
