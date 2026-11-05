@@ -12,6 +12,8 @@ pub mod agent_hooks;
 pub mod api;
 mod artifact_store;
 mod bootstrap;
+mod client_config;
+mod client_process;
 mod coordinator;
 mod daemon_service;
 pub mod db_writer;
