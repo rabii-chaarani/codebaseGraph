@@ -5,7 +5,6 @@ use crate::daemon_service::{repository_fingerprint, verify_daemon_endpoint};
 use serde_json::json;
 use std::{
     collections::{BTreeMap, BTreeSet},
-    env,
     io::Write,
     path::Path,
     process::Command,
@@ -41,7 +40,16 @@ fn attach_result_verification(result: &mut serde_json::Value, options: &McpInsta
         .unwrap_or("generic")
         .to_string();
     let descriptor = result.get("descriptor").cloned().unwrap_or_default();
-    result["verification"] = verify_mcp_install(&descriptor, &client);
+    let scope = result
+        .get("scope")
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or("local");
+    let config_path = result
+        .get("path")
+        .and_then(serde_json::Value::as_str)
+        .map(Path::new)
+        .or(options.client_config_path.as_deref());
+    result["verification"] = verify_mcp_install(&descriptor, &client, scope, config_path);
     result["agent_hooks_verification"] =
         verify_agent_hooks_for_install(&descriptor, &client, options);
 }
@@ -99,7 +107,26 @@ fn verify_agent_hooks_for_install(
 pub(in crate::adapters::cli) fn verify_mcp_install(
     descriptor: &serde_json::Value,
     client: &str,
+    scope: &str,
+    config_path: Option<&Path>,
 ) -> serde_json::Value {
+    let repo_root = descriptor
+        .get("repo_root")
+        .and_then(serde_json::Value::as_str)
+        .map(Path::new);
+    let target = config_path
+        .map(Path::to_path_buf)
+        .map(Ok)
+        .unwrap_or_else(|| {
+            let root = repo_root
+                .ok_or_else(|| "install response did not contain a repository root".to_string())?;
+            let adapter = if client == "claude" && scope == "project" {
+                "claude-project"
+            } else {
+                client
+            };
+            crate::client_config::default_client_config_path(adapter, scope, root)
+        });
     if descriptor
         .get("transport")
         .and_then(serde_json::Value::as_str)
@@ -122,7 +149,12 @@ pub(in crate::adapters::cli) fn verify_mcp_install(
             .get("name")
             .and_then(serde_json::Value::as_str)
             .unwrap_or_default();
-        let visibility = verify_client_visibility(client, server_name);
+        let visibility = verify_client_visibility(
+            client,
+            server_name,
+            repo_root,
+            target.as_deref().map_err(String::as_str),
+        );
         return json!({
             "ok": http.get("ok").and_then(serde_json::Value::as_bool).unwrap_or(false)
                 && visibility.get("ok").and_then(serde_json::Value::as_bool).unwrap_or(true),
@@ -135,7 +167,12 @@ pub(in crate::adapters::cli) fn verify_mcp_install(
         .get("name")
         .and_then(serde_json::Value::as_str)
         .unwrap_or_default();
-    let visibility = verify_client_visibility(client, server_name);
+    let visibility = verify_client_visibility(
+        client,
+        server_name,
+        repo_root,
+        target.as_deref().map_err(String::as_str),
+    );
     json!({
         "ok": stdio.get("ok").and_then(serde_json::Value::as_bool).unwrap_or(false)
             && visibility.get("ok").and_then(serde_json::Value::as_bool).unwrap_or(true),
@@ -218,14 +255,43 @@ pub(in crate::adapters::cli) fn verify_stdio(descriptor: &serde_json::Value) -> 
 pub(in crate::adapters::cli) fn verify_client_visibility(
     client: &str,
     server_name: &str,
+    repo_root: Option<&Path>,
+    target: Result<&Path, &str>,
 ) -> serde_json::Value {
     let Some(command) = visibility_command(client) else {
         return json!({"ok": true, "skipped": true, "reason": format!("{client} has no CLI visibility check")});
     };
-    if !executable_in_path(&command[0]) {
-        return json!({"ok": true, "skipped": true, "reason": format!("{} executable not found", command[0])});
+    let target = match target {
+        Ok(path) => path,
+        Err(error) => return json!({"ok": false, "error": error}),
+    };
+    let executable = match crate::client_process::ClientExecutable::discover(&command[0]) {
+        Ok(Some(executable)) => executable,
+        Ok(None) => {
+            return json!({"ok": true, "skipped": true, "reason": format!("{} executable not found", command[0])})
+        }
+        Err(error) => return json!({"ok": false, "command": command, "error": error}),
+    };
+    let mut process = match executable.command(&command[1..]) {
+        Ok(process) => process,
+        Err(error) => return json!({"ok": false, "command": command, "error": error}),
+    };
+    match crate::client_config::configure_command(&mut process, client, target) {
+        Ok(true) => {}
+        Ok(false) => {
+            return json!({"ok": true, "skipped": true, "reason": "client CLI cannot inspect the selected configuration file", "path": target})
+        }
+        Err(error) => return json!({"ok": false, "command": command, "error": error}),
     }
-    match Command::new(&command[0]).args(&command[1..]).output() {
+    #[cfg(windows)]
+    if let Some(root) = repo_root {
+        if process.get_current_dir().is_none() {
+            process.current_dir(root);
+        }
+    }
+    #[cfg(not(windows))]
+    let _ = repo_root;
+    match process.output() {
         Ok(output) => {
             let stdout = String::from_utf8_lossy(&output.stdout).to_string();
             let stderr = String::from_utf8_lossy(&output.stderr).to_string();
@@ -356,14 +422,4 @@ pub(in crate::adapters::cli) fn visibility_command(client: &str) -> Option<Vec<S
         ]),
         _ => None,
     }
-}
-
-fn executable_in_path(executable: &str) -> bool {
-    let path = Path::new(executable);
-    if path.components().count() > 1 {
-        return path.is_file();
-    }
-    env::var_os("PATH")
-        .map(|paths| env::split_paths(&paths).any(|dir| dir.join(executable).is_file()))
-        .unwrap_or(false)
 }

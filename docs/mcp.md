@@ -26,6 +26,21 @@ The full command accepts `--scope local|user|project`, `--name`,
 `--verify`. Use `--verify` when you want the installer to read back the
 registration and check the transport and graph-tool schemas.
 
+On Windows, user-scoped MCP configuration uses an explicit
+`--client-config-path` first, then a client override such as `CODEX_HOME` or
+`OPENCLAW_HOME`, then the Windows user profile. `HOME` does not select the
+default Windows location. If the profile cannot be resolved, registration
+fails instead of placing user configuration in the current repository.
+Project-scoped configuration keeps its project location.
+
+Windows client discovery supports `.exe`, `.cmd`, and `.bat` files on `PATH`.
+Registration and visibility checks use the same selected configuration target.
+Batch shims receive separate arguments through the Windows batch adapter;
+unsupported or unsafe inputs fail before invocation. If an explicit file
+cannot be addressed by the client's CLI, verification reports that its CLI
+visibility check is unavailable for that file while still checking the server
+transport.
+
 ### Default local transport
 
 For local clients, `auto` resolves to one repository-scoped Streamable HTTP
