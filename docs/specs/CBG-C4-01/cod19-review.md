@@ -37,7 +37,7 @@ No Rust build, product test, native model acceptance, live workflow/protection c
 
 Fresh read-only `/root/cod19_final_review`, default / gpt-6.1-sol / xhigh / fork_turns:none, applied adversarial-review-engineer and engineering lenses under the user AGENTS assignment settings (which override the skill's Max default). Frozen reviewed commit: `210b5d327b18826695ae671713a7b539a9608656`; diff baseline: `79e45b79635e0e747715653ec32efb25fff54e09`.
 
-**Returned verdict: no confirmed P0-P3 defects.** Documentation PR and concrete human-approval handoff are supported after recording the verdict, focused verification of evidence-only additions and independent publication verification. No semantic correction was requested.
+**Returned verdict: no confirmed P0-P3 defects.** Documentation PR and concrete human-approval handoff are supported after recording the verdict, focused final verification and independent publication verification. The initial verdict requested no defect correction; a later bounded review recommended the nonblocking procedural clarification below.
 
 | Frozen reviewed input | SHA-256 |
 | --- | --- |
@@ -53,6 +53,10 @@ Review covered decision/contract fidelity, placement/dependency/shared-contract/
 Conditional future risks remain gated: ignored-policy/effective instruction delivery, Q1 sufficiency, concrete scenarios/calibration, actual runtime pins, credential separation and authoritative hosted transition. They are not demonstrated document defects. Exact published-SHA A/B decisions, including selection of the proposed CBG-C4-only transition, remain human choices; a broader migration requires a revised reviewed package. No approval or activation is inferred from this verdict.
 
 Scryer preparation ledger `chg-vkejmt` was closed empty with rationale retained and no claims/links/folds. Existing models/directives/prior history/unrelated pending work remain preserved. The reviewer made no writes, nested assignments, product source inspection/build/tests or hosted probes. Subsequent evidence-only additions require focused verification against the unchanged semantic hashes above.
+
+Focused verification of clean head `1de7529dca617249b36965068abb4e61846b30bc` passed: only the review record changed from the initial frozen input, all semantic hashes and twelve inherited files remained exact, validator/diff checks passed, active policy remained unchanged and scoped Scryer readback confirmed the empty closed ledger. This is a historical verified snapshot, not the containing commit of this updated record.
+
+A subsequent narrow read-only check found no confirmed defect in C16/C18's procedural Scryer references because scoped B already controls after activation, but recommended an explicit precedence paragraph to avoid a future conflict stop. That paragraph was added to canonical reconciliation: references retain current meaning before activation and resolve to the selected Git/native authority only after actual A/B approval and verified scoped activation, preserving every product/placement/directive/evidence/unrelated obligation. The transition/policy and approval-scope artifacts remain unchanged. This final clarification changes the approval-subject hash and requires focused affected-path verification before publication; its exact final snapshot/result is recorded on COD-19.
 
 Exact publication head, PR, focused final verification and independent remote byte/check results are recorded in COD-19's handoff after execution. Missing CI is not green. Neither review nor publication verification supplies the pending human decision or activation evidence.
 
