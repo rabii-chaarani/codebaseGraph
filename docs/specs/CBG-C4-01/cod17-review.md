@@ -37,3 +37,11 @@ No corrective changes were requested. The three reviewed input hashes were check
 The C1 dispatch contract belongs to COD-16 after the user's API-direction decision. Q1 sufficiency requires COD-25/F04 evidence after the resolution-scope decision. Numerical calibration, automatic ownership qualification, hosted trust/enforcement and exact implementation approval retain their existing downstream gates.
 
 The reviewer did not rerun product suites, replay the supplied graph probe, audit all historical CI logs, verify hosted enforcement or independently repeat original-chat recovery. The review was read-only; no source, model, tracking or memory writes occurred. Reusable knowledge was assessed and no new memory record was warranted for unimplemented proposal contracts.
+
+## Focused verification after the user's decisions
+
+The same independent reviewer checked [cod17-decisions.md](cod17-decisions.md), SHA-256 `ff0f03f2e05de1a41872ea593e8e33cab4e02e2ab05ce170bbaf7147897cad70`, against the user's exact answers. The reviewed branch HEAD was `e84fdd91b3d9a0b50d2c4e081f0de4b0879e3925`; the decision record was then an untracked addition. All three original proposal input hashes remained unchanged.
+
+Returned verdict: **Focused pass: no confirmed defects.** The record faithfully selects C1 and Q1, preserves compatibility and shared dispatch, retains `UNKNOWN` blocking and pilot sufficiency before calibration, and requires renewed user decisions for scope expansion. The reviewer also verified that this review record accurately described the earlier verdict and limits. Settings remained `default` / `gpt-6.1-sol` / `xhigh` / `fork_turns: none`.
+
+This focused check covered decision/review records and hashes only. No source/probe review or product suites were repeated, and no writes occurred. The decisions resolve the earlier open alternatives; they do not authorise implementation or waive downstream gates.
