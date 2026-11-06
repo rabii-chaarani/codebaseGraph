@@ -40,10 +40,25 @@ No Rust build or product test is necessary for this documentation-only change an
 
 ## Independent persisted-diff review
 
-Pending the required fresh read-only Final Reviewer with `default` / `gpt-6.1-sol` / `xhigh` / `fork_turns: none`, using adversarial-review-engineer against the documentation baseline and actual final content/fixtures/evidence. Confirmed P0–P3 defects must be remedied and affected paths reverified before PR handoff. This section will retain exact reviewed hashes/snapshot, outcomes and limitations.
+Fresh read-only `/root/cod16_persisted_final_review`, `agent_type: default`, `model: gpt-6.1-sol`, `reasoning_effort: xhigh`, `fork_turns: none`, applied adversarial-review-engineer and engineering lenses. The user-provided AGENTS assignment settings override the skill's Max default. Frozen reviewed commit: `925eff6b5818ca2bfcab6adbb02caec3966e5192`; diff baseline: `f67e1d95862484dee34c8e818c98b72959366c5b`.
+
+**Returned verdict: no confirmed P0–P3 defects.** Documentation PR handoff is supported after recording the review and completing publication checks. No new consequential open contract question emerged.
+
+| Reviewed input | SHA-256 at the frozen commit |
+| --- | --- |
+| cod16-contracts.md | `c5c5f523deb9a214f9218c15b63c67e66b4cdc429d7a45cf156bdda687af6847` |
+| cod16-decisions.md | `f5c2489ca20e928ae08168d431a49d378dd8ba5d273f167c9f2089f958e93df1` |
+| cod16-fixtures.md | `10eac06bfd49f61aded649bcc96822db62831c421f69946f2d2817acfe2df69a` |
+| cod16-review.md before appending this verdict | `157010281f9566e87f701304770b2d4f9f97e8a923b3f0fb8d575717d160b0f5` |
+
+The reviewer independently reran the read-only validator (PASS), verified its hash, four-file diff/clean snapshot, historical byte identity, links/JSON/fences, trace identifiers and synthetic arithmetic. Static source comparison at `90e2ab6fae2767bdb158e19f0072d43568e80dbc` confirmed all 12 legacy request variants, five QueryRequest fields, executor signature, helper methods and public exports used in the fixtures. This is not Rust compilation.
+
+Review covered decision fidelity, ownership/coverage/lineage, scenario connectivity and exact contract sets, identity/result integrity, guarded transitions, resources, cancellation and ambiguous-dispatch recovery; it explicitly checked proposed placement, dependencies, shared contracts, affected consumers and legacy behavior. No product files changed. Connected graph context described source-baseline implementation and did not index these new worktree documents; the reviewer read the actual frozen Git files. No runtime/product/hosted-enforcement qualification was performed and no writes occurred.
+
+This verdict applies to the stated snapshot. Appended review/delivery records require focused verification against the unchanged content hashes before final handoff; they do not silently extend the reviewed semantic scope.
 
 ## Delivery and retained gates
 
 PR publication evidence pending. PR #184 remains a separate open prerequisite; no merge is requested. Current repository workflow branch filters do not include dev PRs, so no hosted CI result is implied by this documentation delivery. Record actual run/check availability after publication; do not label absence as green.
 
-COD-18 trust/integration, COD-19 full-SHA product implementation approval/procedure transition, COD-25/F04 Q1 sufficiency, COD-40 scenario instances, D17 calibration and maintainer aggregate closure remain pending with their owners. Scryer `chg-7jc6yv` is proportional documentation tracking with no claims/links/folds. Assess reusable knowledge at handoff; issue-specific decisions are retained in the specification documents without duplicating them into memory/wiki.
+COD-18 trust/integration, COD-19 full-SHA product implementation approval/procedure transition, COD-25/F04 Q1 sufficiency, COD-40 scenario instances, D17 calibration and maintainer aggregate closure remain pending with their owners. Empty Scryer `chg-7jc6yv` was closed with its rationale retained and no claims/links/folds. Reusable knowledge was assessed: issue-specific decisions are retained in these specification documents; no additional wiki/memory write is warranted.
