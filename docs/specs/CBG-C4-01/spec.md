@@ -5,19 +5,35 @@
 | Field | Value |
 | --- | --- |
 | Stable work ID | `CBG-C4-01` |
-| Proposed canonical path | `docs/specs/CBG-C4-01/spec.md` |
-| Logical revision | `0.2`, proposed, 23 October 2026; revised after the required adversarial proposal review |
-| Decision authority | The user's explicit choices in the planning conversation, consolidated below |
-| Implementation approval | Pending review of a committed specification; no approved specification SHA exists yet |
+| Canonical path | `docs/specs/CBG-C4-01/spec.md` |
+| Logical revision | **0.3**, proposed final approval package, 7 November 2026, Australia/Darwin |
+| Decision authority | The user's explicit historical choices and COD-16/17/18 decisions; COD-19 prepares the final approval subject |
+| Implementation approval | Pending exact full-SHA human decision; publication/review grants neither implementation permission nor authority activation |
 | Pilot | Graph Read Service in codebaseGraph |
-| Examined source | `6aa5ba8bd99c3071e106a8bfc7a408652a8e4bb5`; an observation baseline, not a selected implementation baseline |
-| Delivery tracking | Pending identity reconciliation: repository instructions name Linear `P-RAB-1`; the named connection returns no matching project |
+| Selected source baseline | `90e2ab6fae2767bdb158e19f0072d43568e80dbc`, codebaseGraph 4.2.1; selected COD-17 pilot baseline |
+| Documentation baseline | COD-18 head `79e45b79635e0e747715653ec32efb25fff54e09`; distinct from the selected product source |
+| Delivery tracking | [CodebaseGraph Extension](https://linear.app/codebasegraph/project/codebasegraph-extension-2cf77b39fc8b), [COD-5](https://linear.app/codebasegraph/issue/COD-5), [COD-19](https://linear.app/codebasegraph/issue/COD-19); work/phase/milestone identities retained |
 | Aggregate closure | Repository maintainers retain closure authority; acceptance of this proposal does not close implementation or platform qualification |
-| Proposal review | Fresh read-only GPT-6.1 Sol at Max reviewed revision `0.1`; findings and revision verification are recorded in [proposal-review.md](proposal-review.md) |
+| Review/evidence | [COD-19 review](cod19-review.md); historical [proposal review](proposal-review.md), [COD-16 review](cod16-review.md), [COD-17 review](cod17-review.md) and [COD-18 review](cod18-review.md) remain separate |
+| Approval scopes | [Specification and implementation](approval-scope.md); [separate authority transition](authority-transition.md); both require the published full SHA and explicit human decision |
 
-The product and governance choices below are agreed. The concrete compilation, projection, metric and evidence contracts are proposed for review. Neither the choices nor this draft authorise dependent implementation. A later approval record must identify this path, its full committed Git SHA, the approved scope and the human decision reference.
+This revision consolidates the settled P0 contracts. It preserves D01-D23 identifiers, R01-R12, A01-A18 and APR-01-APR-05. **D11 is explicitly amended** by the sole-maintainer decision; its historical wording is not represented as unchanged. R10, A13/A18 and authorization evidence are reconciled accordingly. The historical [canonical revision 0.2](https://github.com/rabii-chaarani/codebaseGraph/blob/0a66cb31e397e523190618f211a613f7a095d9a0/docs/specs/CBG-C4-01/spec.md), SHA-256 `f8161559e5183985d62c41b0157225bb643901a365c35098c6b1aa6b08d69b1e`, remains available at its original full SHA; it is not implementation-approved.
 
-The user explicitly replaced the proposed Scryer dependency with codebaseGraph's own architecture language. This extension will have no Scryer runtime or approval dependency. Existing models and unrelated repository work are not migrated or deleted by this proposal. Repository procedure must be reconciled with the agreed authority change before implementation.
+### Normative contract set and reconciliation
+
+The approval subject includes this canonical revision and the exact sources below, together with the separately approved transition scope. Relative convenience copies retain historical bytes; immutable references/digests identify the incorporated versions.
+
+| Contract source | Immutable revision / SHA-256 | Governing detail |
+| --- | --- | --- |
+| [COD-16 supplement 0.2](https://github.com/rabii-chaarani/codebaseGraph/blob/0c49902ba7e12e10a8a93ba8540c2be0527d7d47/docs/specs/CBG-C4-01/cod16-contracts.md) | `0c49902ba7e12e10a8a93ba8540c2be0527d7d47`; `c5c5f523deb9a214f9218c15b63c67e66b4cdc429d7a45cf156bdda687af6847` | C16-01-09: identity, ontology, strict YAML, ownership/coverage/lineage, constraints/metrics/scenarios, C1 API, operations, resources/errors/recovery and one-table reporting |
+| [COD-18 supplement 0.1](https://github.com/rabii-chaarani/codebaseGraph/blob/79e45b79635e0e747715653ec32efb25fff54e09/docs/specs/CBG-C4-01/cod18-contracts.md) | `79e45b79635e0e747715653ec32efb25fff54e09`; `bf57465a7062880f1075201261f20551adf58c502a7c16b358d9f56e77c03823` | C18-01-10: explicit D11 amendment, bootstrap/update isolation, tagged authorization, manual action, producer/path/freshness/expected-state and qualification stop gate |
+| [COD-17 C1/Q1 decisions](https://github.com/rabii-chaarani/codebaseGraph/blob/f67e1d95862484dee34c8e818c98b72959366c5b/docs/specs/CBG-C4-01/cod17-decisions.md) | `f67e1d95862484dee34c8e818c98b72959366c5b`; `ff0f03f2e05de1a41872ea593e8e33cab4e02e2ab05ce170bbaf7147897cad70` | Preserve old Rust callers through one shared private dispatch; qualify scoped imports/direct references before pilot acceptance/calibration |
+
+This canonical revision governs scope, requirements, criteria and explicit reconciliation. C16 supplies concrete details except where C18 and the canonical amendments change authorization. In particular, C16's historical PR-review-only `observed_reviews` assumption is replaced by R10's tagged `approval_evidence`. C18 does not waive C16 result integrity, resources, transport parity, C1/Q1 or durable output. Any remaining material contradiction stops dependent work for a human decision; a submitter cannot select a convenient version or broaden exclusions.
+
+The [COD-16 decisions](cod16-decisions.md) and [COD-18 decisions](cod18-decisions.md) preserve original human decision locators. The maintainer's 7 November closure clarification, question `call_dd90a6278c834ecf88f1c25091fc838a` item 0, closes COD-18's **P0 contract definition only**. Concrete verifier/workflow/configuration pin approval, trust activation and hosted proof remain mandatory COD-37/46/47 gates before first-model acceptance. No trust anchor or product execution is fabricated by P0 closure.
+
+The extension has no Scryer runtime or approval dependency. Current repository instructions remain in force during preparation. The separately proposed authority transition is inert until explicit approval and verified activation; this specification cannot self-install an instruction change, migrate existing models or accept a first native baseline.
 
 ## Problem and observable outcome
 
@@ -41,7 +57,7 @@ The first milestone will demonstrate this complete loop on the Graph Read Servic
 | D08 — Uncertainty | Return `UNKNOWN` for unresolved mappings and block proposal acceptance when mandatory checks depend on them. |
 | D09 — Dependencies | Require explicit permission within governed scope. Declare required relationships separately. |
 | D10 — Architecture authority | Require human approval for every change to the accepted architecture or constraints. |
-| D11 — Approval mechanism | Use a GitHub PR review covering the exact architecture and constraint revision, from at least one designated human other than the proposal author. |
+| D11 — Approval mechanism | Require explicit human authorization of the exact architecture/constraint/waiver revision. In maintainer-controlled sole-maintainer mode, the designated maintainer may authorize their own proposal through the approved manual workflow action; otherwise require a qualifying designated human PR reviewer other than the proposal author. |
 | D12 — Enforcement | Enforce model acceptance and CI/integration gates. Local candidate editing remains possible; a filesystem write gateway is outside the first version. |
 | D13 — Agent integration | Existing agents orchestrate through MCP/CLI. The product does not host an agent runtime in the first version. |
 | D14 — Metrics | Enforce budgets for dependency cycles, direct fan-out and transitive dependency reach, separately scoped to containers and components. |
@@ -55,7 +71,7 @@ The first milestone will demonstrate this complete loop on the Graph Read Servic
 | D22 — File organisation | Use one root manifest with explicit references to architecture and constraint YAML files. |
 | D23 — Surfaces | Deliver MCP, CLI and machine-readable CI reports. A visual editor is separate future work. |
 
-These decisions come from the user's individual selections and subsequent twelve-question response in this conversation. In particular, D21 supersedes the earlier suggestion to retain detailed reports in an external artifact store.
+The historical decisions retain their original locators. D21 still supersedes the earlier external raw-report-store suggestion. D11's explicit amendment is selected in C18-D4/D5; every other D01-D23 row is preserved verbatim from historical revision 0.2. Publication/review is not human implementation approval.
 
 ## Requirements and proposed contracts
 
@@ -63,9 +79,9 @@ These decisions come from the user's individual selections and subsequent twelve
 
 Compile the root manifest and its referenced files into a typed intended-architecture model. Validate stable IDs, reference existence, relationship endpoints and the system → container → component hierarchy. A component has one parent container; a container has one parent software system. A C4 component represents related functionality and may map to code spread across modules. Container boundaries describe applications or data stores, rather than source directories. See the official [C4 abstractions](https://c4model.com/abstractions), [containers](https://c4model.com/abstractions/container) and [components](https://c4model.com/abstractions/component).
 
-The proposed ontology extension contains distinct architecture-system, architecture-container and architecture-component entities, architecture relationships and constraints, and revision-bound implementation mappings. It must not repurpose a source-derived `Component` as an authored architecture element or invent source locations for planned entities. Exact type names and the extension version will be finalised in the reviewed schema contract.
+Use C16-01-03's exact extension versions, primitive identities/hashing, distinct `ArchitectureSystem`, `ArchitectureContainer`, `ArchitectureComponent` and related types, legal endpoints/cardinalities and snapshot separation. Do not repurpose source `Component` or invent source locations. The pinned supplement supplies concrete type/schema contracts; the example below is illustrative organization, not a competing grammar or a complete approved pilot topology.
 
-File references are explicit and confined to the model root. Propose strict duplicate-key and unknown-field diagnostics, bounded parsing, cycle detection for includes and containment, and no executable YAML tags or remote includes. These are proposed input contracts, not implemented features.
+Use C16-03's strict JSON-compatible YAML 1.2 subset and complete explicit root-relative file closure. Reject duplicate keys/IDs/paths, unknown fields, unsupported scalars/tags/aliases/merge keys, escaping/symlink/remote references and trailing documents. No recursive/glob discovery or executable interpolation. Apply the explicit shared execution policy in R12; resource exhaustion cannot produce truncated mandatory PASS. These are implementation contracts, not implemented features.
 
 Illustrative organisation, not an implemented grammar:
 
@@ -114,7 +130,9 @@ A non-placeholder endpoint is not sufficient either. The examined resolver norma
 
 Declare the observation domain of every rule and metric. A statement about supported static dependencies must not be presented as a guarantee about unobserved runtime or dynamic relationships. Relevant exclusions and extraction coverage must be visible. A missing required relationship is a violation only when its absence is established within the applicable observation domain; otherwise it is `UNKNOWN`.
 
-**Feasibility gate:** qualify dependency resolution and coverage for the Rust pilot before calibrating budgets. If existing extraction cannot support the required projection, identify the bounded resolver work and obtain approval for any material scope change. Zero observed edges must never manufacture a passing pilot.
+**Selected Q1 domain:** C16-05 qualified case-sensitive module/item identity, explicit/grouped imports, aliases and statically named direct references under pinned build context. Unsupported cfg/macros/globs/re-export cycles/type-dependent dispatch/external definitions remain UNKNOWN when relevant. Independently derive source/site/required-closure inventories and qualified lineage; a concrete heuristic endpoint does not supply qualification.
+
+**Feasibility gate:** COD-25/F04 must establish actual Graph Read Service endpoint/coverage sufficiency, including affected API Core, Coordinator, Agent Hook and Wiki callers, before projection acceptance or calibration. If Q1 is insufficient, return the measured blocker for a human decision; do not expand resolution or narrow obligations silently. Zero observed edges cannot manufacture a pilot pass.
 
 ### R05 — Evaluate constraints and outcomes
 
@@ -142,7 +160,7 @@ For comparable baseline and candidate inputs, require `candidate <= absolute_max
 
 ### R07 — Apply narrow, expiring waivers
 
-A waiver identifies its metric, stable scope, original limit, accommodated overrun, approved baseline, expiry and qualifying human review. It cannot waive unknown ownership, insufficient extraction, stale tests or missing approval. Other checks remain mandatory.
+A waiver identifies its metric, stable scope, original limit, accommodated overrun, approved baseline, expiry and qualifying human authorization under R10/C18. It cannot waive unknown ownership, insufficient extraction, stale tests or missing approval. Other checks remain mandatory.
 
 Retain the raw metric value and its overrun against the original limit separately from the effective mandatory-check result. A valid waiver can make that effective check `PASS` only within its accommodated ceiling and zero-deterioration rule. This does not erase the raw overrun or introduce a fourth check outcome. An invalid waiver cannot authorise acceptance; if required waiver validity cannot be established, the effective check is `UNKNOWN`.
 
@@ -172,23 +190,39 @@ The first version can recompute mandatory results through the trusted evaluator 
 
 Approval freshness and waiver expiry are rechecked at acceptance time even when deterministic evaluation records can be reused. Unavailable required inputs, an unfinished check, a resource limit or cancellation return `UNKNOWN`; retain completed records only while their input identities remain valid. Retry is explicit.
 
-### R10 — Verify human approval at acceptance and integration
+### R10 — Verify human authorization at acceptance and integration
 
-Bind approval to the root YAML and the complete referenced architecture, constraint and waiver closure. Verify the accepted baseline, reviewed Git commit, matching closure contents, review identity and review state. Require at least one currently qualifying designated human other than the proposal author. Dismissed or invalidated reviews cannot authorise promotion.
+Bind approval to the root and complete architecture/constraint/waiver closure, exact raw-byte/path-set identity, source head, applicable accepted baseline and current trusted configuration. Candidate YAML cannot choose its authorization mode, human identity, verifier, producer or gate. D10 still requires human approval for every accepted architecture/constraint change; no human per-mapping queue is added.
 
-GitHub reviews expose their reviewer, state and reviewed `commit_id`; these provide the approval evidence rather than an agent-written approval flag. See [GitHub review API](https://docs.github.com/en/rest/pulls/reviews) and [review eligibility and stale approvals](https://docs.github.com/en/pull-requests/how-tos/review-pull-requests/reviewing-proposed-changes-in-a-pull-request).
+Use the C18 modes. `designated_review` requires a currently qualifying designated human other than the proposal author, with independently verified effective GitHub review state, reviewed commit and closure. `sole_maintainer_action` permits the designated sole maintainer to authorize their own proposal through a new explicit manual action in the approved pinned workflow. Proposed initial repository/account IDs are `1235031738` / `50892556` (`rabii-chaarani/codebaseGraph` / `@rabii-chaarani`); they become active only through independently established maintainer trust. A mode cannot be inferred from authorship or collaborator counts.
 
-Use trusted accepted policy, reviewer configuration and evaluator selection to verify a candidate. A candidate cannot redefine the gate that decides whether its own changes are accepted. Code-only changes do not silently rewrite the architecture baseline; they still require fresh applicable evaluation and normal repository review.
+A sole-maintainer action binds exact repository/PR/`refs/heads/dev`, full head and expected-base commits, complete governing-closure digest, expected accepted-state ID, active trust revision, explicit decision and authenticated run/attempt/control identity. Automatic events, actor strings, copied real run IDs, inherited rerun privileges, labels and earlier greens are not fresh human approval. A changed subject needs new approval; report-only commits may reuse qualifying deterministic evidence but do not inherit an attempt's manual authorization. Candidate execution receives no approver/integration credentials. An account identity alone does not prove an explicit human decision or credential separation.
 
-Bootstrap the first native baseline from explicit repository-maintainer authority: P0 must establish human-designated reviewer identities and an approved, pinned verifier configuration outside the candidate model, recording their configuration revision and approval alongside the specification. The maintainer-approved implementation/verifier then checks the first model against that trusted configuration and its qualifying GitHub review. Existing protected repository configuration may supply the trust anchor only after verification; its existence is not assumed. If no trust anchor is established, first-model acceptance remains blocked. Candidate YAML cannot designate its own approver or verifier.
+The reconciled C16/C18 shape is:
 
-MCP/CLI acceptance checks and the CI/integration gate share these semantics. They do not prevent arbitrary local edits. GitHub repository protection configuration must be checked during delivery; a local evaluation result alone does not establish an enforced merge gate.
+```text
+ApprovalEvidence =
+  { kind: github_pr_review, reviews: VerifiedReview[] }
+  | { kind: sole_maintainer_action, action: VerifiedMaintainerAction }
 
-Use a trusted, non-skippable final decision on the supported integration path. It must require every mandatory record to be completed and effectively `PASS`, validate result integrity, bind the actual tested integration content and expected accepted-state identity, and recheck qualifying reviews and waiver validity for the final acceptance decision. Upstream failure, cancellation, omission, a skipped job or `UNKNOWN` cannot be translated into successful acceptance. Verify the approved producer/workflow identity and its pinned verifier selection; a matching check name or candidate workflow assertion is insufficient.
+AuthorizationObservation = {
+  evaluation_id, actual_integration_commit, actual_integration_tree,
+  expected_state_id, trust_config_ref, approval_evidence: ApprovalEvidence,
+  observed_at, waiver_validity, decision
+}
+```
 
-Define invalidation and retrigger handling for proposal/base changes, new review submissions, dismissal or disqualification of a relied-on review, and waiver expiry after an earlier successful run. Cached deterministic results can remain useful, but an old green status is not a current authorisation. Bind combined changes through an up-to-date, serialised integration path, qualifying the actual integration revision rather than only independently passing proposal heads. Examples of platform mechanisms to assess are strict up-to-date checks and merge queues; using one is not evidence that every required freshness predicate is enforced. See [GitHub protected-branch rules](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches) and [required-check troubleshooting](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks).
+The historical `observed_reviews` field is replaced, never overloaded with fake PR approvals. Public operations resolve authorization-context locators through maintained trust; a serialized reference is not a bearer grant or override. Preserve tagged logical evidence across CLI/MCP/CI and the existing summary table. Original evaluated provenance and fresh authorization observations remain separate.
 
-**Hosted-enforcement qualification gate:** P0 must identify the supported protected path, its authority and exact freshness/transition contract. P4 must demonstrate that this path rejects stale or skipped authorisation at its final decision boundary. A previously successful GitHub check does not supply an unproved live predicate. If the selected configuration cannot enforce the required review, expiry, integration-content and expected-state conditions, report that limitation and keep this gate unqualified; do not silently weaken the contract or claim protection of other merge paths.
+P0 establishes the trust contract and proposed human identity/mode/path. Concrete immutable verifier/workflow/configuration pins and explicit maintainer approval of them remain COD-37/46/47 gates before first-model acceptance or runtime activation, as clarified when the maintainer closed COD-18. No architecture verifier or protected path is assumed present at baseline. Bootstrap is established outside candidate control; separate later trust updates use the previously active revision and conflict on changed expected trust. A product/model candidate cannot activate its own trust changes.
+
+The selected path under qualification is `github-dev-manual/0.1`: one maintainer-controlled pinned workflow into dev, provisionally `.github/workflows/architecture-integration.yml`. C18-04-08 defines action/producer/control/dependency pins, unprivileged candidate execution, result regeneration/integrity, failure handling and the protected-path connection. Its actual source/configuration and authoritative protocol must be approved and executed before use. A manual-dispatch green, check name or application ID alone does not establish that connection. No hosted controller/App, signing service, extra store, organization migration or protection bypass is assumed.
+
+The trusted final boundary requires every mandatory record complete and effectively PASS, actual combined integration content, fresh qualifying human authorization and waiver validity, and a conditional transition against current accepted-state/trust/base identities. It covers both freshness and actual promotion/integration; a local mutex, workflow concurrency, two independent writes, head-SHA API parameter or queued merge receipt alone is insufficient. Preserve the latest comparable waiver ratchet and reject stale 10-to-9 after 10-to-8. Evaluate interacting proposals on their actual composition.
+
+Invalidate on proposal/base/content/policy/trust changes, review dismissal/disqualification or action withdrawal/cancellation, and waiver expiry after earlier success. Failure/skip/neutral/cancellation/missing mandatory work and UNKNOWN cannot authorize acceptance. Events may request re-evaluation; they do not replace the final live check. Missing required facts are UNKNOWN; a known unsupported path blocks promotion. After ambiguous dispatch inspect actual state before explicit recovery; retain real execution permits and never claim cancellation undid a committed transition.
+
+**Hosted-enforcement stop gate:** COD-47/F09 must demonstrate the real authenticated producer-to-protected-path connection, expected-state/composition/waiver/review/action freshness and rejection of alternate acceptance-capable paths. If the platform cannot enforce a required predicate at the authoritative transition, retain `unsupported_integration_path`/UNKNOWN and blocked acceptance, then return the capability gap for a human scope decision. Specification approval permits bounded staged implementation; it neither proves nor activates this path.
 
 ### R11 — Retain YAML and one durable summary table
 
@@ -208,44 +242,42 @@ Machine-readable CI output serialises the same logical records. It does not requ
 
 ### R12 — Preserve existing interfaces and bounded execution
 
-Introduce transport-neutral architecture operations through the existing public operation registry, with matching MCP and CLI adapters. Proposed capabilities are compilation, inference-evidence submission/validation, proposal evaluation, structural scenario evaluation, implementation verification, report generation and approval verification. Exact operation names, schemas, errors, limits and exit codes require the reviewed public-contract revision before coding.
+Use C16-07-09's settled **C1 compatible family**. Preserve old exhaustive `OperationRequest` variants, public request/descriptor/response/error literal fields, `OperationExecutor`, facade methods/paths and old defaults. No retroactive `non_exhaustive`, new required trait methods or changed old literals. Add an architecture request enum non-exhaustive from introduction, its response/executor contracts and opaque validated execution context through **one shared private dispatch/catalog**, not a second authoritative registry.
 
-Keep `graph_query` single-statement, bounded and read-only. Candidate evaluation must not obtain a mutation escape through that operation. Apply fallible limits to parsing, projection, graph traversal, scenarios and evidence input. Preserve the readable active generation and accepted model on failure. Do not add a model-provider runtime to perform the AI reasoning that existing agents supply.
+The eight operation IDs are `architecture-compile`, `architecture-validate-evidence`, `architecture-evaluate`, `architecture-scenarios`, `architecture-verify`, `architecture-report`, `architecture-verify-approval` and guarded `architecture-accept`, with exact request/response/schema/MCP/CLI mappings in C16-08 and the R10 authorization amendment. Core composes transport-neutral services; adapters translate/present. Graph Read Service retains bounded reads; Language Syntax Graph supplies qualified bindings; the proposed Native Architecture domain owns evidence validation/projection/constraints/metrics/scenarios/evaluation. Exact file ownership and necessary dependency arrangement are settled in each approved execution brief.
+
+Use strict inputs and C16 validation/error/CLI codes; retain simultaneous unknown/violation records. Local PASS, approval preview and report generation cannot promote accepted intent. `graph_query` remains single-statement, parameterized, bounded and read-only, with no source/storage mutation escape. Native verification capability construction and read/write/publication lifetimes remain intact.
+
+Architecture tasks use explicit shared repository `ArchitectureExecutionPolicy` values across CLI/MCP/CI: every C16-09 required positive field, no invented numerical defaults, tighten-only caller overrides, and full effective values/digest in provenance. Missing/invalid required settings block evaluation. Configuration changes invalidate dependent reuse. Apply fallible allocation, configured counters/deadlines and cooperative cancellation; unfinished mandatory work is UNKNOWN, never truncated PASS. Keep real execution permits/leases until actual completion/cleanup and prohibit replay after ambiguous dispatch.
+
+Operational resource settings remain separate from D17 human-calibrated architecture budgets. This approval selects neither numerical resource values nor numerical metric limits. Existing graph-query bounds and semantic cardinalities are unchanged. No hosted model/agent runtime, raw evidence archive, extra durable state/task service or graph-to-k-wiki dependency is included.
 
 ## Repository evidence and extension boundaries
 
-These are implementation observations at the examined source, not evidence that the proposed capabilities already exist. Existing test definitions have not been executed for this proposal.
+The selected clean product baseline is `90e2ab6fae2767bdb158e19f0072d43568e80dbc` (4.2.1). The [COD-17 baseline](https://github.com/rabii-chaarani/codebaseGraph/blob/f67e1d95862484dee34c8e818c98b72959366c5b/docs/specs/CBG-C4-01/cod17-baseline.md) records source/environment/tool identities, topology, the actual placeholder observation and existing test/CI evidence with limits. Historical 6aa5ba8 source observations remain in revision 0.2 and its review; they are not relabeled as current qualification.
 
-| Observation / boundary | Source anchor |
-| --- | --- |
-| Shared ontology: 37 node types, 25 relationship types, empty per-type constraints | [graph schema](../../../assets/graph_schema.json#L77) |
-| Existing source-derived `Component` and syntax-oriented evidence relation | [component](../../../assets/graph_schema.json#L3002), [evidence](../../../assets/graph_schema.json#L6532) |
-| Positional source identity and placeholder metadata | [node construction](../../../src/syntax_materializer/builder/nodes.rs#L43), [placeholder](../../../src/syntax_materializer/builder/nodes.rs#L102) |
-| Extraction paths may filter prohibited relationships | [edge construction](../../../src/syntax_materializer/builder/edges.rs#L68), [staging](../../../src/staging_writer/accumulator.rs#L324) |
-| Rust import inventory, call emission and local label resolution | [imports](../../../src/syntax_materializer/builder/semantic.rs#L280), [calls](../../../src/syntax_materializer/builder/semantic.rs#L381), [resolution](../../../src/syntax_materializer/builder/semantic.rs#L518) |
-| Concrete targets can still be ambiguous: normalised labels and last-match selection | [label registration](../../../src/syntax_materializer/builder/nodes.rs#L236), [normalisation](../../../src/syntax_materializer/ids.rs#L97), [target selection](../../../src/syntax_materializer/builder/semantic.rs#L550) |
-| Public requests/responses and shared registry | [contracts](../../../src/api/contracts.rs#L18), [registry](../../../src/api/core.rs#L87) |
-| Normalisation and response presentation | [normalisation](../../../src/api/normalization.rs#L19), [presentation](../../../src/api/presenter.rs#L11) |
-| MCP descriptors derive from registered operations | [MCP tools](../../../src/adapters/mcp/tools.rs#L10) |
-| Read-only enforcement, native query execution and bounded traversal | [validation](../../../src/api/graph_read.rs#L424), [execution](../../../src/api/graph_read.rs#L443), [traversal](../../../src/api/graph_read.rs#L648) |
-| Existing query behaviour, parameterisation, truncation and rejection tests | [query fixtures](../../../src/adapters/cli/tests/graph.rs#L739) |
-| Existing registry and MCP transport contract tests | [registry tests](../../../src/api/core.rs#L1204), [MCP tests](../../../src/adapters/mcp/tools.rs#L200) |
-| YAML parser is already used by k-wiki; the graph crate has no direct YAML dependency | [k-wiki manifest](../../../crates/k-wiki/Cargo.toml#L23), [root manifest](../../../Cargo.toml#L35) |
+Graph Runtime is the application/library container; Knowledge Wiki and Release Verifier retain their separate boundaries. The principal pilot origin is Graph Read Service within Graph Runtime, following its production dependency closure and affected Core/Coordinator/Agent Hook/Wiki callers. A single-container pilot can legitimately have no inter-container edges; synthetic graphs do not establish coverage or calibrated budgets.
 
-Do not introduce a reverse dependency from the graph crate to k-wiki merely to reuse its YAML parser. Choose and qualify the dependency arrangement in the implementation design. Existing wiki contracts remain at their original locations; this proposal does not copy or supersede them.
+The `execute_graph_search` placeholder gap, collision/shadowing risk and unqualified Q1 sufficiency remain explicit. No extension compiler/resolver/evaluator/approval verifier/hosted gate is claimed implemented by P0 documentary closure.
+
+Preserve existing source ontology/storage format, native capability guards, confinement, cancellation, generation publication/leases/recovery and shared operation semantics. Additive intended/observed/predicted/evaluation states cannot alias source identities. No graph-to-k-wiki parser dependency is approved. Existing wiki specifications stay at their original locations; unrelated specifications/models are not migrated or superseded.
+
+Detailed implementation/file/dependency ownership remains per approved issue brief. Shared files/manifests/lockfiles have one writer. The [authority transition](authority-transition.md) separately defines bootstrap governance without treating an unqualified native model or candidate as its own authority.
 
 ## Proposed delivery sequence
 
 | Step | Deliverable and starting conditions |
 | --- | --- |
-| P0 — Commit and settle contracts | Commit the reviewable specification; reconcile the native authority change, Linear identity and supported pilot baseline. Establish the maintainer-approved first-baseline trust anchor and supported integration-path contract. Finalise ontology, YAML, projection, reassignment evidence, result integrity, expected-state promotion, scenario obligations and public-operation contracts. Apply the required adversarial proposal review and revision verification; resolve starting conditions before any implementation. |
-| P1 — Compile intent | Implement the additive ontology extension, bounded YAML compiler and isolated candidate representation. Qualify strict diagnostics and preserve existing extraction/query behaviour. |
-| P2 — Qualify observed mappings | Implement evidence validation, automatic ownership acceptance and dependency projection, including classification-sensitive reassignment and wrong-concrete-target controls. Establish the Rust pilot's observation domain and coverage. Stop for approval if resolver work materially changes scope. |
-| P3 — Evaluate changes | Implement constraints, precise metrics, comparable baselines, no-deterioration state transitions and scenarios with common obligations. Measure the pilot and obtain approval for calibrated limits and their aggregate scope semantics before treating the budget gate as qualified. A legitimate single-container pilot need not have inter-container edges; distinguish real coverage from synthetic metric fixtures. |
-| P4 — Integrate governance | Expose shared MCP/CLI operations; verify approval closure and trusted result integrity; produce the YAML/table output and matching CI records. Demonstrate the final protected integration decision with current review/expiry checks, actual combined content and expected-state conflict handling. Unsupported enforcement remains unqualified. |
-| P5 — Demonstrate and qualify | Exercise the full pilot loop, negative controls and failure paths. Run the relevant suites, resolve warnings, perform the required fresh integrated review and reconcile specification/evidence/delivery records before closure. |
+| P0 - Final readiness | COD-16/17/18 documentary outcomes are Done. COD-19 publishes this reviewed revision and inert transition/approval scopes; exact full-SHA human implementation approval and verified procedure activation remain pending. Concrete runtime trust pins/hosted proof remain pre-acceptance gates, not fabricated P0 execution |
+| P1 - Compile intent | After approval/procedure readiness, implement additive ontology, strict bounded YAML and isolated candidates; qualify diagnostics while preserving source/query behavior |
+| P2 - Qualify mappings | Implement evidence/ownership/lineage/Q1 projection and prove actual pilot sufficiency before projection acceptance/calibration. Stop for material resolver or obligation changes |
+| P3 - Evaluate changes | Implement constraints, metrics, comparable baselines, ratchets and shared-obligation scenarios. COD-40 settles concrete instances; measure and obtain D17 approval before numerical enforcement qualifies |
+| P4 - Integrate governance | Implement shared operations, integrity, authorization, YAML/table/CI records and selected final path. Approve actual pins and demonstrate protected-path enforcement; unsupported capability blocks acceptance |
+| P5 - Demonstrate and qualify | Execute the actual pilot, failure/bypass/interaction controls, affected suites and independent integrated review. Preserve separate platform/release and maintainer aggregate closure |
 
-P0's implementation approval and contract/start-condition gates remain pending. The required fresh adversarial proposal review has now been run with GPT-6.1 Sol at Max against revision `0.1`; its conditional recommendation, findings and verification of revision `0.2` are recorded in [proposal-review.md](proposal-review.md). The earlier exploratory and requirements consultations did not satisfy that review. The separate final implementation review still requires the repository-mandated settings. Detailed worker ownership and execution briefs will be settled after the native authority/procedure transition and contract review.
+Future stages retain existing Linear prerequisites and bounded per-issue readiness. Plan-level implementation approval does not dispatch every issue, authorize live GitHub settings changes, accept a native baseline, waive tests/qualification, grant merge/release authority or expand Q1.
+
+Historical fresh Sol/Max proposal review and revision 0.2 verification remain in [proposal-review.md](proposal-review.md). COD-16/18 reviews remain valid only within unchanged inputs. This materially reconciled revision receives its own fresh final documentation review; future integrated implementation reviews are not replaced by document review.
 
 ## Acceptance and verification plan
 
@@ -265,23 +297,27 @@ All checks below are planned. No compiler, evaluator, inference engine, metric g
 | A10 | R02/R05/R07 | Given an approved waiver, its effective check can pass while its named raw overrun stays visible, without further metric deterioration. Concurrent candidates `8` and `9` evaluated against `10` cannot accept `9` after `8` without revalidation against `8`. Exercise expiry, improvement rollback, authoritative-state conflicts and unrelated failures through the real transition path. |
 | A11 | R08 | Given both pilot scenarios, validate common parameters, required capabilities and structural postconditions on both transformations before comparing metrics. A candidate omitting a shared obligation cannot appear as a favourable comparison. Unresolved applicability or mandatory evidence returns `UNKNOWN`. Scenario and bypass-control fixtures. |
 | A12 | R09 | Given changed declared inputs, dependent results are invalidated; report-only commits can reuse evidence only after fixed-exclusion input equivalence and trusted-result integrity are verified. Changed mappings, complete-looking altered verdicts/values, omitted mandatory rows and substituted execution references are rejected or regenerated. Freshness, tampering and self-reference tests. |
-| A13 | R10 | Given a trusted bootstrap configuration and an exact qualifying human review, model acceptance succeeds; candidate-supplied trust configuration, changed imports, policy/waiver content, dismissed reviews, wrong authorship or unavailable required approval fail to establish acceptance. Stubbed API contract tests plus a controlled integration demonstration. |
+| A13 | R10 | Given maintainer-established trusted configuration, an exact qualifying designated review in normal mode or authenticated explicit sole-maintainer action in sole mode establishes only the human-authorization predicate. Candidate-selected trust/mode, wrong identity, missing/invalidated action, changed governing closure, stale subject or unavailable facts cannot authorize acceptance; all other mandatory checks still apply. API and controlled hosted cases, C18-F01-F24/F33/F38-F40. |
 | A14 | R09/R11 | Given disposable graph retirement, the committed YAML/table still identifies each accepted mapping, compact evidence, results and input revisions. A table matching input hashes but containing altered result payloads cannot authorise acceptance; regenerate or verify trusted provenance and require the persisted logical records to match. Round-trip, tampering and provenance tests. |
 | A15 | R09/R11/R12 | Given the same trusted evaluation, CLI, MCP and CI serialisation preserve identical logical records and effective outcomes, including integrity failures, missing mandatory records and `UNKNOWN`. Cross-surface contract tests. |
 | A16 | R12 | Given existing query requests and write-like statements, retain parameterisation, bounds and rejection behaviour. Execute the existing affected query/registry/transport suites on the reviewed revision. |
 | A17 | R02–R12 | Given the accepted pilot design, implement a bounded conforming change, re-extract and run its tests. Demonstrate that deviation, stale evidence, changed combined integration content and lost expected-state comparison block the real integration path. End-to-end pilot evidence. |
-| A18 | R09/R10 | Given a supported hosted integration path, an upstream failed/skipped/cancelled job or missing evaluation cannot satisfy the final gate. Demonstrate approval arriving after the first evaluation, approval invalidation after success, waiver expiry after success, wrong producer/workflow identity and changed integration content. The final decision must revalidate or refuse acceptance; otherwise hosted enforcement remains unqualified. |
+| A18 | R09/R10 | Given the selected hosted path, failed/skipped/cancelled/missing work, automatic events/reruns, revoked/disqualified approval, expiry after green, wrong producer/control revision, changed combined content, stale expected state and alternate acceptance paths cannot cross the real final boundary. If a predicate cannot be enforced, retain the named unsupported/UNKNOWN gate. Controlled COD-47 execution is required; no check name or dispatch green alone qualifies. |
 
 Record executed commands, source/environment identities, results and limitations in the durable table or the existing linked canonical evidence. Native platform qualification remains separate from local execution. A configured gate or attached test is not a passing observation. The review's illustrative calculations are counterexamples to incomplete contracts, not execution of these acceptance tests.
 
-## Risks, pending work and handoff
+## Risks, approval and handoff
 
-The principal risk is mistaking incomplete extracted relationships for a complete dependency model. P2 must establish the pilot's coverage before numerical limits or zero-violation results can justify acceptance. Automatic semantic ownership is another qualified inference: independent citation checks improve accountability but do not prove that a responsibility interpretation is correct.
+Incomplete or unsound dependency evidence must not be mistaken for complete conformance. Conservative ownership can leave shared helpers UNKNOWN; Q1 may be insufficient. A concrete endpoint, empty projection, lower metric or rationale alone cannot create a mandatory pass. Return actual insufficiency for a human scope decision rather than widening resolution or shrinking obligations.
 
-Compact reporting must retain enough evidence for the accepted mapping and evaluation policies. It must not collapse into one aggregate PASS row or retain only references to disposable graph state. A persisted summary is inspectable provenance; independent reproduction may still require the pinned tools and linked test artefacts.
+C18 platform facts are dated observations, not live configuration approval or hosted proof. Approved executable/configuration pins, authenticated explicit manual action/credential separation and an authoritative protocol coupling freshness/state to integration remain prerequisites. The selected personal-repository path can remain unsupported. No signing service, hosted controller, extra store, organization migration or bypass is pre-approved as a remedy.
 
-Pending before implementation: commit/review/approval of this revised specification and its concrete contracts; reconciliation of the native authority with repository procedures; the correct Linear identity; a supported clean pilot revision; and satisfaction of the conditional proposal-review starting gates. Numerical limits deliberately remain pending measurement and human approval. P2/P4 must still establish inference/projection and hosted-enforcement capability through executed evidence; documentary remedies do not demonstrate those capabilities. No tracker record, implementation claim, architecture approval, passing product test or platform qualification is asserted by this draft.
+[Approval scope](approval-scope.md) distinguishes specification/implementation permission from authority activation. The concrete request must supply the remotely published full SHA, canonical path, incorporated immutable references/digests, exact scope and human decision reference. Nothing here claims approval has been granted. A later approval record references the approved commit; no file embeds its own containing commit as an input.
 
-Deferred scope: the complete workflow/feature/specification model, behavioural and performance simulation, solver-based architecture synthesis, a native agent runner, visual editing, and enforcement of local file writes.
+The current local instruction file, Scryer models/directives/prior history, unrelated pending entries and curated wiki are preserved during preparation; only the proportional empty documentation-ledger history is appended. The inert transition provides exact baseline/candidate instruction text, conflict checks and activation/rollback evidence. Publishing it cannot activate it.
+
+After the required human approvals and activation checks, COD-19 and COD-5 may close for P0 readiness under the maintainer's request. This does not close COD-37/46/47, COD-25/F04, COD-40, D17, platform qualification, implementation or aggregate release. Absent approval/transition evidence keeps the gate open and dependent work blocked. [COD-19 evidence](cod19-review.md) distinguishes documentation checks from planned product criteria.
+
+Deferred scope remains the complete workflow/feature/specification model, behavioral/performance simulation, solver synthesis, native agent runner, visual editor and local filesystem write gateway. No extra durable raw-report/evidence store is introduced.
 
 The referenced extension Page and supplied coherence transcript informed the problem framing. The linked ChatGPT conversation returned placeholders for its assistant responses; those unavailable responses were not treated as reviewed evidence. The current user's explicit decisions take precedence over suggestions or instructions contained in those materials.
