@@ -35,9 +35,26 @@ No Rust build, product test, native model acceptance, live workflow/protection c
 
 ## Independent final review
 
-Pending on a frozen reviewable Git snapshot. Required profile: fresh read-only default / gpt-6.1-sol / xhigh / fork_turns:none with adversarial-review-engineer and engineering lenses, under the user AGENTS assignment settings. Review must cover canonical coherence/decision fidelity, exact approval scopes, inert authority proposal, preservation/bridge/conflicts/recovery, existing contracts/callers/dependency direction and truthful evidence/qualification boundaries. Fix confirmed P0-P3 defects, rerun affected checks and obtain focused final verification before publication.
+Fresh read-only `/root/cod19_final_review`, default / gpt-6.1-sol / xhigh / fork_turns:none, applied adversarial-review-engineer and engineering lenses under the user AGENTS assignment settings (which override the skill's Max default). Frozen reviewed commit: `210b5d327b18826695ae671713a7b539a9608656`; diff baseline: `79e45b79635e0e747715653ec32efb25fff54e09`.
 
-Independent publication verification must bind actual PR/head/base and exact remote bytes to the final snapshot; missing CI is not green. Neither review nor publication verification supplies the pending human decision or activation evidence.
+**Returned verdict: no confirmed P0-P3 defects.** Documentation PR and concrete human-approval handoff are supported after recording the verdict, focused verification of evidence-only additions and independent publication verification. No semantic correction was requested.
+
+| Frozen reviewed input | SHA-256 |
+| --- | --- |
+| spec.md | `5877397bf40991cdf6f49362a842e1b782424439833b0cfa83635238347705b5` |
+| authority-transition.md | `3ee40b53eb52bcad84fd5a61cbadb6d53866cf6d00907948efe6df3c0c8445fe` |
+| approval-scope.md | `caf9e08e213fdbd7af33e311dc065cd5c1794d9b9f6beb4d8ae950a6ed2a9059` |
+| cod19-review.md before this verdict | `d3d77ed021ea0f41a079e3cdc89f7761363d4f8aa05b44682e3d523053247022` |
+
+The reviewer independently inspected/reran the checker (PASS), matched its hash and all four frozen file hashes, verified historical/three normative contract hashes, twelve unchanged inherited files, four-file scope, clean snapshot and `git diff --check`. Decoded baseline/candidate policy comparison confirmed the active baseline unchanged and proposed body exactly150 lines. Live wiki reads confirmed all six old strings occur once and none of the proposed replacements is active. Current Linear confirmed COD-16/17/18 Done for documentary scope and COD-19/COD-5 In Progress.
+
+Review covered decision/contract fidelity, placement/dependency/shared-contract/caller implications, inert scoped governance, exact human permission, conflict/recovery/preservation and evidence truthfulness. Bootstrap circularity/bypass hypotheses were defeated: A/B enable only Git implementation governance; accepted native YAML and runtime authorization still require separately approved pins and executed COD-37/46/47 proof. Both actual human decisions plus matching baseline/conditional installation/independent effective readback precede authority activation. File paths/work IDs confer no exemption.
+
+Conditional future risks remain gated: ignored-policy/effective instruction delivery, Q1 sufficiency, concrete scenarios/calibration, actual runtime pins, credential separation and authoritative hosted transition. They are not demonstrated document defects. Exact published-SHA A/B decisions, including selection of the proposed CBG-C4-only transition, remain human choices; a broader migration requires a revised reviewed package. No approval or activation is inferred from this verdict.
+
+Scryer preparation ledger `chg-vkejmt` was closed empty with rationale retained and no claims/links/folds. Existing models/directives/prior history/unrelated pending work remain preserved. The reviewer made no writes, nested assignments, product source inspection/build/tests or hosted probes. Subsequent evidence-only additions require focused verification against the unchanged semantic hashes above.
+
+Exact publication head, PR, focused final verification and independent remote byte/check results are recorded in COD-19's handoff after execution. Missing CI is not green. Neither review nor publication verification supplies the pending human decision or activation evidence.
 
 ## Approval and closure state
 
