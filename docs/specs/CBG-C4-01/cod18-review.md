@@ -43,14 +43,31 @@ No Rust build or product test is needed for this documentation-only diff, and no
 
 ## Independent persisted-diff review
 
-Pending on the frozen documentation snapshot. Required profile: fresh read-only native `collaboration.spawn_agent`, `agent_type: default`, `model: gpt-6.1-sol`, `reasoning_effort: xhigh`, `fork_turns: none`, applying [adversarial-review-engineer](/Users/rabii/.codex/skills/adversarial-review-engineer/SKILL.md) and its engineering lenses. User-provided AGENTS settings override the skill's Max default.
+Fresh read-only `/root/cod18_final_review`, native `collaboration.spawn_agent`, `agent_type: default`, `model: gpt-6.1-sol`, `reasoning_effort: xhigh`, `fork_turns: none`, applied [adversarial-review-engineer](/Users/rabii/.codex/skills/adversarial-review-engineer/SKILL.md) and its engineering lenses. User-provided AGENTS settings override the skill's Max default. Frozen reviewed commit: `c9dca03063846a2eef5f5c2bce30e75df1c6b39a`; diff baseline: `0c49902ba7e12e10a8a93ba8540c2be0527d7d47`.
 
-Review scope: decision fidelity and explicit D11 amendment; bootstrap/update isolation; exact subject and manual action authenticity; producer/control closure; state/composition/waiver/cancellation/replay; current platform limitations; C16/linked-issue impact; placement/dependency/public-contract/caller implications; and truthfulness of evidence/qualification limits. A no-defect result would qualify this documentation handoff only. The selected hosted path stays unqualified until COD-47 execution.
+Review scope: decision fidelity and explicit D11 amendment; bootstrap/update isolation; exact subject and manual action authenticity; producer/control closure; state/composition/waiver/cancellation/replay; current platform limitations; C16/linked-issue impact; placement/dependency/public-contract/caller implications; and truthfulness of evidence/qualification limits.
+
+**Returned verdict: no confirmed P0-P3 defects; no semantic correction requested.** User handoff and a documentation PR are supported within the stated planning boundary after recording this verdict and focused verification of evidence-only additions. This is not product implementation approval or hosted qualification.
+
+| Frozen reviewed input | SHA-256 |
+| --- | --- |
+| cod18-contracts.md | `bf57465a7062880f1075201261f20551adf58c502a7c16b358d9f56e77c03823` |
+| cod18-decisions.md | `0c4ab2414be0ce7ed84a42a87819febe61b87778332b3ee936873db45aedf8d8` |
+| cod18-fixtures.md | `cd1eb5af7805a7dc6fd4ff278d9932117aa68cd3433b75e5d6d1d07a6a9c30ae` |
+| cod18-review.md before this verdict | `32f10b4f8a0093a915c3f3e8266a6b02327de4616573ecf7826765fe9ad58d68` |
+
+The reviewer independently inspected/reran the validator (PASS), matched the script and all four file hashes, confirmed all nine inherited blobs and historical canonical revision 0.2, ran `git diff --check` and verified the clean frozen snapshot. The reviewer read current primary GitHub documentation and relevant inherited contracts; no source/product/hosted execution or writes occurred.
+
+The review retained three consequential conditional qualification risks: the actual producer-to-protected-path connection and authoritative final transition are unproved; authenticated account provenance alone does not establish the explicit human decision/credential boundary; and concrete approved executable/configuration pins plus withdrawal/expiry race enforcement remain prerequisites. The contract's stop gate correctly retains unsupported/UNKNOWN acceptance until COD-47 proof. These were not reported as demonstrated document contradictions.
+
+Final evidence-only additions require focused verification against the unchanged semantic document hashes above. Exact publication head, PR and remote readback results are recorded in the COD-18 handoff; publication is not inferred from this local review.
 
 ## Reconciliation and retained gates
 
-Scryer proportional documentation ledger `chg-ymqbv8` carries no claim/link entries or folds. Current orientation also returns unrelated pending work, drift and stale anchors; this documentation work does not adopt, reconcile or declare them fixed. The repository's native-authority transition remains COD-19.
+Scryer proportional documentation ledger `chg-ymqbv8` was closed empty with its rationale retained and no claim/link entries or folds. Current orientation also returns unrelated pending work, drift and stale anchors; this documentation work does not adopt, reconcile or declare them fixed. The repository's native-authority transition remains COD-19.
 
 COD-18 tracking must distinguish selected planning decisions/documentation progress from product implementation approval and runtime trust activation. COD-19 must reconcile/publish the changed canonical revision and full-SHA exact-scope human implementation approval. COD-37/46/47 retain their implementation/hosted proof gates; COD-25/F04, COD-40 and D17 retain their own qualification/calibration work. Maintainers retain aggregate closure.
 
-Reusable knowledge assessed: the policy decisions/rationale are retained in this proposal and decision record. No filler wiki/memory write is warranted. Independent review, frozen/final snapshot and delivery limits must be appended after execution; pending review is not a passing result.
+The coordinator also read the current scope/acceptance contracts of COD-33/36/41/42/43/44/45 to check the linked state, waiver, evidence, operation, transport and report impact. Those records were not changed or advanced. Their existing expected-state, expiry, recomputation, explicit-retry, shared-semantics and one-table obligations are retained by this proposal.
+
+Reusable knowledge assessed: the policy decisions/rationale are retained in this proposal and decision record. No filler wiki/memory write is warranted. The independent reviewer reached the same assessment. The selected hosted path stays unqualified; no product build/test or live acceptance evidence is implied.
