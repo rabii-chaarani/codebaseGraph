@@ -1,6 +1,6 @@
-# COD-21 execution brief — revision 1, proposed
+# COD-21 execution brief — revision 2, authorized scope
 
-Work: CBG-C4-01/F02/S02 / [COD-21](https://linear.app/codebasegraph/issue/COD-21), parent COD-6, M1/P1. Status: readiness investigation complete; compiler contract clarification awaiting human decision; **product implementation not started**. Maintainers retain aggregate closure.
+Work: CBG-C4-01/F02/S02 / [COD-21](https://linear.app/codebasegraph/issue/COD-21), parent COD-6, M1/P1. Status: actual C21-D01/D02 human decisions recorded; bounded implementation authorized under existing Scope A once the owner plan/signatures below are settled; **product implementation not yet started at this revision**. Maintainers retain aggregate closure.
 
 ## Authority, baseline and starting conditions
 
@@ -10,7 +10,7 @@ Live Linear confirms sole blocker COD-20 is Done for its schema/types scope. PR1
 
 Memory recall, existing wiki architecture/authority context, Linear project/issues/relations and graph discovery/context were consulted. Graph tools are available but slow and index the original main checkout: ArchitectureDocument/serde_yaml searches and src/architecture query returned no entries; manifest queries likewise have no File rows. Graph-discovered src/lib.rs (`Module:41664f532caa8578527c`) and explicit change_impact context provide the existing module boundary; branch source export traces COD-20's src/architecture/mod.rs. Qualify these graph gaps against the actual frozen branch; do not rebuild/install or substitute another project's graph.
 
-The proposed [compiler supplement0.1](../cod21-contracts.md) records unresolved C21-D01 serialized grammar and C21-D02 snapshot-source choices. Existing Scope A approval covers settled compiler behavior, not unspecified contract choices. Commit/publish/review this proposal; obtain an actual exact-full-SHA decision before dependent code. Record that decision separately with question/answer/path/full SHA; never infer it from issue status, review, preselection, task dispatch or time.
+The [compiler supplement0.1](../cod21-contracts.md) is approved for C21-D01 serialized grammar and C21-D02 immutable Git/inline inputs at full SHA `9b4384378c03e05a458f8f94291c8bba4d82c7c3`; [actual decision record](../approvals/cod21-approval.md) retains both exact answers and the question locators. Fresh Sol/xhigh review and independent Terra/medium remote readback passed that published subject before the human answers. Original Scope A approval covers settled compiler behavior, with these additional decisions covering the formerly unspecified choices. No approval is inferred from status, review, preselection, dispatch or time. Direct live-tree compilation is outside this assignment.
 
 ## Workflow and ownership
 
@@ -23,7 +23,7 @@ After the start gate, that owner alone may edit:
 - new `tests/architecture_compile.rs` and `tests/fixtures/architecture_compile/**`;
 - `Cargo.toml` and `Cargo.lock`, solely the justified direct parser dependency using the existing locked version; no unrelated updates/features/version change.
 
-Root alone owns `docs/specs/CBG-C4-01/cod21-contracts.md`, this brief, `cod21-evidence.md` and evidence under `cod21-evidence/`. Existing COD-20 product/evidence, assets/graph_schema.json, assets/architecture_schema.json, tests/architecture_model.rs, src/lib.rs, API/adapters/storage/config/workflows, Scryer and wiki files are outside this technical assignment. Further required files return to coordinator for exact reassignment before edits.
+Root alone owns `docs/specs/CBG-C4-01/cod21-contracts.md`, this brief, `approvals/cod21-approval.md`, `cod21-evidence.md` and evidence under `cod21-evidence/`. The supplement stays byte-identical to the approved subject unless a new revision/decision is required. Existing COD-20 product/evidence, assets/graph_schema.json, assets/architecture_schema.json, tests/architecture_model.rs, src/lib.rs, API/adapters/storage/config/workflows, Scryer and wiki files are outside this technical assignment. Further required files return to coordinator for exact reassignment before edits.
 
 Place parsing/source capture/typed compilation/semantic validation under the existing transport-neutral architecture owner. One canonical grammar and validator; no graph→k-wiki dependency, adapter evaluator, native agent runtime or speculative crate. Existing schema/types remain compatible. Compiler service returns complete typed model/raw closure or structured errors; no hashes/acceptance IDs/publication or storage mutation. Proposed internal boundary is compile(ModelInput, validated policy/context) → CompiledModel or CompileError; establish the exact Rust signatures in the owner plan after the human contract decision, before dependents.
 
