@@ -418,3 +418,24 @@ Use nonblocking real ownership in producer order: writer, artifact-use, existing
 | COD113-A5 | DC-S5; COD-113/Q01 | Actual local macOS Rust/Cargo1.98.1 affected storage/recovery checks, formatting and strict Clippy; independent Terra/medium execution; fresh Sol/xhigh adversarial final review of the final snapshot. Preserve executed binaries/dependencies before target reuse. |
 
 Independently investigate the original reader-lease aggregate-drain failure without weakening its assertions or calling it unsafe reader deletion. A distinct unresolved failure remains a delivery gate for the appropriate owner; COD-114/COD-116 and aggregate closure are not transferred here. PR delivery targets main with essential code/substantive tests and linked external evidence. Merge/release are outside this authorization.
+
+
+## COD-113/R02 — first durable parent anchor, proposed 2026-11-07
+
+**Status: proposed; not approved or implemented.** R01/Q01 and their human approval remain unchanged. Implementation found that the first cursor and per-run source capsule currently has no independently recorded parent inode. A copied self-contained capsule/creator tag cannot satisfy the intended physical-origin boundary across restart. The new run bootstrap dispatch is disabled; no run payload deletion or PR delivery is qualified.
+
+### Decision requiring human approval
+
+Recommended: a **new dedicated, write-once metadata attribute on the actual existing writer-lock inode**, used solely to anchor one private recovery-origin journal. The attribute records the installed scope key and physical writer identity, the exact prepublished journal-binding inode, creator nonce and body digest. Write it only while genuine administrative quiescence and actual writer/use/state ownership are verified; sync and read back before publishing that same journal inode. It must not reuse the existing creator-origin attribute or change lock bytes/inode. The journal then records exact cursor and per-run capsule inodes before their publication. Origin registration grants no payload retirement, artifact/reference or generation authority.
+
+The alternative is a **new versioned administrative-source extension** recording the same recovery-origin journal pointer under the actual administrative owner, exclusive gate and writer ownership. This changes administrative source serialization/currentness and needs compatibility treatment for old readers and pinned contexts. It avoids placing a new attribute on the writer lock but changes the frozen administrative authority more directly.
+
+### Required constraints and verification
+
+- Neither option may weaken the existing epoch checks, fake a modern registration, infer origin from a filename/body/tag, overwrite unknown evidence, or change R01's full staging-certificate and retirement requirements.
+- The writer-attribute option preserves existing CGLG encodings and creator tags. Add only typed, purpose-specific operations in the existing lock owner; root/storage/admin/anchor substitution must fail closed. Unsupported, read-only, malformed, conflicting or unsynchronizable metadata must preserve state and report a concrete pending reason. No unsafe fallback.
+- The administrative-extension option requires a new logical contract revision for its explicit record extension; old encodings remain supported and unknown versions fail closed. Mutation must never occur through the current shared read-only receipt.
+- In either case, independently bind the journal/capsule inode before fixed-name publication, verify the actual same object on restart, retain durable intent across interruption, and distinguish legitimate namespace-move metadata changes from replacement.
+- Test interrupted first-anchor creation, pre/post publication, journal replay, duplicate/conflicting anchor, copied attributes/capsules, replacement writer/admin/control inode, unsupported metadata and resource/cancellation paths. Verify old lock bytes/inodes, active graph/pointer/cache/query/search/context, unknown/live state and all R01 gates. Actual verification stays local macOS Rust1.98.1; Windows execution remains waived for COD-113 without a claim of Windows qualification.
+
+Expected additional ownership if the writer-attribute option is approved: narrowly scoped `src/storage/locks.rs` helpers and tests; shared source-owned anchor API in the existing approved bootstrap/run modules. Exact interfaces, format and file assignments must be committed in Scryer before dependent code. Aggregate closure, merge/release and other issue ownership remain unchanged.
