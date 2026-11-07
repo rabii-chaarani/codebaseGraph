@@ -31,9 +31,19 @@ fn primitives_and_strict_shapes_reject_invalid_values() {
     for id in ["", "A", "a--b", "a/thing", "a_"] {
         assert!(Id::new(id).is_err());
     }
-    for path in ["/a", "a/../b", "a//b", "a\\b", "https://x"] {
+    for path in [
+        "/a",
+        "a/../b",
+        "a//b",
+        "a\\b",
+        "https://x",
+        "C:/dir/file",
+        "C:relative",
+        "src/bad\0name.rs",
+    ] {
         assert!(RelativePath::new(path).is_err());
     }
+    assert!(RelativePath::new("docs/design:notes.md").is_ok());
     assert!(Digest::new(format!("sha256:{}", "a".repeat(64))).is_ok());
     assert!(Digest::new(format!("sha256:{}", "A".repeat(64))).is_err());
     assert!(GitObjectId::new("a".repeat(40)).is_ok());
@@ -182,6 +192,27 @@ fn references_round_trip_but_do_not_qualify_bytes() {
         json!({"repository":"repo", "commit":commit, "path":"src/lib.rs", "content_digest":digest});
     let source = json!({"repository":"repo", "commit":commit, "path":"src/lib.rs", "node_kind":"Symbol", "node_id":"revision-id", "symbol":"item", "byte_span":{"start":0,"end":4}, "file_digest":digest});
     let provenance = json!({"repository":"repo", "evaluated_commit":commit, "evaluated_tree":"c".repeat(40), "extractor_digest":digest, "build_context_digest":digest});
+    for path in [
+        "docs/design:notes.md",
+        "src/bad\0name.rs",
+        "/absolute",
+        "C:/absolute",
+        "https://example.com/file",
+    ] {
+        let mut artifact_with_path = artifact.clone();
+        artifact_with_path["path"] = json!(path);
+        let mut source_with_path = source.clone();
+        source_with_path["path"] = json!(path);
+        let valid = path == "docs/design:notes.md";
+        assert_eq!(
+            serde_json::from_value::<ArtifactRef>(artifact_with_path).is_ok(),
+            valid
+        );
+        assert_eq!(
+            serde_json::from_value::<SourceRef>(source_with_path).is_ok(),
+            valid
+        );
+    }
     assert_eq!(
         serde_json::to_value(serde_json::from_value::<ArtifactRef>(artifact.clone()).unwrap())
             .unwrap(),

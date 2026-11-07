@@ -37,7 +37,8 @@ fn id_valid(s: &str) -> bool {
 fn path_valid(s: &str) -> bool {
     !s.is_empty()
         && !s.contains('\\')
-        && !s.contains(':')
+        && !s.contains('\0')
+        && !matches!(s.as_bytes(), [drive, b':', ..] if drive.is_ascii_alphabetic())
         && s.split('/')
             .all(|part| !part.is_empty() && part != "." && part != "..")
 }
