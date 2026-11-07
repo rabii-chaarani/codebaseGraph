@@ -1,6 +1,6 @@
-# COD-23 execution brief — revision 3, approved implementation assignment
+# COD-23 execution brief — revision 4, bounded implementation in progress
 
-Work: `CBG-C4-01/F03/S01` / [COD-23](https://linear.app/codebasegraph/issue/COD-23), parent COD-7, M1/P2. Status: **supplement0.1/brief2 actually approved at exact full SHA; independent contract review/publication passed; bounded implementation assignment ready after publication of this approval/brief update and root GO**. One issue only is active here. This record does not close COD-23 or feature/milestone qualification. It never embeds its own containing SHA.
+Work: `CBG-C4-01/F03/S01` / [COD-23](https://linear.app/codebasegraph/issue/COD-23), parent COD-7, M1/P2. Status: **supplement0.1/brief2 actually approved at exact full SHA; published approval/brief3 and root GO complete; same sole technical owner implementing bounded steps; product acceptance/independent execution/final review pending**. One issue only is active here. This record does not close COD-23 or feature/milestone qualification. It never embeds its own containing SHA.
 
 ## Authority, human directions and baseline
 
@@ -88,3 +88,13 @@ Reusable-knowledge assessment: pending issue-specific input-shape and staging ch
 The frozen approval subject's two file hashes were rechecked locally against e766d14 and still match. Independent final publication confirmed PR191 open/draft/unmerged, exact head/base/tree/sole parent, two added documents and their complete remote bytes. Exact-head status was pending with zero statuses/checks/all-event workflow runs; this supplies no hosted green. The actual human response now satisfies the previously pending exact-subject decision, not the product acceptance gates.
 
 Fresh graph readback is current/readable at generation `22169-1794047652405176000-1`, 6,260,867 nodes; cleanup remains separately pending. Semantic search/change-impact context was repeated before implementation. Live COD-23 remains the selected issue; related COD-113 is separate, not a prerequisite or assigned scope. Main's intentional knowledge/memory edits and all predecessor worktrees/evidence remain preserved. No new unresolved behavior/architecture decision was identified at this approval checkpoint.
+
+## Current execution checkpoint — incomplete product
+
+Approval/brief3 commit `41e6eeb956a6da68c6334b41592b4119c526ad8c` was pushed and root verified the remote ref before product GO. Independent Terra/medium full-byte follow-up matched actual approval SHA-256 `fb339914013b360d93c277f9405633890ba2aae7c4be3376bd4a485e42c0ea95`, brief3 `f362c24c63b3766ce31139f7e121156cda25346f07700b66e9cfbe7708d24c07` and unchanged supplement. PR191 remains frozen at approved e766d14, open/draft/unmerged; its prose now links the actual decision and implementation brief.
+
+First technical-owner execution returned only an unregistered formatted input-vocabulary draft, no integrated service/build/test. That partial attempt is retained as such. The same owner resumed under unchanged delegated workflow, approval, exact file ownership and complete-deliverable responsibility, using bounded sequential steps rather than claiming completion. No reassignment or waiver occurred. The first step implements/qualifies input and mapping identity; pinned source reconstruction, extraction guards and complete validation/tests remain required next.
+
+Owner reports `identity-01` (3 passing tests) and `identity-02` (6 passing tests) under the external implementation evidence directory, each with Cargo JSON, source snapshots/hashes and copied/hash-verified executables plus OpenSSL dependencies before the next build. These are interim owner checks against evolving uncommitted source, not independent final verification or 9 distinct final tests. The working implementation and its full evidence require inspection before any final acceptance claim.
+
+Root owns external `cod23-session-evidence/freeze_cargo_artifacts.py`, a supplementary Cargo-receipt/executable/non-system-loader-closure copier. Its system-binary smoke copy passed; actual per-run product dependency receipts remain required. The helper never executes, rewrites or relocates original binaries; retained copies do not establish relocated replay. It and all run logs/manifests stay outside product PRs. Root process-name inspection saw a transient Cargo/rustc pair that had exited by working-directory follow-up; no current competing build was established, and no process was interrupted.
