@@ -662,7 +662,11 @@ fn nonempty_intent_matches_independent_canonical_payload() {
 
 #[test]
 fn unreadable_commit_tree_and_blob_are_distinct_from_missing_objects() {
-    for kind in ["commit", "tree", "blob"] {
+    for (kind, format) in ["commit", "tree", "blob"].into_iter().flat_map(|kind| {
+        ["sha1", "sha256"]
+            .into_iter()
+            .map(move |format| (kind, format))
+    }) {
         let dir = std::env::temp_dir().join(format!(
             "cod22-corrupt-{kind}-{}-{}",
             std::process::id(),
@@ -672,7 +676,18 @@ fn unreadable_commit_tree_and_blob_are_distinct_from_missing_objects() {
                 .as_nanos()
         ));
         std::fs::create_dir_all(&dir).unwrap();
-        git(&dir, &["init", "-q"]);
+        let init = std::process::Command::new("git")
+            .arg("-C")
+            .arg(&dir)
+            .args(["init", "-q", &format!("--object-format={format}")])
+            .output()
+            .unwrap();
+        if !init.status.success() && format == "sha256" {
+            std::fs::remove_dir_all(dir).unwrap();
+            continue;
+        }
+        assert!(init.status.success());
+        git(&dir, &["config", "core.fsyncObjectFiles", "true"]);
         git(&dir, &["config", "user.name", "test"]);
         git(&dir, &["config", "user.email", "test@example.invalid"]);
         std::fs::write(dir.join("file"), b"content").unwrap();
@@ -693,6 +708,33 @@ fn unreadable_commit_tree_and_blob_are_distinct_from_missing_objects() {
             reference(&commit, "file", b"content"),
             reference(&commit, "other", b"other"),
         ];
+        let qualified = qualify_artifacts(
+            &refs,
+            std::slice::from_ref(&binding),
+            &policy(),
+            None,
+            &ctx(),
+        )
+        .unwrap();
+        assert_eq!(
+            qualified.artifacts().len(),
+            2,
+            "valid with warning config: {kind} {format}"
+        );
+        let missing_commit = reference(&"0".repeat(commit.len()), "file", b"content");
+        assert_eq!(
+            qualify_artifacts(
+                &[missing_commit],
+                std::slice::from_ref(&binding),
+                &policy(),
+                None,
+                &ctx()
+            )
+            .err()
+            .unwrap()
+            .code(),
+            "architecture_input_unavailable"
+        );
         let unavailable_binding =
             RepositoryBinding::new(Text::new("repo").unwrap(), dir.join("missing-repository"))
                 .unwrap();

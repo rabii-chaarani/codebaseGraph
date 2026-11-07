@@ -448,17 +448,6 @@ mod git {
         limit: usize,
         run: &RunContext,
     ) -> Result<Vec<u8>, CompileError> {
-        output_with_stderr_flag(binding, args, input, limit, run).map(|(bytes, _)| bytes)
-    }
-    // Retain whether Git reported an object error without depending on localized
-    // diagnostic text; ordinary compiler calls still discard this flag.
-    fn output_with_stderr_flag(
-        binding: &RepositoryBinding,
-        args: &[&str],
-        input: Option<Vec<u8>>,
-        limit: usize,
-        run: &RunContext,
-    ) -> Result<(Vec<u8>, bool), CompileError> {
         run.check()?;
         let mut child = command(binding)
             .args(args)
@@ -487,7 +476,7 @@ mod git {
         };
         let status = wait(&mut [&mut child], run);
         let (bytes, overflow) = out.join().map_err(|_| unavailable("git reader failed"))?;
-        let (_, stderr_nonempty) = err.join().map_err(|_| unavailable("git reader failed"))?;
+        let _ = err.join().map_err(|_| unavailable("git reader failed"))?;
         if let Some(writer) = writer {
             let _ = writer.join();
         }
@@ -498,7 +487,7 @@ mod git {
                 "git output limit exceeded",
             ));
         }
-        Ok((bytes, stderr_nonempty))
+        Ok(bytes)
     }
     fn verify_bytes(
         binding: &RepositoryBinding,
@@ -762,6 +751,43 @@ mod git {
         }
         Ok(tree)
     }
+    // Query existence separately without interpreting Git's diagnostics.
+    fn object_exists(
+        binding: &RepositoryBinding,
+        id: &str,
+        run: &RunContext,
+    ) -> Result<bool, CompileError> {
+        run.check()?;
+        let mut child = command(binding)
+            .args(["cat-file", "-e", id])
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+            .map_err(|e| unavailable(e.to_string()))?;
+        loop {
+            if let Err(error) = run.check() {
+                let _ = child.kill();
+                let _ = child.wait();
+                return Err(error);
+            }
+            match child.try_wait() {
+                Ok(Some(status)) => {
+                    return match status.code() {
+                        Some(0) => Ok(true),
+                        Some(1) => Ok(false),
+                        _ => Err(unavailable("Git object existence query failed")),
+                    }
+                }
+                Ok(None) => thread::sleep(Duration::from_millis(5)),
+                Err(error) => {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    return Err(unavailable(error.to_string()));
+                }
+            }
+        }
+    }
     fn check_object_type(
         binding: &RepositoryBinding,
         id: &str,
@@ -769,7 +795,7 @@ mod git {
         run: &RunContext,
     ) -> Result<(), CompileError> {
         let input = format!("{id}\n").into_bytes();
-        let (result, reported_error) = output_with_stderr_flag(
+        let result = output(
             binding,
             &["cat-file", "--batch-check=%(objectname) %(objecttype)"],
             Some(input),
@@ -777,13 +803,11 @@ mod git {
             run,
         )
         .map_err(|mut error| {
-            // A failed probe cannot establish that an object exists; preserve
-            // unavailable for a missing or inaccessible repository/tool.
             error.object_integrity_failure = false;
             error
         })?;
         if result == format!("{id} missing\n").as_bytes() {
-            return if reported_error {
+            return if object_exists(binding, id, run)? {
                 Err(CompileError::simple(
                     "invalid_reference",
                     "Git object is unreadable",
@@ -792,7 +816,7 @@ mod git {
                 Err(unavailable("Git object missing"))
             };
         }
-        if reported_error || result != format!("{id} {expected}\n").as_bytes() {
+        if result != format!("{id} {expected}\n").as_bytes() {
             return Err(CompileError::simple(
                 "invalid_reference",
                 "Git object has wrong type or is unreadable",
