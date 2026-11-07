@@ -82,6 +82,85 @@ fn projection(
     }
     Ok(())
 }
+struct BaseIndex {
+    ids: HashSet<String>,
+    components: HashMap<String, HashSet<String>>,
+    containers: HashSet<String>,
+    entities: u64,
+}
+
+fn index_base(
+    docs: &[ArchitectureDocument],
+    mut checkpoint: impl FnMut() -> Result<(), CompileError>,
+) -> Result<BaseIndex, CompileError> {
+    let mut ids = HashSet::<String>::new();
+    let mut components = HashMap::<String, HashSet<String>>::new();
+    let mut containers = HashSet::<String>::new();
+    let mut entities = 0u64;
+    for doc in docs {
+        checkpoint()?;
+        for s in &doc.systems {
+            checkpoint()?;
+            ids.insert(s.id.as_str().to_owned());
+            entities = entities
+                .checked_add(1)
+                .ok_or_else(|| CompileError::simple("resource_limit", "entity count overflow"))?;
+            for r in &s.responsibilities {
+                checkpoint()?;
+                ids.insert(r.id.as_str().to_owned());
+                entities = entities.checked_add(1).ok_or_else(|| {
+                    CompileError::simple("resource_limit", "entity count overflow")
+                })?;
+            }
+        }
+        for c in &doc.containers {
+            checkpoint()?;
+            containers.insert(c.id.as_str().to_owned());
+            ids.insert(c.id.as_str().to_owned());
+            entities = entities
+                .checked_add(1)
+                .ok_or_else(|| CompileError::simple("resource_limit", "entity count overflow"))?;
+            for r in &c.responsibilities {
+                checkpoint()?;
+                ids.insert(r.id.as_str().to_owned());
+                entities = entities.checked_add(1).ok_or_else(|| {
+                    CompileError::simple("resource_limit", "entity count overflow")
+                })?;
+            }
+        }
+        for c in &doc.components {
+            checkpoint()?;
+            ids.insert(c.id.as_str().to_owned());
+            entities = entities
+                .checked_add(1)
+                .ok_or_else(|| CompileError::simple("resource_limit", "entity count overflow"))?;
+            let mut responsibility = HashSet::new();
+            for r in &c.responsibilities {
+                checkpoint()?;
+                ids.insert(r.id.as_str().to_owned());
+                responsibility.insert(r.id.as_str().to_owned());
+                entities = entities.checked_add(1).ok_or_else(|| {
+                    CompileError::simple("resource_limit", "entity count overflow")
+                })?;
+            }
+            components.insert(c.id.as_str().to_owned(), responsibility);
+        }
+        for r in &doc.relationships {
+            checkpoint()?;
+            ids.insert(r.id.as_str().to_owned());
+            entities = entities
+                .checked_add(1)
+                .ok_or_else(|| CompileError::simple("resource_limit", "entity count overflow"))?;
+        }
+    }
+    Ok(BaseIndex {
+        ids,
+        components,
+        containers,
+        entities,
+    })
+}
+
 /// Validate the authored base snapshot. Scenario runtime targets are deliberately
 /// not resolved here; they may be created by a later transformation.
 pub(super) fn validate_base(
@@ -104,58 +183,12 @@ pub(super) fn validate_base(
         };
         return Err(diagnostic(code, error.code, &error.subject, locations));
     }
-    let mut ids = HashSet::<String>::new();
-    let mut components = HashMap::<String, HashSet<String>>::new();
-    let mut containers = HashSet::<String>::new();
-    let mut entities = 0u64;
-    for doc in docs.iter() {
-        for s in &doc.systems {
-            ids.insert(s.id.as_str().to_owned());
-            entities = entities
-                .checked_add(1)
-                .ok_or_else(|| CompileError::simple("resource_limit", "entity count overflow"))?;
-            for r in &s.responsibilities {
-                ids.insert(r.id.as_str().to_owned());
-                entities = entities.checked_add(1).ok_or_else(|| {
-                    CompileError::simple("resource_limit", "entity count overflow")
-                })?;
-            }
-        }
-        for c in &doc.containers {
-            containers.insert(c.id.as_str().to_owned());
-            ids.insert(c.id.as_str().to_owned());
-            entities = entities
-                .checked_add(1)
-                .ok_or_else(|| CompileError::simple("resource_limit", "entity count overflow"))?;
-            for r in &c.responsibilities {
-                ids.insert(r.id.as_str().to_owned());
-                entities = entities.checked_add(1).ok_or_else(|| {
-                    CompileError::simple("resource_limit", "entity count overflow")
-                })?;
-            }
-        }
-        for c in &doc.components {
-            ids.insert(c.id.as_str().to_owned());
-            entities = entities
-                .checked_add(1)
-                .ok_or_else(|| CompileError::simple("resource_limit", "entity count overflow"))?;
-            let mut responsibility = HashSet::new();
-            for r in &c.responsibilities {
-                ids.insert(r.id.as_str().to_owned());
-                responsibility.insert(r.id.as_str().to_owned());
-                entities = entities.checked_add(1).ok_or_else(|| {
-                    CompileError::simple("resource_limit", "entity count overflow")
-                })?;
-            }
-            components.insert(c.id.as_str().to_owned(), responsibility);
-        }
-        for r in &doc.relationships {
-            ids.insert(r.id.as_str().to_owned());
-            entities = entities
-                .checked_add(1)
-                .ok_or_else(|| CompileError::simple("resource_limit", "entity count overflow"))?;
-        }
-    }
+    let BaseIndex {
+        mut ids,
+        components,
+        containers,
+        mut entities,
+    } = index_base(docs, || run.check())?;
     if entities > policy.max_authored_entities {
         return Err(CompileError::simple(
             "resource_limit",
@@ -998,6 +1031,45 @@ mod tests {
             &ctx
         )
         .is_ok());
+    }
+    #[test]
+    fn base_index_checks_every_record_and_responsibility() {
+        let mut doc = base();
+        doc.relationships.push(crate::architecture::Relationship {
+            id: Id::new("relation").unwrap(),
+            level: Level::Component,
+            from: Id::new("a").unwrap(),
+            to: Id::new("b").unwrap(),
+            description: crate::architecture::Text::new("dependency").unwrap(),
+            contract_refs: Vec::new(),
+        });
+        let mut checkpoints = 0;
+        let index = index_base(&[doc.clone()], || {
+            checkpoints += 1;
+            Ok(())
+        })
+        .unwrap();
+        assert_eq!(checkpoints, 10);
+        assert_eq!(index.entities, 9);
+        assert!(index.ids.contains("relation"));
+        assert!(index.components["a"].contains("r-a"));
+        for stop in 1..=10 {
+            let mut calls = 0;
+            let result = index_base(&[doc.clone()], || {
+                calls += 1;
+                if calls == stop {
+                    Err(CompileError::simple("cancelled", "cancelled"))
+                } else {
+                    Ok(())
+                }
+            });
+            assert_eq!(
+                result.err().unwrap().code(),
+                "cancelled",
+                "checkpoint {stop}"
+            );
+            assert_eq!(calls, stop);
+        }
     }
     #[test]
     fn canonical_validator_checkpoints_preserve_results_and_cancel() {
