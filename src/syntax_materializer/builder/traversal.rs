@@ -1,11 +1,11 @@
 use super::{NativeBuilder, Owner};
 use crate::syntax_materializer::{
     empty_metadata, fortran_literal_capture, module_label, semantic_child_ids,
-    should_derive_root_module, table_for_capture, table_for_node_type, tree_capture,
-    NativeSyntaxArena, TreeNodeRef,
+    should_derive_root_module, table_for_capture, table_for_node_type, NativeSyntaxArena,
+    TreeNodeRef,
 };
 
-impl NativeBuilder {
+impl NativeBuilder<'_, '_> {
     pub(in crate::syntax_materializer) fn build_tree(
         &mut self,
         nodes: &NativeSyntaxArena<'_>,
@@ -14,17 +14,53 @@ impl NativeBuilder {
         let Some(root) = nodes.get_node(root_id) else {
             return Err("tree graph root node is missing".to_string());
         };
-        let repository_label = self.repository_label.clone();
-        let source_root = self.source_root.clone();
-        let path = self.path.clone();
+        let (repository_label, source_root, path) = if let Some(guard) = &mut self.guard {
+            let copied = (|| {
+                Ok::<_, crate::extraction_control::ExtractionError>((
+                    crate::extraction_control::copy_text(&self.repository_label, guard)?,
+                    crate::extraction_control::copy_text(&self.source_root, guard)?,
+                    crate::extraction_control::copy_text(&self.path, guard)?,
+                ))
+            })();
+            match copied {
+                Ok(values) => values,
+                Err(error) => {
+                    let message = error.message.to_string();
+                    self.guard_failure = Some(error);
+                    return Err(message);
+                }
+            }
+        } else {
+            (
+                self.repository_label.clone(),
+                self.source_root.clone(),
+                self.path.clone(),
+            )
+        };
         let repository = self.support_node("Repository", &repository_label, &repository_label, "");
         let source = self.support_node("SourceRoot", &source_root, &source_root, &source_root);
-        let file_label = self
-            .path
-            .rsplit('/')
-            .next()
-            .unwrap_or(self.path.as_str())
-            .to_string();
+        let file_label = if let Some(guard) = &mut self.guard {
+            let mut start = 0usize;
+            let result = (|| {
+                for (index, ch) in path.char_indices() {
+                    guard.visit(0)?;
+                    if ch == '/' {
+                        start = index + 1;
+                    }
+                }
+                crate::extraction_control::copy_text(&path[start..], guard)
+            })();
+            match result {
+                Ok(value) => value,
+                Err(error) => {
+                    let message = error.message.to_string();
+                    self.guard_failure = Some(error);
+                    return Err(message);
+                }
+            }
+        } else {
+            path.rsplit('/').next().unwrap_or(path.as_str()).to_string()
+        };
         let file = self.support_node("File", &path, &file_label, &path);
         self.edge(
             "Contains",
@@ -46,16 +82,22 @@ impl NativeBuilder {
             root.node_type(),
             "Module" | "module" | "program" | "source_file"
         ) {
-            let root_capture = tree_capture(root);
+            let root_capture = self.capture(root)?;
             let syntax_id = self.syntax_capture(&root_capture);
-            let module = self.semantic_node(
-                "Module",
-                &root_capture,
-                &module_label(&self.path),
-                &file.id,
-                "",
-                None,
-            );
+            let module_name = if let Some(guard) = &mut self.guard {
+                match crate::syntax_materializer::guarded_module_label(&path, guard) {
+                    Ok(value) => value,
+                    Err(error) => {
+                        let message = error.message.to_string();
+                        self.guard_failure = Some(error);
+                        return Err(message);
+                    }
+                }
+            } else {
+                module_label(&path)
+            };
+            let module =
+                self.semantic_node("Module", &root_capture, &module_name, &file.id, "", None);
             let module_scope = self.scope_for(&module);
             self.edge(
                 "Contains",
@@ -82,10 +124,10 @@ impl NativeBuilder {
                 self.derived_from(&module.id, &syntax_id)?;
             }
             let owner = Owner {
-                node_id: module.id.clone(),
+                node_id: self.copy_text(&module.id)?,
                 table: "Module".to_string(),
-                qualified_name: module.qualified_name.clone(),
-                scope_id: module_scope.id.clone(),
+                qualified_name: self.copy_text(&module.qualified_name)?,
+                scope_id: self.copy_text(&module_scope.id)?,
             };
             for child_id in root.children {
                 self.traverse_tree_node(nodes, *child_id, &owner)?;
@@ -100,10 +142,10 @@ impl NativeBuilder {
                 empty_metadata(),
             )?;
             let owner = Owner {
-                node_id: file.id.clone(),
+                node_id: self.copy_text(&file.id)?,
                 table: "File".to_string(),
-                qualified_name: file.qualified_name.clone(),
-                scope_id: file_scope.id.clone(),
+                qualified_name: self.copy_text(&file.qualified_name)?,
+                scope_id: self.copy_text(&file_scope.id)?,
             };
             self.traverse_tree_node(nodes, root_id, &owner)?;
         }
@@ -119,7 +161,7 @@ impl NativeBuilder {
         let Some(root) = nodes.get_node(root_id) else {
             return Err("tree graph root node is missing".to_string());
         };
-        let root_capture = tree_capture(root);
+        let root_capture = self.capture(root)?;
         let root_syntax_id = self.syntax_capture(&root_capture);
         self.edge(
             "EvidencedBy",
@@ -137,19 +179,28 @@ impl NativeBuilder {
         parent: TreeNodeRef<'_>,
         parent_syntax_id: &str,
     ) -> Result<(), String> {
-        for (child_index, child_id) in parent.children.iter().enumerate() {
-            let Some(child) = nodes.get_node(*child_id) else {
-                return Err(format!("tree graph node {child_id} is missing"));
-            };
-            let child_capture = tree_capture(child);
+        let mut stack = Vec::new();
+        self.reserve(&mut stack, parent.children.len())?;
+        for (index, child_id) in parent.children.iter().enumerate().rev() {
+            stack.push((*child_id, index, self.copy_text(parent_syntax_id)?));
+        }
+        while let Some((child_id, child_index, parent_id)) = stack.pop() {
+            self.guard_visit()?;
+            let child = nodes
+                .get_node(child_id)
+                .ok_or_else(|| format!("tree graph node {child_id} is missing"))?;
+            let child_capture = self.capture(child)?;
             let child_syntax_id = self.syntax_capture(&child_capture);
             self.syntax_child(
-                parent_syntax_id,
+                &parent_id,
                 &child_syntax_id,
                 child.field_name(),
                 child_index,
             )?;
-            self.materialize_syntax_children(nodes, child, &child_syntax_id)?;
+            self.reserve(&mut stack, child.children.len())?;
+            for (index, next_id) in child.children.iter().enumerate().rev() {
+                stack.push((*next_id, index, self.copy_text(&child_syntax_id)?));
+            }
         }
         Ok(())
     }
@@ -160,15 +211,67 @@ impl NativeBuilder {
         node_id: usize,
         owner: &Owner,
     ) -> Result<(), String> {
-        let Some(node) = nodes.get_node(node_id) else {
-            return Err(format!("tree graph node {node_id} is missing"));
-        };
-        let next_owner = self.emit_tree_node(nodes, node, owner)?;
-        let child_owner = next_owner.as_ref().unwrap_or(owner);
-        for child_id in semantic_child_ids(nodes, node, &self.language) {
-            self.traverse_tree_node(nodes, child_id, child_owner)?;
+        enum Job {
+            Enter(usize, usize),
+            Exit(usize, usize),
         }
-        self.emit_parser_like_metadata_fields(node, child_owner)?;
+        let mut owners = Vec::new();
+        self.reserve(&mut owners, 1)?;
+        owners.push(Owner {
+            node_id: self.copy_text(&owner.node_id)?,
+            table: self.copy_text(&owner.table)?,
+            qualified_name: self.copy_text(&owner.qualified_name)?,
+            scope_id: self.copy_text(&owner.scope_id)?,
+        });
+        let mut stack = Vec::new();
+        self.reserve(&mut stack, 1)?;
+        stack.push(Job::Enter(node_id, 0));
+        while let Some(job) = stack.pop() {
+            self.guard_visit()?;
+            match job {
+                Job::Enter(id, owner_index) => {
+                    let node = nodes
+                        .get_node(id)
+                        .ok_or_else(|| format!("tree graph node {id} is missing"))?;
+                    let next = self.emit_tree_node(nodes, node, &owners[owner_index])?;
+                    let child_owner = if let Some(value) = next {
+                        self.reserve(&mut owners, 1)?;
+                        owners.push(value);
+                        owners.len() - 1
+                    } else {
+                        owner_index
+                    };
+                    let children = if let Some(guard) = &mut self.guard {
+                        match crate::syntax_materializer::semantic_child_ids_guarded(
+                            nodes,
+                            node,
+                            &self.language,
+                            guard,
+                        ) {
+                            Ok(children) => children,
+                            Err(error) => {
+                                let message = error.message.to_string();
+                                self.guard_failure = Some(error);
+                                return Err(message);
+                            }
+                        }
+                    } else {
+                        semantic_child_ids(nodes, node, &self.language)
+                    };
+                    self.reserve(&mut stack, children.len().saturating_add(1))?;
+                    stack.push(Job::Exit(id, child_owner));
+                    for child in children.into_iter().rev() {
+                        stack.push(Job::Enter(child, child_owner));
+                    }
+                }
+                Job::Exit(id, owner_index) => {
+                    let node = nodes
+                        .get_node(id)
+                        .ok_or_else(|| format!("tree graph node {id} is missing"))?;
+                    self.emit_parser_like_metadata_fields(node, &owners[owner_index])?;
+                }
+            }
+        }
         Ok(())
     }
 
@@ -178,7 +281,7 @@ impl NativeBuilder {
         node: TreeNodeRef<'_>,
         owner: &Owner,
     ) -> Result<Option<Owner>, String> {
-        let mut capture = tree_capture(node);
+        let mut capture = self.capture(node)?;
         if self.language == "python" {
             capture.capture_name.clear();
         }
@@ -233,10 +336,10 @@ impl NativeBuilder {
                 self.emit_tree_return_type(nodes, node, &semantic)?;
             }
             return Ok(Some(Owner {
-                node_id: semantic.id.clone(),
+                node_id: self.copy_text(&semantic.id)?,
                 table,
-                qualified_name: semantic.qualified_name.clone(),
-                scope_id: scope.id.clone(),
+                qualified_name: self.copy_text(&semantic.qualified_name)?,
+                scope_id: self.copy_text(&scope.id)?,
             }));
         }
         Ok(None)

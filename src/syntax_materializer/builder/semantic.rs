@@ -3,23 +3,25 @@ use crate::syntax_materializer::{
     assignment_target_label, assignment_target_table, call_value_child, empty_metadata,
     import_label, json_field_label, parameter_annotation_capture, parameter_capture,
     parameter_child_ids, parser_like_metadata_capture, return_type_capture, symbol_key,
-    table_for_node_type, tree_capture, Capture, GraphNodeRow, NativeSyntaxArena, TreeNodeRef,
+    table_for_node_type, Capture, GraphNodeRow, NativeSyntaxArena, TreeNodeRef,
 };
 use serde_json::Value;
 
-impl NativeBuilder {
+impl NativeBuilder<'_, '_> {
     pub(in crate::syntax_materializer) fn emit_tree_import(
         &mut self,
         node: TreeNodeRef<'_>,
         owner: &Owner,
         syntax_id: &str,
     ) -> Result<GraphNodeRow, String> {
-        let mut capture = tree_capture(node);
+        let mut capture = self.capture(node)?;
         if self.language == "python" {
             capture.capture_name.clear();
         }
-        if let Some(label) = import_label(node) {
-            capture.label = label;
+        if self.guard.is_none() || self.language != "rust" {
+            if let Some(label) = import_label(node) {
+                capture.label = label;
+            }
         }
         self.emit_import(&capture, owner, syntax_id)
     }
@@ -31,7 +33,7 @@ impl NativeBuilder {
         owner: &Owner,
         syntax_id: &str,
     ) -> Result<GraphNodeRow, String> {
-        let capture = tree_capture(node);
+        let capture = self.capture(node)?;
         let label = if self.language == "python" {
             "Assignment"
         } else {
@@ -48,8 +50,40 @@ impl NativeBuilder {
         self.connect_owner(owner, &assignment)?;
         self.derived_from(&assignment.id, syntax_id)?;
 
-        if let Some(target_label) = assignment_target_label(nodes, node) {
-            let target_table = assignment_target_table(&target_label, owner, &capture.node_type);
+        let target_label = match (self.language.as_str(), self.guard.as_mut()) {
+            ("rust", Some(guard)) => {
+                match crate::syntax_materializer::assignment_target_label_guarded(
+                    nodes, node, guard,
+                ) {
+                    Ok(value) => value,
+                    Err(error) => {
+                        let message = error.message.to_string();
+                        self.guard_failure = Some(error);
+                        return Err(message);
+                    }
+                }
+            }
+            _ => assignment_target_label(nodes, node),
+        };
+        if let Some(target_label) = target_label {
+            let target_table = match (self.language.as_str(), self.guard.as_mut()) {
+                ("rust", Some(guard)) => {
+                    match crate::syntax_materializer::assignment_target_table_guarded(
+                        &target_label,
+                        owner,
+                        &capture.node_type,
+                        guard,
+                    ) {
+                        Ok(value) => value,
+                        Err(error) => {
+                            let message = error.message.to_string();
+                            self.guard_failure = Some(error);
+                            return Err(message);
+                        }
+                    }
+                }
+                _ => assignment_target_table(&target_label, owner, &capture.node_type),
+            };
             let target = self.semantic_node(
                 target_table,
                 &capture,
@@ -95,7 +129,7 @@ impl NativeBuilder {
             let Some(value_node) = nodes.get_node(value_id) else {
                 return Ok(assignment);
             };
-            let call_capture = tree_capture(value_node);
+            let call_capture = self.capture(value_node)?;
             let call_syntax_id = self.syntax_capture(&call_capture);
             let call = self.emit_call(&call_capture, owner, &call_syntax_id)?;
             self.edge_if_allowed(
@@ -115,14 +149,43 @@ impl NativeBuilder {
         function_node: TreeNodeRef<'_>,
         callable: &GraphNodeRow,
     ) -> Result<(), String> {
-        for (index, parameter_id) in parameter_child_ids(nodes, function_node)
-            .into_iter()
-            .enumerate()
-        {
+        let parameter_ids = if let Some(guard) = &mut self.guard {
+            match crate::syntax_materializer::parameter_child_ids_guarded(
+                nodes,
+                function_node,
+                guard,
+            ) {
+                Ok(ids) => ids,
+                Err(error) => {
+                    let message = error.message.to_string();
+                    self.guard_failure = Some(error);
+                    return Err(message);
+                }
+            }
+        } else {
+            parameter_child_ids(nodes, function_node)
+        };
+        for (index, parameter_id) in parameter_ids.into_iter().enumerate() {
+            self.guard_visit()?;
             let Some(parameter_node) = nodes.get_node(parameter_id) else {
                 continue;
             };
-            let mut capture = parameter_capture(parameter_node, self.language.as_str());
+            let mut capture = if self.guard.is_some() && self.language != "python" {
+                let mut capture = self.capture(parameter_node)?;
+                capture.capture_name = "parameter".to_string();
+                let before_colon = capture
+                    .label
+                    .split_once(':')
+                    .map_or(capture.label.as_str(), |(left, _)| left);
+                let before_equals = before_colon
+                    .split_once('=')
+                    .map_or(before_colon, |(left, _)| left);
+                let label = self.copy_text(before_equals.trim().trim_start_matches('*'))?;
+                capture.label = label;
+                capture
+            } else {
+                parameter_capture(parameter_node, self.language.as_str())
+            };
             if capture.label.is_empty() {
                 capture.label = format!("param_{index}");
             }
@@ -283,9 +346,12 @@ impl NativeBuilder {
         owner: &Owner,
         syntax_id: &str,
     ) -> Result<GraphNodeRow, String> {
-        let imported = capture.label.clone();
+        let imported = self.copy_text(&capture.label)?;
         let mut metadata = empty_metadata();
-        metadata.insert("imported_name".to_string(), Value::String(imported.clone()));
+        metadata.insert(
+            "imported_name".to_string(),
+            Value::String(self.copy_text(&imported)?),
+        );
         let semantic = self.semantic_node(
             "ImportDeclaration",
             capture,
@@ -319,7 +385,7 @@ impl NativeBuilder {
         )?;
         self.derived_from(&semantic.id, syntax_id)?;
         if !imported.is_empty() {
-            let path = self.path.clone();
+            let path = self.copy_path()?;
             let dependency = self.support_node("Dependency", &imported, &imported, &path);
             self.edge(
                 "DependsOn",
@@ -521,21 +587,24 @@ impl NativeBuilder {
         label: &str,
         kind_prefix: &str,
     ) -> Result<Option<GraphNodeRow>, String> {
-        let Some(target) = self.resolve_reference_target(label) else {
+        let Some(target) = self.resolve_reference_target(label)? else {
             return Ok(None);
         };
         if target.id == source.id {
             return Ok(None);
         }
         let mut metadata = empty_metadata();
-        metadata.insert("label".to_string(), Value::String(label.to_string()));
+        metadata.insert("label".to_string(), Value::String(self.copy_text(label)?));
         metadata.insert("resolver".to_string(), Value::String("label".to_string()));
+        let mut reference_metadata = empty_metadata();
+        reference_metadata.insert("label".to_string(), Value::String(self.copy_text(label)?));
+        reference_metadata.insert("resolver".to_string(), Value::String("label".to_string()));
         self.edge_if_allowed(
             "References",
             &source.id,
             &target.id,
             &format!("{}_reference", kind_prefix),
-            metadata.clone(),
+            reference_metadata,
         )?;
         self.edge_if_allowed(
             "ResolvesTo",
@@ -550,25 +619,72 @@ impl NativeBuilder {
     pub(in crate::syntax_materializer) fn resolve_reference_target(
         &mut self,
         label: &str,
-    ) -> Option<GraphNodeRow> {
-        let reference_label = label.trim();
+    ) -> Result<Option<GraphNodeRow>, String> {
+        let (reference_label, short) = if let Some(guard) = &mut self.guard {
+            let result = (|| {
+                let trimmed = crate::extraction_control::trim_text(label, guard)?;
+                let mut start = 0usize;
+                for (index, ch) in trimmed.char_indices() {
+                    guard.visit(0)?;
+                    if ch == '.' {
+                        start = index + 1;
+                    }
+                }
+                Ok::<_, crate::extraction_control::ExtractionError>((trimmed, &trimmed[start..]))
+            })();
+            match result {
+                Ok(value) => value,
+                Err(error) => {
+                    let message = error.message.to_string();
+                    self.guard_failure = Some(error);
+                    return Err(message);
+                }
+            }
+        } else {
+            let trimmed = label.trim();
+            (trimmed, trimmed.rsplit('.').next().unwrap_or(trimmed))
+        };
         if reference_label.is_empty() {
-            return None;
+            return Ok(None);
         }
-        let short = reference_label
-            .rsplit('.')
-            .next()
-            .unwrap_or(reference_label);
         for candidate in [reference_label, short] {
-            let key = symbol_key(candidate);
+            let key = if let Some(guard) = &mut self.guard {
+                match crate::extraction_control::normalized_symbol(candidate, guard) {
+                    Ok(key) => key,
+                    Err(error) => {
+                        let message = error.message.to_string();
+                        self.guard_failure = Some(error);
+                        return Err(message);
+                    }
+                }
+            } else {
+                symbol_key(candidate)
+            };
             if let Some(ids) = self.symbols_by_name.get(&key) {
                 for node_id in ids.iter().rev() {
+                    if let Some(guard) = &mut self.guard {
+                        if let Err(error) = guard.visit(0) {
+                            let message = error.message.to_string();
+                            self.guard_failure = Some(error);
+                            return Err(message);
+                        }
+                    }
                     if let Some(node) = self.nodes.get(node_id) {
-                        return Some(node.clone());
+                        if let Some(guard) = &mut self.guard {
+                            return match super::nodes::copy_node(node, guard) {
+                                Ok(node) => Ok(Some(node)),
+                                Err(error) => {
+                                    let message = error.message.to_string();
+                                    self.guard_failure = Some(error);
+                                    Err(message)
+                                }
+                            };
+                        }
+                        return Ok(Some(node.clone()));
                     }
                 }
             }
         }
-        Some(self.symbol_node(reference_label))
+        Ok(Some(self.symbol_node(reference_label)))
     }
 }

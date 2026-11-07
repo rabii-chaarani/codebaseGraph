@@ -585,3 +585,207 @@ pub(super) fn table_for_capture(capture: &str, owner: &Owner) -> Option<String> 
         .to_string(),
     )
 }
+
+pub(super) fn tree_capture_guarded(
+    node: TreeNodeRef<'_>,
+    control: &mut crate::extraction_control::ExtractionControl<'_>,
+) -> Result<Capture, crate::extraction_control::ExtractionError> {
+    use crate::extraction_control::copy_text as copy;
+    use crate::extraction_control::ExtractionError;
+    let mut label = None;
+    for key in [
+        "name", "id", "arg", "attr", "module", "path", "function", "value",
+    ] {
+        control.visit(0)?;
+        if let Some(Value::String(value)) = node.node.fields.get(key) {
+            let trimmed = crate::extraction_control::trim_text(value, control)?;
+            if !trimmed.is_empty() {
+                label = Some(copy(trimmed, control)?);
+                break;
+            }
+        }
+    }
+    let label = match label {
+        Some(v) => v,
+        None => {
+            let text = crate::extraction_control::trim_text(node.text(), control)?;
+            if text.is_empty() {
+                copy(node.node_type(), control)?
+            } else {
+                copy(text, control)?
+            }
+        }
+    };
+    let mut fields = Vec::new();
+    fields
+        .try_reserve(node.node.fields.len())
+        .map_err(|_| ExtractionError::new("resource_limit", "allocation failed"))?;
+    for key in node.node.fields.keys() {
+        control.visit(0)?;
+        fields.push(copy(key, control)?);
+    }
+    Ok(Capture {
+        capture_name: copy(node.capture_name(), control)?,
+        node_type: copy(node.node_type(), control)?,
+        label,
+        text: copy(node.text(), control)?,
+        line_start: node.line_start(),
+        line_end: node.line_end(),
+        byte_start: node.byte_start(),
+        byte_end: node.byte_end(),
+        fields,
+    })
+}
+
+pub(super) fn semantic_child_ids_guarded(
+    nodes: &NativeSyntaxArena<'_>,
+    parent: TreeNodeRef<'_>,
+    language: &str,
+    control: &mut crate::extraction_control::ExtractionControl<'_>,
+) -> Result<Vec<usize>, crate::extraction_control::ExtractionError> {
+    use crate::extraction_control::ExtractionError;
+    let mut stack = Vec::new();
+    stack
+        .try_reserve(parent.children.len())
+        .map_err(|_| ExtractionError::new("resource_limit", "allocation failed"))?;
+    for id in parent.children.iter().rev() {
+        stack.push((parent, *id));
+    }
+    let mut result = Vec::new();
+    while let Some((parent, id)) = stack.pop() {
+        control.visit(0)?;
+        let Some(child) = nodes.get_node(id) else {
+            continue;
+        };
+        if should_inline_child(child, language) {
+            stack
+                .try_reserve(child.children.len())
+                .map_err(|_| ExtractionError::new("resource_limit", "allocation failed"))?;
+            for id in child.children.iter().rev() {
+                stack.push((child, *id));
+            }
+        } else if should_traverse_child(parent, child, language) {
+            result
+                .try_reserve(1)
+                .map_err(|_| ExtractionError::new("resource_limit", "allocation failed"))?;
+            result.push(id);
+        }
+    }
+    Ok(result)
+}
+
+pub(super) fn parameter_child_ids_guarded(
+    nodes: &NativeSyntaxArena<'_>,
+    function_node: TreeNodeRef<'_>,
+    control: &mut crate::extraction_control::ExtractionControl<'_>,
+) -> Result<Vec<usize>, crate::extraction_control::ExtractionError> {
+    use crate::extraction_control::ExtractionError;
+    let mut result = Vec::new();
+    for id in function_node.children {
+        control.visit(0)?;
+        let Some(parameters) = nodes.get_node(*id) else {
+            continue;
+        };
+        if parameters.node_type() != "parameters" {
+            continue;
+        }
+        for child in parameters.children {
+            control.visit(0)?;
+            if nodes.get_node(*child).is_some_and(|n| {
+                matches!(
+                    n.node_type(),
+                    "identifier" | "typed_parameter" | "default_parameter" | "parameter"
+                )
+            }) {
+                result
+                    .try_reserve(1)
+                    .map_err(|_| ExtractionError::new("resource_limit", "allocation failed"))?;
+                result.push(*child);
+            }
+        }
+    }
+    Ok(result)
+}
+
+/// Rust assignment targets use the first non-call child when no target field
+/// is present. Preserve the legacy label while guarding child scans and copies.
+pub(super) fn assignment_target_label_guarded(
+    nodes: &NativeSyntaxArena<'_>,
+    node: TreeNodeRef<'_>,
+    control: &mut crate::extraction_control::ExtractionControl<'_>,
+) -> Result<Option<String>, crate::extraction_control::ExtractionError> {
+    if let Some(Value::String(value)) = node.node.fields.get("target") {
+        let value = crate::extraction_control::trim_text(value, control)?;
+        #[cfg(test)]
+        control.observe_assignment_copy(value);
+        return Ok(Some(crate::extraction_control::copy_text(value, control)?));
+    }
+    for id in node.children {
+        control.visit(0)?;
+        if let Some(child) = nodes.get_node(*id) {
+            if !matches!(child.node_type(), "call" | "call_expression") {
+                let mut selected = None;
+                for key in [
+                    "name", "id", "arg", "attr", "module", "path", "function", "value",
+                ] {
+                    control.visit(0)?;
+                    if let Some(Value::String(value)) = child.node.fields.get(key) {
+                        let value = crate::extraction_control::trim_text(value, control)?;
+                        if !value.is_empty() {
+                            selected = Some(value);
+                            break;
+                        }
+                    }
+                }
+                let label = if let Some(value) = selected {
+                    value
+                } else {
+                    let value = crate::extraction_control::trim_text(child.text(), control)?;
+                    if value.is_empty() {
+                        child.node_type()
+                    } else {
+                        value
+                    }
+                };
+                #[cfg(test)]
+                control.observe_assignment_copy(label);
+                let label = crate::extraction_control::copy_text(label, control)?;
+                return Ok((!label.is_empty()).then_some(label));
+            }
+        }
+    }
+    Ok(None)
+}
+pub(super) fn assignment_target_table_guarded(
+    label: &str,
+    owner: &Owner,
+    node_type: &str,
+    control: &mut crate::extraction_control::ExtractionControl<'_>,
+) -> Result<&'static str, crate::extraction_control::ExtractionError> {
+    #[cfg(test)]
+    control.observe_assignment_classification(label);
+    let mut alpha = false;
+    let mut uppercase = true;
+    let mut dot = false;
+    for ch in label.chars() {
+        control.visit(0)?;
+        if ch.is_alphabetic() {
+            alpha = true;
+            uppercase &= ch.is_uppercase();
+        }
+        dot |= ch == '.';
+    }
+    if alpha && uppercase {
+        return Ok("Constant");
+    }
+    if owner.table == "Class" {
+        return Ok("ClassAttribute");
+    }
+    if dot {
+        return Ok("InstanceAttribute");
+    }
+    if node_type == "AnnAssign" && owner.table == "Class" {
+        return Ok("ClassAttribute");
+    }
+    Ok("Variable")
+}

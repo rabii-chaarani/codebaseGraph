@@ -2,7 +2,7 @@ use super::{NativeBuilder, Owner};
 use crate::syntax_materializer::{empty_metadata, graph_id, GraphEdgeRow, GraphNodeRow};
 use serde_json::{Map, Value};
 
-impl NativeBuilder {
+impl NativeBuilder<'_, '_> {
     pub(in crate::syntax_materializer) fn connect_owner(
         &mut self,
         owner: &Owner,
@@ -109,6 +109,28 @@ impl NativeBuilder {
             }
         }
         let canonical_key = format!("{}|{}|{}|{}", edge_type, source_id, target_id, kind);
+        let edge_id = graph_id("edge", &canonical_key);
+        if let Some(failure) = &self.guard_failure {
+            return Err(failure.message.to_string());
+        }
+        if !self.edges.contains_key(&edge_id) {
+            if let Some(guard) = &mut self.guard {
+                if let Err(error) = guard.edge() {
+                    let message = error.message.to_string();
+                    self.guard_failure = Some(error);
+                    return Err(message);
+                }
+                if self.edges.try_reserve(1).is_err() {
+                    let error = crate::extraction_control::ExtractionError::new(
+                        "resource_limit",
+                        "allocation failed",
+                    );
+                    let message = error.message.to_string();
+                    self.guard_failure = Some(error);
+                    return Err(message);
+                }
+            }
+        }
         let mut edge_metadata = empty_metadata();
         edge_metadata.insert(
             "canonical_key".to_string(),
@@ -118,7 +140,7 @@ impl NativeBuilder {
             edge_metadata.insert(key, value);
         }
         let edge = GraphEdgeRow {
-            id: graph_id("edge", &canonical_key),
+            id: edge_id,
             edge_type: edge_type.to_string(),
             source_id: source_id.to_string(),
             target_id: target_id.to_string(),
@@ -132,9 +154,58 @@ impl NativeBuilder {
             byte_end: None,
             metadata: Value::Object(edge_metadata),
         };
+        if let Some(guard) = &mut self.guard {
+            let source = self.edges.get(&edge.id).unwrap_or(&edge);
+            let copied = match copy_edge(source, guard) {
+                Ok(value) => value,
+                Err(error) => {
+                    let message = error.message.to_string();
+                    self.guard_failure = Some(error);
+                    return Err(message);
+                }
+            };
+            if !self.edges.contains_key(&edge.id) {
+                let id = match crate::extraction_control::copy_text(&edge.id, guard) {
+                    Ok(value) => value,
+                    Err(error) => {
+                        let message = error.message.to_string();
+                        self.guard_failure = Some(error);
+                        return Err(message);
+                    }
+                };
+                self.edges.insert(id, edge);
+            }
+            return Ok(copied);
+        }
         self.edges
             .entry(edge.id.clone())
             .or_insert_with(|| edge.clone());
         Ok(self.edges.get(&edge.id).cloned().unwrap_or(edge))
     }
+}
+
+fn copy_edge(
+    edge: &GraphEdgeRow,
+    guard: &mut crate::extraction_control::ExtractionControl<'_>,
+) -> Result<GraphEdgeRow, crate::extraction_control::ExtractionError> {
+    use crate::extraction_control::copy_text;
+    Ok(GraphEdgeRow {
+        id: copy_text(&edge.id, guard)?,
+        edge_type: copy_text(&edge.edge_type, guard)?,
+        source_id: copy_text(&edge.source_id, guard)?,
+        target_id: copy_text(&edge.target_id, guard)?,
+        kind: copy_text(&edge.kind, guard)?,
+        confidence: edge.confidence,
+        field_name: edge
+            .field_name
+            .as_deref()
+            .map(|v| copy_text(v, guard))
+            .transpose()?,
+        child_index: edge.child_index,
+        line_start: edge.line_start,
+        line_end: edge.line_end,
+        byte_start: edge.byte_start,
+        byte_end: edge.byte_end,
+        metadata: super::nodes::copy_value(&edge.metadata, guard)?,
+    })
 }

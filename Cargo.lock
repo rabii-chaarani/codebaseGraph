@@ -195,6 +195,7 @@ dependencies = [
  "lbug",
  "libc",
  "libmimalloc-sys",
+ "libyaml-rs",
  "lzma-rs",
  "mimalloc",
  "notify",

@@ -67,6 +67,29 @@ pub(super) fn module_label(path: &str) -> String {
     stem.replace('/', ".")
 }
 
+pub(super) fn guarded_module_label(
+    path: &str,
+    control: &mut crate::extraction_control::ExtractionControl<'_>,
+) -> Result<String, crate::extraction_control::ExtractionError> {
+    use crate::extraction_control::ExtractionError;
+    let mut last_dot = None;
+    for (index, ch) in path.char_indices() {
+        control.visit(0)?;
+        if ch == '.' {
+            last_dot = Some(index);
+        }
+    }
+    let stem = last_dot.map_or(path, |index| &path[..index]);
+    let mut out = String::new();
+    out.try_reserve(stem.len())
+        .map_err(|_| ExtractionError::new("resource_limit", "allocation failed"))?;
+    for ch in stem.chars() {
+        control.visit(0)?;
+        out.push(if ch == '/' { '.' } else { ch });
+    }
+    Ok(out)
+}
+
 pub(super) fn qualified_name(owner: &str, label: &str) -> String {
     if owner.is_empty() || owner == label {
         label.to_string()
@@ -111,21 +134,28 @@ pub(super) fn sha1_hex(bytes: &[u8]) -> String {
 }
 
 pub(super) fn sha1(input: &[u8]) -> [u8; 20] {
+    sha1_with(input, || Ok::<(), std::convert::Infallible>(())).expect("infallible SHA-1")
+}
+
+fn sha1_with<E>(
+    input: &[u8],
+    mut checkpoint: impl FnMut() -> Result<(), E>,
+) -> Result<[u8; 20], E> {
     let mut h0: u32 = 0x67452301;
     let mut h1: u32 = 0xefcdab89;
     let mut h2: u32 = 0x98badcfe;
     let mut h3: u32 = 0x10325476;
     let mut h4: u32 = 0xc3d2e1f0;
-
-    let bit_len = (input.len() as u64) * 8;
-    let mut message = input.to_vec();
-    message.push(0x80);
-    while message.len() % 64 != 56 {
-        message.push(0);
-    }
-    message.extend_from_slice(&bit_len.to_be_bytes());
-
-    for chunk in message.chunks(64) {
+    let (chunks, remainder) = input.as_chunks::<64>();
+    let mut tail = [0u8; 128];
+    tail[..remainder.len()].copy_from_slice(remainder);
+    tail[remainder.len()] = 0x80;
+    let tail_len = if remainder.len() < 56 { 64 } else { 128 };
+    tail[tail_len - 8..tail_len]
+        .copy_from_slice(&((input.len() as u64).wrapping_mul(8)).to_be_bytes());
+    let (tail_chunks, _) = tail[..tail_len].as_chunks::<64>();
+    for chunk in chunks.iter().chain(tail_chunks.iter()) {
+        checkpoint()?;
         let mut words = [0u32; 80];
         for (index, word) in words.iter_mut().enumerate().take(16) {
             let offset = index * 4;
@@ -171,12 +201,40 @@ pub(super) fn sha1(input: &[u8]) -> [u8; 20] {
         h3 = h3.wrapping_add(d);
         h4 = h4.wrapping_add(e);
     }
-
     let mut output = [0u8; 20];
     for (index, word) in [h0, h1, h2, h3, h4].iter().enumerate() {
         output[index * 4..index * 4 + 4].copy_from_slice(&word.to_be_bytes());
     }
-    output
+    Ok(output)
+}
+
+pub(super) fn graph_id_guarded(
+    prefix: &str,
+    value: &str,
+    control: &mut crate::extraction_control::ExtractionControl<'_>,
+) -> Result<String, crate::extraction_control::ExtractionError> {
+    use crate::extraction_control::ExtractionError;
+    let digest = sha1_with(value.as_bytes(), || control.visit(0))?;
+    let mut out = String::new();
+    out.try_reserve(
+        prefix
+            .len()
+            .checked_add(21)
+            .ok_or_else(|| ExtractionError::new("resource_limit", "ID length overflow"))?,
+    )
+    .map_err(|_| ExtractionError::new("resource_limit", "allocation failed"))?;
+    for ch in prefix.chars() {
+        control.visit(0)?;
+        out.push(ch);
+    }
+    out.push(':');
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    for byte in &digest[..10] {
+        control.visit(0)?;
+        out.push(HEX[(byte >> 4) as usize] as char);
+        out.push(HEX[(byte & 15) as usize] as char);
+    }
+    Ok(out)
 }
 
 pub(super) fn stable_optional_i64(value: Option<i64>) -> String {

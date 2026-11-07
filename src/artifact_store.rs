@@ -798,7 +798,7 @@ fn write_envelope_file_and_sync(
 }
 fn decode_key(text: &str) -> [u8; 32] {
     let mut key = [0; 32];
-    for (i, pair) in text.as_bytes().chunks_exact(2).enumerate() {
+    for (i, pair) in text.as_bytes().as_chunks::<2>().0.iter().enumerate() {
         let digit = |b: u8| if b <= b'9' { b - b'0' } else { b - b'a' + 10 };
         key[i] = (digit(pair[0]) << 4) | digit(pair[1]);
     }
@@ -1844,7 +1844,7 @@ mod tests {
                 out[..8].copy_from_slice(&volume.to_le_bytes());
                 out[8..16].copy_from_slice(&index.to_le_bytes());
             };
-            for image in spoofed.chunks_exact_mut(512) {
+            for image in spoofed.as_chunks_mut::<512>().0.iter_mut() {
                 image[64..96].copy_from_slice(&decode_key(&key));
                 put_identity(&mut image[208..224], directory_id);
                 put_identity(&mut image[240..256], receipt_id);

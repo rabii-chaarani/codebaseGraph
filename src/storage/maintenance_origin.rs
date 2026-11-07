@@ -603,8 +603,8 @@ pub(crate) fn observe_published_origin_without_payload(
     }
     let bytes = read_exact::<MAX_BYTES>(&file)?;
     let mut previous: Option<OriginFacts> = None;
-    for (index, image) in bytes.chunks_exact(FRAME).enumerate() {
-        let Some(facts) = decode(image.try_into().unwrap()) else {
+    for (index, image) in bytes.as_chunks::<FRAME>().0.iter().enumerate() {
+        let Some(facts) = decode(image) else {
             return Ok(false);
         };
         if usize::from(facts.phase.number()) != index

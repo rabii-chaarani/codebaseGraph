@@ -57,7 +57,7 @@ pub(crate) fn scan_native_header43<S: ByteSource + ?Sized>(
     if length < HEADER_BYTES as u64 {
         return Err(NativeUnknown::Truncated);
     }
-    if length % PAGE_BYTES != 0 {
+    if !length.is_multiple_of(PAGE_BYTES) {
         return Err(NativeUnknown::UnsupportedLayout);
     }
     let available_pages = length / PAGE_BYTES;
@@ -1486,7 +1486,7 @@ impl<'a, S: ByteSource + ?Sized> VersionCursor<'a, S> {
         })
     }
     fn visible(&mut self, row: u64) -> Result<bool, NativeUnknown> {
-        if row % 2048 == 0 {
+        if row.is_multiple_of(2048) {
             self.insert = true;
             self.deletion = 0;
             self.same = 0;

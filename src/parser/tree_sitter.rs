@@ -116,3 +116,163 @@ fn normalize_tree_sitter_node(node: Node<'_>, source_bytes: &[u8]) -> SyntaxNode
         fields,
     }
 }
+
+/// Parse immutable Rust bytes with native cooperative progress reporting.
+/// Flat normalization and materialization are separate phases.
+pub(super) fn parse_guarded_tree(
+    source: &[u8],
+    profile: &LanguageProfile,
+    control: &mut crate::extraction_control::ExtractionControl<'_>,
+) -> Result<tree_sitter::Tree, crate::extraction_control::ExtractionError> {
+    use crate::extraction_control::ExtractionError;
+    use tree_sitter::ParseOptions;
+    control.check()?;
+    let language = grammar_language(profile)
+        .ok_or_else(|| ExtractionError::new("reconstruction_unavailable", "unsupported grammar"))?;
+    let mut parser = Parser::new();
+    parser
+        .set_language(&language)
+        .map_err(|_| ExtractionError::new("reconstruction_unavailable", "unsupported grammar"))?;
+    let mut failure = None;
+    let mut progress = |_: &tree_sitter::ParseState| match control.check() {
+        Ok(()) => false,
+        Err(error) => {
+            failure = Some(error);
+            true
+        }
+    };
+    let mut read = |offset: usize, _: tree_sitter::Point| source.get(offset..).unwrap_or_default();
+    let tree = parser.parse_with_options(
+        &mut read,
+        None,
+        Some(ParseOptions::new().progress_callback(&mut progress)),
+    );
+    if let Some(error) = failure {
+        return Err(error);
+    }
+    control.check()?;
+    let tree = tree.ok_or_else(|| {
+        ExtractionError::new("reconstruction_unavailable", "parser returned no tree")
+    })?;
+    if tree.root_node().has_error() {
+        return Err(ExtractionError::new(
+            "reconstruction_unavailable",
+            "source contains parse errors",
+        ));
+    }
+    Ok(tree)
+}
+
+/// Convert a completed Rust tree into flat records without recursive ownership.
+pub(super) fn normalize_rust_flat(
+    tree: &tree_sitter::Tree,
+    source: &[u8],
+    profile: &LanguageProfile,
+    control: &mut crate::extraction_control::ExtractionControl<'_>,
+) -> Result<crate::normalize::FlatSyntax, crate::extraction_control::ExtractionError> {
+    use crate::{
+        extraction_control::ExtractionError,
+        normalize::{mapping_for_syntax_node, FlatSyntax},
+    };
+    enum Job<'a> {
+        Enter(Node<'a>, Option<usize>, Option<&'static str>, u64),
+        Exit,
+    }
+    fn reserve<T>(v: &mut Vec<T>, n: usize) -> Result<(), ExtractionError> {
+        v.try_reserve(n)
+            .map_err(|_| ExtractionError::new("resource_limit", "allocation failed"))
+    }
+    fn copy(
+        value: &str,
+        control: &mut crate::extraction_control::ExtractionControl<'_>,
+    ) -> Result<String, ExtractionError> {
+        let mut s = String::new();
+        s.try_reserve(value.len())
+            .map_err(|_| ExtractionError::new("resource_limit", "allocation failed"))?;
+        for ch in value.chars() {
+            control.visit(0)?;
+            s.push(ch);
+        }
+        Ok(s)
+    }
+    let mut result = FlatSyntax {
+        nodes: Vec::new(),
+        parents: Vec::new(),
+        children: Vec::new(),
+    };
+    let mut ancestors: Vec<String> = Vec::new();
+    let mut stack = Vec::new();
+    reserve(&mut stack, 1)?;
+    stack.push(Job::Enter(tree.root_node(), None, None, 1));
+    while let Some(job) = stack.pop() {
+        match job {
+            Job::Exit => {
+                control.check()?;
+                ancestors.pop();
+            }
+            Job::Enter(node, parent, field, depth) => {
+                control.visit(depth)?;
+                let fields = super::fields::rust_fields_guarded(node, source, depth, control)?;
+                let text = match node.utf8_text(source).ok().filter(|s| !s.is_empty()) {
+                    Some(value) => copy(value, control)?,
+                    None => {
+                        let label = first_field_label(&fields);
+                        copy(&label, control)?
+                    }
+                };
+                let mut syntax = SyntaxNode {
+                    node_type: copy(node.kind(), control)?,
+                    text,
+                    line_start: Some((node.start_position().row + 1) as i64),
+                    line_end: Some((node.end_position().row + 1) as i64),
+                    byte_start: Some(node.start_byte() as i64),
+                    byte_end: Some(node.end_byte() as i64),
+                    capture_name: String::new(),
+                    field_name: match field {
+                        Some(value) => Some(copy(value, control)?),
+                        None => None,
+                    },
+                    children: Vec::new(),
+                    fields,
+                };
+                if let Some(mapping) =
+                    mapping_for_syntax_node(&syntax, &profile.capture_mappings, &ancestors)
+                {
+                    syntax.capture_name = copy(&mapping.capture_name, control)?;
+                }
+                reserve(&mut result.nodes, 1)?;
+                reserve(&mut result.parents, 1)?;
+                reserve(&mut result.children, 1)?;
+                let id = result.nodes.len();
+                result.nodes.push(syntax);
+                result.parents.push(parent);
+                result.children.push(Vec::new());
+                if let Some(parent) = parent {
+                    reserve(&mut result.children[parent], 1)?;
+                    result.children[parent].push(id);
+                }
+                reserve(&mut ancestors, 1)?;
+                ancestors.push(copy(node.kind(), control)?);
+                reserve(&mut stack, node.child_count().saturating_add(1))?;
+                stack.push(Job::Exit);
+                for index in (0..node.child_count()).rev() {
+                    control.check()?;
+                    if let Some(child) = node.child(index).filter(|c| c.is_named()) {
+                        let field = u32::try_from(index)
+                            .ok()
+                            .and_then(|i| node.field_name_for_child(i));
+                        stack.push(Job::Enter(
+                            child,
+                            Some(id),
+                            field,
+                            depth.checked_add(1).ok_or_else(|| {
+                                ExtractionError::new("resource_limit", "depth overflow")
+                            })?,
+                        ));
+                    }
+                }
+            }
+        }
+    }
+    Ok(result)
+}

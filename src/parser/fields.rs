@@ -3,6 +3,34 @@ use std::collections::{BTreeMap, BTreeSet};
 use tree_sitter::Node;
 
 pub(super) fn tree_sitter_fields(node: Node<'_>, source_bytes: &[u8]) -> BTreeMap<String, Value> {
+    tree_sitter_fields_with(
+        node,
+        source_bytes,
+        |child| Ok::<_, std::convert::Infallible>(node_types(child).into_iter().collect()),
+        |child| {
+            Ok::<_, std::convert::Infallible>(
+                node_text(child, source_bytes).map(|value| clean_label(&value)),
+            )
+        },
+        |fields, types, descendants| {
+            augment_field_metadata(node, source_bytes, fields, types, descendants);
+            Ok::<_, std::convert::Infallible>(())
+        },
+    )
+    .expect("infallible field collection")
+}
+
+fn tree_sitter_fields_with<E>(
+    node: Node<'_>,
+    _source_bytes: &[u8],
+    mut collect: impl FnMut(Node<'_>) -> Result<Vec<String>, E>,
+    mut label: impl FnMut(Node<'_>) -> Result<Option<String>, E>,
+    mut augment: impl FnMut(
+        &mut BTreeMap<String, Value>,
+        &mut Map<String, Value>,
+        &mut Map<String, Value>,
+    ) -> Result<(), E>,
+) -> Result<BTreeMap<String, Value>, E> {
     let mut fields = BTreeMap::new();
     let mut field_types = Map::new();
     let mut field_descendant_types = Map::new();
@@ -26,24 +54,18 @@ pub(super) fn tree_sitter_fields(node: Node<'_>, source_bytes: &[u8]) -> BTreeMa
         field_types.insert(field_name.to_string(), json!(child.kind()));
         field_descendant_types.insert(
             field_name.to_string(),
-            json!(node_types(child).into_iter().collect::<Vec<_>>()),
+            Value::Array(collect(child)?.into_iter().map(Value::String).collect()),
         );
         if field_name != "declarator" {
-            if let Some(label) = node_text(child, source_bytes).map(|value| clean_label(&value)) {
+            if let Some(label) = label(child)? {
                 if !label.is_empty() {
-                    fields.insert(field_name.to_string(), json!(label));
+                    fields.insert(field_name.to_string(), Value::String(label));
                 }
             }
         }
     }
 
-    augment_field_metadata(
-        node,
-        source_bytes,
-        &mut fields,
-        &mut field_types,
-        &mut field_descendant_types,
-    );
+    augment(&mut fields, &mut field_types, &mut field_descendant_types)?;
     if !field_types.is_empty() {
         fields.insert("_field_types".to_string(), Value::Object(field_types));
     }
@@ -53,7 +75,116 @@ pub(super) fn tree_sitter_fields(node: Node<'_>, source_bytes: &[u8]) -> BTreeMa
             Value::Object(field_descendant_types),
         );
     }
-    fields
+    Ok(fields)
+}
+
+/// Guarded variant is limited to successfully parsed built-in Rust. Its
+/// grammar-required fields avoid the language-specific recursive fallbacks in
+/// augmentation; descendant collection is explicitly bounded here.
+pub(super) fn rust_fields_guarded(
+    node: Node<'_>,
+    source_bytes: &[u8],
+    depth: u64,
+    control: &mut crate::extraction_control::ExtractionControl<'_>,
+) -> Result<BTreeMap<String, Value>, crate::extraction_control::ExtractionError> {
+    use crate::extraction_control::ExtractionError;
+    let cell = std::cell::RefCell::new(control);
+    fn label(
+        node: Node<'_>,
+        bytes: &[u8],
+        control: &mut crate::extraction_control::ExtractionControl<'_>,
+    ) -> Result<Option<String>, ExtractionError> {
+        let Some(text) = node.utf8_text(bytes).ok().filter(|value| !value.is_empty()) else {
+            return Ok(None);
+        };
+        let trimmed = crate::extraction_control::trim_text(text, control)?;
+        let mut out = String::new();
+        out.try_reserve(trimmed.len())
+            .map_err(|_| ExtractionError::new("resource_limit", "allocation failed"))?;
+        for c in trimmed.chars() {
+            control.visit(0)?;
+            out.push(if c == '\n' { ' ' } else { c });
+        }
+        Ok(Some(out))
+    }
+    tree_sitter_fields_with(
+        node,
+        source_bytes,
+        |child| {
+            let mut control = cell.borrow_mut();
+            let control = &mut **control;
+            let mut stack = Vec::new();
+            stack
+                .try_reserve(1)
+                .map_err(|_| ExtractionError::new("resource_limit", "allocation failed"))?;
+            stack.push((
+                child,
+                depth
+                    .checked_add(1)
+                    .ok_or_else(|| ExtractionError::new("resource_limit", "depth overflow"))?,
+            ));
+            let mut kinds = Vec::new();
+            while let Some((current, d)) = stack.pop() {
+                control.visit(d)?;
+                kinds
+                    .try_reserve(1)
+                    .map_err(|_| ExtractionError::new("resource_limit", "allocation failed"))?;
+                kinds.push(current.kind());
+                for i in (0..current.named_child_count()).rev() {
+                    if let Some(next) = current.named_child(i) {
+                        stack.try_reserve(1).map_err(|_| {
+                            ExtractionError::new("resource_limit", "allocation failed")
+                        })?;
+                        stack.push((
+                            next,
+                            d.checked_add(1).ok_or_else(|| {
+                                ExtractionError::new("resource_limit", "depth overflow")
+                            })?,
+                        ));
+                    }
+                }
+            }
+            crate::extraction_control::sort_by(&mut kinds, control, |a, b| a.cmp(b))?;
+            let mut output = Vec::new();
+            output
+                .try_reserve(kinds.len())
+                .map_err(|_| ExtractionError::new("resource_limit", "allocation failed"))?;
+            let mut previous = None;
+            for kind in kinds {
+                control.visit(0)?;
+                if previous == Some(kind) {
+                    continue;
+                }
+                previous = Some(kind);
+                let mut value = String::new();
+                value
+                    .try_reserve(kind.len())
+                    .map_err(|_| ExtractionError::new("resource_limit", "allocation failed"))?;
+                value.push_str(kind);
+                output.push(value);
+            }
+            Ok(output)
+        },
+        |child| {
+            let mut control = cell.borrow_mut();
+            label(child, source_bytes, &mut control)
+        },
+        |fields, _types, _descendants| {
+            // In the linked Rust grammar these are the only applicable generic
+            // augmentation cases on a complete, error-free named tree.
+            if node.kind() == "use_declaration" {
+                if let Some(first) = node.named_child(0) {
+                    let mut control = cell.borrow_mut();
+                    if let Some(module) = label(first, source_bytes, &mut control)? {
+                        if !module.is_empty() {
+                            fields.insert("module".to_string(), Value::String(module));
+                        }
+                    }
+                }
+            }
+            Ok(())
+        },
+    )
 }
 
 pub(super) fn augment_field_metadata(
