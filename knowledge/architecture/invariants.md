@@ -13,7 +13,7 @@ type: architecture
 ---
 # Architecture Invariants
 
-These constraints are the shortest durable test for whether a change still fits the repository architecture. They summarize Scryer responsibilities and current graph evidence; changing one is an architecture decision, not a local refactor.
+These constraints test whether a change fits the approved architecture. Scryer remains the intent source outside COD-19's explicitly activated CBG-C4-01 scope; that scope uses approved Git/bootstrap contracts and then qualified accepted native C4 intent. Graph facts remain implementation evidence. Changing a constraint requires the applicable human architecture approval.
 
 ## Runtime invariants
 
@@ -53,12 +53,12 @@ These constraints are the shortest durable test for whether a change still fits 
 ## Verification invariants
 
 30. **Release checks exercise packaged behavior.** The separate Release Verifier validates repository policy, versions, workflows, CLI artifacts, and MCP negotiation as shipped.
-31. **Intent and implementation evidence remain separate.** Scryer is the authored responsibility model; the codebase graph and tests are evidence of the current implementation. Neither silently substitutes for the other.
+31. **Intent and implementation evidence remain separate.** Use the explicitly approved authority for the current scope: Scryer outside the activated CBG-C4-01 transition, approved Git/bootstrap contracts and then qualified accepted native YAML within it. Codebase graph and tests are implementation evidence; candidates cannot replace accepted intent or authorize themselves.
 32. **Architecture documentation records durable boundaries, not transient counts.** Snapshot metrics may qualify confidence, but responsibilities, dependencies, failure modes, and recovery rules are what this wiki preserves.
 33. **Idle storage has a measurable acceptance state.** With no readers, managed v2 has exactly one generation, no run directories, no pending cleanup, stable graph results, and churn size within the greater of 10% or 8 MiB above a clean-control rebuild.
 
 ## When an invariant changes
 
-Update the Scryer model first for changed responsibilities or links, obtain the required architecture sign-off, implement and test the change, reconcile anchors and drift, then update the affected wiki concepts. If code evidence contradicts the wiki without an approved intent change, treat it as drift rather than rewriting the invariant around the implementation.
+Update the applicable approved intent/brief before changing responsibilities or links and obtain or reuse matching human approval. For Scryer-governed work retain its model/sign-off/anchor/evidence process. For activated CBG-C4-01 work use the approved Git/bootstrap or qualified native authority and linked executed evidence. Then update affected wiki concepts. Code evidence cannot silently rewrite intent or clear unrelated drift.
 
 Related: [Repository Architecture Overview](./overview.md), [Graph Storage Lifecycle and Recovery](./graph-storage-lifecycle.md), [Public Operations and Runtime Paths](./operation-paths.md), and [Repository Ownership Map](./repository-map.md).

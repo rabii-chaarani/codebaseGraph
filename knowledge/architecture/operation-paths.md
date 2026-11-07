@@ -111,6 +111,6 @@ For schema-v1 state, search, context, query, and health remain available. Build,
 
 ## Adding or changing an operation
 
-Update the public contracts and authoritative registry first, keep the handler transport-neutral, then let CLI/MCP adapters translate to it. Verify the operation through the facade and at least one transport contract. Storage lifecycle changes must preserve [Graph Storage Lifecycle and Recovery](./graph-storage-lifecycle.md). If responsibility or dependency direction changes, update Scryer and this architecture set together.
+Update the public contracts and authoritative registry first, keep the handler transport-neutral, then let CLI/MCP adapters translate to it. Verify the operation through the facade and at least one transport contract. Storage lifecycle changes must preserve [Graph Storage Lifecycle and Recovery](./graph-storage-lifecycle.md). If responsibility or dependency direction changes, update the applicable approved architecture authority and this architecture set together; retain Scryer for unrelated scope and use the explicitly activated COD-19 Git/native bridge only for approved CBG-C4-01 work.
 
 Related: [Graph Runtime](./graph-runtime.md), [Materialization Pipeline](./materialization-pipeline.md), [Graph Storage Lifecycle and Recovery](./graph-storage-lifecycle.md), and [Architecture Invariants](./invariants.md).
