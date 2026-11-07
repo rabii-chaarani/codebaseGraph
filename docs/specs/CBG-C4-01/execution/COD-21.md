@@ -1,4 +1,4 @@
-# COD-21 execution brief — revision 3, implementation start
+# COD-21 execution brief — revision 4, owner reassignment
 
 Work: CBG-C4-01/F02/S02 / [COD-21](https://linear.app/codebasegraph/issue/COD-21), parent COD-6, M1/P1. Status: actual C21-D01/D02 human decisions recorded; owner plan/signatures settled below; bounded implementation authorized under existing Scope A after this brief is committed and coordinator signals GO. **Product implementation not yet started at this revision's creation.** Maintainers retain aggregate closure.
 
@@ -14,7 +14,7 @@ The [compiler supplement0.1](../cod21-contracts.md) is approved for C21-D01 seri
 
 ## Workflow and ownership
 
-Workflow: **delegated**, one complete technical owner, default/gpt-6.1-terra/medium/fork_turns:none (`/root/cod21_owner`). Root coordinates questions/tracking and serialized Git/delivery. The owner is not alone in the workspace, must preserve other edits and report ownership/contract changes before writing. No nested dispatch. Read-only investigation has changed no product files.
+Workflow: **delegated**, one complete technical owner, default/gpt-6.1-terra/medium/fork_turns:none. Initial owner `/root/cod21_owner` stopped and explicitly relinquished all files/processes after an incomplete scaffolding attempt; no compiler acceptance was achieved. New sole owner `/root/cod21_implementation_2` inherits the exact files and settled contracts below after this reassignment is committed. Root coordinates questions/tracking and serialized Git/delivery. The owner is not alone in the workspace, must preserve other edits and report ownership/contract changes before writing. No nested dispatch. This is the second owner attempt, not a reset of evidence or acceptance history.
 
 After the start gate, that owner alone may edit:
 
@@ -50,6 +50,12 @@ CompileError carries a stable C16 code and ordered CompileDiagnostics (code, rea
 Implement in order: policy/context; bounded cancellable immutable Git object source and exact inline capture; span-preserving strict libyaml event parser; complete strict constraint/scenario grammar and local typed substitutions; whole-closure validation/bounded Cartesian policy checks; complete output size accounting and acceptance/compatibility checks. Source Git plumbing uses structured command arguments, exact immutable IDs and literal paths, disables replacement objects/lazy fetch/config-driven filters/optional locks, and verifies commit/tree/blob types, contents and hashes. Bounded cancellable `git hash-object` may supply the repository's object hash format without a new SHA-1 dependency. Handle legal unusual path bytes without line-framed command injection. Own child cleanup through actual completion; no shell, network fetch or unchecked blocking/unbounded process output.
 
 The owner owns implementation/checks within the already listed files; root owns this plan/approval/evidence and all serialized Git. Any material signature/behavior/ownership change returns to coordinator before dependent edits; routine internal layout can proceed within the settled contracts.
+
+### Reassignment and PR-content instruction
+
+The first owner returned only policy/diagnostic scaffolding and unconnected constraint/scenario drafts (four compile files, narrow export/parser dependency/lockfile edits). There is no compile entry, source loader, strict parser, semantic validation or test suite from that attempt. Its partial offline check passed with dead-code warnings; it is not product acceptance. All processes are quiescent and its file ownership is revoked before the new assignment. Reuse sound work but complete the entire agreed compiler and checks; do not present partial scaffolding as the deliverable.
+
+The maintainer subsequently instructed that PRs include only essential files and exclude session-related logs/evidence. This overrides earlier instructions to add session artifacts to the implementation PR, without waiving actual verification/review or retention. Root keeps session logs/reports outside the implementation PR, summarizes results/links in tracking/PR prose and preserves approved/frozen subjects and predecessor evidence. The already published exact approval subject remains available; no history or evidence is silently destroyed. The new technical owner writes logs only to its unique external scratch directory and does not add session artifacts to product changes. Final delivery will use an essential-file diff; root serializes that integration and supplies its exact snapshot for independent checks/review.
 
 ## Scope, acceptance and failures
 
