@@ -958,7 +958,8 @@ fn digest<S: ByteSource + ?Sized>(
 fn matches_prefix(hash: &[u8; 32], prefix: &[u8; 32], bits: usize) -> bool {
     let whole = bits / 8;
     hash[..whole] == prefix[..whole]
-        && (bits % 8 == 0 || ((hash[whole] ^ prefix[whole]) & (0xff << (8 - bits % 8))) == 0)
+        && (bits.is_multiple_of(8)
+            || ((hash[whole] ^ prefix[whole]) & (0xff << (8 - bits % 8))) == 0)
 }
 fn replay<S: ReplayEvents + ?Sized>(
     source: &S,

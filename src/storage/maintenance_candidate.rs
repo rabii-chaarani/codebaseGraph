@@ -248,7 +248,7 @@ fn lower_hex(bytes: &[u8]) -> bool {
 fn decode_key(name: &[u8; 64]) -> [u8; 32] {
     let mut key = [0; 32];
     let digit = |b: u8| if b <= b'9' { b - b'0' } else { b - b'a' + 10 };
-    for (i, pair) in name.chunks_exact(2).enumerate() {
+    for (i, pair) in name.as_chunks::<2>().0.iter().enumerate() {
         key[i] = digit(pair[0]) * 16 + digit(pair[1]);
     }
     key
@@ -3181,8 +3181,7 @@ fn prepare_terminal_output(
         report.unknown = true;
         return Ok(None);
     }
-    for (i, frame) in tail.chunks_exact(512).enumerate() {
-        let frame: &[u8; 512] = frame.try_into().unwrap();
+    for (i, frame) in tail.as_chunks::<512>().0.iter().enumerate() {
         if !workspace_frame_valid(frame, &work, (i + 1) as u8)
             || u64::from_le_bytes(frame[16..24].try_into().unwrap()) != work.ready.source_epoch()
             || u64::from_le_bytes(frame[24..32].try_into().unwrap()) != work.ready.admission_epoch()
