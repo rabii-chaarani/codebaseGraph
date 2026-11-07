@@ -1,4 +1,4 @@
-# COD-21 execution brief — revision 7, canonical result-byte accounting
+# COD-21 execution brief — revision 8, approved Rust minimum
 
 Work: CBG-C4-01/F02/S02 / [COD-21](https://linear.app/codebasegraph/issue/COD-21), parent COD-6, M1/P1. Status: actual C21-D01/D02 human decisions recorded; owner plan/signatures settled below; first implementation attempt returned incomplete; fresh owner authorized under existing Scope A after this reassignment is committed and coordinator signals GO. **Compiler acceptance is unsatisfied.** Maintainers retain aggregate closure.
 
@@ -11,6 +11,8 @@ Live Linear confirms sole blocker COD-20 is Done for its schema/types scope. PR1
 Memory recall, existing wiki architecture/authority context, Linear project/issues/relations and graph discovery/context were consulted. Graph tools are available but slow and index the original main checkout: ArchitectureDocument/serde_yaml searches and src/architecture query returned no entries; manifest queries likewise have no File rows. Graph-discovered src/lib.rs (`Module:41664f532caa8578527c`) and explicit change_impact context provide the existing module boundary; branch source export traces COD-20's src/architecture/mod.rs. Qualify these graph gaps against the actual frozen branch; do not rebuild/install or substitute another project's graph.
 
 The [compiler supplement0.1](../cod21-contracts.md) is approved for C21-D01 serialized grammar and C21-D02 immutable Git/inline inputs at full SHA `9b4384378c03e05a458f8f94291c8bba4d82c7c3`; [actual decision record](../approvals/cod21-approval.md) retains both exact answers and the question locators. Fresh Sol/xhigh review and independent Terra/medium remote readback passed that published subject before the human answers. Original Scope A approval covers settled compiler behavior, with these additional decisions covering the formerly unspecified choices. No approval is inferred from status, review, preselection, dispatch or time. Direct live-tree compilation is outside this assignment.
+
+Subsequent explicit [Rust compatibility decision](../approvals/cod21-rust-minimum.md): the maintainer selected **Raise the minimum to1.98**, question call_8c324340b9fa49ecad77029b66b331a7/item0. The same owner may retain root Cargo.toml rust-version1.98 and its requested comment identifying **Rust1.98.1** for compilation/verification, removing obsolete1.82 commentary. This intentionally changes the root compiler floor; public Rust API shapes and all other C16/C21 behavior remain. Final checks use explicit +1.98.1 and report actual environment/qualification; earlier1.96 results are supplemental, earlier1.82 failure remains historical. Original approved input/spec artifacts are not silently revised and this exact-property authorization is not represented as approval of an unmentioned whole Git commit.
 
 ## Workflow and ownership
 

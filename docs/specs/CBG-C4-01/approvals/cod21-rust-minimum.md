@@ -1,0 +1,17 @@
+# COD-21 Rust compilation and minimum-version decision
+
+Work CBG-C4-01/F02/S02 / COD-21; 7 November 2026, Australia/Darwin. This is the actual maintainer decision for the root package's Rust compatibility metadata, separate from the immutable C4 input contract.
+
+The maintainer first requested a Cargo.toml comment identifying the compilation toolchain and repository memory of that guidance. The selected build/verification compiler is **Rust 1.98.1**. During readback, the working root Cargo.toml also contained `rust-version = "1.98"`; its actor was initially unknown, so the coordinator preserved it and asked rather than overwriting it.
+
+Actual question `request_user_input_async`, `call_8c324340b9fa49ecad77029b66b331a7`, item0, explicitly contrasted restoring the prior 1.82 minimum/comment-only change with retaining a raised minimum. Exact human answer: **Raise the minimum to 1.98**. This grants the exact root `Cargo.toml` `[package].rust-version` change from `1.82` to **`1.98`**, together with accurate explanatory comments. The decision is not inferred from file contents, a commit or a compiler installation. The human approved this property/value scope; no claim is made that the question named an unmentioned Git SHA or approved every implementation byte.
+
+## Compatibility and linked impact
+
+This intentionally stops advertising support for compilers below Rust1.98 for the root codebase-graph package. It supersedes the earlier comment-only/unchanged-minimum assumption. Root builds and all final local verification use explicit `cargo +1.98.1 ...`; there is no global rustup-default change or new toolchain pin. The root library's callers inherit this compiler floor, including consumers such as k-wiki; other workspace member manifest values are not silently rewritten by this bounded instruction.
+
+The earlier Rust1.82 experiment remains failed historical evidence: unchanged baseline dependency tree-sitter-language0.1.8 declares Rust1.90/edition2024. No passing1.82 check is fabricated and no unrelated dependency upgrade is made. Qualification reports state the actual tested1.98.1 patch/environment; Windows/Linux/release and other supported-platform gates remain separate.
+
+The change affects the R12/C1 compilation prerequisite and C21-A06's compatibility context, not existing public request variants/fields/traits, semantic defaults, graph-query bounds, component responsibilities/dependency direction, C4 syntax, ontology installation or native trust. COD-5's selected source baseline90e2ab6fae2767bdb158e19f0072d43568e80dbc and earlier evidence retain their original identities; testing the new dev-based delivery does not requalify that old snapshot. This deliberate minimum-version delta is disclosed separately from inherited dev/package/build-dependency differences.
+
+Canonical specification0.3 and ScopeA/B subject66dff2564e76ad06cdf172332e2da318d150fc73, actual scoped activationba5c7c543bd711b663e1dfc92d4bd58497ffb557, and the C21-D01/D02 input-contract approval subject9b4384378c03e05a458f8f94291c8bba4d82c7c3 remain byte-identical and otherwise applicable. This later exact-property human decision supplies the compatibility amendment; it grants no merge/release, settings/trust activation, additional issue or aggregate closure. Independent verification and the fresh integrated review must assess the actual final delivery snapshot with this intentional delta.
