@@ -1,6 +1,6 @@
 # COD-21 execution brief — revision 4, owner reassignment
 
-Work: CBG-C4-01/F02/S02 / [COD-21](https://linear.app/codebasegraph/issue/COD-21), parent COD-6, M1/P1. Status: actual C21-D01/D02 human decisions recorded; owner plan/signatures settled below; bounded implementation authorized under existing Scope A after this brief is committed and coordinator signals GO. **Product implementation not yet started at this revision's creation.** Maintainers retain aggregate closure.
+Work: CBG-C4-01/F02/S02 / [COD-21](https://linear.app/codebasegraph/issue/COD-21), parent COD-6, M1/P1. Status: actual C21-D01/D02 human decisions recorded; owner plan/signatures settled below; first implementation attempt returned incomplete; fresh owner authorized under existing Scope A after this reassignment is committed and coordinator signals GO. **Compiler acceptance is unsatisfied.** Maintainers retain aggregate closure.
 
 ## Authority, baseline and starting conditions
 
