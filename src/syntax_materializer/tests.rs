@@ -551,3 +551,139 @@ fn large_valid_root_uses_same_guarded_rows_as_legacy() {
     assert_eq!(actual.nodes, expected.nodes);
     assert_eq!(actual.edges, expected.edges);
 }
+
+#[test]
+fn long_rust_reference_edge_copy_is_interruptible_and_preserves_rows() {
+    use crate::{
+        extraction_control::{ExtractionControl, ExtractionError},
+        parser,
+        profiles::ProfileSet,
+        protocol::SourceSnapshot,
+    };
+    use std::sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    };
+    let name = format!("long_name_{}", "x".repeat(2048));
+    let source = format!("fn {name}() {{}} fn use_it() {{ {name}(); }}");
+    let profile = ProfileSet::new(&[])
+        .profile_for_language("rust")
+        .unwrap()
+        .clone();
+    let snapshot = SourceSnapshot {
+        path: "src/lib.rs".into(),
+        absolute_path: String::new(),
+        content_hash: String::new(),
+        language: Some("rust".into()),
+        byte_len: source.len() as u64,
+        source: Some(source.clone()),
+    };
+    let legacy = parser::parse_file(&snapshot, &profile).unwrap();
+    let expected = build_syntax_tree_graph_rows(meta("rust", "src/lib.rs"), &legacy.root).unwrap();
+    assert!(expected
+        .edges
+        .iter()
+        .any(|edge| edge.edge_type == "References"
+            && edge.metadata.get("label").and_then(Value::as_str) == Some(name.as_str())));
+    let mut check = || Ok(());
+    let mut parse = ExtractionControl::new(&mut check, 1000, 10_000_000, 100_000, 100_000);
+    let tree = parser::parse_guarded_tree(source.as_bytes(), &profile, &mut parse).unwrap();
+    let flat =
+        parser::normalize_guarded_rust(&tree, source.as_bytes(), &profile, &mut parse).unwrap();
+    let mut check = || Ok(());
+    let mut guard = ExtractionControl::new(&mut check, 1000, 10_000_000, 100_000, 100_000);
+    let actual = build_flat_syntax_rows(meta("rust", "src/lib.rs"), &flat, &mut guard).unwrap();
+    assert_eq!(actual.nodes, expected.nodes);
+    assert_eq!(actual.edges, expected.edges);
+    let flag = Arc::new(AtomicBool::new(false));
+    let seen = flag.clone();
+    let mut after = 0usize;
+    let mut cancel = || {
+        if seen.load(Ordering::Relaxed) {
+            after += 1;
+            if after > 20 {
+                return Err(ExtractionError::new(
+                    "cancelled",
+                    "edge label copy cancelled",
+                ));
+            }
+        }
+        Ok(())
+    };
+    let mut guard = ExtractionControl::new(&mut cancel, 1000, 10_000_000, 100_000, 100_000);
+    guard.watch_edge_copy(name, flag.clone());
+    let error = build_flat_syntax_rows(meta("rust", "src/lib.rs"), &flat, &mut guard).unwrap_err();
+    assert!(flag.load(Ordering::Relaxed));
+    assert_eq!(error.code, "cancelled");
+}
+
+#[test]
+fn long_rust_assignment_target_copy_and_classification_are_interruptible() {
+    use crate::{
+        extraction_control::{ExtractionControl, ExtractionError},
+        parser,
+        profiles::ProfileSet,
+        protocol::SourceSnapshot,
+    };
+    use std::sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    };
+    let name = format!("long_target_{}", "x".repeat(2048));
+    let source = format!("fn f() {{ let mut {name}=0; {name}=other; }}");
+    let profile = ProfileSet::new(&[])
+        .profile_for_language("rust")
+        .unwrap()
+        .clone();
+    let snapshot = SourceSnapshot {
+        path: "src/lib.rs".into(),
+        absolute_path: String::new(),
+        content_hash: String::new(),
+        language: Some("rust".into()),
+        byte_len: source.len() as u64,
+        source: Some(source.clone()),
+    };
+    let legacy = parser::parse_file(&snapshot, &profile).unwrap();
+    let expected = build_syntax_tree_graph_rows(meta("rust", "src/lib.rs"), &legacy.root).unwrap();
+    assert!(expected
+        .nodes
+        .iter()
+        .any(|node| node.table == "Variable" && node.label == name));
+    let mut check = || Ok(());
+    let mut parse = ExtractionControl::new(&mut check, 1000, 10_000_000, 100_000, 100_000);
+    let tree = parser::parse_guarded_tree(source.as_bytes(), &profile, &mut parse).unwrap();
+    let flat =
+        parser::normalize_guarded_rust(&tree, source.as_bytes(), &profile, &mut parse).unwrap();
+    let mut check = || Ok(());
+    let mut guard = ExtractionControl::new(&mut check, 1000, 10_000_000, 100_000, 100_000);
+    let actual = build_flat_syntax_rows(meta("rust", "src/lib.rs"), &flat, &mut guard).unwrap();
+    assert_eq!(actual.nodes, expected.nodes);
+    assert_eq!(actual.edges, expected.edges);
+    for classify in [false, true] {
+        let flag = Arc::new(AtomicBool::new(false));
+        let seen = flag.clone();
+        let mut after = 0usize;
+        let mut cancel = || {
+            if seen.load(Ordering::Relaxed) {
+                after += 1;
+                if after > 20 {
+                    return Err(ExtractionError::new(
+                        "cancelled",
+                        "assignment work cancelled",
+                    ));
+                }
+            }
+            Ok(())
+        };
+        let mut guard = ExtractionControl::new(&mut cancel, 1000, 10_000_000, 100_000, 100_000);
+        if classify {
+            guard.watch_assignment_classification(name.clone(), flag.clone());
+        } else {
+            guard.watch_assignment_copy(name.clone(), flag.clone());
+        }
+        let error =
+            build_flat_syntax_rows(meta("rust", "src/lib.rs"), &flat, &mut guard).unwrap_err();
+        assert!(flag.load(Ordering::Relaxed));
+        assert_eq!(error.code, "cancelled");
+    }
+}

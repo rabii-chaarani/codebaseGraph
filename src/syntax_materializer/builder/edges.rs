@@ -154,9 +154,58 @@ impl NativeBuilder<'_, '_> {
             byte_end: None,
             metadata: Value::Object(edge_metadata),
         };
+        if let Some(guard) = &mut self.guard {
+            let source = self.edges.get(&edge.id).unwrap_or(&edge);
+            let copied = match copy_edge(source, guard) {
+                Ok(value) => value,
+                Err(error) => {
+                    let message = error.message.to_string();
+                    self.guard_failure = Some(error);
+                    return Err(message);
+                }
+            };
+            if !self.edges.contains_key(&edge.id) {
+                let id = match crate::extraction_control::copy_text(&edge.id, guard) {
+                    Ok(value) => value,
+                    Err(error) => {
+                        let message = error.message.to_string();
+                        self.guard_failure = Some(error);
+                        return Err(message);
+                    }
+                };
+                self.edges.insert(id, edge);
+            }
+            return Ok(copied);
+        }
         self.edges
             .entry(edge.id.clone())
             .or_insert_with(|| edge.clone());
         Ok(self.edges.get(&edge.id).cloned().unwrap_or(edge))
     }
+}
+
+fn copy_edge(
+    edge: &GraphEdgeRow,
+    guard: &mut crate::extraction_control::ExtractionControl<'_>,
+) -> Result<GraphEdgeRow, crate::extraction_control::ExtractionError> {
+    use crate::extraction_control::copy_text;
+    Ok(GraphEdgeRow {
+        id: copy_text(&edge.id, guard)?,
+        edge_type: copy_text(&edge.edge_type, guard)?,
+        source_id: copy_text(&edge.source_id, guard)?,
+        target_id: copy_text(&edge.target_id, guard)?,
+        kind: copy_text(&edge.kind, guard)?,
+        confidence: edge.confidence,
+        field_name: edge
+            .field_name
+            .as_deref()
+            .map(|v| copy_text(v, guard))
+            .transpose()?,
+        child_index: edge.child_index,
+        line_start: edge.line_start,
+        line_end: edge.line_end,
+        byte_start: edge.byte_start,
+        byte_end: edge.byte_end,
+        metadata: super::nodes::copy_value(&edge.metadata, guard)?,
+    })
 }

@@ -52,11 +52,14 @@ fn tree_sitter_fields_with<E>(
             continue;
         };
         field_types.insert(field_name.to_string(), json!(child.kind()));
-        field_descendant_types.insert(field_name.to_string(), json!(collect(child)?));
+        field_descendant_types.insert(
+            field_name.to_string(),
+            Value::Array(collect(child)?.into_iter().map(Value::String).collect()),
+        );
         if field_name != "declarator" {
             if let Some(label) = label(child)? {
                 if !label.is_empty() {
-                    fields.insert(field_name.to_string(), json!(label));
+                    fields.insert(field_name.to_string(), Value::String(label));
                 }
             }
         }
@@ -94,7 +97,7 @@ pub(super) fn rust_fields_guarded(
         let Some(text) = node.utf8_text(bytes).ok().filter(|value| !value.is_empty()) else {
             return Ok(None);
         };
-        let trimmed = text.trim();
+        let trimmed = crate::extraction_control::trim_text(text, control)?;
         let mut out = String::new();
         out.try_reserve(trimmed.len())
             .map_err(|_| ExtractionError::new("resource_limit", "allocation failed"))?;

@@ -50,8 +50,40 @@ impl NativeBuilder<'_, '_> {
         self.connect_owner(owner, &assignment)?;
         self.derived_from(&assignment.id, syntax_id)?;
 
-        if let Some(target_label) = assignment_target_label(nodes, node) {
-            let target_table = assignment_target_table(&target_label, owner, &capture.node_type);
+        let target_label = match (self.language.as_str(), self.guard.as_mut()) {
+            ("rust", Some(guard)) => {
+                match crate::syntax_materializer::assignment_target_label_guarded(
+                    nodes, node, guard,
+                ) {
+                    Ok(value) => value,
+                    Err(error) => {
+                        let message = error.message.to_string();
+                        self.guard_failure = Some(error);
+                        return Err(message);
+                    }
+                }
+            }
+            _ => assignment_target_label(nodes, node),
+        };
+        if let Some(target_label) = target_label {
+            let target_table = match (self.language.as_str(), self.guard.as_mut()) {
+                ("rust", Some(guard)) => {
+                    match crate::syntax_materializer::assignment_target_table_guarded(
+                        &target_label,
+                        owner,
+                        &capture.node_type,
+                        guard,
+                    ) {
+                        Ok(value) => value,
+                        Err(error) => {
+                            let message = error.message.to_string();
+                            self.guard_failure = Some(error);
+                            return Err(message);
+                        }
+                    }
+                }
+                _ => assignment_target_table(&target_label, owner, &capture.node_type),
+            };
             let target = self.semantic_node(
                 target_table,
                 &capture,
@@ -588,14 +620,33 @@ impl NativeBuilder<'_, '_> {
         &mut self,
         label: &str,
     ) -> Result<Option<GraphNodeRow>, String> {
-        let reference_label = label.trim();
+        let (reference_label, short) = if let Some(guard) = &mut self.guard {
+            let result = (|| {
+                let trimmed = crate::extraction_control::trim_text(label, guard)?;
+                let mut start = 0usize;
+                for (index, ch) in trimmed.char_indices() {
+                    guard.visit(0)?;
+                    if ch == '.' {
+                        start = index + 1;
+                    }
+                }
+                Ok::<_, crate::extraction_control::ExtractionError>((trimmed, &trimmed[start..]))
+            })();
+            match result {
+                Ok(value) => value,
+                Err(error) => {
+                    let message = error.message.to_string();
+                    self.guard_failure = Some(error);
+                    return Err(message);
+                }
+            }
+        } else {
+            let trimmed = label.trim();
+            (trimmed, trimmed.rsplit('.').next().unwrap_or(trimmed))
+        };
         if reference_label.is_empty() {
             return Ok(None);
         }
-        let short = reference_label
-            .rsplit('.')
-            .next()
-            .unwrap_or(reference_label);
         for candidate in [reference_label, short] {
             let key = if let Some(guard) = &mut self.guard {
                 match crate::extraction_control::normalized_symbol(candidate, guard) {

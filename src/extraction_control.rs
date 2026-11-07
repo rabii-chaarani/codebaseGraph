@@ -20,6 +20,13 @@ pub(crate) struct ExtractionControl<'a> {
     edges: u64,
     #[cfg(test)]
     reserve_failure_after: Option<usize>,
+    #[cfg(test)]
+    edge_copy_observer: Option<(String, std::sync::Arc<std::sync::atomic::AtomicBool>)>,
+    #[cfg(test)]
+    assignment_copy_observer: Option<(String, std::sync::Arc<std::sync::atomic::AtomicBool>)>,
+    #[cfg(test)]
+    assignment_classification_observer:
+        Option<(String, std::sync::Arc<std::sync::atomic::AtomicBool>)>,
 }
 impl<'a> ExtractionControl<'a> {
     pub(crate) fn new(
@@ -40,11 +47,65 @@ impl<'a> ExtractionControl<'a> {
             edges: 0,
             #[cfg(test)]
             reserve_failure_after: None,
+            #[cfg(test)]
+            edge_copy_observer: None,
+            #[cfg(test)]
+            assignment_copy_observer: None,
+            #[cfg(test)]
+            assignment_classification_observer: None,
         }
     }
     #[cfg(test)]
     pub(crate) fn inject_reserve_failure_after(&mut self, successful_reserves: usize) {
         self.reserve_failure_after = Some(successful_reserves);
+    }
+    #[cfg(test)]
+    pub(crate) fn watch_edge_copy(
+        &mut self,
+        label: String,
+        flag: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    ) {
+        self.edge_copy_observer = Some((label, flag));
+    }
+    #[cfg(test)]
+    pub(crate) fn observe_edge_copy(&self, label: Option<&str>) {
+        if let Some((expected, flag)) = &self.edge_copy_observer {
+            if label == Some(expected.as_str()) {
+                flag.store(true, std::sync::atomic::Ordering::Relaxed);
+            }
+        }
+    }
+    #[cfg(test)]
+    pub(crate) fn watch_assignment_copy(
+        &mut self,
+        label: String,
+        flag: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    ) {
+        self.assignment_copy_observer = Some((label, flag));
+    }
+    #[cfg(test)]
+    pub(crate) fn observe_assignment_copy(&self, label: &str) {
+        if let Some((expected, flag)) = &self.assignment_copy_observer {
+            if expected == label {
+                flag.store(true, std::sync::atomic::Ordering::Relaxed);
+            }
+        }
+    }
+    #[cfg(test)]
+    pub(crate) fn watch_assignment_classification(
+        &mut self,
+        label: String,
+        flag: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    ) {
+        self.assignment_classification_observer = Some((label, flag));
+    }
+    #[cfg(test)]
+    pub(crate) fn observe_assignment_classification(&self, label: &str) {
+        if let Some((expected, flag)) = &self.assignment_classification_observer {
+            if expected == label {
+                flag.store(true, std::sync::atomic::Ordering::Relaxed);
+            }
+        }
     }
     pub(crate) fn reserve<T>(
         &mut self,
@@ -220,6 +281,25 @@ pub(crate) fn normalized_symbol(
         }
     }
     Ok(output)
+}
+
+/// Borrow the same slice as `str::trim` while polling each scanned character.
+pub(crate) fn trim_text<'a>(
+    value: &'a str,
+    control: &mut ExtractionControl<'_>,
+) -> Result<&'a str, ExtractionError> {
+    let mut first = None;
+    let mut end = 0;
+    for (index, ch) in value.char_indices() {
+        control.visit(0)?;
+        if !ch.is_whitespace() {
+            if first.is_none() {
+                first = Some(index);
+            }
+            end = index + ch.len_utf8();
+        }
+    }
+    Ok(first.map_or("", |start| &value[start..end]))
 }
 
 #[cfg(test)]

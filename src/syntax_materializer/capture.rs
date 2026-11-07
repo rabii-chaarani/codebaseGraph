@@ -598,7 +598,7 @@ pub(super) fn tree_capture_guarded(
     ] {
         control.visit(0)?;
         if let Some(Value::String(value)) = node.node.fields.get(key) {
-            let trimmed = value.trim();
+            let trimmed = crate::extraction_control::trim_text(value, control)?;
             if !trimmed.is_empty() {
                 label = Some(copy(trimmed, control)?);
                 break;
@@ -608,7 +608,7 @@ pub(super) fn tree_capture_guarded(
     let label = match label {
         Some(v) => v,
         None => {
-            let text = node.text().trim();
+            let text = crate::extraction_control::trim_text(node.text(), control)?;
             if text.is_empty() {
                 copy(node.node_type(), control)?
             } else {
@@ -705,4 +705,87 @@ pub(super) fn parameter_child_ids_guarded(
         }
     }
     Ok(result)
+}
+
+/// Rust assignment targets use the first non-call child when no target field
+/// is present. Preserve the legacy label while guarding child scans and copies.
+pub(super) fn assignment_target_label_guarded(
+    nodes: &NativeSyntaxArena<'_>,
+    node: TreeNodeRef<'_>,
+    control: &mut crate::extraction_control::ExtractionControl<'_>,
+) -> Result<Option<String>, crate::extraction_control::ExtractionError> {
+    if let Some(Value::String(value)) = node.node.fields.get("target") {
+        let value = crate::extraction_control::trim_text(value, control)?;
+        #[cfg(test)]
+        control.observe_assignment_copy(value);
+        return Ok(Some(crate::extraction_control::copy_text(value, control)?));
+    }
+    for id in node.children {
+        control.visit(0)?;
+        if let Some(child) = nodes.get_node(*id) {
+            if !matches!(child.node_type(), "call" | "call_expression") {
+                let mut selected = None;
+                for key in [
+                    "name", "id", "arg", "attr", "module", "path", "function", "value",
+                ] {
+                    control.visit(0)?;
+                    if let Some(Value::String(value)) = child.node.fields.get(key) {
+                        let value = crate::extraction_control::trim_text(value, control)?;
+                        if !value.is_empty() {
+                            selected = Some(value);
+                            break;
+                        }
+                    }
+                }
+                let label = if let Some(value) = selected {
+                    value
+                } else {
+                    let value = crate::extraction_control::trim_text(child.text(), control)?;
+                    if value.is_empty() {
+                        child.node_type()
+                    } else {
+                        value
+                    }
+                };
+                #[cfg(test)]
+                control.observe_assignment_copy(label);
+                let label = crate::extraction_control::copy_text(label, control)?;
+                return Ok((!label.is_empty()).then_some(label));
+            }
+        }
+    }
+    Ok(None)
+}
+pub(super) fn assignment_target_table_guarded(
+    label: &str,
+    owner: &Owner,
+    node_type: &str,
+    control: &mut crate::extraction_control::ExtractionControl<'_>,
+) -> Result<&'static str, crate::extraction_control::ExtractionError> {
+    #[cfg(test)]
+    control.observe_assignment_classification(label);
+    let mut alpha = false;
+    let mut uppercase = true;
+    let mut dot = false;
+    for ch in label.chars() {
+        control.visit(0)?;
+        if ch.is_alphabetic() {
+            alpha = true;
+            uppercase &= ch.is_uppercase();
+        }
+        dot |= ch == '.';
+    }
+    if alpha && uppercase {
+        return Ok("Constant");
+    }
+    if owner.table == "Class" {
+        return Ok("ClassAttribute");
+    }
+    if dot {
+        return Ok("InstanceAttribute");
+    }
+    if node_type == "AnnAssign" && owner.table == "Class" {
+        return Ok("ClassAttribute");
+    }
+    Ok("Variable")
 }

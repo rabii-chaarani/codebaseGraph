@@ -513,6 +513,10 @@ pub(super) fn copy_value(
             let mut result = Map::new();
             for (key, v) in values {
                 guard.visit(0)?;
+                #[cfg(test)]
+                if key == "label" {
+                    guard.observe_edge_copy(v.as_str());
+                }
                 result.insert(copy_text(key, guard)?, copy_value(v, guard)?);
             }
             Value::Object(result)
