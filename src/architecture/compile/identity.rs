@@ -65,16 +65,15 @@ pub(super) fn raw_digest(bytes: &[u8], run: &RunContext) -> Result<Digest, Compi
         .map_err(|e| CompileError::simple("architecture_internal_error", e))
 }
 
-pub fn identify(
+fn constituents(
     model: &CompiledModel,
-    context: &ExecutionContext,
-) -> Result<CompiledIdentity, CompileError> {
-    let run = context.start_at(&model.effective_policy, Instant::now())?;
+    run: &RunContext,
+) -> Result<(Digest, Digest, Digest, Digest), CompileError> {
     run.check()?;
-    let intent_digest = super::output::intent_hash(model, &run)?;
-    let closure_digest = super::output::closure_hash(model, &run)?;
+    let intent_digest = super::output::intent_hash(model, run)?;
+    let closure_digest = super::output::closure_hash(model, run)?;
     let policy_digest =
-        super::output::hash_value("architecture-policy", &model.effective_policy, &run)?;
+        super::output::hash_value("architecture-policy", &model.effective_policy, run)?;
     #[derive(Serialize)]
     #[serde(tag = "kind", rename_all = "snake_case")]
     enum Provenance<'a> {
@@ -115,7 +114,29 @@ pub fn identify(
         provenance,
     };
     let compile_input_digest =
-        super::output::hash_value("architecture-compile-input", &input, &run)?;
+        super::output::hash_value("architecture-compile-input", &input, run)?;
+    Ok((
+        intent_digest,
+        closure_digest,
+        policy_digest,
+        compile_input_digest,
+    ))
+}
+
+pub(super) fn compile_input_in_run(
+    model: &CompiledModel,
+    run: &RunContext,
+) -> Result<Digest, CompileError> {
+    constituents(model, run).map(|(_, _, _, input)| input)
+}
+
+pub fn identify(
+    model: &CompiledModel,
+    context: &ExecutionContext,
+) -> Result<CompiledIdentity, CompileError> {
+    let run = context.start_at(&model.effective_policy, Instant::now())?;
+    let (intent_digest, closure_digest, policy_digest, compile_input_digest) =
+        constituents(model, &run)?;
     let mut linked_artifacts = Vec::new();
     for reference in artifacts::inventory(model, &run)? {
         let reference_digest =

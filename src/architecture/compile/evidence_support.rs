@@ -1,7 +1,7 @@
 //! Narrow bridge to the compiler's policy, canonical writer and hashing machinery.
 use super::{
-    identity, output, policy::RunContext, ArchitectureExecutionPolicy,
-    ArchitectureExecutionPolicyOverride, CompileError, ExecutionContext,
+    output, policy::RunContext, ArchitectureExecutionPolicy, ArchitectureExecutionPolicyOverride,
+    CompileError, ExecutionContext,
 };
 use serde::Serialize;
 use std::time::Instant;
@@ -18,20 +18,13 @@ pub(crate) fn start(
     run.check()?;
     Ok((effective, run))
 }
-pub(crate) fn sort<T>(
-    values: &mut [T],
-    run: &Run,
-    cmp: impl FnMut(&T, &T) -> std::cmp::Ordering,
-) -> Result<(), CompileError> {
-    identity::canonical::sort_by(values, run, cmp)
-}
-
 pub(crate) fn stream_hash<T: Serialize>(
     value: &T,
     limit: u64,
     run: &Run,
+    control: &mut crate::extraction_control::ExtractionControl<'_>,
 ) -> Result<(crate::architecture::Digest, u64), CompileError> {
-    output::evidence_stream_hash(value, limit, run)
+    output::evidence_stream_hash(value, limit, run, control)
 }
 
 pub(crate) fn tree(
@@ -66,4 +59,24 @@ pub(crate) fn metadata_hash<T: Serialize>(
     run: &Run,
 ) -> Result<crate::architecture::Digest, CompileError> {
     output::hash_value(domain, value, run)
+}
+
+pub(crate) fn measure<T: Serialize>(value: &T, limit: u64, run: &Run) -> Result<u64, CompileError> {
+    output::measure_serialized(value, limit, run)
+}
+
+pub(crate) fn compile_input(
+    model: &super::CompiledModel,
+    run: &Run,
+) -> Result<crate::architecture::Digest, CompileError> {
+    super::identity::compile_input_in_run(model, run)
+}
+
+pub(crate) fn stream_bytes<T: Serialize>(
+    value: &T,
+    limit: u64,
+    run: &Run,
+    control: &mut crate::extraction_control::ExtractionControl<'_>,
+) -> Result<Vec<u8>, CompileError> {
+    output::evidence_stream_bytes(value, limit, run, control)
 }

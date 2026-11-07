@@ -31,7 +31,7 @@ struct Span {
     start: u64,
 }
 #[derive(Serialize)]
-struct Source<'a> {
+pub(super) struct Source<'a> {
     byte_span: Span,
     commit: &'a crate::architecture::GitObjectId,
     file_digest: &'a Digest,
@@ -59,7 +59,7 @@ impl<'a> From<&'a SourceRef> for Source<'a> {
     }
 }
 #[derive(Serialize)]
-struct Artifact<'a> {
+pub(super) struct Artifact<'a> {
     commit: &'a crate::architecture::GitObjectId,
     content_digest: &'a Digest,
     path: &'a crate::architecture::RelativePath,
@@ -86,7 +86,7 @@ impl Serialize for Sources<'_> {
         seq.end()
     }
 }
-struct AssertionView<'a>(&'a Assertion);
+pub(super) struct AssertionView<'a>(pub(super) &'a Assertion);
 impl Serialize for AssertionView<'_> {
     fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
         let mut m = s.serialize_map(None)?;
@@ -187,12 +187,23 @@ struct Mapping<'a> {
     structural_citations: Vec<Citation<'a>>,
 }
 #[derive(Serialize)]
-struct Provenance<'a> {
+pub(super) struct Provenance<'a> {
     build_context_digest: &'a Digest,
     evaluated_commit: &'a crate::architecture::GitObjectId,
     evaluated_tree: &'a crate::architecture::GitObjectId,
     extractor_digest: &'a Digest,
     repository: &'a crate::architecture::Text,
+}
+impl<'a> From<&'a SourceProvenance> for Provenance<'a> {
+    fn from(v: &'a SourceProvenance) -> Self {
+        Self {
+            build_context_digest: &v.build_context_digest,
+            evaluated_commit: &v.evaluated_commit,
+            evaluated_tree: &v.evaluated_tree,
+            extractor_digest: &v.extractor_digest,
+            repository: &v.repository,
+        }
+    }
 }
 #[derive(Serialize)]
 struct Payload<'a> {
@@ -200,23 +211,26 @@ struct Payload<'a> {
     mappings: Vec<Mapping<'a>>,
     source: Provenance<'a>,
 }
-fn refs<'a, T>(items: &'a [T], run: &support::Run) -> Result<Vec<&'a T>, EvidenceError> {
+fn refs<'a, T>(
+    items: &'a [T],
+    control: &mut crate::extraction_control::ExtractionControl<'_>,
+) -> Result<Vec<&'a T>, EvidenceError> {
     let mut v = Vec::new();
     v.try_reserve(items.len())
         .map_err(|_| limit("allocation failed"))?;
     for item in items {
-        run.check()?;
+        control.visit(0)?;
         v.push(item);
     }
     Ok(v)
 }
 fn unique<T>(
     items: &[T],
-    run: &support::Run,
+    control: &mut crate::extraction_control::ExtractionControl<'_>,
     same: impl Fn(&T, &T) -> bool,
 ) -> Result<(), EvidenceError> {
     for pair in items.windows(2) {
-        run.check()?;
+        control.visit(0)?;
         if same(&pair[0], &pair[1]) {
             return Err(invalid("duplicate set key"));
         }
@@ -255,7 +269,24 @@ pub fn mapping_facts_digest(
     context: &ExecutionContext,
 ) -> Result<MappingFactsDigest, EvidenceError> {
     let (policy, run) = support::start(policy, overrides, context)?;
-    facts(source, mappings, &policy, &run).map(|(digest, _)| digest)
+    let mut checkpoint = || {
+        run.check().map_err(|error| {
+            crate::extraction_control::ExtractionError::new(
+                error.code(),
+                "evidence operation interrupted",
+            )
+        })
+    };
+    let mut control = crate::extraction_control::ExtractionControl::new(
+        &mut checkpoint,
+        policy.max_parse_depth(),
+        policy.max_traversal_steps(),
+        policy.max_projected_vertices(),
+        policy.max_projected_edges(),
+    );
+    let (digest, _) = facts(source, mappings, &policy, &run, &mut control)?;
+    support::measure(&digest, policy.max_result_bytes(), &run)?;
+    Ok(digest)
 }
 
 pub(super) fn facts(
@@ -263,19 +294,20 @@ pub(super) fn facts(
     mappings: &[MappingSubmission],
     policy: &ArchitectureExecutionPolicy,
     run: &support::Run,
+    control: &mut crate::extraction_control::ExtractionControl<'_>,
 ) -> Result<(MappingFactsDigest, u64), EvidenceError> {
     if mappings.len() as u64 > policy.max_mapping_records() {
         return Err(limit("mapping count exceeded"));
     }
-    let mut sorted = refs(mappings, run)?;
-    support::sort(&mut sorted, run, |a, b| compare(a, b))?;
-    unique(&sorted, run, |a, b| compare(a, b).is_eq())?;
+    let mut sorted = refs(mappings, control)?;
+    crate::extraction_control::sort_by(&mut sorted, control, |a, b| compare(a, b))?;
+    unique(&sorted, control, |a, b| compare(a, b).is_eq())?;
     let mut records = Vec::new();
     records
         .try_reserve(sorted.len())
         .map_err(|_| limit("allocation failed"))?;
     for m in sorted {
-        run.check()?;
+        control.visit(0)?;
         if m.structural_citations.len() as u64 > policy.max_citations_per_mapping() {
             return Err(limit("citation count exceeded"));
         }
@@ -292,7 +324,7 @@ pub(super) fn facts(
                     .map(|c| &c.explanation),
             )
         {
-            run.check()?;
+            control.visit(0)?;
             size = size
                 .checked_add(explanation.as_str().len() as u64)
                 .ok_or_else(|| limit("rationale size overflow"))?;
@@ -300,52 +332,61 @@ pub(super) fn facts(
         if size > policy.max_rationale_bytes() {
             return Err(limit("rationale bytes exceeded"));
         }
-        let mut ids = refs(&m.responsibility_ids, run)?;
-        support::sort(&mut ids, run, |a, b| a.as_str().cmp(b.as_str()))?;
-        unique(&ids, run, |a, b| a == b)?;
-        let mut rs = refs(&m.rationale.responsibilities, run)?;
-        support::sort(&mut rs, run, |a, b| {
+        let mut ids = refs(&m.responsibility_ids, control)?;
+        crate::extraction_control::sort_by(&mut ids, control, |a, b| a.as_str().cmp(b.as_str()))?;
+        unique(&ids, control, |a, b| a == b)?;
+        let mut rs = refs(&m.rationale.responsibilities, control)?;
+        crate::extraction_control::sort_by(&mut rs, control, |a, b| {
             a.responsibility_id
                 .as_str()
                 .cmp(b.responsibility_id.as_str())
         })?;
-        unique(&rs, run, |a, b| a.responsibility_id == b.responsibility_id)?;
+        unique(&rs, control, |a, b| {
+            a.responsibility_id == b.responsibility_id
+        })?;
         let mut responsibilities = Vec::new();
         responsibilities
             .try_reserve(rs.len())
             .map_err(|_| limit("allocation failed"))?;
         for r in rs {
-            run.check()?;
+            control.visit(0)?;
             responsibilities.push(Resp {
                 explanation: &r.explanation,
                 responsibility_id: &r.responsibility_id,
             });
         }
-        let mut cs = refs(&m.rationale.competing_components, run)?;
-        support::sort(&mut cs, run, |a, b| {
+        let mut cs = refs(&m.rationale.competing_components, control)?;
+        crate::extraction_control::sort_by(&mut cs, control, |a, b| {
             a.component.as_str().cmp(b.component.as_str())
         })?;
-        unique(&cs, run, |a, b| a.component == b.component)?;
+        unique(&cs, control, |a, b| a.component == b.component)?;
         let mut competitors = Vec::new();
         competitors
             .try_reserve(cs.len())
             .map_err(|_| limit("allocation failed"))?;
         for c in cs {
-            run.check()?;
+            control.visit(0)?;
             competitors.push(Competitor {
                 component: &c.component,
                 explanation: &c.explanation,
             });
         }
-        let mut citations = refs(&m.structural_citations, run)?;
-        support::sort(&mut citations, run, |a, b| a.id.as_str().cmp(b.id.as_str()))?;
-        unique(&citations, run, |a, b| a.id == b.id)?;
+        let mut citations = refs(&m.structural_citations, control)?;
+        crate::extraction_control::sort_by(&mut citations, control, |a, b| {
+            a.id.as_str().cmp(b.id.as_str())
+        })?;
+        unique(&citations, control, |a, b| a.id == b.id)?;
         let mut citation_views = Vec::new();
         citation_views
             .try_reserve(citations.len())
             .map_err(|_| limit("allocation failed"))?;
         for c in citations {
-            run.check()?;
+            control.visit(0)?;
+            if let Assertion::ReachesExportedItem { path, .. } = &c.assertion {
+                for _ in path {
+                    control.visit(0)?;
+                }
+            }
             citation_views.push(Citation {
                 assertion: AssertionView(&c.assertion),
                 id: &c.id,
@@ -354,14 +395,16 @@ pub(super) fn facts(
         }
         let previous = if let Some(p) = &m.previous_mapping {
             let lineage = if let Some(l) = &p.lineage {
-                let mut es = refs(&l.evidence_refs, run)?;
-                support::sort(&mut es, run, |a, b| artifact_key(a).cmp(&artifact_key(b)))?;
-                unique(&es, run, |a, b| artifact_key(a) == artifact_key(b))?;
+                let mut es = refs(&l.evidence_refs, control)?;
+                crate::extraction_control::sort_by(&mut es, control, |a, b| {
+                    artifact_key(a).cmp(&artifact_key(b))
+                })?;
+                unique(&es, control, |a, b| artifact_key(a) == artifact_key(b))?;
                 let mut ev = Vec::new();
                 ev.try_reserve(es.len())
                     .map_err(|_| limit("allocation failed"))?;
                 for e in es {
-                    run.check()?;
+                    control.visit(0)?;
                     ev.push(Artifact::from(e));
                 }
                 Some(Lineage {
@@ -417,7 +460,8 @@ pub(super) fn facts(
             repository: &source.repository,
         },
     };
-    let (digest, bytes) = support::stream_hash(&payload, policy.max_evidence_bytes(), run)?;
+    let (digest, bytes) =
+        support::stream_hash(&payload, policy.max_evidence_bytes(), run, control)?;
     Ok((MappingFactsDigest(digest), bytes))
 }
 
@@ -465,6 +509,12 @@ pub fn source_extractor_identity(
     context: &ExecutionContext,
 ) -> Result<SourceExtractorIdentity, EvidenceError> {
     let run = support::metadata_run(context);
+    extractor_in_run(&run)
+}
+
+pub(super) fn extractor_in_run(
+    run: &support::Run,
+) -> Result<SourceExtractorIdentity, EvidenceError> {
     run.check()?;
     let profile = crate::profiles::built_in_profiles()
         .into_iter()
@@ -482,7 +532,7 @@ pub fn source_extractor_identity(
             "built-in Rust grammar missing",
         )
     })?;
-    let grammar_node_types_digest = support::raw_digest(node_types.as_bytes(), &run)?;
+    let grammar_node_types_digest = support::raw_digest(node_types.as_bytes(), run)?;
     let descriptor = SourceExtractorDescriptor {
         version: "native-source-evidence/0.1",
         language: "rust",
@@ -490,6 +540,6 @@ pub fn source_extractor_identity(
         grammar_node_types_digest,
         node_identity_version: "native-source-graph/1",
     };
-    let digest = support::metadata_hash("architecture-source-extractor", &descriptor, &run)?;
+    let digest = support::metadata_hash("architecture-source-extractor", &descriptor, run)?;
     Ok(SourceExtractorIdentity { descriptor, digest })
 }

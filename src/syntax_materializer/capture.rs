@@ -673,3 +673,36 @@ pub(super) fn semantic_child_ids_guarded(
     }
     Ok(result)
 }
+
+pub(super) fn parameter_child_ids_guarded(
+    nodes: &NativeSyntaxArena<'_>,
+    function_node: TreeNodeRef<'_>,
+    control: &mut crate::extraction_control::ExtractionControl<'_>,
+) -> Result<Vec<usize>, crate::extraction_control::ExtractionError> {
+    use crate::extraction_control::ExtractionError;
+    let mut result = Vec::new();
+    for id in function_node.children {
+        control.visit(0)?;
+        let Some(parameters) = nodes.get_node(*id) else {
+            continue;
+        };
+        if parameters.node_type() != "parameters" {
+            continue;
+        }
+        for child in parameters.children {
+            control.visit(0)?;
+            if nodes.get_node(*child).is_some_and(|n| {
+                matches!(
+                    n.node_type(),
+                    "identifier" | "typed_parameter" | "default_parameter" | "parameter"
+                )
+            }) {
+                result
+                    .try_reserve(1)
+                    .map_err(|_| ExtractionError::new("resource_limit", "allocation failed"))?;
+                result.push(*child);
+            }
+        }
+    }
+    Ok(result)
+}

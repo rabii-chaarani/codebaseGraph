@@ -412,3 +412,113 @@ mod deep_reconstruction_tests {
         drop(rows);
     }
 }
+
+struct ReconstructedFile<'a> {
+    path: &'a RelativePath,
+    digest: &'a Digest,
+    rows: crate::syntax_materializer::BuiltGraphRows,
+}
+/// Invocation-local contextual rows; source bytes are never installed or stored.
+pub(super) struct ReconstructionCache<'a> {
+    files: Vec<ReconstructedFile<'a>>,
+}
+impl<'a> ReconstructionCache<'a> {
+    pub(super) fn new() -> Self {
+        Self { files: Vec::new() }
+    }
+    pub(super) fn check_reference(
+        &mut self,
+        reference: &'a SourceRef,
+        source: &SourceProvenance,
+        capture: &mut Capture<'a>,
+        extractor_matches: bool,
+        control: &mut crate::extraction_control::ExtractionControl<'_>,
+    ) -> Result<super::output::EvidenceCheck, super::EvidenceError> {
+        use super::output::{CheckStatus, EvidenceCheck};
+        fn check(status: CheckStatus, code: Option<&str>) -> EvidenceCheck {
+            EvidenceCheck {
+                status,
+                reason_codes: code.into_iter().map(str::to_owned).collect(),
+            }
+        }
+        control.visit(0)?;
+        if reference.repository != source.repository || reference.commit != source.evaluated_commit
+        {
+            return Ok(check(
+                CheckStatus::Invalid,
+                Some("current_revision_mismatch"),
+            ));
+        }
+        let bytes = match capture.file(reference) {
+            Ok(bytes) => bytes,
+            Err(error) => match error.code() {
+                "architecture_input_unavailable" => {
+                    return Ok(check(
+                        CheckStatus::Unknown,
+                        Some("source_input_unavailable"),
+                    ))
+                }
+                "invalid_reference" | "path_not_confined" => {
+                    return Ok(check(
+                        CheckStatus::Invalid,
+                        Some("invalid_source_reference"),
+                    ))
+                }
+                _ => return Err(error),
+            },
+        };
+        if !extractor_matches {
+            return Ok(check(CheckStatus::Unknown, Some("extractor_mismatch")));
+        }
+        let mut existing = None;
+        for (index, file) in self.files.iter().enumerate() {
+            control.visit(0)?;
+            if file.path == &reference.path && file.digest == &reference.file_digest {
+                existing = Some(index);
+                break;
+            }
+        }
+        let index = if let Some(index) = existing {
+            index
+        } else {
+            let rows = match reconstruct(bytes, &reference.path, &reference.repository, control) {
+                Ok(rows) => rows,
+                Err(error) if error.code == "reconstruction_unavailable" => {
+                    return Ok(check(
+                        CheckStatus::Unknown,
+                        Some("reconstruction_unavailable"),
+                    ))
+                }
+                Err(error) => return Err(error.into()),
+            };
+            self.files
+                .try_reserve(1)
+                .map_err(|_| super::EvidenceError::new("resource_limit", "allocation failed"))?;
+            self.files.push(ReconstructedFile {
+                path: &reference.path,
+                digest: &reference.file_digest,
+                rows,
+            });
+            self.files.len() - 1
+        };
+        if exact_node(&self.files[index].rows, reference, control)?.is_some() {
+            Ok(check(CheckStatus::Valid, None))
+        } else {
+            Ok(check(CheckStatus::Invalid, Some("source_node_mismatch")))
+        }
+    }
+    pub(super) fn contains(
+        &self,
+        scope: &SourceRef,
+        member: &SourceRef,
+        control: &mut crate::extraction_control::ExtractionControl<'_>,
+    ) -> Result<bool, super::EvidenceError> {
+        for file in &self.files {
+            control.visit(0)?;
+            if file.path == &scope.path && file.digest == &scope.file_digest {
+                return Ok(direct_scope_contains(&file.rows, scope, member, control)?);
+            }
+        }
+        Ok(false)
+    }
+}

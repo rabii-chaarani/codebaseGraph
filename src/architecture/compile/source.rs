@@ -969,6 +969,25 @@ pub(super) fn capture_artifact(
     })
 }
 
+/// Evidence uses the same verified immutable Git reader as compilation and
+/// linked-artifact qualification; candidate records never select a directory.
+pub(super) fn evidence_tree(
+    binding: &RepositoryBinding,
+    commit: &GitObjectId,
+    run: &RunContext,
+) -> Result<GitObjectId, CompileError> {
+    git::commit_tree(binding, commit, run, true)
+}
+pub(super) fn evidence_file(
+    binding: &RepositoryBinding,
+    tree: &GitObjectId,
+    path: &RelativePath,
+    limit: u64,
+    run: &RunContext,
+) -> Result<Vec<u8>, CompileError> {
+    git::file(binding, tree, path.as_str(), limit, run, true).map(|(bytes, _)| bytes)
+}
+
 #[cfg(test)]
 mod tests {
     use super::super::{ArchitectureExecutionPolicy, ExecutionContext};
@@ -1218,24 +1237,4 @@ mod tests {
         assert_eq!(reader.root().unwrap_err().code(), "path_not_confined");
         std::fs::remove_dir_all(repo).unwrap();
     }
-}
-
-/// Evidence uses the same verified immutable Git reader as compilation and
-/// linked-artifact qualification; candidate records never select a directory.
-pub(super) fn evidence_tree(
-    binding: &RepositoryBinding,
-    commit: &GitObjectId,
-    run: &RunContext,
-) -> Result<GitObjectId, CompileError> {
-    git::commit_tree(binding, commit, run, true)
-}
-pub(super) fn evidence_file(
-    binding: &RepositoryBinding,
-    tree: &GitObjectId,
-    path: &RelativePath,
-    limit: u64,
-    run: &RunContext,
-) -> Result<Vec<u8>, CompileError> {
-    check_path(path.as_str())?;
-    git::file(binding, tree, path.as_str(), limit, run, true).map(|(bytes, _)| bytes)
 }

@@ -243,6 +243,28 @@ impl NativeBuilder<'_, '_> {
                 }
             }
         }
+        if let Some(guard) = &mut self.guard {
+            let source = self.nodes.get(&node.id).unwrap_or(&node);
+            let added = match copy_node(source, guard) {
+                Ok(value) => value,
+                Err(error) => {
+                    self.guard_failure = Some(error);
+                    return node;
+                }
+            };
+            if !self.nodes.contains_key(&node.id) {
+                let key = match crate::extraction_control::copy_text(&node.id, guard) {
+                    Ok(value) => value,
+                    Err(error) => {
+                        self.guard_failure = Some(error);
+                        return node;
+                    }
+                };
+                self.nodes.insert(key, node);
+            }
+            self.register_resolvable(&added);
+            return added;
+        }
         self.nodes
             .entry(node.id.clone())
             .or_insert_with(|| node.clone());
@@ -265,18 +287,75 @@ impl NativeBuilder<'_, '_> {
         ) {
             return;
         }
-        for key in [
-            node.label.as_str(),
-            node.qualified_name.as_str(),
-            imported_name(node).as_str(),
-        ] {
-            let normalized = symbol_key(key);
+        if self.guard.is_none() {
+            for key in [
+                node.label.as_str(),
+                node.qualified_name.as_str(),
+                imported_name(node).as_str(),
+            ] {
+                let normalized = symbol_key(key);
+                if normalized.is_empty() {
+                    continue;
+                }
+                let ids = self.symbols_by_name.entry(normalized).or_default();
+                if !ids.contains(&node.id) {
+                    ids.push(node.id.clone());
+                }
+            }
+            return;
+        }
+        let imported = node
+            .metadata
+            .get("imported_name")
+            .and_then(Value::as_str)
+            .unwrap_or_default();
+        for key in [node.label.as_str(), node.qualified_name.as_str(), imported] {
+            let guard = self.guard.as_mut().expect("guarded branch");
+            let normalized = match crate::extraction_control::normalized_symbol(key, guard) {
+                Ok(value) => value,
+                Err(error) => {
+                    self.guard_failure = Some(error);
+                    return;
+                }
+            };
             if normalized.is_empty() {
                 continue;
             }
+            if self.symbols_by_name.try_reserve(1).is_err() {
+                self.guard_failure = Some(crate::extraction_control::ExtractionError::new(
+                    "resource_limit",
+                    "allocation failed",
+                ));
+                return;
+            }
             let ids = self.symbols_by_name.entry(normalized).or_default();
-            if !ids.contains(&node.id) {
-                ids.push(node.id.clone());
+            let mut found = false;
+            for id in ids.iter() {
+                if let Err(error) = guard.visit(0) {
+                    self.guard_failure = Some(error);
+                    return;
+                }
+                if id == &node.id {
+                    found = true;
+                    break;
+                }
+            }
+            if !found {
+                if ids.try_reserve(1).is_err() {
+                    self.guard_failure = Some(crate::extraction_control::ExtractionError::new(
+                        "resource_limit",
+                        "allocation failed",
+                    ));
+                    return;
+                }
+                let id = match crate::extraction_control::copy_text(&node.id, guard) {
+                    Ok(value) => value,
+                    Err(error) => {
+                        self.guard_failure = Some(error);
+                        return;
+                    }
+                };
+                ids.push(id);
             }
         }
     }
@@ -328,4 +407,69 @@ impl NativeBuilder<'_, '_> {
         });
         BuiltGraphRows { nodes, edges }
     }
+}
+
+// Node metadata here is created by the materializer itself: a fixed-depth
+// object of scalar values and the grammar's field-name array. Candidate text
+// occurs in scalar strings, which are copied cooperatively.
+pub(super) fn copy_value(
+    value: &Value,
+    guard: &mut crate::extraction_control::ExtractionControl<'_>,
+) -> Result<Value, crate::extraction_control::ExtractionError> {
+    use crate::extraction_control::{copy_text, ExtractionError};
+    guard.visit(0)?;
+    Ok(match value {
+        Value::Null => Value::Null,
+        Value::Bool(v) => Value::Bool(*v),
+        Value::Number(v) => Value::Number(v.clone()),
+        Value::String(v) => Value::String(copy_text(v, guard)?),
+        Value::Array(values) => {
+            let mut result = Vec::new();
+            result
+                .try_reserve(values.len())
+                .map_err(|_| ExtractionError::new("resource_limit", "allocation failed"))?;
+            for v in values {
+                guard.visit(0)?;
+                result.push(copy_value(v, guard)?);
+            }
+            Value::Array(result)
+        }
+        Value::Object(values) => {
+            let mut result = Map::new();
+            for (key, v) in values {
+                guard.visit(0)?;
+                result.insert(copy_text(key, guard)?, copy_value(v, guard)?);
+            }
+            Value::Object(result)
+        }
+    })
+}
+pub(super) fn copy_node(
+    node: &GraphNodeRow,
+    guard: &mut crate::extraction_control::ExtractionControl<'_>,
+) -> Result<GraphNodeRow, crate::extraction_control::ExtractionError> {
+    use crate::extraction_control::copy_text;
+    Ok(GraphNodeRow {
+        id: copy_text(&node.id, guard)?,
+        table: copy_text(&node.table, guard)?,
+        label: copy_text(&node.label, guard)?,
+        kind: copy_text(&node.kind, guard)?,
+        language: copy_text(&node.language, guard)?,
+        grammar_version: node
+            .grammar_version
+            .as_deref()
+            .map(|v| copy_text(v, guard))
+            .transpose()?,
+        path: copy_text(&node.path, guard)?,
+        qualified_name: copy_text(&node.qualified_name, guard)?,
+        scope_id: copy_text(&node.scope_id, guard)?,
+        line_start: node.line_start,
+        line_end: node.line_end,
+        byte_start: node.byte_start,
+        byte_end: node.byte_end,
+        tree_sitter_node_type: copy_text(&node.tree_sitter_node_type, guard)?,
+        capture_name: copy_text(&node.capture_name, guard)?,
+        summary: copy_text(&node.summary, guard)?,
+        metadata: copy_value(&node.metadata, guard)?,
+    })
 }

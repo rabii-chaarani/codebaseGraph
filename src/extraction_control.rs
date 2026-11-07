@@ -155,9 +155,62 @@ pub(crate) fn copy_text(
     Ok(output)
 }
 
+/// Match `str::trim().to_lowercase()` with fallible, cooperative growth.
+pub(crate) fn normalized_symbol(
+    value: &str,
+    control: &mut ExtractionControl<'_>,
+) -> Result<String, ExtractionError> {
+    let mut first = None;
+    let mut last = 0usize;
+    let mut ascii = true;
+    for (index, ch) in value.char_indices() {
+        control.visit(0)?;
+        ascii &= ch.is_ascii();
+        if !ch.is_whitespace() {
+            if first.is_none() {
+                first = Some(index);
+            }
+            last = index + ch.len_utf8();
+        }
+    }
+    let Some(first) = first else {
+        return Ok(String::new());
+    };
+    let trimmed = &value[first..last];
+    if !ascii {
+        // Unicode lowercase has context-sensitive mappings (for example final
+        // sigma); preserve std semantics until its allocation can be bounded.
+        let output = trimmed.to_lowercase();
+        control.check()?;
+        return Ok(output);
+    }
+    let mut output = String::new();
+    for ch in trimmed.chars() {
+        control.visit(0)?;
+        for lower in ch.to_lowercase() {
+            output
+                .try_reserve(lower.len_utf8())
+                .map_err(|_| ExtractionError::new("resource_limit", "allocation failed"))?;
+            output.push(lower);
+        }
+    }
+    Ok(output)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn symbol_normalization_matches_unicode_context() {
+        for value in [" ABC ", "ΟΣ", "Straße", "İ"] {
+            let mut check = || Ok(());
+            let mut control = ExtractionControl::new(&mut check, 100, 1000, 1, 1);
+            assert_eq!(
+                normalized_symbol(value, &mut control).unwrap(),
+                value.trim().to_lowercase()
+            );
+        }
+    }
     #[test]
     fn exact_depth_and_step_boundaries() {
         let mut check = || Ok(());

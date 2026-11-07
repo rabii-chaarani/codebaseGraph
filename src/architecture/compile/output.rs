@@ -45,7 +45,13 @@ impl Write for Sink<'_> {
         self.bytes
             .try_reserve(bytes.len())
             .map_err(|_| io::Error::other("result allocation"))?;
-        self.bytes.extend_from_slice(bytes);
+        for chunk in bytes.chunks(65_536) {
+            if let Err(error) = self.run.check() {
+                self.failure = Some(error);
+                return Err(io::Error::other("cancelled"));
+            }
+            self.bytes.extend_from_slice(chunk);
+        }
         Ok(bytes.len())
     }
     fn flush(&mut self) -> io::Result<()> {
@@ -557,11 +563,48 @@ pub(super) fn closure_hash(
     finish_hash(out)
 }
 
+struct EvidenceSink<'a, 'b, 'c> {
+    sink: &'a mut Sink<'b>,
+    control: &'a mut crate::extraction_control::ExtractionControl<'c>,
+    failure: Option<crate::extraction_control::ExtractionError>,
+}
+impl Write for EvidenceSink<'_, '_, '_> {
+    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+        if let Err(error) = self.control.visit(0) {
+            self.failure = Some(error);
+            return Err(io::Error::other("evidence work limit"));
+        }
+        self.sink.write(bytes)
+    }
+    fn flush(&mut self) -> io::Result<()> {
+        self.sink.flush()
+    }
+}
+fn evidence_write<T: Serialize>(
+    out: &mut Sink<'_>,
+    value: &T,
+    control: &mut crate::extraction_control::ExtractionControl<'_>,
+) -> Result<(), CompileError> {
+    let mut writer = EvidenceSink {
+        sink: out,
+        control,
+        failure: None,
+    };
+    if serde_json::to_writer(&mut writer, value).is_err() {
+        if let Some(error) = writer.failure {
+            return Err(CompileError::simple(error.code, error.message));
+        }
+        return Err(writer.sink.failure());
+    }
+    Ok(())
+}
+
 /// Stream a preordered canonical evidence view without an intermediate JSON value.
 pub(super) fn evidence_stream_hash<T: Serialize>(
     value: &T,
     limit: u64,
     run: &RunContext,
+    control: &mut crate::extraction_control::ExtractionControl<'_>,
 ) -> Result<(crate::architecture::Digest, u64), CompileError> {
     let mut out = Sink {
         bytes: Vec::new(),
@@ -576,7 +619,29 @@ pub(super) fn evidence_stream_hash<T: Serialize>(
     out.raw(b"architecture-mapping-facts/0.1\n")?;
     out.limit = limit;
     out.written = 0;
-    serde_json::to_writer(&mut out, value).map_err(|_| out.failure())?;
+    evidence_write(&mut out, value, control)?;
     let size = out.written;
     Ok((finish_hash(out)?, size))
+}
+
+/// Stream a preordered complete evidence result into the bounded owned cache.
+pub(super) fn evidence_stream_bytes<T: Serialize>(
+    value: &T,
+    limit: u64,
+    run: &RunContext,
+    control: &mut crate::extraction_control::ExtractionControl<'_>,
+) -> Result<Vec<u8>, CompileError> {
+    let mut out = Sink {
+        bytes: Vec::new(),
+        limit,
+        run,
+        failure: None,
+        normalized: false,
+        hash: None,
+        count_only: false,
+        written: 0,
+    };
+    evidence_write(&mut out, value, control)?;
+    run.check()?;
+    Ok(out.bytes)
 }

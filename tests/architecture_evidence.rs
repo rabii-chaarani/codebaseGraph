@@ -76,10 +76,10 @@ fn sets_reorder_but_content_changes_and_duplicates_fail() {
         .unwrap()
         .reverse();
     let b: MappingSubmission = serde_json::from_value(value.clone()).unwrap();
-    assert_eq!(digest(&[a.clone()]), digest(&[b]));
+    assert_eq!(digest(std::slice::from_ref(&a)), digest(&[b]));
     value["inference_provenance"]["agent_id"] = json!("different");
     let changed: MappingSubmission = serde_json::from_value(value).unwrap();
-    assert_ne!(digest(&[a.clone()]), digest(&[changed]));
+    assert_ne!(digest(std::slice::from_ref(&a)), digest(&[changed]));
     assert_eq!(
         mapping_facts_digest(&source(), &[a.clone(), a], &policy(), None, &ctx())
             .unwrap_err()
@@ -372,4 +372,429 @@ fn builtin_extractor_descriptor_hash_and_context_guard() {
         source_extractor_identity(&expired).unwrap_err().code(),
         "deadline_exceeded"
     );
+}
+
+#[test]
+fn digest_output_and_traversal_budgets_are_admitted() {
+    let mut raw = serde_json::to_value(policy()).unwrap();
+    raw["max_result_bytes"] = json!(73);
+    let exact = ArchitectureExecutionPolicy::from_json(raw.clone()).unwrap();
+    assert!(mapping_facts_digest(&source(), &[], &exact, None, &ctx()).is_ok());
+    raw["max_result_bytes"] = json!(72);
+    let under = ArchitectureExecutionPolicy::from_json(raw.clone()).unwrap();
+    assert_eq!(
+        mapping_facts_digest(&source(), &[], &under, None, &ctx())
+            .unwrap_err()
+            .code(),
+        "resource_limit"
+    );
+    raw["max_result_bytes"] = json!(73);
+    raw["max_traversal_steps"] = json!(1);
+    let tiny = ArchitectureExecutionPolicy::from_json(raw).unwrap();
+    let item: MappingSubmission = serde_json::from_value(mapping()).unwrap();
+    assert_eq!(
+        mapping_facts_digest(&source(), &[item], &tiny, None, &ctx())
+            .unwrap_err()
+            .code(),
+        "resource_limit"
+    );
+}
+
+#[test]
+fn public_validation_proves_raw_nodes_but_not_ownership() {
+    use codebase_graph::architecture::{
+        compile::{compile, ModelInput, RepositoryBinding},
+        evidence::{source_extractor_identity, validate_evidence, CheckStatus},
+        RelativePath, Text,
+    };
+    use std::path::Path;
+    fn git(dir: &Path, args: &[&str]) -> String {
+        let out = std::process::Command::new("git")
+            .arg("-C")
+            .arg(dir)
+            .args(args)
+            .output()
+            .unwrap();
+        assert!(
+            out.status.success(),
+            "{}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+        String::from_utf8(out.stdout).unwrap().trim().to_owned()
+    }
+    for object_format in ["sha1", "sha256"] {
+        let root =
+            b"schema_version: '0.1'\nmodel_id: model\narchitecture: [arch]\nconstraints: []\n";
+        let arch=br#"{"schema_version":"0.1","systems":[{"id":"sys","name":"System","responsibilities":[{"id":"sys-task","statement":"System task"}]}],"containers":[{"id":"container","name":"Container","responsibilities":[{"id":"container-task","statement":"Container task"}],"system":"sys","kind":"application"}],"components":[{"id":"alpha","name":"Alpha","responsibilities":[{"id":"task","statement":"Task"}],"container":"container"},{"id":"beta","name":"Beta","responsibilities":[{"id":"other","statement":"Other"}],"container":"container"}],"relationships":[]}"#;
+        let p = |s| RelativePath::new(s).unwrap();
+        let input = ModelInput::inline_files(
+            p("root"),
+            [(p("root"), root.to_vec()), (p("arch"), arch.to_vec())],
+        )
+        .unwrap();
+        let model = compile(input, None, &policy(), None, &ctx()).unwrap();
+        let dir = std::env::temp_dir().join(format!(
+            "cod23-public-{}-{}-{}",
+            std::process::id(),
+            object_format,
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        std::fs::create_dir_all(dir.join("src")).unwrap();
+        git(
+            &dir,
+            &["init", "-q", &format!("--object-format={object_format}")],
+        );
+        git(&dir, &["config", "user.name", "test"]);
+        git(&dir, &["config", "user.email", "test@example.invalid"]);
+        std::fs::write(dir.join("src/lib.rs"), b"fn hello() {}").unwrap();
+        std::fs::write(dir.join("src/lib.txt"), b"fn hello() {}").unwrap();
+        let large = vec![b'x'; 9000];
+        std::fs::write(dir.join("src/large.rs"), &large).unwrap();
+        std::fs::write(dir.join("src/literal*[?].rs"), b"fn hello() {}").unwrap();
+        git(&dir, &["add", "--all"]);
+        git(&dir, &["commit", "-qm", "fixture"]);
+        let commit = git(&dir, &["rev-parse", "HEAD"]);
+        let tree = git(&dir, &["rev-parse", "HEAD^{tree}"]);
+        let digest = format!("sha256:{:x}", Sha256::digest(b"fn hello() {}"));
+        let extractor = source_extractor_identity(&ctx()).unwrap();
+        let provenance:SourceProvenance=serde_json::from_value(json!({"repository":"repo","evaluated_commit":commit,"evaluated_tree":tree,"extractor_digest":extractor.digest(),"build_context_digest":digest})).unwrap();
+        let function = json!({"repository":"repo","commit":commit,"path":"src/lib.rs","node_kind":"Function","node_id":"Function:216f9df7cf9055f46285","symbol":"src.lib.hello","byte_span":{"start":0,"end":13},"file_digest":digest});
+        let scope = json!({"repository":"repo","commit":commit,"path":"src/lib.rs","node_kind":"Scope","node_id":"Scope:41046104907937f3c6e1","symbol":"src.lib.<scope>","byte_span":{"start":0,"end":13},"file_digest":digest});
+        let input = json!({"source_ref":function,"proposed_component":"alpha","responsibility_ids":["task"],"structural_citations":[{"id":"direct","source_ref":scope,"assertion":{"kind":"scope_contains","member":function}}],"rationale":{"responsibilities":[{"responsibility_id":"task","explanation":"responsibility"}],"competing_components":[{"component":"beta","explanation":"competitor"}]},"inference_provenance":{"agent_id":"agent","model_id":"model","input_digest":digest,"rule_version":"responsibility-evidence/0.1","result_digest":digest},"previous_mapping":null,"change_kind":"initial","discriminator":"responsibility-evidence/0.1"});
+        let mapping: MappingSubmission = serde_json::from_value(input.clone()).unwrap();
+        let binding = RepositoryBinding::new(Text::new("repo").unwrap(), dir.join(".git")).unwrap();
+        let bindings = [binding];
+        std::fs::write(dir.join("src/lib.rs"), b"dirty working tree").unwrap();
+        let result = validate_evidence(&model, &provenance, &[mapping], &bindings, &ctx()).unwrap();
+        assert!(!result.has_invalid_evidence());
+        assert!(result.has_unknown());
+        assert!(result
+            .diagnostics()
+            .iter()
+            .any(|d| d.code() == "build_context_unqualified"));
+        let record = &result.records()[0];
+        assert_eq!(record.source_check().status(), CheckStatus::Valid);
+        assert_eq!(record.responsibility_check().status(), CheckStatus::Valid);
+        assert_eq!(record.rationale_check().status(), CheckStatus::Valid);
+        assert_eq!(record.inference_check().status(), CheckStatus::Valid);
+        assert_eq!(record.history_check().status(), CheckStatus::Valid);
+        assert_eq!(
+            record.citations()[0].assertion_check().status(),
+            CheckStatus::Valid
+        );
+        assert_eq!(record.ownership_qualification(), "unknown");
+        for (pointer, replacement) in [
+            ("/source_ref/node_id", json!("fabricated")),
+            ("/source_ref/node_kind", json!("Symbol")),
+            ("/source_ref/symbol", json!("hello")),
+            ("/source_ref/byte_span/start", json!(1)),
+            ("/source_ref/commit", json!("2".repeat(commit.len()))),
+            (
+                "/source_ref/file_digest",
+                json!(format!("sha256:{}", "0".repeat(64))),
+            ),
+        ] {
+            let mut changed = input.clone();
+            *changed.pointer_mut(pointer).unwrap() = replacement;
+            let changed: MappingSubmission = serde_json::from_value(changed).unwrap();
+            let result =
+                validate_evidence(&model, &provenance, &[changed], &bindings, &ctx()).unwrap();
+            assert!(
+                result.has_invalid_evidence() && result.has_unknown(),
+                "{pointer}"
+            );
+            assert_eq!(
+                result.records()[0].source_check().status(),
+                CheckStatus::Invalid,
+                "{pointer}"
+            );
+        }
+        let mut literal = input.clone();
+        literal["source_ref"]["path"] = json!("src/literal*[?].rs");
+        literal["source_ref"]["node_id"] = json!("Function:8abd243fec2b586d3596");
+        literal["source_ref"]["symbol"] = json!("src.literal*[?].hello");
+        let literal: MappingSubmission = serde_json::from_value(literal).unwrap();
+        let result = validate_evidence(&model, &provenance, &[literal], &bindings, &ctx()).unwrap();
+        assert_eq!(
+            result.records()[0].source_check().status(),
+            CheckStatus::Valid
+        );
+        assert!(!result.has_invalid_evidence());
+        let mut moved = input.clone();
+        moved["source_ref"]["path"] = json!("src/literal*[?].rs");
+        let moved: MappingSubmission = serde_json::from_value(moved).unwrap();
+        let result = validate_evidence(&model, &provenance, &[moved], &bindings, &ctx()).unwrap();
+        assert_eq!(
+            result.records()[0].source_check().status(),
+            CheckStatus::Invalid
+        );
+        let mut bad_links = input.clone();
+        bad_links["rationale"]["competing_components"] = json!([]);
+        bad_links["inference_provenance"]["rule_version"] = json!("different");
+        let bad_links: MappingSubmission = serde_json::from_value(bad_links).unwrap();
+        let result =
+            validate_evidence(&model, &provenance, &[bad_links], &bindings, &ctx()).unwrap();
+        assert!(result.has_invalid_evidence() && result.has_unknown());
+        assert_eq!(
+            result.records()[0].rationale_check().status(),
+            CheckStatus::Invalid
+        );
+        assert_eq!(
+            result.records()[0].inference_check().status(),
+            CheckStatus::Invalid
+        );
+        let mut history = input.clone();
+        history["change_kind"] = json!("retained");
+        history["previous_mapping"] = json!({"source_ref":function,"component":"removed-owner","mapping_facts_digest":digest,"evidence_ref":{"repository":"repo","commit":commit,"path":"old.md","content_digest":digest},"lineage":null});
+        let history: MappingSubmission = serde_json::from_value(history).unwrap();
+        let result = validate_evidence(&model, &provenance, &[history], &bindings, &ctx()).unwrap();
+        assert!(!result.has_invalid_evidence() && result.has_unknown());
+        assert_eq!(
+            result.records()[0].history_check().status(),
+            CheckStatus::Unknown
+        );
+        // Preserve already-proven invalid evidence when later immutable file
+        // capture exceeds a deterministic configured byte limit.
+        let mut bounded_raw = serde_json::to_value(policy()).unwrap();
+        bounded_raw["max_file_bytes"] = json!(8192);
+        let bounded_policy = ArchitectureExecutionPolicy::from_json(bounded_raw).unwrap();
+        let bounded_input = ModelInput::inline_files(
+            p("root"),
+            [(p("root"), root.to_vec()), (p("arch"), arch.to_vec())],
+        )
+        .unwrap();
+        let bounded_model = compile(bounded_input, None, &bounded_policy, None, &ctx()).unwrap();
+        let mut fabricated = function.clone();
+        fabricated["node_id"] = json!("fabricated");
+        let mut large_ref = function.clone();
+        large_ref["path"] = json!("src/large.rs");
+        large_ref["byte_span"] = json!({"start":0,"end":1});
+        large_ref["file_digest"] = json!(format!("sha256:{:x}", Sha256::digest(&large)));
+        let mut late_failure = input.clone();
+        late_failure["structural_citations"] = json!([{ "id":"reach", "source_ref":fabricated, "assertion":{"kind":"reaches_exported_item","crate":"mycrate","namespace":"value","item_path":"hello","max_hops":null,"path":[large_ref]} }]);
+        let late_failure: MappingSubmission = serde_json::from_value(late_failure).unwrap();
+        let error = validate_evidence(
+            &bounded_model,
+            &provenance,
+            &[late_failure],
+            &bindings,
+            &ctx(),
+        )
+        .unwrap_err();
+        assert_eq!(error.code(), "resource_limit");
+        assert!(error.has_known_invalid_evidence() && error.has_known_unknown());
+        assert!(error
+            .diagnostics()
+            .iter()
+            .any(|d| d.code() == "source_node_mismatch"));
+        let mut inference_failure = input.clone();
+        inference_failure["source_ref"] = large_ref;
+        inference_failure["inference_provenance"]["rule_version"] = json!("different");
+        let inference_failure: MappingSubmission =
+            serde_json::from_value(inference_failure).unwrap();
+        let error = validate_evidence(
+            &bounded_model,
+            &provenance,
+            &[inference_failure],
+            &bindings,
+            &ctx(),
+        )
+        .unwrap_err();
+        assert_eq!(error.code(), "resource_limit");
+        assert!(error.has_known_invalid_evidence() && error.has_known_unknown());
+        assert!(error
+            .diagnostics()
+            .iter()
+            .any(|d| d.code() == "inference_version_mismatch"));
+        let mut unsupported = input.clone();
+        unsupported["discriminator"] = json!("responsibility-evidence/9");
+        unsupported["inference_provenance"]["rule_version"] = json!("responsibility-evidence/9");
+        let unsupported: MappingSubmission = serde_json::from_value(unsupported).unwrap();
+        let result =
+            validate_evidence(&model, &provenance, &[unsupported], &bindings, &ctx()).unwrap();
+        assert!(!result.has_invalid_evidence() && result.has_unknown());
+        assert!(result.records()[0]
+            .reason_codes()
+            .iter()
+            .any(|v| v == "unsupported_evidence"));
+        let mut language = input.clone();
+        language["source_ref"]["path"] = json!("src/lib.txt");
+        let language: MappingSubmission = serde_json::from_value(language).unwrap();
+        let result =
+            validate_evidence(&model, &provenance, &[language], &bindings, &ctx()).unwrap();
+        assert_eq!(
+            result.records()[0].source_check().status(),
+            CheckStatus::Unknown
+        );
+        let cancelled = ExecutionContext::new(Arc::new(AtomicBool::new(true)), None);
+        assert_eq!(
+            validate_evidence(&model, &provenance, &[], &bindings, &cancelled)
+                .unwrap_err()
+                .code(),
+            "cancelled"
+        );
+        let expired = ExecutionContext::new(
+            Arc::new(AtomicBool::new(false)),
+            Some(std::time::Instant::now()),
+        );
+        assert_eq!(
+            validate_evidence(&model, &provenance, &[], &bindings, &expired)
+                .unwrap_err()
+                .code(),
+            "deadline_exceeded"
+        );
+        let blob = git(&dir, &["rev-parse", "HEAD:src/lib.rs"]);
+        let object = dir.join(".git/objects").join(&blob[..2]).join(&blob[2..]);
+        std::fs::remove_file(&object).unwrap();
+        std::fs::write(object, b"corrupt").unwrap();
+        let mapping: MappingSubmission = serde_json::from_value(input).unwrap();
+        let result = validate_evidence(&model, &provenance, &[mapping], &bindings, &ctx()).unwrap();
+        assert!(result.has_invalid_evidence() && result.has_unknown());
+        assert_eq!(
+            result.records()[0].source_check().status(),
+            CheckStatus::Invalid
+        );
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+}
+
+#[test]
+fn canonical_identity_covers_every_claim_field() {
+    let mut base = mapping();
+    let reference = base["source_ref"].clone();
+    let artifact = json!({"repository":"repo","commit":"1".repeat(40),"path":"evidence.md","content_digest":format!("sha256:{}","f".repeat(64))});
+    base["structural_citations"] = json!([{"id":"cite","source_ref":reference,"assertion":{"kind":"reaches_exported_item","crate":"crate-name","namespace":"value","item_path":"hello","max_hops":3,"path":[reference]}}]);
+    base["previous_mapping"] = json!({"source_ref":reference,"component":"old","mapping_facts_digest":format!("sha256:{}","a".repeat(64)),"evidence_ref":artifact,"lineage":{"previous":reference,"current":reference,"rule_version":"v1","basis":"unique_structural_move","evidence_refs":[artifact]}});
+    let expected = digest(&[serde_json::from_value(base.clone()).unwrap()]);
+    let mutations = [
+        ("/source_ref/repository", json!("other")),
+        ("/source_ref/commit", json!("2".repeat(40))),
+        ("/source_ref/path", json!("src/other.rs")),
+        ("/source_ref/node_kind", json!("Scope")),
+        ("/source_ref/node_id", json!("different")),
+        ("/source_ref/symbol", json!("different")),
+        ("/source_ref/byte_span/start", json!(0)),
+        ("/source_ref/byte_span/end", json!(4)),
+        (
+            "/source_ref/file_digest",
+            json!(format!("sha256:{}", "0".repeat(64))),
+        ),
+        ("/proposed_component", json!("other")),
+        ("/responsibility_ids/0", json!("other")),
+        ("/structural_citations/0/id", json!("other")),
+        ("/structural_citations/0/source_ref/node_id", json!("other")),
+        ("/structural_citations/0/assertion/crate", json!("other")),
+        ("/structural_citations/0/assertion/namespace", json!("type")),
+        (
+            "/structural_citations/0/assertion/item_path",
+            json!("other"),
+        ),
+        ("/structural_citations/0/assertion/max_hops", json!(4)),
+        (
+            "/structural_citations/0/assertion/path/0/node_id",
+            json!("other"),
+        ),
+        (
+            "/rationale/responsibilities/0/responsibility_id",
+            json!("other"),
+        ),
+        ("/rationale/responsibilities/0/explanation", json!("other")),
+        (
+            "/rationale/competing_components/0/component",
+            json!("other"),
+        ),
+        (
+            "/rationale/competing_components/0/explanation",
+            json!("other"),
+        ),
+        ("/inference_provenance/agent_id", json!("other")),
+        ("/inference_provenance/model_id", json!("other")),
+        (
+            "/inference_provenance/input_digest",
+            json!(format!("sha256:{}", "0".repeat(64))),
+        ),
+        ("/inference_provenance/rule_version", json!("other")),
+        (
+            "/inference_provenance/result_digest",
+            json!(format!("sha256:{}", "0".repeat(64))),
+        ),
+        ("/previous_mapping/source_ref/node_id", json!("other")),
+        ("/previous_mapping/component", json!("other")),
+        (
+            "/previous_mapping/mapping_facts_digest",
+            json!(format!("sha256:{}", "0".repeat(64))),
+        ),
+        ("/previous_mapping/evidence_ref/repository", json!("other")),
+        (
+            "/previous_mapping/evidence_ref/commit",
+            json!("2".repeat(40)),
+        ),
+        ("/previous_mapping/evidence_ref/path", json!("other.md")),
+        (
+            "/previous_mapping/evidence_ref/content_digest",
+            json!(format!("sha256:{}", "0".repeat(64))),
+        ),
+        ("/previous_mapping/lineage/previous/node_id", json!("other")),
+        ("/previous_mapping/lineage/current/node_id", json!("other")),
+        ("/previous_mapping/lineage/rule_version", json!("other")),
+        (
+            "/previous_mapping/lineage/basis",
+            json!("unchanged_qualified_identity"),
+        ),
+        (
+            "/previous_mapping/lineage/evidence_refs/0/repository",
+            json!("other"),
+        ),
+        (
+            "/previous_mapping/lineage/evidence_refs/0/commit",
+            json!("2".repeat(40)),
+        ),
+        (
+            "/previous_mapping/lineage/evidence_refs/0/path",
+            json!("other.md"),
+        ),
+        (
+            "/previous_mapping/lineage/evidence_refs/0/content_digest",
+            json!(format!("sha256:{}", "0".repeat(64))),
+        ),
+        ("/change_kind", json!("retained")),
+        ("/discriminator", json!("other")),
+    ];
+    for (pointer, replacement) in mutations {
+        let mut changed = base.clone();
+        *changed.pointer_mut(pointer).unwrap() = replacement;
+        let actual = digest(&[serde_json::from_value(changed).unwrap()]);
+        assert_ne!(expected, actual, "{pointer}");
+    }
+    for prefix in [
+        "/previous_mapping/source_ref",
+        "/previous_mapping/lineage/previous",
+        "/previous_mapping/lineage/current",
+        "/structural_citations/0/source_ref",
+        "/structural_citations/0/assertion/path/0",
+    ] {
+        for (field, replacement) in [
+            ("repository", json!("other")),
+            ("commit", json!("2".repeat(40))),
+            ("path", json!("src/other.rs")),
+            ("node_kind", json!("Scope")),
+            ("node_id", json!("other")),
+            ("symbol", json!("other")),
+            ("byte_span/start", json!(0)),
+            ("byte_span/end", json!(4)),
+            ("file_digest", json!(format!("sha256:{}", "0".repeat(64)))),
+        ] {
+            let pointer = format!("{prefix}/{field}");
+            let mut changed = base.clone();
+            *changed.pointer_mut(&pointer).unwrap() = replacement;
+            assert_ne!(
+                expected,
+                digest(&[serde_json::from_value(changed).unwrap()]),
+                "{pointer}"
+            );
+        }
+    }
 }
