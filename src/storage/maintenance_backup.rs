@@ -49,7 +49,7 @@ impl BackupAddress {
                 .checked_add(u128::from(*byte - b'0'))?;
         }
         let mut key = [0; 32];
-        for (index, pair) in name.get(10..74)?.chunks_exact(2).enumerate() {
+        for (index, pair) in name.get(10..74)?.as_chunks::<2>().0.iter().enumerate() {
             fn nibble(byte: u8) -> Option<u8> {
                 match byte {
                     b'0'..=b'9' => Some(byte - b'0'),
