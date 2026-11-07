@@ -1,13 +1,13 @@
-# COD-22 execution brief — revision 1, proposed contract preparation
+# COD-22 execution brief — revision 2, approved implementation assignment
 
-Work: `CBG-C4-01/F02/S03` / [COD-22](https://linear.app/codebasegraph/issue/COD-22), parent COD-6, M1/P1. Status: **readiness/contract preparation; C22-D01/D02 human decisions pending; dependent product coding blocked**. Maintainers retain COD-6/milestone aggregate closure. This file is the execution record under the scoped Git/bootstrap authority; it grants no additional scope.
+Work: `CBG-C4-01/F02/S03` / [COD-22](https://linear.app/codebasegraph/issue/COD-22), parent COD-6, M1/P1. Status: **C22-D01/D02 actually approved; implementation assignment ready after this brief is committed and root signals GO**. Product acceptance remains unexecuted. Maintainers retain COD-6/milestone aggregate closure. This file is the execution record under the scoped Git/bootstrap authority; it grants no additional scope.
 
 ## Authority and immutable inputs
 
 - Approved canonical specification 0.3 / R01–R12 / A01–A18: `66dff2564e76ad06cdf172332e2da318d150fc73:docs/specs/CBG-C4-01/spec.md`, with its exact incorporated C16/C18/C1/Q1 contracts. [Actual Scope A/B human decision](https://github.com/rabii-chaarani/codebaseGraph/blob/ba5c7c543bd711b663e1dfc92d4bd58497ffb557/docs/specs/CBG-C4-01/approvals/cod19-approval.md) and scoped activation remain `ba5c7c543bd711b663e1dfc92d4bd58497ffb557`.
 - Approved compiler grammar/input supplement: `9b4384378c03e05a458f8f94291c8bba4d82c7c3:docs/specs/CBG-C4-01/cod21-contracts.md`; actual record at `f2129e7dac64191ca61d842e6773ffb1a104668d:docs/specs/CBG-C4-01/approvals/cod21-approval.md`.
 - Root minimum Rust 1.98 / explicit build and verification Rust 1.98.1: existing maintainer decision at `1ed5620073e5e0a60cef6425daaca2cb20c469d9:docs/specs/CBG-C4-01/approvals/cod21-rust-minimum.md`. Do not select the older local stable alias or rewrite other members' minima.
-- [Proposed COD-22 supplement 0.1](../cod22-contracts.md): exact domains, equivalence/payloads and linked-content protocol require a real decision before implementation. Reuse approved C16 behavior without reopening it. No C22 approval record exists yet; commit/status/review/preselection/elapsed time are not approval.
+- [COD-22 supplement 0.1](https://github.com/rabii-chaarani/codebaseGraph/blob/8635297ff7f25bfd745d959f0ec7917982afa802/docs/specs/CBG-C4-01/cod22-contracts.md): exact domains, equivalence/payloads and linked-content protocol were actually approved at full SHA `8635297ff7f25bfd745d959f0ec7917982afa802`. [Actual C22-D01/D02 decision](../approvals/cod22-approval.md) records the question locator and exact answer. Reuse approved C16 behavior without reopening it; commit/status/review/preselection/elapsed time are not approval.
 
 Only activated CBG-C4 scope uses this bridge. Unrelated Scryer models, directives, pending work and closure owners remain untouched. No Scryer claim/sign-off/runtime dependency is invented. Native YAML authority and trust/acceptance/hosted enforcement still require COD-37/46/47 and their independent human decisions.
 
@@ -31,21 +31,21 @@ Immediate consumers are library callers of `architecture::compile`; future COD-2
 
 ## Workflow, ownership and proposed service signatures
 
-Select **direct** workflow: root is coordinator and sole technical/documentation writer. Do not dispatch an implementer or let independent checkers edit source. Independent verification/review retain separate agents and the exact repository settings below. Git actions are serialized by root; all workers/checkers share the workspace and must preserve others' edits, report blockers and never dispatch nested agents.
+Select **delegated** workflow: root coordinates and owns documentation/tracking/Git; `/root/cod22_implementation` is the one complete technical owner (native default / gpt-6.1-terra / medium / fork_turns:none). This changes the preparation's direct proposed mode before any product writer/process exists; root's code ownership is quiescent and revoked before assignment. The owner investigates, locally designs within settled contracts, implements and checks the complete deliverable. Independent verification/review retain separate agents and the exact repository settings below. Git actions are serialized by root; all workers/checkers share the workspace and must preserve others' edits, report blockers and never dispatch nested agents.
 
-Root owns only these new preparation paths now: `docs/specs/CBG-C4-01/cod22-contracts.md` and `docs/specs/CBG-C4-01/execution/COD-22.md`. A later actual `approvals/cod22-approval.md` may record only the user's real decision. No code writer is active before the human decisions and a committed implementation-ready brief revision.
+Root owns `docs/specs/CBG-C4-01/cod22-contracts.md`, `docs/specs/CBG-C4-01/execution/COD-22.md` and `approvals/cod22-approval.md`. The supplement remains byte-identical to the approved subject. Product worktree `/private/tmp/codebasegraph-cod22-20261107`, branch `codex/cod-22-identity`, starts at exact prerequisite e9bcaf0. No product writer is active until this implementation-ready revision is committed and root signals GO.
 
-Proposed product ownership after those gates:
+Exact product ownership for `/root/cod22_implementation` after those gates:
 
 - `src/architecture/compile/mod.rs`: additive module export and private validated root-file index in CompiledModel, captured from the existing reader's root path before it is discarded. Identity uses that index into the already retained sorted closure; no root-path reconstruction or change to the existing complete-output byte shape.
-- New `src/architecture/compile/identity.rs`, `identity/canonical.rs`, `identity/artifacts.rs`: identity orchestration, canonical hashing/normalization and reference inventory/qualification respectively. Root is one owner of this entire deliverable; smaller internal splits require an exact recorded reassignment before edits.
+- New `src/architecture/compile/identity.rs`, `identity/canonical.rs`, `identity/artifacts.rs`: identity orchestration, canonical hashing/normalization and reference inventory/qualification respectively. One owner controls the entire deliverable; additional files require an exact recorded reassignment before edits.
 - `src/architecture/compile/output.rs`: bounded internal reuse of canonical traversal/encoding only, preserving existing complete-output representation/admission and stack-safe behavior.
 - `src/architecture/compile/source.rs`: expose a narrow internal verified immutable artifact capture helper using existing Git plumbing; no duplicate Git implementation, broadened loader policy or working-tree mode.
 - New `tests/architecture_identity.rs`: observable identity/reference/failure acceptance coverage; fixtures remain self-contained temporary local repositories or inline values in that file.
 
 Cargo.toml/Cargo.lock, primitive models/schema, compile grammar/validators, existing tests, lib/API/adapters/storage/config/workflows, Scryer, wiki and predecessor evidence are outside product ownership. Existing sha2/serde_json dependencies suffice. Required additional paths/contract changes return to the coordinator before edits. Broader restructuring is not silently included.
 
-Proposed service entrypoints under `architecture::compile::identity`:
+Settled service entrypoints under `architecture::compile::identity`:
 
 ```rust
 pub fn identify(
@@ -74,7 +74,7 @@ No partial successful identity/qualification, implicit fetch, fallback to mutabl
 
 ## Storage, evidence, delivery and pending gates
 
-Before preparation, df showed approximately 13 GiB free. No Rust build or cleaner was started. Before a large build, recheck free space and configured cargo-reclaim plans/status. Use a new issue-owned normal worktree target; do not reuse or delete COD-21's retained approximately 10 GiB target or unrelated/shared caches. If a disposable out-of-tree target is needed, follow AGENTS' unique rust-agent-builds rule and record its actual path. Resolve any write approval needed without changing global rustup/default/reclaim policy.
+Before preparation, df showed approximately 13 GiB free; at actual approval it showed 7.6 GiB. No Rust build or cleaner has started. Configured cargo-reclaim covers established repository/worktree/cache roots, balanced mode, whole-target off and a four-hour recent-write window; retained COD-21 temporary evidence is outside those unattended roots. Before a large build, recheck free space and inspect configured plans/status. Use new issue-owned normal target `/private/tmp/codebasegraph-cod22-20261107/target`; do not reuse or delete COD-21's retained approximately 10 GiB target or unrelated/shared caches. To fit storage, use explicitly recorded `CARGO_PROFILE_DEV_DEBUG=0`, `CARGO_PROFILE_TEST_DEBUG=0`, `CARGO_INCREMENTAL=0` where necessary; do not label that profile as default-profile qualification. If a disposable out-of-tree target is needed, follow AGENTS' unique rust-agent-builds rule and record its actual path. Report space insufficiency before attempting an unsafe large build; no target/cache deletion or competing cleaner is authorized.
 
 Keep session logs and session-specific evidence outside the eventual implementation PR; use retained external session artifacts plus PR/Linear summaries. Immutable specification/approval/brief history is preserved separately. PR contents contain only essential source/substantive tests and any explicitly required deliverable contracts; no session-evidence dump or unrelated wiki edits.
 
@@ -82,6 +82,6 @@ Independent `verification`: native default / gpt-6.1-terra / medium / fresh prom
 
 For this proposed contract package, the same required independent review method/settings inspect the two-file documentation delta before the exact published subject is presented for decision. Independently read back remote bytes/approval references; do not describe document review as implemented product verification. No implementation PR handoff or COD-22 Done state follows from this preparation.
 
-After actual decisions: record approved path/full SHA/scope/human question reference, update/commit this brief, synchronize Linear, then code. After product acceptance/checks/review, root may commit/push the essential branch and open a draft PR to dev, with prerequisites, canonical approved revisions, Linear and real evidence/limitations. Independent publication verification checks the final remote snapshot. Reconcile relevant wiki knowledge and explicitly assess reusable memory without filler. Only after the one issue's authorized PR handoff, open a fresh coordinator chat for the next actually ready issue.
+Actual decision is now recorded. Root commits/publishes this brief/approval record, creates the isolated product worktree, synchronizes Linear and signals GO before code. After product acceptance/checks/review, root may commit/push the essential branch and open a draft PR to dev, with prerequisites, canonical approved revisions, Linear and real evidence/limitations. Independent publication verification checks the final remote snapshot. Reconcile relevant wiki knowledge and explicitly assess reusable memory without filler. Only after the one issue's authorized PR handoff, open a fresh coordinator chat for the next actually ready issue.
 
-Current unsatisfied gates: C22-D01/D02 human decisions; implementation-ready brief; all product acceptance/evidence; independent final product verification/review/publication. No merge, release, trust activation, integration-settings mutation or unrelated issue advancement is authorized.
+Current unsatisfied gates: committed/published implementation-ready brief and GO; all product acceptance/evidence; independent final product verification/review/publication. No merge, release, trust activation, integration-settings mutation or unrelated issue advancement is authorized.
