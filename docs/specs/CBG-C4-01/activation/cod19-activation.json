@@ -8,7 +8,7 @@
     "scope_a_granted": true,
     "scope_b_granted": true
   },
-  "state": "post-close-preservation-proved-pending-focused-verification",
+  "state": "verified-git-bootstrap-authority-active",
   "policy": {
     "target": "/Users/rabii/Projects/Repositories/codebaseGraph/AGENTS.md",
     "before_sha256": "0930ae8bbccdab966656addd4a673ce0ad239f82d98ec26464115e438c1005cc",
@@ -183,7 +183,7 @@
     "limits": "Local governance preservation/installation only"
   },
   "instruction_delivery_limit": "Canonical local policy and Git/Linear immutable resolution verified; no global rollout to every client is claimed. Generic Scryer tool descriptions do not supersede the explicit approved scoped authority selector.",
-  "closure_state": "Await focused independent post-close evidence verification/publication/tracking; no new issue dispatched",
+  "closure_state": "Approved local Git-bootstrap activation verified; final evidence-only focus, remote publication and tracking reconciliation precede P0 closure",
   "post_close_check": {
     "result": "FAIL",
     "path": ".scryer/planned.scry",
@@ -192,7 +192,8 @@
     "publication_or_issue_closure_after_failure": false,
     "resolution": "Exact raw reconstruction matches preflight SHA256; only owned unsigned empty change metadata removed and owned closure event appended",
     "corrected_result": "PASS",
-    "failed_checkpoint_retained": true
+    "failed_checkpoint_retained": true,
+    "independently_resolved": true
   },
   "author_check_final": {
     "command": "python3 -B /private/tmp/codebasegraph-cod19-checks-20261107/validate_activation_final.py",
@@ -200,5 +201,24 @@
     "result": "PASS",
     "preserved_historical_helper": "validate_activation.py / 5ae4b7be572bdac47fa2da9e7d2dbf6f5846d5dff3bc78980f30b7956a29a48f",
     "limits": "Actual post-close governance preservation; not product conformance"
+  },
+  "post_close_independent_verification": {
+    "agent": "/root/cod19_activation_verify",
+    "model": "gpt-6.1-terra",
+    "effort": "medium",
+    "fork_turns": "none",
+    "snapshot": "7a430e7b4504a28dd256fbfd81c9c52b6969a2d4",
+    "result": "PASS",
+    "exact_raw_reconstruction_and_live_preservation_checked": true
+  },
+  "post_close_independent_review": {
+    "agent": "/root/cod19_activation_final_review",
+    "model": "gpt-6.1-sol",
+    "effort": "xhigh",
+    "fork_turns": "none",
+    "snapshot": "7a430e7b4504a28dd256fbfd81c9c52b6969a2d4",
+    "result": "PASS",
+    "confirmed_defects": [],
+    "method": "adversarial-review-engineer and engineering lenses"
   }
 }
