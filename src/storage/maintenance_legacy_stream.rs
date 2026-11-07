@@ -213,11 +213,11 @@ impl LegacyFrameKind {
                     .map_err(|_| invalid())?;
             }
             Self::StagingRows => {
-                if p.is_empty() || p.len() % 768 != 0 || p.len() > 3072 {
+                if p.is_empty() || !p.len().is_multiple_of(768) || p.len() > 3072 {
                     return Err(invalid());
                 }
-                for row in p.chunks_exact(768) {
-                    StagingRowWitness::decode(row.try_into().unwrap()).map_err(|_| invalid())?;
+                for row in p.as_chunks::<768>().0.iter() {
+                    StagingRowWitness::decode(row).map_err(|_| invalid())?;
                 }
             }
             Self::StagingPayload => {
@@ -1143,10 +1143,9 @@ impl ReplayStagingCertificates for LegacyStreamReplay<'_> {
                             }
                             match item.kind {
                                 LegacyFrameKind::StagingRows => {
-                                    for row in item.payload().chunks_exact(768) {
-                                        let row =
-                                            StagingRowWitness::decode(row.try_into().unwrap())
-                                                .map_err(|_| invalid())?;
+                                    for row in item.payload().as_chunks::<768>().0.iter() {
+                                        let row = StagingRowWitness::decode(row)
+                                            .map_err(|_| invalid())?;
                                         if let Err(e) = emit(StagingReplayEvent::Row(row)) {
                                             consumer = Some(e);
                                             return Err(invalid());
