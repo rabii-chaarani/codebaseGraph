@@ -2,6 +2,8 @@
 
 Status: **awaiting human approval before source edits**. Work CBG-C4-01/F02/S02 / COD-21, 7 November 2026, Australia/Darwin.
 
+Subsequent actual decision: the maintainer selected **Approve the one-line extension (Recommended)** for this proposal at full SHA fa4328d913c10ab3925d40804464e24272a9efc3, question call_1ba2c431bec84a679ef724c0ad5e7be8/item0. [The actual approval record](../approvals/cod21-process-approval.md) supersedes the pending-human wording. After this assignment is committed and scope/sign-off is recorded, the same sole owner may perform exactly the one-line change below; all remaining verification/review gates stay active.
+
 The approved15-site/nine-file cleanup is applied. A subsequent complete `cargo +1.98.1 clippy -p codebase-graph --all-targets --keep-going -- -D warnings` run reports exactly one remaining diagnostic, in a separately compiled test-support target: `tests/support/storage_maintenance/process.rs:813`. The earlier approval was explicitly limited to nine files, so it does not silently authorize this tenth file.
 
 Proposed sole additional change, by the existing complete technical owner `/root/cod21_implementation_2`:
