@@ -1,0 +1,64 @@
+{
+  "format": "cod19-installation/0.1",
+  "approved_subject": "66dff2564e76ad06cdf172332e2da318d150fc73",
+  "state": "policy-installed-activation-pending-checks",
+  "method": "owned single-writer O_NOFOLLOW/exclusive baseline descriptor lock, metadata/hash recheck, same-directory fsynced atomic replace",
+  "policy": {
+    "target": "/Users/rabii/Projects/Repositories/codebaseGraph/AGENTS.md",
+    "before_sha256": "0930ae8bbccdab966656addd4a673ce0ad239f82d98ec26464115e438c1005cc",
+    "after_sha256": "ed72f74970f8c4e2cc0f5834b787a6d0d26e47360d0ba3ea3a4eabcc0b6a7b80",
+    "lines": 150,
+    "mode": 420,
+    "uid": 501,
+    "gid": 20
+  },
+  "wiki_updates": [
+    {
+      "concept_id": "architecture/overview",
+      "page_path": "architecture/overview.md",
+      "delta_ids": [
+        "W1"
+      ],
+      "method": "k_wiki.wiki_populate_page",
+      "expected_content_hash": "3710c89eae9a6d3f30899b0f1b9e4948c4b9fb09bae34962f507ef9a85dd7e78",
+      "result_content_hash": "3fd9aee518f9e603e72c1f15c30a61f848a37acdb0fcf90fd2a9f90ee536a67b",
+      "exact_expected_after_match": true
+    },
+    {
+      "concept_id": "architecture/invariants",
+      "page_path": "architecture/invariants.md",
+      "delta_ids": [
+        "W2",
+        "W3",
+        "W4"
+      ],
+      "method": "k_wiki.wiki_populate_page",
+      "expected_content_hash": "778c4fe26697b8947f0b08c7ec70f85ba5c1718656002edb9ac8a77d922b015a",
+      "result_content_hash": "9cfe0939f2246621f4474d548333edbde91b8c6b58cd46b48a3da0f8704f4b24",
+      "exact_expected_after_match": true
+    },
+    {
+      "concept_id": "architecture/repository-map",
+      "page_path": "architecture/repository-map.md",
+      "delta_ids": [
+        "W5"
+      ],
+      "method": "k_wiki.wiki_populate_page",
+      "expected_content_hash": "ad0273bd362d37346e16b8fd446a65d62462f3ae7b5ce1e502f5e44961d1c0f1",
+      "result_content_hash": "3393597f3ee9174510b7648d117f973504acde554b7fea38a8c8320782abc60d",
+      "exact_expected_after_match": true
+    },
+    {
+      "concept_id": "architecture/operation-paths",
+      "page_path": "architecture/operation-paths.md",
+      "delta_ids": [
+        "W6"
+      ],
+      "method": "k_wiki.wiki_populate_page",
+      "expected_content_hash": "f700053df572091aed938c64bfb63c3050f99d312843d5908c22f5518b283657",
+      "result_content_hash": "e2b1fe09cced14299042c6be3087911d820f5469f316fcaa8eaabb39f6505a64",
+      "exact_expected_after_match": true
+    }
+  ],
+  "runtime_trust_or_native_model_activated": false
+}

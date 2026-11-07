@@ -1,0 +1,35 @@
+{
+  "format": "cod19-own-ledger-closure/0.1",
+  "change_id": "chg-cvd8ka",
+  "operation": "Scryer close_change on owned empty ledger",
+  "history_close": {
+    "at": 1794012610,
+    "by": "agent",
+    "driver": "abandoned",
+    "kind": "change",
+    "nodeId": "",
+    "changeId": "chg-cvd8ka",
+    "rows": [
+      {
+        "marker": "✓",
+        "text": "COD-19 approved A/B activation at66dff2564e76ad06cdf172332e2da318d150fc73, explicit user decision7November2026 call_a5e675540706431c8f776f81e99c6da0 plus CBG-C4-only scope call_57a6ee4f85d24c3aa9bf53f3f1d1abd2: record approval, conditionally install exact local policy and six wiki wording edits, verify and close P0 gates; no runtime trust/model/hosted activation or unrelated model changes."
+      }
+    ]
+  },
+  "plan_before_sha256": "78205702e7d74787c9251fb09df432cf88c42ec7a768def848a2a2c8b8893ccf",
+  "plan_before_size": 257827,
+  "plan_after_sha256": "db16a13303097baf71e54b43e1e2c871f9f133892fddff458c963917f2f52cc5",
+  "plan_after_size": 257343,
+  "only_removed_entry": {
+    "id": "chg-cvd8ka",
+    "rationale": "COD-19 approved A/B activation at66dff2564e76ad06cdf172332e2da318d150fc73, explicit user decision7November2026 call_a5e675540706431c8f776f81e99c6da0 plus CBG-C4-only scope call_57a6ee4f85d24c3aa9bf53f3f1d1abd2: record approval, conditionally install exact local policy and six wiki wording edits, verify and close P0 gates; no runtime trust/model/hosted activation or unrelated model changes.",
+    "createdAt": 1794011205
+  },
+  "entry_array": "changes",
+  "entry_index": 33,
+  "reconstruction_method": "Read-only exact raw JSON insertion of owned unsigned metadata entry at end of changes; unchanged raw prefix/suffix. createdAt matched to preflight SHA-256 within Git subject-to-preflight interval. No Scryer file written.",
+  "exact_reconstructed_preflight_match": true,
+  "all_other_plan_bytes_unchanged": true,
+  "history_prefix_preserved": true,
+  "history_suffix_only_owned_empty_close": true
+}

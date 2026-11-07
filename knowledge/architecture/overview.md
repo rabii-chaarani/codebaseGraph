@@ -53,7 +53,7 @@ This documentation reconciles two repository-local evidence layers on 2026-08-04
 - The Scryer intent model defines 201 architecture nodes and 224 responsibilities across the system, with all 157 anchorable leaf responsibilities mapped. Its health report also records 28 silent anchors and 52 asserted-only links, so responsibility wording is authoritative intent while those mapping gaps remain confidence qualifiers.
 - The codebase graph contained 502,118 materialized nodes at the time of review. Graph search and context confirmed the current entry points, public facade, materialization stages, graph reads, wiki service, and renderer paths.
 
-Counts describe the reviewed snapshot, not a permanent invariant. When code and this wiki diverge, consult Scryer for intended responsibilities and the codebase graph for current implementation evidence, then update the durable decision here.
+Counts describe the reviewed snapshot, not a permanent invariant. When code and this wiki diverge, consult the currently approved architectural authority and the source graph as implementation evidence. After COD-19's explicitly approved scoped activation, CBG-C4-01 uses approved Git contracts/briefs during bootstrap and qualified accepted native YAML for C4 intent thereafter; unrelated work remains Scryer-governed. No candidate or historical snapshot self-activates authority.
 
 ## Reading map
 

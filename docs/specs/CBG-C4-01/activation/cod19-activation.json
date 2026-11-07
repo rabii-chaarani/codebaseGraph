@@ -1,0 +1,224 @@
+{
+  "format": "cod19-activation-evidence/0.1",
+  "approved_subject": "66dff2564e76ad06cdf172332e2da318d150fc73",
+  "human_approval": {
+    "record_path": "docs/specs/CBG-C4-01/approvals/cod19-approval.md",
+    "record_commit": "f5e17456385ce925eecaffd2c2253905f9e0cc97",
+    "scope": "CBG-C4-01 only",
+    "scope_a_granted": true,
+    "scope_b_granted": true
+  },
+  "state": "verified-git-bootstrap-authority-active",
+  "policy": {
+    "target": "/Users/rabii/Projects/Repositories/codebaseGraph/AGENTS.md",
+    "before_sha256": "0930ae8bbccdab966656addd4a673ce0ad239f82d98ec26464115e438c1005cc",
+    "after_sha256": "ed72f74970f8c4e2cc0f5834b787a6d0d26e47360d0ba3ea3a4eabcc0b6a7b80",
+    "lines": 150,
+    "mode": 420,
+    "uid": 501,
+    "gid": 20
+  },
+  "wiki_pages": [
+    {
+      "concept_id": "architecture/overview",
+      "source_path": "knowledge/architecture/overview.md",
+      "before_sha256": "3710c89eae9a6d3f30899b0f1b9e4948c4b9fb09bae34962f507ef9a85dd7e78",
+      "after_sha256": "3fd9aee518f9e603e72c1f15c30a61f848a37acdb0fcf90fd2a9f90ee536a67b",
+      "delta_ids": [
+        "W1"
+      ],
+      "metadata_and_other_bytes_preserved": true,
+      "publication_copy_matches_mcp_source": true
+    },
+    {
+      "concept_id": "architecture/invariants",
+      "source_path": "knowledge/architecture/invariants.md",
+      "before_sha256": "778c4fe26697b8947f0b08c7ec70f85ba5c1718656002edb9ac8a77d922b015a",
+      "after_sha256": "9cfe0939f2246621f4474d548333edbde91b8c6b58cd46b48a3da0f8704f4b24",
+      "delta_ids": [
+        "W2",
+        "W3",
+        "W4"
+      ],
+      "metadata_and_other_bytes_preserved": true,
+      "publication_copy_matches_mcp_source": true
+    },
+    {
+      "concept_id": "architecture/repository-map",
+      "source_path": "knowledge/architecture/repository-map.md",
+      "before_sha256": "ad0273bd362d37346e16b8fd446a65d62462f3ae7b5ce1e502f5e44961d1c0f1",
+      "after_sha256": "3393597f3ee9174510b7648d117f973504acde554b7fea38a8c8320782abc60d",
+      "delta_ids": [
+        "W5"
+      ],
+      "metadata_and_other_bytes_preserved": true,
+      "publication_copy_matches_mcp_source": true
+    },
+    {
+      "concept_id": "architecture/operation-paths",
+      "source_path": "knowledge/architecture/operation-paths.md",
+      "before_sha256": "f700053df572091aed938c64bfb63c3050f99d312843d5908c22f5518b283657",
+      "after_sha256": "e2b1fe09cced14299042c6be3087911d820f5469f316fcaa8eaabb39f6505a64",
+      "delta_ids": [
+        "W6"
+      ],
+      "metadata_and_other_bytes_preserved": true,
+      "publication_copy_matches_mcp_source": true
+    }
+  ],
+  "wiki_checks": {
+    "profile": "recommended",
+    "accepted": true,
+    "diagnostics": [],
+    "link_diagnostics": [],
+    "build": {
+      "tool": "k_wiki.wiki_build",
+      "bundle_root": "/Users/rabii/Projects/Repositories/codebaseGraph/knowledge",
+      "output_root": "/Users/rabii/Projects/Repositories/codebaseGraph/.kwiki/site",
+      "route_count": 284,
+      "asset_count": 2
+    }
+  },
+  "scryer_preservation": {
+    "static_files_match": false,
+    "files": {
+      "model.scry": {
+        "sha256": "cec5ed0555de4b41ab66194965dd901103812adf161e0b7fe734d3336b8efc2d",
+        "size": 282798
+      },
+      "planned.scry": {
+        "sha256": "78205702e7d74787c9251fb09df432cf88c42ec7a768def848a2a2c8b8893ccf",
+        "size": 257827
+      },
+      "model.baseline.scry": {
+        "sha256": "cec5ed0555de4b41ab66194965dd901103812adf161e0b7fe734d3336b8efc2d",
+        "size": 282798
+      },
+      "model.legacy-pre-0.3.scry": {
+        "sha256": "b5f9e61d164e06e54ced5889d5777ffac3e6556d8d2e5a3999fefe7225e49cf8",
+        "size": 33468
+      },
+      ".anchors.json": {
+        "sha256": "b46ce4f1a396decf7bbc1b7b6c0eb4cf0dd6660b4e6fc9cc29a0add63dbe1b27",
+        "size": 107761
+      },
+      ".build_edges.json": {
+        "sha256": "bf587c8382e0aec65b7c8e111596fc016c4d712c1851e7437af8cc577ed8059b",
+        "size": 4381449
+      },
+      ".test-results.json": {
+        "sha256": "c2753913138f3fb96bcec21500bdca6518772cff875dcab96c4a3c7eb498d0d3",
+        "size": 95798
+      }
+    },
+    "history_prefix_match": true,
+    "history_prefix": {
+      "size": 148272,
+      "sha256": "314b65e8a08e651cb7e4c568c9685bb65400884373c10f8dbed93c7bc76ae69e"
+    },
+    "own_ledger": "chg-cvd8ka",
+    "unrelated_entries_or_claims_changed": false,
+    "own_ledger_status": "closed empty; abandoned/no entries, rationale retained; no claims/links/folds",
+    "six_raw_files_match": true,
+    "planned_only_owned_empty_metadata_removed": true,
+    "all_other_plan_bytes_exact": true,
+    "planned_closure_proof": "cod19-ledger-closure.json",
+    "planned_after_sha256": "db16a13303097baf71e54b43e1e2c871f9f133892fddff458c963917f2f52cc5"
+  },
+  "effective_resolution": {
+    "instruction_source": "/Users/rabii/Projects/Repositories/codebaseGraph/AGENTS.md",
+    "approved_artifact_resolver": "Git full-SHA path via COD-19 Linear record; artifacts need not be on canonical main HEAD",
+    "spec_ref": "66dff2564e76ad06cdf172332e2da318d150fc73:docs/specs/CBG-C4-01/spec.md",
+    "transition_ref": "66dff2564e76ad06cdf172332e2da318d150fc73:docs/specs/CBG-C4-01/authority-transition.md",
+    "approval_ref": "f5e17456385ce925eecaffd2c2253905f9e0cc97:docs/specs/CBG-C4-01/approvals/cod19-approval.md"
+  },
+  "canonical_checkout": {
+    "head": "90e2ab6fae2767bdb158e19f0072d43568e80dbc",
+    "tracked_changes": [
+      "knowledge/architecture/invariants.md",
+      "knowledge/architecture/operation-paths.md",
+      "knowledge/architecture/overview.md",
+      "knowledge/architecture/repository-map.md"
+    ],
+    "reason": "Approved MCP wiki edits intentionally remain active locally; exact bytes are versioned in the documentation worktree/PR without changing main or merging"
+  },
+  "product_implementation_started": false,
+  "runtime_trust_pins_or_native_model_activated": false,
+  "hosted_enforcement_qualified": false,
+  "merge_or_release_performed": false,
+  "active_scope": "CBG-C4-01 only; repository-local Git implementation governance",
+  "independent_readback": {
+    "agent": "/root/cod19_activation_verify",
+    "settings": {
+      "agent_type": "default",
+      "model": "gpt-6.1-terra",
+      "reasoning_effort": "medium",
+      "fork_turns": "none"
+    },
+    "snapshot": "db5ed00aab1687aba8ad6119a7c2f4226c865b1e",
+    "result": "PASS",
+    "actual_live_policy_and_mcp_wiki_checked": true,
+    "fresh_git_linear_resolution_checked": true,
+    "no_writes_or_builds": true
+  },
+  "independent_final_review": {
+    "agent": "/root/cod19_activation_final_review",
+    "settings": {
+      "agent_type": "default",
+      "model": "gpt-6.1-sol",
+      "reasoning_effort": "xhigh",
+      "fork_turns": "none"
+    },
+    "baseline": "66dff2564e76ad06cdf172332e2da318d150fc73",
+    "snapshot": "db5ed00aab1687aba8ad6119a7c2f4226c865b1e",
+    "method": "adversarial-review-engineer and engineering lenses",
+    "confirmed_defects": [],
+    "result": "PASS",
+    "no_writes_builds_or_hosted_probes": true
+  },
+  "author_check": {
+    "command": "python3 -B /private/tmp/codebasegraph-cod19-checks-20261107/validate_activation.py",
+    "script_sha256": "5ae4b7be572bdac47fa2da9e7d2dbf6f5846d5dff3bc78980f30b7956a29a48f",
+    "result": "PASS",
+    "limits": "Local governance preservation/installation only"
+  },
+  "instruction_delivery_limit": "Canonical local policy and Git/Linear immutable resolution verified; no global rollout to every client is claimed. Generic Scryer tool descriptions do not supersede the explicit approved scoped authority selector.",
+  "closure_state": "Approved local Git-bootstrap activation verified; final evidence-only focus, remote publication and tracking reconciliation precede P0 closure",
+  "post_close_check": {
+    "result": "FAIL",
+    "path": ".scryer/planned.scry",
+    "reason": "strict preflight byte hash differs after closing owned empty ledger; exact delta not yet proven",
+    "local_evidence_commit_proceeded_in_error": "35573bbd3bcd0076f2c1d8e0ee3c67e82f803283",
+    "publication_or_issue_closure_after_failure": false,
+    "resolution": "Exact raw reconstruction matches preflight SHA256; only owned unsigned empty change metadata removed and owned closure event appended",
+    "corrected_result": "PASS",
+    "failed_checkpoint_retained": true,
+    "independently_resolved": true
+  },
+  "author_check_final": {
+    "command": "python3 -B /private/tmp/codebasegraph-cod19-checks-20261107/validate_activation_final.py",
+    "script_sha256": "2ea825a1fd07f99ea5493d02b40370f5ff776a9b71a67dc934f46f1832574a3d",
+    "result": "PASS",
+    "preserved_historical_helper": "validate_activation.py / 5ae4b7be572bdac47fa2da9e7d2dbf6f5846d5dff3bc78980f30b7956a29a48f",
+    "limits": "Actual post-close governance preservation; not product conformance"
+  },
+  "post_close_independent_verification": {
+    "agent": "/root/cod19_activation_verify",
+    "model": "gpt-6.1-terra",
+    "effort": "medium",
+    "fork_turns": "none",
+    "snapshot": "7a430e7b4504a28dd256fbfd81c9c52b6969a2d4",
+    "result": "PASS",
+    "exact_raw_reconstruction_and_live_preservation_checked": true
+  },
+  "post_close_independent_review": {
+    "agent": "/root/cod19_activation_final_review",
+    "model": "gpt-6.1-sol",
+    "effort": "xhigh",
+    "fork_turns": "none",
+    "snapshot": "7a430e7b4504a28dd256fbfd81c9c52b6969a2d4",
+    "result": "PASS",
+    "confirmed_defects": [],
+    "method": "adversarial-review-engineer and engineering lenses"
+  }
+}

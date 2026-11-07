@@ -65,6 +65,6 @@ The Release Verifier is intentionally separate from runtime code. It selects pla
 
 ## Architecture discovery workflow
 
-Before reading source for an architecture change, locate the governing files and relationships through the repository codebase graph. Read Scryer for the intended container/component responsibility and inherited directives. Use source only as implementation evidence, then reconcile durable architectural changes back into Scryer and this wiki.
+Before source reads for an architecture change, locate files/relationships through the source graph. Resolve the current approved authority and binding constraints: Scryer for unrelated work, approved Git/bootstrap briefs and then qualified native C4 intent for explicitly activated CBG-C4-01 scope. Preserve existing directives and ownership; unresolved cross-scope conflicts stop for the maintainer. Reconcile evidence and this wiki without changing another scope's authority.
 
 Related: [Graph Runtime](./graph-runtime.md), [Knowledge Wiki](./knowledge-wiki.md), [Native Release Verification](./release-verification.md), and [Architecture Invariants](./invariants.md).
