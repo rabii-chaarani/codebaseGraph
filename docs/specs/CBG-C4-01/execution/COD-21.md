@@ -1,4 +1,4 @@
-# COD-21 execution brief — revision 8, approved Rust minimum
+# COD-21 execution brief — revision 9, pending compatibility cleanup
 
 Work: CBG-C4-01/F02/S02 / [COD-21](https://linear.app/codebasegraph/issue/COD-21), parent COD-6, M1/P1. Status: actual C21-D01/D02 human decisions recorded; owner plan/signatures settled below; first implementation attempt returned incomplete; fresh owner authorized under existing Scope A after this reassignment is committed and coordinator signals GO. **Compiler acceptance is unsatisfied.** Maintainers retain aggregate closure.
 
@@ -13,6 +13,8 @@ Memory recall, existing wiki architecture/authority context, Linear project/issu
 The [compiler supplement0.1](../cod21-contracts.md) is approved for C21-D01 serialized grammar and C21-D02 immutable Git/inline inputs at full SHA `9b4384378c03e05a458f8f94291c8bba4d82c7c3`; [actual decision record](../approvals/cod21-approval.md) retains both exact answers and the question locators. Fresh Sol/xhigh review and independent Terra/medium remote readback passed that published subject before the human answers. Original Scope A approval covers settled compiler behavior, with these additional decisions covering the formerly unspecified choices. No approval is inferred from status, review, preselection, dispatch or time. Direct live-tree compilation is outside this assignment.
 
 Subsequent explicit [Rust compatibility decision](../approvals/cod21-rust-minimum.md): the maintainer selected **Raise the minimum to1.98**, question call_8c324340b9fa49ecad77029b66b331a7/item0. The same owner may retain root Cargo.toml rust-version1.98 and its requested comment identifying **Rust1.98.1** for compilation/verification, removing obsolete1.82 commentary. This intentionally changes the root compiler floor; public Rust API shapes and all other C16/C21 behavior remain. Final checks use explicit +1.98.1 and report actual environment/qualification; earlier1.96 results are supplemental, earlier1.82 failure remains historical. Original approved input/spec artifacts are not silently revised and this exact-property authorization is not represented as approval of an unmentioned whole Git commit.
+
+Independent verification of integrated3bf045a passed all66 scoped tests/fmt but failed strictClippy15 MSRV-aware idiom diagnostics. [The exact9-file legacy cleanup proposal](COD-21-rust198-clippy.md) awaits explicit human approval and Scryer sign-off; no ownership or source-edit permission for those9 files is active yet. Scryer rejected an attempted sign-off because that new scope was not explicitly approved. Do not bypass the rejection, invent claims or weaken the lint gate. The independent reviewer also confirmed a separate P2 missing semantic-loop checkpoints in compile/validate.rs; the existing owner is assigned that correction within already approved compiler scope while the cleanup decision is pending.
 
 ## Workflow and ownership
 
