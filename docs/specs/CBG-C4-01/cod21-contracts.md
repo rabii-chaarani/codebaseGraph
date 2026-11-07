@@ -40,7 +40,7 @@ Waiver `approval_ref` uses AuthorizationContextRef. Its ArtifactRef locates a pi
 
 Constraint fields retain C16-03: ownership rules have Id/component/responsibility_ids/all_of/none_of; allow/require use Id/level/nonempty from and to Id arrays/ProjectionRef; budgets use Id/level/nonempty origins/ProjectionRef/metric/nonnegative absolute_max and max_increase/BaselineRef; waivers use Id/budget_id/BaselineRef/nonnegative original_limit and ceiling/quoted UTC RFC3339 expires_at/AuthorizationContextRef. Expiry permits `Z` or `+00:00` UTC offsets and valid optional fractional seconds. Other offsets, invalid calendar dates and non-string expiry reject. Compiler validation does not decide whether a waiver is currently effective.
 
-Ownership clause kinds/fields and the positive optional max_hops remain C16-04. Metric values are exactly `cyclic_nodes`, `max_direct_fanout`, `max_transitive_reach`. Rule endpoint arrays and budget origins are sets: reject duplicates and normalize by Id for deterministic typed output. Relationship contract refs are canonical sets: reject identical duplicate ArtifactRefs and normalize by repository/commit/path/content_digest; changed fields identify a different ref.
+Ownership clauses are strict `{ kind: exported_item, crate: Text, namespace: Text, item_path: Text }` or `{ kind: reaches_exported_item, crate: Text, namespace: Text, item_path: Text, max_hops?: positive u64 }`, per C16-04. The three Text fields are nonempty UTF-8; the compiler preserves exact case/text and does not invent a Rust binding or treat textual syntax as qualified evidence. Namespace/item/export/path qualification remains downstream. Metric values are exactly `cyclic_nodes`, `max_direct_fanout`, `max_transitive_reach`. Rule endpoint arrays and budget origins are sets: reject duplicates and normalize by Id for deterministic typed output. Relationship contract refs are canonical sets: reject identical duplicate ArtifactRefs and normalize by repository/commit/path/content_digest; changed fields identify a different ref.
 
 ## C21-03 — Scenario parameters and substitution
 
@@ -62,14 +62,14 @@ Scenario `preconditions` and `obligations` are required arrays of strict C16-06 
 | Kind | Fields |
 | --- | --- |
 | `element_exists` | `element: ElementRef` |
-| `relationship_exists` | `from: Id, to: Id, level, projection: ProjectionRef` |
+| `relationship_exists` | `from: ElementRef, to: ElementRef, level, projection: ProjectionRef` |
 | `contract_ref_equals` | `relationship_id: Id, expected: ArtifactRef[]` |
-| `reachable` | `from: Id, to: Id, level, projection: ProjectionRef` |
-| `no_bypass` | `from: Id, to: Id, via: Id, level, projection: ProjectionRef` |
+| `reachable` | `from: ElementRef, to: ElementRef, level, projection: ProjectionRef` |
+| `no_bypass` | `from: ElementRef, to: ElementRef, via: ElementRef, level, projection: ProjectionRef` |
 
-For the endpoint Id fields, literal IDs identify elements at the explicit sibling `level`. An ElementId parameter is used only where the field expects ElementRef; it cannot drop its level by substituting into a bare Id. A String parameter may fill a bare Id if it passes Id validation. This keeps the proposed field shapes explicit while preserving C16's typed substitution rule. A future alternative that uses ElementRefs for all endpoints needs a revised decision, not a permissive parser accepting both.
+Each from/to/via ElementRef must have the same level as its predicate's explicit sibling `level`. ElementId parameters may substitute these whole endpoint objects; a String cannot substitute an ElementRef. This catches wrong-level parameter substitutions without erasing the supplied level. Literal bare IDs are not an alternate endpoint encoding. String parameters can still fill actual string fields subject to those fields' Id/Text validation.
 
-Within each of preconditions and obligations, every no_bypass must have an explicit reachable record with the same resolved from/to/level/projection. Endpoints/via are distinct at the selected level. Do not inject a missing predicate or treat disconnected/inapplicable inputs as PASS. Scenario compilation validates the declared syntax, bindings and shared obligations; the later runner resolves applicability and evaluates both actual transformed snapshots.
+Within each of preconditions and obligations, every no_bypass must have an explicit reachable record with the same resolved from/to/level/projection. Endpoints/via are distinct at the selected level. Do not inject a missing predicate or treat disconnected/inapplicable inputs as PASS. Scenario compilation validates declared syntax, binding existence/type, endpoint level consistency and shared predicate pairing. Scenario element/relationship/operation targets may be introduced or changed by a transform: do not require their existence in the initial authored model. The later runner resolves applicability and checks actual existence, target types/digests and all final references against each correct transformed snapshot; unknown applicability is not compilation success evidence or scenario PASS.
 
 ## C21-04 — Typed transformation encoding
 
@@ -122,13 +122,13 @@ Compilation returns either a complete typed result/raw closure or diagnostics. N
 
 ## C21-07 — Validation and planned acceptance
 
-Global model validation covers required versions/fields, duplicate keys/IDs/paths/ArtifactRefs, nonempty responsibilities, parent/endpoints/types, constraint targets/responsibility ownership, and cross-document contradictions. Require pairs must be covered by the union of explicit allow pairs at exactly the same level and ProjectionRef; no ancestor permission or default edge. Budget/waiver links must exist and agree in referenced baseline/metric scope; current waiver authority/effectiveness is downstream. Scenario bindings and required paired predicates compile before any scenario execution. A hierarchy cycle or cross-level parent cannot be made legal through input ordering.
+Global authored-model validation covers required versions/fields, duplicate keys/IDs/paths/ArtifactRefs, nonempty responsibilities, architecture parents/endpoints/types, non-scenario constraint targets/responsibility ownership, and cross-document contradictions. Require pairs must be covered by the union of explicit allow pairs at exactly the same level and ProjectionRef; no ancestor permission or default edge. Budget/waiver links must exist and agree in referenced baseline/metric scope; current waiver authority/effectiveness is downstream. Scenario declarations and embedded complete record shapes, parameter binding types/levels and required paired predicates compile before execution. Scenario runtime target existence/expected-digest checks and complete final transformed-snapshot reference validation belong to COD-29/39, including IDs introduced by operations; they are not base-model existence checks. A hierarchy cycle or cross-level parent in an authored model cannot be made legal through input ordering.
 
 | Criterion | Requirements / contracts | Planned observable evidence |
 | --- | --- | --- |
 | C21-A01 | R01/A01; C16-01/03; C21-01/02 | Valid multi-file/inline/pinned-root fixtures compile to the same deterministic typed intent; preserve raw closure bytes/order for downstream hashing |
 | C21-A02 | R01/A01; C16-03 | Malformed/duplicate/unknown/wrong-scalar/tag/anchor/alias/merge/trailing-document fixtures produce exact file/span/reason; no partial success |
-| C21-A03 | R01/A01; C16-02/03/06 | Cross-file IDs/parents/endpoints, constraint references, require-without-allow, duplicate refs, typed parameters/operations and paired reach/no-bypass negative controls reject explicitly |
+| C21-A03 | R01/A01; C16-02/03/06 | Cross-file IDs/parents/endpoints, non-scenario constraint references, require-without-allow, duplicate refs, malformed typed parameters/operations and missing paired reach/no-bypass reject; a well-typed scenario target introduced by a transform compiles without a fabricated runtime pass |
 | C21-A04 | R01/R02, A01/A02 | Escaping/duplicate/symlink/submodule/missing/corrupt input and changed working-tree controls cannot escape or mix an immutable pinned closure; exact inline closure required |
 | C21-A05 | R12/A15/A16; C16-09 | Explicit policy invalid/missing/tighten-only, boundary+one file/bytes/depth/entity/pairs/operations/scenarios, cancellation/deadline and checked arithmetic controls; accepted/observed fixtures unchanged |
 | C21-A06 | R01/R12; PC-03/04/08 | COD-20 type/schema tests, existing relevant source-schema/API compatibility checks, formatting and strict Clippy; no runtime schema/adapter/store/config change or reverse wiki dependency |
