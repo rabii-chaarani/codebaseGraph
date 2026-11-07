@@ -1,4 +1,4 @@
-# COD-21 execution brief — revision 4, owner reassignment
+# COD-21 execution brief — revision 5, cancellable canonical validation
 
 Work: CBG-C4-01/F02/S02 / [COD-21](https://linear.app/codebasegraph/issue/COD-21), parent COD-6, M1/P1. Status: actual C21-D01/D02 human decisions recorded; owner plan/signatures settled below; first implementation attempt returned incomplete; fresh owner authorized under existing Scope A after this reassignment is committed and coordinator signals GO. **Compiler acceptance is unsatisfied.** Maintainers retain aggregate closure.
 
@@ -18,7 +18,7 @@ Workflow: **delegated**, one complete technical owner, default/gpt-6.1-terra/med
 
 After the start gate, that owner alone may edit:
 
-- `src/architecture/mod.rs` for narrow compiler exports/reuse of existing invariant types;
+- `src/architecture/mod.rs` for narrow compiler exports/documentation and the backward-compatible canonical validation checkpoint extraction described below;
 - new `src/architecture/compile/{mod,source,yaml,policy,constraints,scenarios,validate}.rs` (split these responsibilities further only through coordinator reassignment);
 - new `tests/architecture_compile.rs` and `tests/fixtures/architecture_compile/**`;
 - `Cargo.toml` and `Cargo.lock`, solely the justified direct parser dependency using the existing locked version; no unrelated updates/features/version change.
@@ -56,6 +56,10 @@ The owner owns implementation/checks within the already listed files; root owns 
 The first owner returned only policy/diagnostic scaffolding and unconnected constraint/scenario drafts (four compile files, narrow export/parser dependency/lockfile edits). There is no compile entry, source loader, strict parser, semantic validation or test suite from that attempt. Its partial offline check passed with dead-code warnings; it is not product acceptance. All processes are quiescent and its file ownership is revoked before the new assignment. Reuse sound work but complete the entire agreed compiler and checks; do not present partial scaffolding as the deliverable.
 
 The maintainer subsequently instructed that PRs include only essential files and exclude session-related logs/evidence. This overrides earlier instructions to add session artifacts to the implementation PR, without waiving actual verification/review or retention. Root keeps session logs/reports outside the implementation PR, summarizes results/links in tracking/PR prose and preserves approved/frozen subjects and predecessor evidence. The already published exact approval subject remains available; no history or evidence is silently destroyed. The new technical owner writes logs only to its unique external scratch directory and does not add session artifacts to product changes. Final delivery will use an essential-file diff; root serializes that integration and supplies its exact snapshot for independent checks/review.
+
+### Canonical validator checkpoint extraction
+
+Coordinator assigns the same sole owner the exact additional mod.rs change needed for C21-A05/R12 cancellation without duplicating C4 semantics: extract the existing validator implementation into a private `validate_with_checkpoint<E>` helper taking the document slice and a fallible mutable checkpoint callback; retain public `validate(&[ArchitectureDocument]) -> Vec<Diagnostic>` unchanged, delegating with an infallible no-op callback. The compiler invokes that helper with its RunContext check. Keep one implementation of identity/hierarchy/endpoint/responsibility checks and deterministic diagnostic ordering, check at safe points within owned semantic loops and around sorting, and preserve legacy results. No public signature/trait/error/default/ontology or dependency-direction change, new numerical cap or runtime authority follows. Existing architecture tests plus focused cancellation/deadline checks verify the extraction. This is a bounded prerequisite within the already approved C16/C21 behavior; it changes HOW, not intended behavior/acceptance, so the existing human approvals remain applicable. The coordinator commits this file assignment before the owner edits that validator body.
 
 ## Scope, acceptance and failures
 
