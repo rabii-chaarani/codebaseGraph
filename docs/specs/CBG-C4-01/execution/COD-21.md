@@ -1,4 +1,4 @@
-# COD-21 execution brief — revision 9, pending compatibility cleanup
+# COD-21 execution brief — revision 10, approved compatibility cleanup
 
 Work: CBG-C4-01/F02/S02 / [COD-21](https://linear.app/codebasegraph/issue/COD-21), parent COD-6, M1/P1. Status: actual C21-D01/D02 human decisions recorded; owner plan/signatures settled below; first implementation attempt returned incomplete; fresh owner authorized under existing Scope A after this reassignment is committed and coordinator signals GO. **Compiler acceptance is unsatisfied.** Maintainers retain aggregate closure.
 
@@ -15,6 +15,8 @@ The [compiler supplement0.1](../cod21-contracts.md) is approved for C21-D01 seri
 Subsequent explicit [Rust compatibility decision](../approvals/cod21-rust-minimum.md): the maintainer selected **Raise the minimum to1.98**, question call_8c324340b9fa49ecad77029b66b331a7/item0. The same owner may retain root Cargo.toml rust-version1.98 and its requested comment identifying **Rust1.98.1** for compilation/verification, removing obsolete1.82 commentary. This intentionally changes the root compiler floor; public Rust API shapes and all other C16/C21 behavior remain. Final checks use explicit +1.98.1 and report actual environment/qualification; earlier1.96 results are supplemental, earlier1.82 failure remains historical. Original approved input/spec artifacts are not silently revised and this exact-property authorization is not represented as approval of an unmentioned whole Git commit.
 
 Independent verification of integrated3bf045a passed all66 scoped tests/fmt but failed strictClippy15 MSRV-aware idiom diagnostics. [The exact9-file legacy cleanup proposal](COD-21-rust198-clippy.md) awaits explicit human approval and Scryer sign-off; no ownership or source-edit permission for those9 files is active yet. Scryer rejected an attempted sign-off because that new scope was not explicitly approved. Do not bypass the rejection, invent claims or weaken the lint gate. The independent reviewer also confirmed a separate P2 missing semantic-loop checkpoints in compile/validate.rs; the existing owner is assigned that correction within already approved compiler scope while the cleanup decision is pending.
+
+Subsequent actual decision: the maintainer answered **Approve the nine-file cleanup (Recommended)** for exact proposal95d9818e271ccb18ce986b99193df850993bf11b, question call_948a6a5b7f494a7ea6ac87920e4e62d7/item0. [Approval record](../approvals/cod21-clippy-approval.md) supersedes the pending-human wording above. After this assignment is committed and Scryer sign-off succeeds, the same sole complete owner may edit only those additional9 files/15 idiom sites under the preserved-behavior constraints; no global lint suppression or other refactor. Root serializes integration and independent final checks/review. The prior rejection and original proposal remain historical evidence, not erased or reinterpreted as approval.
 
 ## Workflow and ownership
 
