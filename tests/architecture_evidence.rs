@@ -297,3 +297,39 @@ fn exact_and_minus_one_payload_budget() {
         "resource_limit"
     );
 }
+
+#[test]
+fn streamed_canonical_oracle_covers_each_assertion_shape() {
+    let base = mapping();
+    let reference = base["source_ref"].clone();
+    let artifact = json!({"repository":"repo","commit":"1111111111111111111111111111111111111111","path":"contract.md","content_digest":format!("sha256:{}","f".repeat(64))});
+    let variants = [
+        json!({"kind":"node_exists"}),
+        json!({"kind":"scope_contains","member":reference}),
+        json!({"kind":"exported_item","crate":"crate-name","namespace":"value","item_path":"foo"}),
+        json!({"kind":"reaches_exported_item","crate":"crate-name","namespace":"value","item_path":"foo","max_hops":2,"path":[reference]}),
+        json!({"kind":"linked_contract_anchor","reference":artifact,"anchor":"anchor"}),
+    ];
+    for assertion in variants {
+        let mut raw = base.clone();
+        raw["structural_citations"] =
+            json!([{"id":"citation","source_ref":reference,"assertion":assertion}]);
+        let typed: MappingSubmission = serde_json::from_value(raw.clone()).unwrap();
+        raw["responsibility_ids"].as_array_mut().unwrap().reverse();
+        raw["rationale"]["responsibilities"]
+            .as_array_mut()
+            .unwrap()
+            .reverse();
+        raw["rationale"]["competing_components"]
+            .as_array_mut()
+            .unwrap()
+            .reverse();
+        let mut payload = json!({"evidence_version":"architecture-evidence/0.1","mappings":[raw],"source":source()});
+        payload.sort_all_objects();
+        let bytes = serde_json::to_vec(&payload).unwrap();
+        let mut hash = Sha256::new();
+        hash.update(b"architecture-mapping-facts/0.1\n");
+        hash.update(bytes);
+        assert_eq!(digest(&[typed]), format!("sha256:{:x}", hash.finalize()));
+    }
+}

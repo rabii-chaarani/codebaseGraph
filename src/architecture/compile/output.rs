@@ -21,6 +21,14 @@ impl Write for Sink<'_> {
             self.failure = Some(e);
             return Err(io::Error::other("cancelled"));
         }
+        let size = self
+            .written
+            .checked_add(bytes.len() as u64)
+            .ok_or_else(|| io::Error::other("result size overflow"))?;
+        if size > self.limit {
+            return Err(io::Error::other("result byte limit"));
+        }
+        self.written = size;
         if let Some(hash) = &mut self.hash {
             for chunk in bytes.chunks(65_536) {
                 if let Err(error) = self.run.check() {
@@ -31,14 +39,6 @@ impl Write for Sink<'_> {
             }
             return Ok(bytes.len());
         }
-        let size = self
-            .written
-            .checked_add(bytes.len() as u64)
-            .ok_or_else(|| io::Error::other("result size overflow"))?;
-        if size > self.limit {
-            return Err(io::Error::other("result byte limit"));
-        }
-        self.written = size;
         if self.count_only {
             return Ok(bytes.len());
         }
@@ -557,23 +557,26 @@ pub(super) fn closure_hash(
     finish_hash(out)
 }
 
-/// Canonical JSON for a fixed-depth evidence value, bounded before publication.
-pub(super) fn evidence_bytes<T: Serialize>(
+/// Stream a preordered canonical evidence view without an intermediate JSON value.
+pub(super) fn evidence_stream_hash<T: Serialize>(
     value: &T,
     limit: u64,
     run: &RunContext,
-) -> Result<Vec<u8>, CompileError> {
+) -> Result<(crate::architecture::Digest, u64), CompileError> {
     let mut out = Sink {
         bytes: Vec::new(),
-        limit,
+        limit: u64::MAX,
         run,
         failure: None,
         normalized: false,
-        hash: None,
+        hash: Some(Sha256::new()),
         count_only: false,
         written: 0,
     };
-    out.value(value)?;
-    run.check()?;
-    Ok(out.bytes)
+    out.raw(b"architecture-mapping-facts/0.1\n")?;
+    out.limit = limit;
+    out.written = 0;
+    serde_json::to_writer(&mut out, value).map_err(|_| out.failure())?;
+    let size = out.written;
+    Ok((finish_hash(out)?, size))
 }

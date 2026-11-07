@@ -18,20 +18,6 @@ pub(crate) fn start(
     run.check()?;
     Ok((effective, run))
 }
-pub(crate) fn canonical<T: Serialize>(
-    value: &T,
-    limit: u64,
-    run: &Run,
-) -> Result<Vec<u8>, CompileError> {
-    output::evidence_bytes(value, limit, run)
-}
-pub(crate) fn hash<T: Serialize>(
-    domain: &str,
-    value: &T,
-    run: &Run,
-) -> Result<crate::architecture::Digest, CompileError> {
-    output::hash_value(domain, value, run)
-}
 pub(crate) fn sort<T>(
     values: &mut [T],
     run: &Run,
@@ -40,6 +26,33 @@ pub(crate) fn sort<T>(
     identity::canonical::sort_by(values, run, cmp)
 }
 
-pub(crate) fn measure<T: Serialize>(value: &T, limit: u64, run: &Run) -> Result<u64, CompileError> {
-    output::measure_serialized(value, limit, run)
+pub(crate) fn stream_hash<T: Serialize>(
+    value: &T,
+    limit: u64,
+    run: &Run,
+) -> Result<(crate::architecture::Digest, u64), CompileError> {
+    output::evidence_stream_hash(value, limit, run)
+}
+
+pub(crate) fn tree(
+    binding: &super::RepositoryBinding,
+    commit: &crate::architecture::GitObjectId,
+    run: &Run,
+) -> Result<crate::architecture::GitObjectId, CompileError> {
+    super::source::evidence_tree(binding, commit, run)
+}
+pub(crate) fn file(
+    binding: &super::RepositoryBinding,
+    tree: &crate::architecture::GitObjectId,
+    path: &crate::architecture::RelativePath,
+    limit: u64,
+    run: &Run,
+) -> Result<Vec<u8>, CompileError> {
+    super::source::evidence_file(binding, tree, path, limit, run)
+}
+pub(crate) fn raw_digest(
+    bytes: &[u8],
+    run: &Run,
+) -> Result<crate::architecture::Digest, CompileError> {
+    super::identity::raw_digest(bytes, run)
 }
