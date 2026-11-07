@@ -788,6 +788,20 @@ mod git {
             }
         }
     }
+    fn classify_unreadable_object(
+        binding: &RepositoryBinding,
+        id: &str,
+        run: &RunContext,
+    ) -> Result<(), CompileError> {
+        if object_exists(binding, id, run)? {
+            Err(CompileError::simple(
+                "invalid_reference",
+                "Git object is unreadable",
+            ))
+        } else {
+            Err(unavailable("Git object missing"))
+        }
+    }
     fn check_object_type(
         binding: &RepositoryBinding,
         id: &str,
@@ -795,26 +809,21 @@ mod git {
         run: &RunContext,
     ) -> Result<(), CompileError> {
         let input = format!("{id}\n").into_bytes();
-        let result = output(
+        let result = match output(
             binding,
             &["cat-file", "--batch-check=%(objectname) %(objecttype)"],
             Some(input),
             160,
             run,
-        )
-        .map_err(|mut error| {
-            error.object_integrity_failure = false;
-            error
-        })?;
+        ) {
+            Ok(result) => result,
+            Err(error) if error.object_integrity_failure => {
+                return classify_unreadable_object(binding, id, run)
+            }
+            Err(error) => return Err(error),
+        };
         if result == format!("{id} missing\n").as_bytes() {
-            return if object_exists(binding, id, run)? {
-                Err(CompileError::simple(
-                    "invalid_reference",
-                    "Git object is unreadable",
-                ))
-            } else {
-                Err(unavailable("Git object missing"))
-            };
+            return classify_unreadable_object(binding, id, run);
         }
         if result != format!("{id} {expected}\n").as_bytes() {
             return Err(CompileError::simple(

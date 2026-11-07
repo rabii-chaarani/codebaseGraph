@@ -703,6 +703,11 @@ fn unreadable_commit_tree_and_blob_are_distinct_from_missing_objects() {
         };
         let obj = dir.join(".git/objects").join(&id[..2]).join(&id[2..]);
         let valid = std::fs::read(&obj).unwrap();
+        // zlib-compressed Git object header `bogus 8\0original`.
+        let malformed = [
+            120, 156, 75, 202, 79, 47, 45, 86, 176, 96, 200, 47, 202, 76, 207, 204, 75, 204, 1, 0,
+            48, 99, 5, 206,
+        ];
         let binding = RepositoryBinding::new(Text::new("repo").unwrap(), dir.join(".git")).unwrap();
         let refs = [
             reference(&commit, "file", b"content"),
@@ -748,6 +753,7 @@ fn unreadable_commit_tree_and_blob_are_distinct_from_missing_objects() {
         for (label, corrupt) in [
             ("invalid-zlib", b"not-zlib".as_slice()),
             ("truncated", &valid[..valid.len() / 2]),
+            ("unknown-type", malformed.as_slice()),
         ] {
             std::fs::remove_file(&obj).unwrap();
             std::fs::write(&obj, corrupt).unwrap();
