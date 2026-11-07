@@ -1138,6 +1138,49 @@ mod assembly_tests {
         let function = serde_json::json!({"repository":"repo","commit":source.evaluated_commit.as_str(),"path":"src/lib.rs","node_kind":"Function","node_id":"Function:216f9df7cf9055f46285","symbol":"src.lib.hello","byte_span":{"start":0,"end":13},"file_digest":file_digest});
         let scope = serde_json::json!({"repository":"repo","commit":source.evaluated_commit.as_str(),"path":"src/lib.rs","node_kind":"Scope","node_id":"Scope:41046104907937f3c6e1","symbol":"src.lib.<scope>","byte_span":{"start":0,"end":13},"file_digest":file_digest});
         let raw = serde_json::json!({"source_ref":function,"proposed_component":"missing","responsibility_ids":["task"],"structural_citations":[{"id":"node","source_ref":function,"assertion":{"kind":"node_exists"}},{"id":"scope","source_ref":scope,"assertion":{"kind":"scope_contains","member":function}},{"id":"export","source_ref":function,"assertion":{"kind":"exported_item","crate":"mycrate","namespace":"value","item_path":"hello"}}],"rationale":{"responsibilities":[{"responsibility_id":"task","explanation":"reason"}],"competing_components":[]},"inference_provenance":{"agent_id":"agent","model_id":"model","input_digest":file_digest,"rule_version":"responsibility-evidence/0.1","result_digest":file_digest},"previous_mapping":null,"change_kind":"initial","discriminator":"responsibility-evidence/0.1"});
+        // Inject failure at the first real guarded traversal reserve, after
+        // arena admission, with a known adverse inference result already recorded.
+        let mut injected = raw.clone();
+        injected["inference_provenance"]["rule_version"] = serde_json::json!("different");
+        let injected: MappingSubmission = serde_json::from_value(injected).unwrap();
+        let injected_mappings = [injected];
+        let (_, injected_run) = evidence_support::start(&policy, None, &context).unwrap();
+        let mut callback = || {
+            injected_run.check().map_err(|e| {
+                crate::extraction_control::ExtractionError::new(e.code(), "interrupted")
+            })
+        };
+        let mut injected_control = ExtractionControl::new(
+            &mut callback,
+            policy.max_parse_depth(),
+            policy.max_traversal_steps(),
+            policy.max_projected_vertices(),
+            policy.max_projected_edges(),
+        );
+        injected_control.inject_reserve_failure_after(0);
+        let mut injected_diagnostics = Vec::new();
+        let mut injected_invalid = false;
+        let error = validate_in_run(
+            &model,
+            &source,
+            &injected_mappings,
+            &bindings,
+            &injected_run,
+            &mut injected_control,
+            ValidationProgress {
+                diagnostics: &mut injected_diagnostics,
+                known_invalid: &mut injected_invalid,
+            },
+        )
+        .unwrap_err();
+        assert_eq!(error.code(), "resource_limit");
+        assert!(injected_invalid);
+        assert!(injected_diagnostics
+            .iter()
+            .any(|d| d.code() == "inference_version_mismatch"));
+        assert!(injected_diagnostics
+            .iter()
+            .any(|d| d.code() == "build_context_unqualified"));
         let mapping: MappingSubmission = serde_json::from_value(raw.clone()).unwrap();
         let mappings = [mapping];
         let mut diagnostics = Vec::new();

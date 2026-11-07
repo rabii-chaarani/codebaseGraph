@@ -18,8 +18,10 @@ impl NativeBuilder<'_, '_> {
         if self.language == "python" {
             capture.capture_name.clear();
         }
-        if let Some(label) = import_label(node) {
-            capture.label = label;
+        if self.guard.is_none() || self.language != "rust" {
+            if let Some(label) = import_label(node) {
+                capture.label = label;
+            }
         }
         self.emit_import(&capture, owner, syntax_id)
     }
@@ -351,7 +353,7 @@ impl NativeBuilder<'_, '_> {
         )?;
         self.derived_from(&semantic.id, syntax_id)?;
         if !imported.is_empty() {
-            let path = self.path.clone();
+            let path = self.copy_path()?;
             let dependency = self.support_node("Dependency", &imported, &imported, &path);
             self.edge(
                 "DependsOn",
