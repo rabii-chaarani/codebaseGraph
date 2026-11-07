@@ -59,10 +59,61 @@ impl<'a, 'b> NativeBuilder<'a, 'b> {
     pub(in crate::syntax_materializer) fn with_guard(
         meta: BTreeMap<String, String>,
         guard: &'a mut crate::extraction_control::ExtractionControl<'b>,
-    ) -> Result<Self, String> {
-        let mut builder = Self::new(meta)?;
-        builder.guard = Some(guard);
-        Ok(builder)
+    ) -> Result<Self, crate::extraction_control::ExtractionError> {
+        use crate::extraction_control::copy_text;
+        let relation_allowlist = RelationAllowlist::from_meta(&meta).map_err(|_| {
+            crate::extraction_control::ExtractionError::new(
+                "reconstruction_unavailable",
+                "materializer configuration invalid",
+            )
+        })?;
+        let copy = |key: &str,
+                    guard: &mut crate::extraction_control::ExtractionControl<'_>|
+         -> Result<String, crate::extraction_control::ExtractionError> {
+            copy_text(meta.get(key).map_or("", String::as_str), guard)
+        };
+        let path = copy("path", guard)?;
+        let language = copy("language", guard)?;
+        let grammar_version = match meta.get("grammar_version").filter(|v| !v.trim().is_empty()) {
+            Some(v) => Some(copy_text(v, guard)?),
+            None => None,
+        };
+        let source_root = copy("source_root", guard)?;
+        let repository_label = match meta.get("repository_label") {
+            Some(v) => copy_text(v, guard)?,
+            None => "repository".to_string(),
+        };
+        Ok(Self {
+            guard: Some(guard),
+            guard_failure: None,
+            path,
+            language,
+            grammar_version,
+            source_root,
+            repository_label,
+            nodes: HashMap::new(),
+            edges: HashMap::new(),
+            symbols_by_name: HashMap::new(),
+            relation_allowlist,
+        })
+    }
+    pub(in crate::syntax_materializer) fn reserve<T>(
+        &mut self,
+        values: &mut Vec<T>,
+        additional: usize,
+    ) -> Result<(), String> {
+        if let Some(guard) = &mut self.guard {
+            if let Err(error) = guard.reserve(values, additional) {
+                let message = error.message.to_string();
+                self.guard_failure = Some(error);
+                return Err(message);
+            }
+            Ok(())
+        } else {
+            values
+                .try_reserve(additional)
+                .map_err(|_| "allocation failed".to_string())
+        }
     }
     pub(in crate::syntax_materializer) fn guard_visit(&mut self) -> Result<(), String> {
         if let Some(failure) = &self.guard_failure {
@@ -92,6 +143,20 @@ impl<'a, 'b> NativeBuilder<'a, 'b> {
             }
         } else {
             Ok(crate::syntax_materializer::tree_capture(node))
+        }
+    }
+    pub(in crate::syntax_materializer) fn copy_path(&mut self) -> Result<String, String> {
+        if let Some(guard) = &mut self.guard {
+            match crate::extraction_control::copy_text(&self.path, guard) {
+                Ok(path) => Ok(path),
+                Err(error) => {
+                    let message = error.message.to_string();
+                    self.guard_failure = Some(error);
+                    Err(message)
+                }
+            }
+        } else {
+            Ok(self.path.clone())
         }
     }
     pub(in crate::syntax_materializer) fn copy_text(

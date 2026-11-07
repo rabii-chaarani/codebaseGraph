@@ -7,7 +7,7 @@ use crate::architecture::{
 
 struct CapturedFile<'a> {
     path: &'a RelativePath,
-    digest: &'a Digest,
+    digest: Digest,
     bytes: Vec<u8>,
 }
 pub(super) struct Capture<'a> {
@@ -71,12 +71,6 @@ impl<'a> Capture<'a> {
         for (i, file) in self.files.iter().enumerate() {
             self.run.check()?;
             if file.path == &reference.path {
-                if file.digest != &reference.file_digest {
-                    return Err(EvidenceError::new(
-                        "invalid_reference",
-                        "file digest mismatch",
-                    ));
-                }
                 found = Some(i);
                 break;
             }
@@ -92,12 +86,6 @@ impl<'a> Capture<'a> {
                 self.run,
             )?;
             let digest = support::raw_digest(&bytes, self.run)?;
-            if digest != reference.file_digest {
-                return Err(EvidenceError::new(
-                    "invalid_reference",
-                    "file digest mismatch",
-                ));
-            }
             self.remaining = self
                 .remaining
                 .checked_sub(bytes.len() as u64)
@@ -107,11 +95,17 @@ impl<'a> Capture<'a> {
                 .map_err(|_| EvidenceError::new("resource_limit", "allocation failed"))?;
             self.files.push(CapturedFile {
                 path: &reference.path,
-                digest: &reference.file_digest,
+                digest,
                 bytes,
             });
             self.files.len() - 1
         };
+        if self.files[index].digest != reference.file_digest {
+            return Err(EvidenceError::new(
+                "invalid_reference",
+                "file digest mismatch",
+            ));
+        }
         let bytes = &self.files[index].bytes;
         if reference.byte_span.end() > bytes.len() as u64 {
             return Err(EvidenceError::new("invalid_reference", "span exceeds file"));
@@ -187,7 +181,8 @@ mod tests {
             git(&dir, &["config", "user.name", "test"]);
             git(&dir, &["config", "user.email", "test@example.invalid"]);
             std::fs::write(dir.join("file.rs"), b"original").unwrap();
-            git(&dir, &["add", "file.rs"]);
+            std::fs::write(dir.join("second.rs"), b"second!!").unwrap();
+            git(&dir, &["add", "file.rs", "second.rs"]);
             git(&dir, &["commit", "-qm", "fixture"]);
             let commit = GitObjectId::new(git(&dir, &["rev-parse", "HEAD"])).unwrap();
             let tree = GitObjectId::new(git(&dir, &["rev-parse", "HEAD^{tree}"])).unwrap();
@@ -226,6 +221,44 @@ mod tests {
             assert_eq!(
                 capture.file(&bad_digest).unwrap_err().code(),
                 "invalid_reference"
+            );
+            let mut second = reference.clone();
+            second.path = RelativePath::new("second.rs").unwrap();
+            second.file_digest =
+                Digest::new(format!("sha256:{:x}", Sha256::digest(b"second!!"))).unwrap();
+            let mut wrong_first = reference.clone();
+            wrong_first.file_digest = Digest::new(format!("sha256:{}", "0".repeat(64))).unwrap();
+            let mut wrong_second = second.clone();
+            wrong_second.file_digest = wrong_first.file_digest.clone();
+            let exact_policy = policy(20);
+            let (_, exact_run) = support::start(&exact_policy, None, &context).unwrap();
+            let mut exact =
+                Capture::begin(&source, &binding, &exact_policy, 4, &exact_run).unwrap();
+            assert_eq!(
+                exact.file(&wrong_first).unwrap_err().code(),
+                "invalid_reference"
+            );
+            assert_eq!(
+                exact.file(&wrong_first).unwrap_err().code(),
+                "invalid_reference"
+            );
+            assert_eq!(exact.file(&reference).unwrap(), b"original");
+            assert_eq!(
+                exact.file(&wrong_second).unwrap_err().code(),
+                "invalid_reference"
+            );
+            assert_eq!(exact.file(&second).unwrap(), b"second!!");
+            let under_policy = policy(19);
+            let (_, under_run) = support::start(&under_policy, None, &context).unwrap();
+            let mut under =
+                Capture::begin(&source, &binding, &under_policy, 4, &under_run).unwrap();
+            assert_eq!(
+                under.file(&wrong_first).unwrap_err().code(),
+                "invalid_reference"
+            );
+            assert_eq!(
+                under.file(&wrong_second).unwrap_err().code(),
+                "resource_limit"
             );
             let mut wrong = source.clone();
             wrong.evaluated_tree =
@@ -286,13 +319,16 @@ pub(super) fn reconstruct(
     let tree = crate::parser::parse_guarded_tree(bytes, &profile, control)?;
     let flat = crate::parser::normalize_guarded_rust(&tree, bytes, &profile, control)?;
     let meta = std::collections::BTreeMap::from([
-        ("path".to_string(), path.as_str().to_string()),
+        (
+            "path".to_string(),
+            crate::extraction_control::copy_text(path.as_str(), control)?,
+        ),
         ("language".to_string(), "rust".to_string()),
         ("grammar_version".to_string(), profile.grammar_version),
         ("source_root".to_string(), String::new()),
         (
             "repository_label".to_string(),
-            repository.as_str().to_string(),
+            crate::extraction_control::copy_text(repository.as_str(), control)?,
         ),
     ]);
     crate::syntax_materializer::build_flat_syntax_rows(meta, &flat, control)

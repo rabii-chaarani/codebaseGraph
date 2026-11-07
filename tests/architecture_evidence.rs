@@ -609,6 +609,72 @@ fn public_validation_proves_raw_nodes_but_not_ownership() {
             .diagnostics()
             .iter()
             .any(|d| d.code() == "inference_version_mismatch"));
+        // Three distinct captured files: unsupported primary plus two files
+        // cited with bad digests. The middle correct claim reuses the first.
+        let mut aggregate = input.clone();
+        aggregate["source_ref"]["path"] = json!("src/lib.txt");
+        let mut bad_first = function.clone();
+        bad_first["file_digest"] = json!(format!("sha256:{}", "0".repeat(64)));
+        let mut bad_second = bad_first.clone();
+        bad_second["path"] = json!("src/literal*[?].rs");
+        aggregate["structural_citations"] = json!([
+            {"id":"a-bad","source_ref":bad_first,"assertion":{"kind":"node_exists"}},
+            {"id":"b-good","source_ref":function,"assertion":{"kind":"node_exists"}},
+            {"id":"c-bad","source_ref":bad_second,"assertion":{"kind":"node_exists"}}
+        ]);
+        let mut payload = json!({"evidence_version":"architecture-evidence/0.1","source":provenance,"mappings":[aggregate.clone()]});
+        payload.sort_all_objects();
+        let payload_size = serde_json::to_vec(&payload).unwrap().len() as u64;
+        let aggregate: MappingSubmission = serde_json::from_value(aggregate).unwrap();
+        let mut exact_raw = serde_json::to_value(policy()).unwrap();
+        exact_raw["max_evidence_bytes"] = json!(payload_size + 39);
+        let exact_policy = ArchitectureExecutionPolicy::from_json(exact_raw.clone()).unwrap();
+        let make_input = || {
+            ModelInput::inline_files(
+                p("root"),
+                [(p("root"), root.to_vec()), (p("arch"), arch.to_vec())],
+            )
+            .unwrap()
+        };
+        let exact_model = compile(make_input(), None, &exact_policy, None, &ctx()).unwrap();
+        let exact = validate_evidence(
+            &exact_model,
+            &provenance,
+            std::slice::from_ref(&aggregate),
+            &bindings,
+            &ctx(),
+        )
+        .unwrap();
+        assert!(exact.has_invalid_evidence() && exact.has_unknown());
+        assert_eq!(
+            exact.records()[0].citations()[0].source_checks()[0].status(),
+            CheckStatus::Invalid
+        );
+        assert_eq!(
+            exact.records()[0].citations()[1].source_checks()[0].status(),
+            CheckStatus::Valid
+        );
+        assert_eq!(
+            exact.records()[0].citations()[2].source_checks()[0].status(),
+            CheckStatus::Invalid
+        );
+        exact_raw["max_evidence_bytes"] = json!(payload_size + 38);
+        let under_policy = ArchitectureExecutionPolicy::from_json(exact_raw).unwrap();
+        let under_model = compile(make_input(), None, &under_policy, None, &ctx()).unwrap();
+        let error = validate_evidence(
+            &under_model,
+            &provenance,
+            std::slice::from_ref(&aggregate),
+            &bindings,
+            &ctx(),
+        )
+        .unwrap_err();
+        assert_eq!(error.code(), "resource_limit");
+        assert!(error.has_known_invalid_evidence() && error.has_known_unknown());
+        assert!(error
+            .diagnostics()
+            .iter()
+            .any(|d| d.code() == "invalid_source_reference"));
         let mut unsupported = input.clone();
         unsupported["discriminator"] = json!("responsibility-evidence/9");
         unsupported["inference_provenance"]["rule_version"] = json!("responsibility-evidence/9");

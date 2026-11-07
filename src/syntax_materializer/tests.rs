@@ -452,3 +452,102 @@ fn materializer_observes_cancellation_during_copy() {
         "cancelled"
     );
 }
+
+#[test]
+fn guarded_real_traversal_reserve_failure_is_fatal() {
+    use crate::{extraction_control::ExtractionControl, parser, profiles::ProfileSet};
+    let source = "fn hello() {}";
+    let profile = ProfileSet::new(&[])
+        .profile_for_language("rust")
+        .unwrap()
+        .clone();
+    let mut check = || Ok(());
+    let mut parse = ExtractionControl::new(&mut check, 100, 100_000, 1000, 1000);
+    let tree = parser::parse_guarded_tree(source.as_bytes(), &profile, &mut parse).unwrap();
+    let flat =
+        parser::normalize_guarded_rust(&tree, source.as_bytes(), &profile, &mut parse).unwrap();
+    let mut check = || Ok(());
+    let mut guard = ExtractionControl::new(&mut check, 100, 100_000, 1000, 1000);
+    guard.inject_reserve_failure_after(0);
+    let error = build_flat_syntax_rows(meta("rust", "src/lib.rs"), &flat, &mut guard).unwrap_err();
+    assert_eq!(error.code, "resource_limit");
+}
+
+#[test]
+fn guarded_sha1_preserves_vectors_and_interrupts_hash_blocks() {
+    use crate::extraction_control::{ExtractionControl, ExtractionError};
+    for (len, expected) in [
+        (0, "da39a3ee5e6b4b0d3255"),
+        (55, "c1c8bbdc22796e28c0e1"),
+        (56, "c2db330f6083854c99d4"),
+        (63, "03f09f5b158a7a8cdad9"),
+        (64, "0098ba824b5c16427bd7"),
+        (65, "11655326c708d70319be"),
+        (4096, "8c51fb6a0b587ec95ca7"),
+    ] {
+        let input = "a".repeat(len);
+        let mut check = || Ok(());
+        let mut control = ExtractionControl::new(&mut check, 10, 100_000, 10, 10);
+        assert_eq!(
+            graph_id_guarded("Node", &input, &mut control).unwrap(),
+            format!("Node:{expected}")
+        );
+        assert_eq!(graph_id("Node", &input), format!("Node:{expected}"));
+    }
+    let input = "a".repeat(4096);
+    let mut check = || Ok(());
+    let mut control = ExtractionControl::new(&mut check, 10, 2, 10, 10);
+    assert_eq!(
+        graph_id_guarded("Node", &input, &mut control)
+            .unwrap_err()
+            .code,
+        "resource_limit"
+    );
+    let mut calls = 0;
+    let mut check = || {
+        calls += 1;
+        if calls >= 3 {
+            Err(ExtractionError::new("cancelled", "hash cancelled"))
+        } else {
+            Ok(())
+        }
+    };
+    let mut control = ExtractionControl::new(&mut check, 10, 100_000, 10, 10);
+    assert_eq!(
+        graph_id_guarded("Node", &input, &mut control)
+            .unwrap_err()
+            .code,
+        "cancelled"
+    );
+}
+
+#[test]
+fn large_valid_root_uses_same_guarded_rows_as_legacy() {
+    use crate::{
+        extraction_control::ExtractionControl, parser, profiles::ProfileSet,
+        protocol::SourceSnapshot,
+    };
+    let source = format!("{}\nfn hello() {{}}", "//x\n".repeat(1024));
+    let profile = ProfileSet::new(&[])
+        .profile_for_language("rust")
+        .unwrap()
+        .clone();
+    let snapshot = SourceSnapshot {
+        path: "src/lib.rs".into(),
+        absolute_path: String::new(),
+        content_hash: String::new(),
+        language: Some("rust".into()),
+        byte_len: source.len() as u64,
+        source: Some(source.clone()),
+    };
+    let legacy = parser::parse_file(&snapshot, &profile).unwrap();
+    let expected = build_syntax_tree_graph_rows(meta("rust", "src/lib.rs"), &legacy.root).unwrap();
+    let mut check = || Ok(());
+    let mut control = ExtractionControl::new(&mut check, 1000, 10_000_000, 100_000, 100_000);
+    let tree = parser::parse_guarded_tree(source.as_bytes(), &profile, &mut control).unwrap();
+    let flat =
+        parser::normalize_guarded_rust(&tree, source.as_bytes(), &profile, &mut control).unwrap();
+    let actual = build_flat_syntax_rows(meta("rust", "src/lib.rs"), &flat, &mut control).unwrap();
+    assert_eq!(actual.nodes, expected.nodes);
+    assert_eq!(actual.edges, expected.edges);
+}

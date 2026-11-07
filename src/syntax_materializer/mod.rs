@@ -37,12 +37,7 @@ pub(crate) fn build_flat_syntax_rows(
 ) -> Result<BuiltGraphRows, crate::extraction_control::ExtractionError> {
     use crate::extraction_control::ExtractionError;
     let arena = NativeSyntaxArena::from_flat(flat, control)?;
-    let mut builder = NativeBuilder::with_guard(meta, control).map_err(|_| {
-        ExtractionError::new(
-            "reconstruction_unavailable",
-            "materializer configuration invalid",
-        )
-    })?;
+    let mut builder = NativeBuilder::with_guard(meta, control)?;
     let result = builder.build_tree(&arena, arena.root_id);
     if let Some(error) = builder.guard_failure.take() {
         return Err(error);

@@ -18,6 +18,8 @@ pub(crate) struct ExtractionControl<'a> {
     steps: u64,
     vertices: u64,
     edges: u64,
+    #[cfg(test)]
+    reserve_failure_after: Option<usize>,
 }
 impl<'a> ExtractionControl<'a> {
     pub(crate) fn new(
@@ -36,7 +38,30 @@ impl<'a> ExtractionControl<'a> {
             steps: 0,
             vertices: 0,
             edges: 0,
+            #[cfg(test)]
+            reserve_failure_after: None,
         }
+    }
+    #[cfg(test)]
+    pub(crate) fn inject_reserve_failure_after(&mut self, successful_reserves: usize) {
+        self.reserve_failure_after = Some(successful_reserves);
+    }
+    pub(crate) fn reserve<T>(
+        &mut self,
+        values: &mut Vec<T>,
+        additional: usize,
+    ) -> Result<(), ExtractionError> {
+        self.check()?;
+        #[cfg(test)]
+        if let Some(remaining) = self.reserve_failure_after.as_mut() {
+            if *remaining == 0 {
+                return Err(ExtractionError::new("resource_limit", "allocation failed"));
+            }
+            *remaining -= 1;
+        }
+        values
+            .try_reserve(additional)
+            .map_err(|_| ExtractionError::new("resource_limit", "allocation failed"))
     }
     pub(crate) fn check(&mut self) -> Result<(), ExtractionError> {
         (self.checkpoint)()
