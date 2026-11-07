@@ -810,7 +810,7 @@ impl CoveredEpochObservation {
                     directory.display()
                 ));
             }
-            for (phase, frame) in origin.chunks_exact(512).enumerate() {
+            for (phase, frame) in origin.as_chunks::<512>().0.iter().enumerate() {
                 if &frame[..8] != b"CGORIG01"
                     || frame[24] != phase as u8
                     || frame[480..] != Sha256::digest(&frame[..480])[..]
