@@ -3,18 +3,18 @@ use crate::syntax_materializer::{
     assignment_target_label, assignment_target_table, call_value_child, empty_metadata,
     import_label, json_field_label, parameter_annotation_capture, parameter_capture,
     parameter_child_ids, parser_like_metadata_capture, return_type_capture, symbol_key,
-    table_for_node_type, tree_capture, Capture, GraphNodeRow, NativeSyntaxArena, TreeNodeRef,
+    table_for_node_type, Capture, GraphNodeRow, NativeSyntaxArena, TreeNodeRef,
 };
 use serde_json::Value;
 
-impl NativeBuilder {
+impl NativeBuilder<'_, '_> {
     pub(in crate::syntax_materializer) fn emit_tree_import(
         &mut self,
         node: TreeNodeRef<'_>,
         owner: &Owner,
         syntax_id: &str,
     ) -> Result<GraphNodeRow, String> {
-        let mut capture = tree_capture(node);
+        let mut capture = self.capture(node)?;
         if self.language == "python" {
             capture.capture_name.clear();
         }
@@ -31,7 +31,7 @@ impl NativeBuilder {
         owner: &Owner,
         syntax_id: &str,
     ) -> Result<GraphNodeRow, String> {
-        let capture = tree_capture(node);
+        let capture = self.capture(node)?;
         let label = if self.language == "python" {
             "Assignment"
         } else {
@@ -95,7 +95,7 @@ impl NativeBuilder {
             let Some(value_node) = nodes.get_node(value_id) else {
                 return Ok(assignment);
             };
-            let call_capture = tree_capture(value_node);
+            let call_capture = self.capture(value_node)?;
             let call_syntax_id = self.syntax_capture(&call_capture);
             let call = self.emit_call(&call_capture, owner, &call_syntax_id)?;
             self.edge_if_allowed(

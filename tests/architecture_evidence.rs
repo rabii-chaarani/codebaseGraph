@@ -333,3 +333,43 @@ fn streamed_canonical_oracle_covers_each_assertion_shape() {
         assert_eq!(digest(&[typed]), format!("sha256:{:x}", hash.finalize()));
     }
 }
+
+#[test]
+fn builtin_extractor_descriptor_hash_and_context_guard() {
+    use codebase_graph::architecture::evidence::source_extractor_identity;
+    let identity = source_extractor_identity(&ctx()).unwrap();
+    let d = identity.descriptor();
+    assert_eq!(d.version(), "native-source-evidence/0.1");
+    assert_eq!(d.language(), "rust");
+    assert_eq!(d.profile().grammar_package, "tree_sitter_rust");
+    assert_eq!(d.node_identity_version(), "native-source-graph/1");
+    assert_eq!(
+        d.grammar_node_types_digest().as_str(),
+        format!(
+            "sha256:{:x}",
+            Sha256::digest(tree_sitter_rust::NODE_TYPES.as_bytes())
+        )
+    );
+    let mut descriptor = serde_json::to_value(d).unwrap();
+    descriptor.sort_all_objects();
+    let mut hash = Sha256::new();
+    hash.update(b"architecture-source-extractor/0.1\n");
+    hash.update(serde_json::to_vec(&descriptor).unwrap());
+    assert_eq!(
+        identity.digest().as_str(),
+        format!("sha256:{:x}", hash.finalize())
+    );
+    let cancelled = ExecutionContext::new(Arc::new(AtomicBool::new(true)), None);
+    assert_eq!(
+        source_extractor_identity(&cancelled).unwrap_err().code(),
+        "cancelled"
+    );
+    let expired = ExecutionContext::new(
+        Arc::new(AtomicBool::new(false)),
+        Some(std::time::Instant::now()),
+    );
+    assert_eq!(
+        source_extractor_identity(&expired).unwrap_err().code(),
+        "deadline_exceeded"
+    );
+}

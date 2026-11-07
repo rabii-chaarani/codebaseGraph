@@ -2,7 +2,7 @@ use super::{NativeBuilder, Owner};
 use crate::syntax_materializer::{empty_metadata, graph_id, GraphEdgeRow, GraphNodeRow};
 use serde_json::{Map, Value};
 
-impl NativeBuilder {
+impl NativeBuilder<'_, '_> {
     pub(in crate::syntax_materializer) fn connect_owner(
         &mut self,
         owner: &Owner,
@@ -109,6 +109,28 @@ impl NativeBuilder {
             }
         }
         let canonical_key = format!("{}|{}|{}|{}", edge_type, source_id, target_id, kind);
+        let edge_id = graph_id("edge", &canonical_key);
+        if let Some(failure) = &self.guard_failure {
+            return Err(failure.message.to_string());
+        }
+        if !self.edges.contains_key(&edge_id) {
+            if let Some(guard) = &mut self.guard {
+                if let Err(error) = guard.edge() {
+                    let message = error.message.to_string();
+                    self.guard_failure = Some(error);
+                    return Err(message);
+                }
+                if self.edges.try_reserve(1).is_err() {
+                    let error = crate::extraction_control::ExtractionError::new(
+                        "resource_limit",
+                        "allocation failed",
+                    );
+                    let message = error.message.to_string();
+                    self.guard_failure = Some(error);
+                    return Err(message);
+                }
+            }
+        }
         let mut edge_metadata = empty_metadata();
         edge_metadata.insert(
             "canonical_key".to_string(),
@@ -118,7 +140,7 @@ impl NativeBuilder {
             edge_metadata.insert(key, value);
         }
         let edge = GraphEdgeRow {
-            id: graph_id("edge", &canonical_key),
+            id: edge_id,
             edge_type: edge_type.to_string(),
             source_id: source_id.to_string(),
             target_id: target_id.to_string(),

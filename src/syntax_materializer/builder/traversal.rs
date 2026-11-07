@@ -1,11 +1,11 @@
 use super::{NativeBuilder, Owner};
 use crate::syntax_materializer::{
     empty_metadata, fortran_literal_capture, module_label, semantic_child_ids,
-    should_derive_root_module, table_for_capture, table_for_node_type, tree_capture,
-    NativeSyntaxArena, TreeNodeRef,
+    should_derive_root_module, table_for_capture, table_for_node_type, NativeSyntaxArena,
+    TreeNodeRef,
 };
 
-impl NativeBuilder {
+impl NativeBuilder<'_, '_> {
     pub(in crate::syntax_materializer) fn build_tree(
         &mut self,
         nodes: &NativeSyntaxArena<'_>,
@@ -46,7 +46,7 @@ impl NativeBuilder {
             root.node_type(),
             "Module" | "module" | "program" | "source_file"
         ) {
-            let root_capture = tree_capture(root);
+            let root_capture = self.capture(root)?;
             let syntax_id = self.syntax_capture(&root_capture);
             let module = self.semantic_node(
                 "Module",
@@ -119,7 +119,7 @@ impl NativeBuilder {
         let Some(root) = nodes.get_node(root_id) else {
             return Err("tree graph root node is missing".to_string());
         };
-        let root_capture = tree_capture(root);
+        let root_capture = self.capture(root)?;
         let root_syntax_id = self.syntax_capture(&root_capture);
         self.edge(
             "EvidencedBy",
@@ -137,19 +137,32 @@ impl NativeBuilder {
         parent: TreeNodeRef<'_>,
         parent_syntax_id: &str,
     ) -> Result<(), String> {
-        for (child_index, child_id) in parent.children.iter().enumerate() {
-            let Some(child) = nodes.get_node(*child_id) else {
-                return Err(format!("tree graph node {child_id} is missing"));
-            };
-            let child_capture = tree_capture(child);
+        let mut stack = Vec::new();
+        stack
+            .try_reserve(parent.children.len())
+            .map_err(|_| "allocation failed".to_string())?;
+        for (index, child_id) in parent.children.iter().enumerate().rev() {
+            stack.push((*child_id, index, self.copy_text(parent_syntax_id)?));
+        }
+        while let Some((child_id, child_index, parent_id)) = stack.pop() {
+            self.guard_visit()?;
+            let child = nodes
+                .get_node(child_id)
+                .ok_or_else(|| format!("tree graph node {child_id} is missing"))?;
+            let child_capture = self.capture(child)?;
             let child_syntax_id = self.syntax_capture(&child_capture);
             self.syntax_child(
-                parent_syntax_id,
+                &parent_id,
                 &child_syntax_id,
                 child.field_name(),
                 child_index,
             )?;
-            self.materialize_syntax_children(nodes, child, &child_syntax_id)?;
+            stack
+                .try_reserve(child.children.len())
+                .map_err(|_| "allocation failed".to_string())?;
+            for (index, next_id) in child.children.iter().enumerate().rev() {
+                stack.push((*next_id, index, self.copy_text(&child_syntax_id)?));
+            }
         }
         Ok(())
     }
@@ -160,15 +173,75 @@ impl NativeBuilder {
         node_id: usize,
         owner: &Owner,
     ) -> Result<(), String> {
-        let Some(node) = nodes.get_node(node_id) else {
-            return Err(format!("tree graph node {node_id} is missing"));
-        };
-        let next_owner = self.emit_tree_node(nodes, node, owner)?;
-        let child_owner = next_owner.as_ref().unwrap_or(owner);
-        for child_id in semantic_child_ids(nodes, node, &self.language) {
-            self.traverse_tree_node(nodes, child_id, child_owner)?;
+        enum Job {
+            Enter(usize, usize),
+            Exit(usize, usize),
         }
-        self.emit_parser_like_metadata_fields(node, child_owner)?;
+        let mut owners = Vec::new();
+        owners
+            .try_reserve(1)
+            .map_err(|_| "allocation failed".to_string())?;
+        owners.push(Owner {
+            node_id: self.copy_text(&owner.node_id)?,
+            table: self.copy_text(&owner.table)?,
+            qualified_name: self.copy_text(&owner.qualified_name)?,
+            scope_id: self.copy_text(&owner.scope_id)?,
+        });
+        let mut stack = Vec::new();
+        stack
+            .try_reserve(1)
+            .map_err(|_| "allocation failed".to_string())?;
+        stack.push(Job::Enter(node_id, 0));
+        while let Some(job) = stack.pop() {
+            self.guard_visit()?;
+            match job {
+                Job::Enter(id, owner_index) => {
+                    let node = nodes
+                        .get_node(id)
+                        .ok_or_else(|| format!("tree graph node {id} is missing"))?;
+                    let next = self.emit_tree_node(nodes, node, &owners[owner_index])?;
+                    let child_owner = if let Some(value) = next {
+                        owners
+                            .try_reserve(1)
+                            .map_err(|_| "allocation failed".to_string())?;
+                        owners.push(value);
+                        owners.len() - 1
+                    } else {
+                        owner_index
+                    };
+                    let children = if let Some(guard) = &mut self.guard {
+                        match crate::syntax_materializer::semantic_child_ids_guarded(
+                            nodes,
+                            node,
+                            &self.language,
+                            guard,
+                        ) {
+                            Ok(children) => children,
+                            Err(error) => {
+                                let message = error.message.to_string();
+                                self.guard_failure = Some(error);
+                                return Err(message);
+                            }
+                        }
+                    } else {
+                        semantic_child_ids(nodes, node, &self.language)
+                    };
+                    stack
+                        .try_reserve(children.len().saturating_add(1))
+                        .map_err(|_| "allocation failed".to_string())?;
+                    stack.push(Job::Exit(id, child_owner));
+                    for child in children.into_iter().rev() {
+                        stack.push(Job::Enter(child, child_owner));
+                    }
+                }
+                Job::Exit(id, owner_index) => {
+                    let node = nodes
+                        .get_node(id)
+                        .ok_or_else(|| format!("tree graph node {id} is missing"))?;
+                    self.emit_parser_like_metadata_fields(node, &owners[owner_index])?;
+                }
+            }
+        }
         Ok(())
     }
 
@@ -178,7 +251,7 @@ impl NativeBuilder {
         node: TreeNodeRef<'_>,
         owner: &Owner,
     ) -> Result<Option<Owner>, String> {
-        let mut capture = tree_capture(node);
+        let mut capture = self.capture(node)?;
         if self.language == "python" {
             capture.capture_name.clear();
         }

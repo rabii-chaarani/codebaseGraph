@@ -5,7 +5,7 @@ use crate::syntax_materializer::{
 };
 use serde_json::{Map, Value};
 
-impl NativeBuilder {
+impl NativeBuilder<'_, '_> {
     pub(in crate::syntax_materializer) fn support_node(
         &mut self,
         table: &str,
@@ -225,6 +225,24 @@ impl NativeBuilder {
     }
 
     pub(in crate::syntax_materializer) fn add_node(&mut self, node: GraphNodeRow) -> GraphNodeRow {
+        if self.guard_failure.is_some() {
+            return node;
+        }
+        if !self.nodes.contains_key(&node.id) {
+            if let Some(guard) = &mut self.guard {
+                if let Err(error) = guard.vertex() {
+                    self.guard_failure = Some(error);
+                    return node;
+                }
+                if self.nodes.try_reserve(1).is_err() {
+                    self.guard_failure = Some(crate::extraction_control::ExtractionError::new(
+                        "resource_limit",
+                        "allocation failed",
+                    ));
+                    return node;
+                }
+            }
+        }
         self.nodes
             .entry(node.id.clone())
             .or_insert_with(|| node.clone());
@@ -261,6 +279,41 @@ impl NativeBuilder {
                 ids.push(node.id.clone());
             }
         }
+    }
+
+    pub(in crate::syntax_materializer) fn into_rows_guarded(
+        mut self,
+    ) -> Result<BuiltGraphRows, crate::extraction_control::ExtractionError> {
+        use crate::extraction_control::{sort_by, ExtractionError};
+        if let Some(error) = self.guard_failure.take() {
+            return Err(error);
+        }
+        let guard = self.guard.take().ok_or_else(|| {
+            ExtractionError::new("architecture_internal_error", "missing materializer guard")
+        })?;
+        let mut nodes = Vec::new();
+        nodes
+            .try_reserve(self.nodes.len())
+            .map_err(|_| ExtractionError::new("resource_limit", "allocation failed"))?;
+        for value in self.nodes.into_values() {
+            guard.visit(0)?;
+            nodes.push(value);
+        }
+        sort_by(&mut nodes, guard, |a, b| {
+            (a.table.as_str(), a.id.as_str()).cmp(&(b.table.as_str(), b.id.as_str()))
+        })?;
+        let mut edges = Vec::new();
+        edges
+            .try_reserve(self.edges.len())
+            .map_err(|_| ExtractionError::new("resource_limit", "allocation failed"))?;
+        for value in self.edges.into_values() {
+            guard.visit(0)?;
+            edges.push(value);
+        }
+        sort_by(&mut edges, guard, |a, b| {
+            (a.edge_type.as_str(), a.id.as_str()).cmp(&(b.edge_type.as_str(), b.id.as_str()))
+        })?;
+        Ok(BuiltGraphRows { nodes, edges })
     }
 
     pub(in crate::syntax_materializer) fn into_rows(self) -> BuiltGraphRows {

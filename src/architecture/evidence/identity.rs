@@ -420,3 +420,76 @@ pub(super) fn facts(
     let (digest, bytes) = support::stream_hash(&payload, policy.max_evidence_bytes(), run)?;
     Ok((MappingFactsDigest(digest), bytes))
 }
+
+/// Built-in extraction semantics; this identifies an implementation, not a build receipt.
+#[derive(Debug, Serialize)]
+pub struct SourceExtractorIdentity {
+    descriptor: SourceExtractorDescriptor,
+    digest: Digest,
+}
+impl SourceExtractorIdentity {
+    pub fn descriptor(&self) -> &SourceExtractorDescriptor {
+        &self.descriptor
+    }
+    pub fn digest(&self) -> &Digest {
+        &self.digest
+    }
+}
+#[derive(Debug, Serialize)]
+pub struct SourceExtractorDescriptor {
+    version: &'static str,
+    language: &'static str,
+    profile: crate::protocol::LanguageProfile,
+    grammar_node_types_digest: Digest,
+    node_identity_version: &'static str,
+}
+impl SourceExtractorDescriptor {
+    pub fn version(&self) -> &str {
+        self.version
+    }
+    pub fn language(&self) -> &str {
+        self.language
+    }
+    pub fn profile(&self) -> &crate::protocol::LanguageProfile {
+        &self.profile
+    }
+    pub fn grammar_node_types_digest(&self) -> &Digest {
+        &self.grammar_node_types_digest
+    }
+    pub fn node_identity_version(&self) -> &str {
+        self.node_identity_version
+    }
+}
+/// Identify the linked built-in Rust extractor without implying source qualification.
+pub fn source_extractor_identity(
+    context: &ExecutionContext,
+) -> Result<SourceExtractorIdentity, EvidenceError> {
+    let run = support::metadata_run(context);
+    run.check()?;
+    let profile = crate::profiles::built_in_profiles()
+        .into_iter()
+        .find(|p| p.language == "rust")
+        .ok_or_else(|| {
+            EvidenceError::new(
+                "architecture_internal_error",
+                "built-in Rust profile missing",
+            )
+        })?;
+    run.check()?;
+    let node_types = crate::parser::grammar_node_types(&profile).ok_or_else(|| {
+        EvidenceError::new(
+            "architecture_internal_error",
+            "built-in Rust grammar missing",
+        )
+    })?;
+    let grammar_node_types_digest = support::raw_digest(node_types.as_bytes(), &run)?;
+    let descriptor = SourceExtractorDescriptor {
+        version: "native-source-evidence/0.1",
+        language: "rust",
+        profile,
+        grammar_node_types_digest,
+        node_identity_version: "native-source-graph/1",
+    };
+    let digest = support::metadata_hash("architecture-source-extractor", &descriptor, &run)?;
+    Ok(SourceExtractorIdentity { descriptor, digest })
+}

@@ -362,3 +362,162 @@ mod tests {
         }
     }
 }
+
+pub(crate) fn parse_guarded_tree(
+    source: &[u8],
+    profile: &LanguageProfile,
+    control: &mut crate::extraction_control::ExtractionControl<'_>,
+) -> Result<::tree_sitter::Tree, crate::extraction_control::ExtractionError> {
+    tree_sitter::parse_guarded_tree(source, profile, control)
+}
+
+#[cfg(test)]
+mod guarded_tests {
+    use super::*;
+    use crate::{
+        extraction_control::{ExtractionControl, ExtractionError},
+        profiles::ProfileSet,
+    };
+    #[test]
+    fn native_parse_progress_observes_cancellation_and_rejects_parse_errors() {
+        let profile = ProfileSet::new(&[])
+            .profile_for_language("rust")
+            .unwrap()
+            .clone();
+        let mut calls = 0usize;
+        let mut callback = || {
+            calls += 1;
+            if calls >= 2 {
+                Err(ExtractionError::new("cancelled", "test cancellation"))
+            } else {
+                Ok(())
+            }
+        };
+        let mut control =
+            ExtractionControl::new(&mut callback, 100_000, 1_000_000, 1_000_000, 1_000_000);
+        let source = "fn f() {}\n".repeat(100_000);
+        let err = match parse_guarded_tree(source.as_bytes(), &profile, &mut control) {
+            Ok(_) => panic!("parse should cancel"),
+            Err(error) => error,
+        };
+        assert_eq!(err.code, "cancelled");
+        let mut callback = || Ok(());
+        let mut control = ExtractionControl::new(&mut callback, 100, 100, 100, 100);
+        let err = match parse_guarded_tree(b"fn {", &profile, &mut control) {
+            Ok(_) => panic!("parse errors must be unknown"),
+            Err(error) => error,
+        };
+        assert_eq!(err.code, "reconstruction_unavailable");
+    }
+}
+
+pub(crate) fn normalize_guarded_rust(
+    tree: &::tree_sitter::Tree,
+    source: &[u8],
+    profile: &LanguageProfile,
+    control: &mut crate::extraction_control::ExtractionControl<'_>,
+) -> Result<crate::normalize::FlatSyntax, crate::extraction_control::ExtractionError> {
+    tree_sitter::normalize_rust_flat(tree, source, profile, control)
+}
+
+#[cfg(test)]
+mod flat_tests {
+    use super::*;
+    use crate::{extraction_control::ExtractionControl, profiles::ProfileSet};
+    #[test]
+    fn flat_rust_nodes_preserve_legacy_fields_and_guard_depth() {
+        let profile = ProfileSet::new(&[])
+            .profile_for_language("rust")
+            .unwrap()
+            .clone();
+        let source="use std::fmt; struct Thing { value: i32 } impl Thing { fn get(&self) -> i32 { self.value } } fn main() { Thing::get(); }";
+        let legacy = super::parse_source(source, &profile).unwrap();
+        let mut check = || Ok(());
+        let mut ctl = ExtractionControl::new(&mut check, 1000, 1_000_000, 1_000_000, 1_000_000);
+        let tree = parse_guarded_tree(source.as_bytes(), &profile, &mut ctl).unwrap();
+        let flat = normalize_guarded_rust(&tree, source.as_bytes(), &profile, &mut ctl).unwrap();
+        let mut stack = vec![(&legacy.root, 0usize)];
+        let mut count = 0;
+        while let Some((original, id)) = stack.pop() {
+            let actual = &flat.nodes[id];
+            count += 1;
+            assert_eq!(
+                (
+                    &actual.node_type,
+                    &actual.text,
+                    &actual.capture_name,
+                    &actual.field_name,
+                    &actual.fields,
+                    actual.byte_start,
+                    actual.byte_end
+                ),
+                (
+                    &original.node_type,
+                    &original.text,
+                    &original.capture_name,
+                    &original.field_name,
+                    &original.fields,
+                    original.byte_start,
+                    original.byte_end
+                )
+            );
+            assert_eq!(flat.children[id].len(), original.children.len());
+            for (child, &child_id) in original.children.iter().zip(&flat.children[id]).rev() {
+                assert_eq!(flat.parents[child_id], Some(id));
+                stack.push((child, child_id));
+            }
+        }
+        assert_eq!(count, flat.nodes.len());
+        let deep = format!("fn f() {{ {} 0 {} }}", "(".repeat(500), ")".repeat(500));
+        let mut check = || Ok(());
+        let mut ctl = ExtractionControl::new(&mut check, 64, 1_000_000, 1_000_000, 1_000_000);
+        let tree = parse_guarded_tree(deep.as_bytes(), &profile, &mut ctl).unwrap();
+        let error = match normalize_guarded_rust(&tree, deep.as_bytes(), &profile, &mut ctl) {
+            Ok(_) => panic!("depth must be bounded"),
+            Err(e) => e,
+        };
+        assert_eq!(error.code, "resource_limit");
+        let mut check = || Ok(());
+        let mut control =
+            ExtractionControl::new(&mut check, 2_000, 10_000_000, 10_000_000, 10_000_000);
+        let tree = parse_guarded_tree(deep.as_bytes(), &profile, &mut control).unwrap();
+        let flat = normalize_guarded_rust(&tree, deep.as_bytes(), &profile, &mut control).unwrap();
+        assert!(flat.nodes.len() > 500);
+        drop(flat);
+    }
+}
+
+#[cfg(test)]
+mod guarded_copy_tests {
+    use super::*;
+    use crate::{
+        extraction_control::{ExtractionControl, ExtractionError},
+        profiles::ProfileSet,
+    };
+    #[test]
+    fn cancellation_interrupts_field_and_normalization_copy_work() {
+        let profile = ProfileSet::new(&[])
+            .profile_for_language("rust")
+            .unwrap()
+            .clone();
+        let source = format!("fn {}() {{}}", "a".repeat(20_000));
+        let mut ok = || Ok(());
+        let mut initial = ExtractionControl::new(&mut ok, 100, 1_000_000, 1000, 1000);
+        let tree = parse_guarded_tree(source.as_bytes(), &profile, &mut initial).unwrap();
+        let mut calls = 0usize;
+        let mut cancel = || {
+            calls += 1;
+            if calls > 500 {
+                Err(ExtractionError::new("cancelled", "copy cancelled"))
+            } else {
+                Ok(())
+            }
+        };
+        let mut guarded = ExtractionControl::new(&mut cancel, 100, 1_000_000, 1000, 1000);
+        let error = match normalize_guarded_rust(&tree, source.as_bytes(), &profile, &mut guarded) {
+            Ok(_) => panic!("copy must stop"),
+            Err(error) => error,
+        };
+        assert_eq!(error.code, "cancelled");
+    }
+}

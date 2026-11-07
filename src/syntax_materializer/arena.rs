@@ -39,6 +39,43 @@ impl<'a> NativeSyntaxArena<'a> {
         node_id
     }
 
+    pub(super) fn from_flat(
+        flat: &'a crate::normalize::FlatSyntax,
+        control: &mut crate::extraction_control::ExtractionControl<'_>,
+    ) -> Result<Self, crate::extraction_control::ExtractionError> {
+        use crate::extraction_control::ExtractionError;
+        if flat.nodes.len() != flat.parents.len()
+            || flat.nodes.len() != flat.children.len()
+            || flat.nodes.is_empty()
+        {
+            return Err(ExtractionError::new(
+                "architecture_internal_error",
+                "invalid flat syntax arena",
+            ));
+        }
+        let mut nodes = Vec::new();
+        nodes
+            .try_reserve(flat.nodes.len())
+            .map_err(|_| ExtractionError::new("resource_limit", "allocation failed"))?;
+        for (index, node) in flat.nodes.iter().enumerate() {
+            control.visit(0)?;
+            let mut children = Vec::new();
+            children
+                .try_reserve(flat.children[index].len())
+                .map_err(|_| ExtractionError::new("resource_limit", "allocation failed"))?;
+            for child in &flat.children[index] {
+                control.check()?;
+                children.push(*child);
+            }
+            nodes.push(NativeSyntaxNode {
+                parent_id: flat.parents[index],
+                node,
+                children,
+            });
+        }
+        Ok(Self { nodes, root_id: 0 })
+    }
+
     pub(super) fn get_node(&self, id: usize) -> Option<TreeNodeRef<'_>> {
         self.nodes.get(id).map(|node| TreeNodeRef {
             parent_id: node.parent_id,

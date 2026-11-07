@@ -21,25 +21,20 @@ pub(crate) fn mapping_for_syntax_node<'a>(
     mappings: &'a [CaptureMapping],
     ancestors: &[String],
 ) -> Option<&'a CaptureMapping> {
-    let candidates = mappings
-        .iter()
-        .filter(|mapping| {
+    let candidates = || {
+        mappings.iter().filter(|mapping| {
             mapping
                 .parser_node_types
                 .iter()
                 .any(|node_type| node_type == &node.node_type)
         })
-        .collect::<Vec<_>>();
-    for mapping in &candidates {
-        if !mapping.context_rule.is_empty()
-            && context_rule_matches(&mapping.context_rule, node, ancestors)
-        {
-            return Some(mapping);
-        }
-    }
-    candidates
-        .into_iter()
-        .find(|mapping| mapping.context_rule.is_empty())
+    };
+    candidates()
+        .find(|mapping| {
+            !mapping.context_rule.is_empty()
+                && context_rule_matches(&mapping.context_rule, node, ancestors)
+        })
+        .or_else(|| candidates().find(|mapping| mapping.context_rule.is_empty()))
 }
 
 fn context_rule_matches(rule: &str, node: &SyntaxNode, ancestors: &[String]) -> bool {
@@ -98,4 +93,12 @@ fn field_descendant_has(node: &SyntaxNode, field_name: &str, expected_type: &str
                 .filter_map(Value::as_str)
                 .any(|value| value == expected_type)
         })
+}
+
+/// Flat owned representation for bounded extraction. Child vectors on each
+/// syntax record remain empty, so failure cleanup is independent of depth.
+pub(crate) struct FlatSyntax {
+    pub(crate) nodes: Vec<SyntaxNode>,
+    pub(crate) parents: Vec<Option<usize>>,
+    pub(crate) children: Vec<Vec<usize>>,
 }

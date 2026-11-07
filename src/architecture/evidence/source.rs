@@ -255,3 +255,160 @@ mod tests {
         }
     }
 }
+
+/// Reconstruct contextual graph facts from captured bytes only. No graph is written.
+pub(super) fn reconstruct(
+    bytes: &[u8],
+    path: &RelativePath,
+    repository: &crate::architecture::Text,
+    control: &mut crate::extraction_control::ExtractionControl<'_>,
+) -> Result<crate::syntax_materializer::BuiltGraphRows, crate::extraction_control::ExtractionError>
+{
+    use crate::extraction_control::ExtractionError;
+    control.check()?;
+    if !path.as_str().ends_with(".rs") {
+        return Err(ExtractionError::new(
+            "reconstruction_unavailable",
+            "unsupported source language",
+        ));
+    }
+    std::str::from_utf8(bytes)
+        .map_err(|_| ExtractionError::new("reconstruction_unavailable", "source is not UTF-8"))?;
+    let profile = crate::profiles::built_in_profiles()
+        .into_iter()
+        .find(|profile| profile.language == "rust")
+        .ok_or_else(|| {
+            ExtractionError::new(
+                "architecture_internal_error",
+                "built-in Rust profile missing",
+            )
+        })?;
+    let tree = crate::parser::parse_guarded_tree(bytes, &profile, control)?;
+    let flat = crate::parser::normalize_guarded_rust(&tree, bytes, &profile, control)?;
+    let meta = std::collections::BTreeMap::from([
+        ("path".to_string(), path.as_str().to_string()),
+        ("language".to_string(), "rust".to_string()),
+        ("grammar_version".to_string(), profile.grammar_version),
+        ("source_root".to_string(), String::new()),
+        (
+            "repository_label".to_string(),
+            repository.as_str().to_string(),
+        ),
+    ]);
+    crate::syntax_materializer::build_flat_syntax_rows(meta, &flat, control)
+}
+
+pub(super) fn exact_node<'a>(
+    rows: &'a crate::syntax_materializer::BuiltGraphRows,
+    reference: &SourceRef,
+    control: &mut crate::extraction_control::ExtractionControl<'_>,
+) -> Result<
+    Option<&'a crate::syntax_materializer::GraphNodeRow>,
+    crate::extraction_control::ExtractionError,
+> {
+    for row in &rows.nodes {
+        control.visit(0)?;
+        if row.id == reference.node_id.as_str()
+            && row.table == reference.node_kind.as_str()
+            && row.qualified_name == reference.symbol.as_str()
+            && row.path == reference.path.as_str()
+            && row.byte_start.and_then(|v| u64::try_from(v).ok())
+                == Some(reference.byte_span.start())
+            && row.byte_end.and_then(|v| u64::try_from(v).ok()) == Some(reference.byte_span.end())
+        {
+            return Ok(Some(row));
+        }
+    }
+    Ok(None)
+}
+pub(super) fn direct_scope_contains(
+    rows: &crate::syntax_materializer::BuiltGraphRows,
+    scope: &SourceRef,
+    member: &SourceRef,
+    control: &mut crate::extraction_control::ExtractionControl<'_>,
+) -> Result<bool, crate::extraction_control::ExtractionError> {
+    if scope.node_kind.as_str() != "Scope"
+        || exact_node(rows, scope, control)?.is_none()
+        || exact_node(rows, member, control)?.is_none()
+    {
+        return Ok(false);
+    }
+    for edge in &rows.edges {
+        control.visit(0)?;
+        if edge.edge_type == "Contains"
+            && edge.source_id == scope.node_id.as_str()
+            && edge.target_id == member.node_id.as_str()
+        {
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}
+
+#[cfg(test)]
+mod reconstruction_tests {
+    use super::*;
+    use crate::{
+        architecture::{ByteSpan, GitObjectId, Text},
+        extraction_control::ExtractionControl,
+    };
+    use sha2::{Digest as _, Sha256};
+    #[test]
+    fn exact_independent_literal_node_scope_and_mismatches() {
+        let bytes = b"fn hello() {}";
+        let path = RelativePath::new("src/lib.rs").unwrap();
+        let repo = Text::new("repo").unwrap();
+        let mut check = || Ok(());
+        let mut control = ExtractionControl::new(&mut check, 100, 100_000, 100_000, 100_000);
+        let rows = reconstruct(bytes, &path, &repo, &mut control).unwrap();
+        let reference = SourceRef {
+            repository: repo,
+            commit: GitObjectId::new("1".repeat(40)).unwrap(),
+            path,
+            node_kind: Text::new("Function").unwrap(),
+            node_id: Text::new("Function:216f9df7cf9055f46285").unwrap(),
+            symbol: Text::new("src.lib.hello").unwrap(),
+            byte_span: ByteSpan::new(0, 13).unwrap(),
+            file_digest: Digest::new(format!("sha256:{:x}", Sha256::digest(bytes))).unwrap(),
+        };
+        assert!(exact_node(&rows, &reference, &mut control)
+            .unwrap()
+            .is_some());
+        let mut scope = reference.clone();
+        scope.node_kind = Text::new("Scope").unwrap();
+        scope.node_id = Text::new("Scope:41046104907937f3c6e1").unwrap();
+        scope.symbol = Text::new("src.lib.<scope>").unwrap();
+        assert!(direct_scope_contains(&rows, &scope, &reference, &mut control).unwrap());
+        let mut wrong = reference.clone();
+        wrong.byte_span = ByteSpan::new(1, 13).unwrap();
+        assert!(exact_node(&rows, &wrong, &mut control).unwrap().is_none());
+        wrong = reference.clone();
+        wrong.symbol = Text::new("hello").unwrap();
+        assert!(exact_node(&rows, &wrong, &mut control).unwrap().is_none());
+        wrong = reference.clone();
+        wrong.node_kind = Text::new("Symbol").unwrap();
+        assert!(exact_node(&rows, &wrong, &mut control).unwrap().is_none());
+        assert!(!direct_scope_contains(&rows, &reference, &scope, &mut control).unwrap());
+    }
+}
+
+#[cfg(test)]
+mod deep_reconstruction_tests {
+    use super::*;
+    use crate::{architecture::Text, extraction_control::ExtractionControl};
+    #[test]
+    fn deep_flat_reconstruction_drops_without_recursive_owned_nodes() {
+        let source = format!("fn f() {{ {} 0 {} }}", "(".repeat(500), ")".repeat(500));
+        let mut check = || Ok(());
+        let mut control = ExtractionControl::new(&mut check, 2_000, 20_000_000, 100_000, 100_000);
+        let rows = reconstruct(
+            source.as_bytes(),
+            &RelativePath::new("src/lib.rs").unwrap(),
+            &Text::new("repo").unwrap(),
+            &mut control,
+        )
+        .unwrap();
+        assert!(!rows.nodes.is_empty());
+        drop(rows);
+    }
+}

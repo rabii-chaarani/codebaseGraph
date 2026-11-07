@@ -20,6 +20,7 @@ mod daemon_service;
 pub mod db_writer;
 pub mod error;
 mod execution;
+mod extraction_control;
 mod hash;
 mod materialization_worker;
 pub(crate) mod mcp_client;

@@ -56,3 +56,14 @@ pub(crate) fn raw_digest(
 ) -> Result<crate::architecture::Digest, CompileError> {
     super::identity::raw_digest(bytes, run)
 }
+
+pub(crate) fn metadata_run(context: &ExecutionContext) -> Run {
+    context.metadata_run()
+}
+pub(crate) fn metadata_hash<T: Serialize>(
+    domain: &str,
+    value: &T,
+    run: &Run,
+) -> Result<crate::architecture::Digest, CompileError> {
+    output::hash_value(domain, value, run)
+}

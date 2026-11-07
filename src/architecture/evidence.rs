@@ -2,7 +2,10 @@
 mod identity;
 mod input;
 mod source;
-pub use identity::{mapping_facts_digest, MappingFactsDigest};
+pub use identity::{
+    mapping_facts_digest, source_extractor_identity, MappingFactsDigest, SourceExtractorDescriptor,
+    SourceExtractorIdentity,
+};
 pub use input::*;
 
 /// An incomplete evidence operation. No successful validation is carried here.

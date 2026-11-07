@@ -253,3 +253,202 @@ fn syntax_node(
             .collect(),
     }
 }
+
+#[test]
+fn flat_arena_rust_rows_match_legacy_rows() {
+    use crate::{
+        extraction_control::ExtractionControl, parser, profiles::ProfileSet,
+        protocol::SourceSnapshot,
+    };
+    let source="use std::fmt; struct Thing { value: i32 } impl Thing { fn get(&self) -> i32 { self.value } } fn main() { Thing::get(); }";
+    let profile = ProfileSet::new(&[])
+        .profile_for_language("rust")
+        .unwrap()
+        .clone();
+    let snapshot = SourceSnapshot {
+        path: "src/lib.rs".into(),
+        absolute_path: String::new(),
+        content_hash: String::new(),
+        language: Some("rust".into()),
+        byte_len: source.len() as u64,
+        source: Some(source.into()),
+    };
+    let legacy = parser::parse_file(&snapshot, &profile).unwrap();
+    let expected = build_syntax_tree_graph_rows(meta("rust", "src/lib.rs"), &legacy.root).unwrap();
+    let mut check = || Ok(());
+    let mut control = ExtractionControl::new(&mut check, 1000, 1_000_000, 1_000_000, 1_000_000);
+    let tree = parser::parse_guarded_tree(source.as_bytes(), &profile, &mut control).unwrap();
+    let flat =
+        parser::normalize_guarded_rust(&tree, source.as_bytes(), &profile, &mut control).unwrap();
+    let actual = build_flat_syntax_rows(meta("rust", "src/lib.rs"), &flat, &mut control).unwrap();
+    assert_eq!(actual.nodes, expected.nodes);
+    assert_eq!(actual.edges, expected.edges);
+    assert!(actual.nodes.iter().any(|n| n.table == "Function"
+        && n.byte_start.is_some()
+        && n.byte_end.is_some()
+        && !n.qualified_name.is_empty()));
+    assert!(actual.edges.iter().any(|e| e.edge_type == "Contains"
+        && actual
+            .nodes
+            .iter()
+            .any(|n| n.id == e.source_id && n.table == "Scope")));
+}
+
+#[test]
+fn rust_source_known_node_and_scope_identity_vector() {
+    use crate::{extraction_control::ExtractionControl, parser, profiles::ProfileSet};
+    let source = "fn hello() {}";
+    let profile = ProfileSet::new(&[])
+        .profile_for_language("rust")
+        .unwrap()
+        .clone();
+    let mut check = || Ok(());
+    let mut control = ExtractionControl::new(&mut check, 100, 10_000, 10_000, 10_000);
+    let tree = parser::parse_guarded_tree(source.as_bytes(), &profile, &mut control).unwrap();
+    let flat =
+        parser::normalize_guarded_rust(&tree, source.as_bytes(), &profile, &mut control).unwrap();
+    let arena = NativeSyntaxArena::from_flat(&flat, &mut control).unwrap();
+    let mut builder = NativeBuilder::new(meta("rust", "src/lib.rs")).unwrap();
+    builder.build_tree(&arena, arena.root_id).unwrap();
+    let rows = builder.into_rows();
+    let function = rows
+        .nodes
+        .iter()
+        .find(|n| n.id == "Function:216f9df7cf9055f46285")
+        .unwrap();
+    assert_eq!(
+        (
+            function.table.as_str(),
+            function.qualified_name.as_str(),
+            function.path.as_str(),
+            function.byte_start,
+            function.byte_end
+        ),
+        ("Function", "src.lib.hello", "src/lib.rs", Some(0), Some(13))
+    );
+    assert!(rows.edges.iter().any(|e| e.edge_type == "Contains"
+        && e.source_id == "Scope:41046104907937f3c6e1"
+        && e.target_id == function.id));
+}
+
+#[test]
+fn flat_materializer_enforces_vertex_edge_and_cancellation_limits() {
+    use crate::{
+        extraction_control::{ExtractionControl, ExtractionError},
+        parser,
+        profiles::ProfileSet,
+    };
+    let source = "fn hello() {}";
+    let profile = ProfileSet::new(&[])
+        .profile_for_language("rust")
+        .unwrap()
+        .clone();
+    let mut check = || Ok(());
+    let mut parser_control = ExtractionControl::new(&mut check, 100, 10_000, 10_000, 10_000);
+    let tree =
+        parser::parse_guarded_tree(source.as_bytes(), &profile, &mut parser_control).unwrap();
+    let flat =
+        parser::normalize_guarded_rust(&tree, source.as_bytes(), &profile, &mut parser_control)
+            .unwrap();
+    for (vertices, edges) in [(1, 10_000), (10_000, 1)] {
+        let mut check = || Ok(());
+        let mut control = ExtractionControl::new(&mut check, 100, 10_000, vertices, edges);
+        let result = build_flat_syntax_rows(meta("rust", "src/lib.rs"), &flat, &mut control);
+        assert_eq!(result.err().unwrap().code, "resource_limit");
+    }
+    // Arena admission consumes one visit per flat node; this limit permits
+    // admission and forces failure inside the subsequent materializer work.
+    let mut check = || Ok(());
+    let mut traversal =
+        ExtractionControl::new(&mut check, 100, flat.nodes.len() as u64 + 5, 10_000, 10_000);
+    assert_eq!(
+        build_flat_syntax_rows(meta("rust", "src/lib.rs"), &flat, &mut traversal)
+            .err()
+            .unwrap()
+            .code,
+        "resource_limit"
+    );
+    let mut check = || Err(ExtractionError::new("cancelled", "cancelled"));
+    let mut control = ExtractionControl::new(&mut check, 100, 10_000, 10_000, 10_000);
+    assert_eq!(
+        build_flat_syntax_rows(meta("rust", "src/lib.rs"), &flat, &mut control)
+            .err()
+            .unwrap()
+            .code,
+        "cancelled"
+    );
+}
+
+#[test]
+fn flat_materializer_exact_vertex_and_edge_limits() {
+    use crate::{extraction_control::ExtractionControl, parser, profiles::ProfileSet};
+    let source = "fn hello() {}";
+    let profile = ProfileSet::new(&[])
+        .profile_for_language("rust")
+        .unwrap()
+        .clone();
+    let mut check = || Ok(());
+    let mut parse_control = ExtractionControl::new(&mut check, 100, 1_000_000, 10_000, 10_000);
+    let tree = parser::parse_guarded_tree(source.as_bytes(), &profile, &mut parse_control).unwrap();
+    let flat =
+        parser::normalize_guarded_rust(&tree, source.as_bytes(), &profile, &mut parse_control)
+            .unwrap();
+    let mut check = || Ok(());
+    let mut full = ExtractionControl::new(&mut check, 100, 1_000_000, 10_000, 10_000);
+    let rows = build_flat_syntax_rows(meta("rust", "src/lib.rs"), &flat, &mut full).unwrap();
+    let vertices = rows.nodes.len() as u64;
+    let edges = rows.edges.len() as u64;
+    let mut check = || Ok(());
+    let mut exact = ExtractionControl::new(&mut check, 100, 1_000_000, vertices, edges);
+    let exact_rows = build_flat_syntax_rows(meta("rust", "src/lib.rs"), &flat, &mut exact).unwrap();
+    assert_eq!(exact_rows.nodes, rows.nodes);
+    assert_eq!(exact_rows.edges, rows.edges);
+    for (v, e) in [(vertices - 1, edges), (vertices, edges - 1)] {
+        let mut check = || Ok(());
+        let mut control = ExtractionControl::new(&mut check, 100, 1_000_000, v, e);
+        assert_eq!(
+            build_flat_syntax_rows(meta("rust", "src/lib.rs"), &flat, &mut control)
+                .err()
+                .unwrap()
+                .code,
+            "resource_limit"
+        );
+    }
+}
+
+#[test]
+fn materializer_observes_cancellation_during_copy() {
+    use crate::{
+        extraction_control::{ExtractionControl, ExtractionError},
+        parser,
+        profiles::ProfileSet,
+    };
+    let source = format!("fn {}() {{}}", "a".repeat(10_000));
+    let profile = ProfileSet::new(&[])
+        .profile_for_language("rust")
+        .unwrap()
+        .clone();
+    let mut check = || Ok(());
+    let mut parse_control = ExtractionControl::new(&mut check, 100, 1_000_000, 1000, 1000);
+    let tree = parser::parse_guarded_tree(source.as_bytes(), &profile, &mut parse_control).unwrap();
+    let flat =
+        parser::normalize_guarded_rust(&tree, source.as_bytes(), &profile, &mut parse_control)
+            .unwrap();
+    let mut calls = 0;
+    let mut cancel = || {
+        calls += 1;
+        if calls > 500 {
+            Err(ExtractionError::new("cancelled", "copy cancelled"))
+        } else {
+            Ok(())
+        }
+    };
+    let mut control = ExtractionControl::new(&mut cancel, 100, 1_000_000, 1000, 1000);
+    assert_eq!(
+        build_flat_syntax_rows(meta("rust", "src/lib.rs"), &flat, &mut control)
+            .err()
+            .unwrap()
+            .code,
+        "cancelled"
+    );
+}

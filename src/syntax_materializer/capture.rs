@@ -585,3 +585,91 @@ pub(super) fn table_for_capture(capture: &str, owner: &Owner) -> Option<String> 
         .to_string(),
     )
 }
+
+pub(super) fn tree_capture_guarded(
+    node: TreeNodeRef<'_>,
+    control: &mut crate::extraction_control::ExtractionControl<'_>,
+) -> Result<Capture, crate::extraction_control::ExtractionError> {
+    use crate::extraction_control::copy_text as copy;
+    use crate::extraction_control::ExtractionError;
+    let mut label = None;
+    for key in [
+        "name", "id", "arg", "attr", "module", "path", "function", "value",
+    ] {
+        control.visit(0)?;
+        if let Some(Value::String(value)) = node.node.fields.get(key) {
+            let trimmed = value.trim();
+            if !trimmed.is_empty() {
+                label = Some(copy(trimmed, control)?);
+                break;
+            }
+        }
+    }
+    let label = match label {
+        Some(v) => v,
+        None => {
+            let text = node.text().trim();
+            if text.is_empty() {
+                copy(node.node_type(), control)?
+            } else {
+                copy(text, control)?
+            }
+        }
+    };
+    let mut fields = Vec::new();
+    fields
+        .try_reserve(node.node.fields.len())
+        .map_err(|_| ExtractionError::new("resource_limit", "allocation failed"))?;
+    for key in node.node.fields.keys() {
+        control.visit(0)?;
+        fields.push(copy(key, control)?);
+    }
+    Ok(Capture {
+        capture_name: copy(node.capture_name(), control)?,
+        node_type: copy(node.node_type(), control)?,
+        label,
+        text: copy(node.text(), control)?,
+        line_start: node.line_start(),
+        line_end: node.line_end(),
+        byte_start: node.byte_start(),
+        byte_end: node.byte_end(),
+        fields,
+    })
+}
+
+pub(super) fn semantic_child_ids_guarded(
+    nodes: &NativeSyntaxArena<'_>,
+    parent: TreeNodeRef<'_>,
+    language: &str,
+    control: &mut crate::extraction_control::ExtractionControl<'_>,
+) -> Result<Vec<usize>, crate::extraction_control::ExtractionError> {
+    use crate::extraction_control::ExtractionError;
+    let mut stack = Vec::new();
+    stack
+        .try_reserve(parent.children.len())
+        .map_err(|_| ExtractionError::new("resource_limit", "allocation failed"))?;
+    for id in parent.children.iter().rev() {
+        stack.push((parent, *id));
+    }
+    let mut result = Vec::new();
+    while let Some((parent, id)) = stack.pop() {
+        control.visit(0)?;
+        let Some(child) = nodes.get_node(id) else {
+            continue;
+        };
+        if should_inline_child(child, language) {
+            stack
+                .try_reserve(child.children.len())
+                .map_err(|_| ExtractionError::new("resource_limit", "allocation failed"))?;
+            for id in child.children.iter().rev() {
+                stack.push((child, *id));
+            }
+        } else if should_traverse_child(parent, child, language) {
+            result
+                .try_reserve(1)
+                .map_err(|_| ExtractionError::new("resource_limit", "allocation failed"))?;
+            result.push(id);
+        }
+    }
+    Ok(result)
+}

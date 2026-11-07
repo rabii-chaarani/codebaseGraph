@@ -91,6 +91,13 @@ impl ExecutionContext {
     pub fn deadline(&self) -> Option<Instant> {
         self.deadline
     }
+    /// Context-only guard for fixed built-in metadata, without a policy-derived deadline.
+    pub(crate) fn metadata_run(&self) -> RunContext {
+        RunContext {
+            cancelled: self.cancelled.clone(),
+            deadline: self.deadline,
+        }
+    }
     #[cfg(test)]
     pub(crate) fn start(
         &self,
