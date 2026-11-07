@@ -556,3 +556,24 @@ pub(super) fn closure_hash(
     out.raw(b"]")?;
     finish_hash(out)
 }
+
+/// Canonical JSON for a fixed-depth evidence value, bounded before publication.
+pub(super) fn evidence_bytes<T: Serialize>(
+    value: &T,
+    limit: u64,
+    run: &RunContext,
+) -> Result<Vec<u8>, CompileError> {
+    let mut out = Sink {
+        bytes: Vec::new(),
+        limit,
+        run,
+        failure: None,
+        normalized: false,
+        hash: None,
+        count_only: false,
+        written: 0,
+    };
+    out.value(value)?;
+    run.check()?;
+    Ok(out.bytes)
+}

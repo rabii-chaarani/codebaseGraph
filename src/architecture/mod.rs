@@ -392,3 +392,6 @@ fn validate_with_checkpoint<E>(
 
 /// Strict, bounded architecture model compilation.
 pub mod compile;
+
+/// Evidence claim identity and bounded validation.
+pub mod evidence;
