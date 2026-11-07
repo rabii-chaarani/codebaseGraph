@@ -111,7 +111,7 @@ impl PinnedProvenance {
     }
 }
 
-fn with_subject(mut error: CompileError, path: &str) -> CompileError {
+pub(super) fn with_subject(mut error: CompileError, path: &str) -> CompileError {
     for diagnostic in &mut error.diagnostics {
         if diagnostic.subject.is_none() {
             diagnostic.subject = Some(path.to_owned());
@@ -171,7 +171,7 @@ impl<'a> Reader<'a> {
                         "repository identity mismatch",
                     ));
                 }
-                let tree = git::commit_tree(binding, &revision.commit, run)?;
+                let tree = git::commit_tree(binding, &revision.commit, run, false)?;
                 (
                     root,
                     ReaderMode::Git {
@@ -233,7 +233,14 @@ impl<'a> Reader<'a> {
             ReaderMode::Git {
                 binding,
                 provenance,
-            } => git::file(binding, &provenance.tree, path.as_str(), limit, self.run)?,
+            } => git::file(
+                binding,
+                &provenance.tree,
+                path.as_str(),
+                limit,
+                self.run,
+                false,
+            )?,
         };
         self.total = self
             .total
@@ -705,7 +712,11 @@ mod git {
         binding: &RepositoryBinding,
         commit: &GitObjectId,
         run: &RunContext,
+        strict: bool,
     ) -> Result<GitObjectId, CompileError> {
+        if strict {
+            check_object_type(binding, commit.as_str(), "commit", run)?;
+        }
         let (prefix, _) = verify_object(binding, "commit", commit.as_str(), run, None)?;
         let line = prefix
             .strip_suffix(b"\n")
@@ -716,8 +727,26 @@ mod git {
         if tree.as_str().len() != commit.as_str().len() {
             return Err(unavailable("object format mismatch"));
         }
+        if strict {
+            check_object_type(binding, tree.as_str(), "tree", run)?;
+        }
         verify_tree(binding, tree.as_str(), run)?;
         Ok(tree)
+    }
+    fn check_object_type(
+        binding: &RepositoryBinding,
+        id: &str,
+        expected: &str,
+        run: &RunContext,
+    ) -> Result<(), CompileError> {
+        let typ = output(binding, &["cat-file", "-t", id], None, 64, run)?;
+        if typ.strip_suffix(b"\n") != Some(expected.as_bytes()) {
+            return Err(CompileError::simple(
+                "invalid_reference",
+                "Git object has wrong type",
+            ));
+        }
+        Ok(())
     }
     pub(super) fn file(
         binding: &RepositoryBinding,
@@ -725,6 +754,7 @@ mod git {
         path: &str,
         limit: u64,
         run: &RunContext,
+        strict: bool,
     ) -> Result<(Vec<u8>, Option<GitObjectId>), CompileError> {
         let mut tree = root_tree.clone();
         let mut components = path.split('/').peekable();
@@ -749,6 +779,9 @@ mod git {
                         "non-directory or unsafe tree entry",
                     ));
                 }
+                if strict {
+                    check_object_type(binding, id.as_str(), "tree", run)?;
+                }
                 verify_tree(binding, id.as_str(), run)?;
                 tree = id;
             } else {
@@ -757,6 +790,9 @@ mod git {
                         "path_not_confined",
                         "nonregular file entry",
                     ));
+                }
+                if strict {
+                    check_object_type(binding, id.as_str(), "blob", run)?;
                 }
                 let size = output(binding, &["cat-file", "-s", id.as_str()], None, 64, run)?;
                 let size = std::str::from_utf8(&size)
@@ -785,6 +821,47 @@ mod git {
         }
         Err(unavailable("empty path"))
     }
+}
+
+/// Capture one independently selected immutable Git artifact using the compiler's
+/// existing verified object reader and confinement rules.
+pub(super) fn capture_artifact(
+    binding: &RepositoryBinding,
+    reference: &crate::architecture::ArtifactRef,
+    limit: u64,
+    run: &RunContext,
+) -> Result<(GitObjectId, GitObjectId, Vec<u8>), CompileError> {
+    let capture = || {
+        RelativePath::new(reference.path.as_str())
+            .map_err(|e| CompileError::simple("path_not_confined", e))?;
+        let tree = git::commit_tree(binding, &reference.commit, run, true)?;
+        let (bytes, object) = git::file(binding, &tree, reference.path.as_str(), limit, run, true)?;
+        Ok((tree, object.expect("Git capture returns blob ID"), bytes))
+    };
+    capture().map_err(|mut error: CompileError| {
+        if error.code == "architecture_input_unavailable"
+            && error.diagnostics.iter().any(|d| {
+                matches!(
+                    d.reason.as_str(),
+                    "git object hash mismatch"
+                        | "object hash mismatch"
+                        | "invalid commit tree"
+                        | "missing commit tree"
+                        | "object format mismatch"
+                        | "invalid blob size"
+                        | "blob size mismatch"
+                        | "invalid tree object"
+                        | "truncated tree object"
+                )
+            })
+        {
+            error.code = "invalid_reference";
+            for diagnostic in &mut error.diagnostics {
+                diagnostic.code = "invalid_reference";
+            }
+        }
+        with_subject(error, reference.path.as_str())
+    })
 }
 
 #[cfg(test)]

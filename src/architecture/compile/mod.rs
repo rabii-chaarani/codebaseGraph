@@ -1,5 +1,6 @@
 //! Transport-neutral, bounded compilation of an immutable architecture closure.
 mod constraints;
+pub mod identity;
 mod output;
 mod policy;
 mod scenarios;
@@ -111,6 +112,7 @@ pub struct CompiledModel {
     architecture: Vec<super::ArchitectureDocument>,
     constraints: Vec<ConstraintDocument>,
     closure: Vec<ClosureFile>,
+    root_index: usize,
     effective_policy: ArchitectureExecutionPolicy,
     provenance: Option<PinnedProvenance>,
     canonical_json: Vec<u8>,
@@ -213,6 +215,14 @@ pub fn compile(
             return Err(error);
         }
     };
+    let root_index = closure
+        .binary_search_by(|f| f.path().as_str().cmp(root_path.as_str()))
+        .map_err(|_| {
+            CompileError::simple(
+                "architecture_internal_error",
+                "root missing from captured closure",
+            )
+        })?;
     let find_file = |path: &RelativePath| -> Result<&ClosureFile, CompileError> {
         let resolved = if directory.is_empty() {
             path.as_str().to_owned()
@@ -292,6 +302,7 @@ pub fn compile(
         architecture,
         constraints,
         closure,
+        root_index,
         effective_policy,
         provenance,
         canonical_json: Vec::new(),

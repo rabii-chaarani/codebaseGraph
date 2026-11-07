@@ -2,13 +2,18 @@
 use super::policy::RunContext;
 use super::{CompileError, CompiledModel, ConstraintRecord, Operation, Scenario};
 use serde::Serialize;
+use sha2::{Digest as _, Sha256};
 use std::io::{self, Write};
 
-struct Sink<'a> {
+pub(super) struct Sink<'a> {
     bytes: Vec<u8>,
     limit: u64,
     run: &'a RunContext,
     failure: Option<CompileError>,
+    normalized: bool,
+    hash: Option<Sha256>,
+    count_only: bool,
+    written: u64,
 }
 impl Write for Sink<'_> {
     fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
@@ -16,13 +21,26 @@ impl Write for Sink<'_> {
             self.failure = Some(e);
             return Err(io::Error::other("cancelled"));
         }
+        if let Some(hash) = &mut self.hash {
+            for chunk in bytes.chunks(65_536) {
+                if let Err(error) = self.run.check() {
+                    self.failure = Some(error);
+                    return Err(io::Error::other("cancelled"));
+                }
+                hash.update(chunk);
+            }
+            return Ok(bytes.len());
+        }
         let size = self
-            .bytes
-            .len()
-            .checked_add(bytes.len())
+            .written
+            .checked_add(bytes.len() as u64)
             .ok_or_else(|| io::Error::other("result size overflow"))?;
-        if u64::try_from(size).map_or(true, |n| n > self.limit) {
+        if size > self.limit {
             return Err(io::Error::other("result byte limit"));
+        }
+        self.written = size;
+        if self.count_only {
+            return Ok(bytes.len());
         }
         self.bytes
             .try_reserve(bytes.len())
@@ -50,6 +68,9 @@ impl Sink<'_> {
             .map_err(|e| CompileError::simple("architecture_internal_error", e.to_string()))?;
         // Workspace feature unification enables preserve_order, so sorting is
         // explicit even for these fixed-depth record values.
+        if self.normalized {
+            super::identity::canonical::normalize(&mut value, self.run)?;
+        }
         value.sort_all_objects();
         serde_json::to_writer(&mut *self, &value).map_err(|_| self.failure())
     }
@@ -85,7 +106,10 @@ mod erased {
         }
     }
 }
-fn scenarios(out: &mut Sink<'_>, values: &[Scenario]) -> Result<(), CompileError> {
+fn scenarios<'a>(
+    out: &mut Sink<'_>,
+    values: impl IntoIterator<Item = &'a Scenario>,
+) -> Result<(), CompileError> {
     enum Job<'a> {
         Scenario(&'a Scenario),
         Tail(&'a Scenario),
@@ -104,7 +128,7 @@ fn scenarios(out: &mut Sink<'_>, values: &[Scenario]) -> Result<(), CompileError
         }};
     }
     out.raw(b"[")?;
-    for (index, scenario) in values.iter().enumerate() {
+    for (index, scenario) in values.into_iter().enumerate() {
         if index != 0 {
             out.raw(b",")?;
         }
@@ -128,11 +152,19 @@ fn scenarios(out: &mut Sink<'_>, values: &[Scenario]) -> Result<(), CompileError
                     out.raw(b"],\"id\":")?;
                     out.value(&s.id)?;
                     out.raw(b",\"obligations\":")?;
-                    out.value(&s.obligations)?;
+                    if out.normalized {
+                        out.predicates(&s.obligations)?;
+                    } else {
+                        out.value(&s.obligations)?;
+                    }
                     out.raw(b",\"parameters\":")?;
                     out.value(&s.parameters)?;
                     out.raw(b",\"preconditions\":")?;
-                    out.value(&s.preconditions)?;
+                    if out.normalized {
+                        out.predicates(&s.preconditions)?;
+                    } else {
+                        out.value(&s.preconditions)?;
+                    }
                     out.raw(b"}")?;
                 }
                 Job::Ops(operations, i) => {
@@ -256,6 +288,10 @@ pub(super) fn encode(model: &CompiledModel, run: &RunContext) -> Result<Vec<u8>,
         limit: model.effective_policy.max_result_bytes,
         run,
         failure: None,
+        normalized: false,
+        hash: None,
+        count_only: false,
+        written: 0,
     };
     out.raw(b"{\"architecture\":")?;
     out.value(&model.architecture)?;
@@ -317,4 +353,206 @@ pub(super) fn encode(model: &CompiledModel, run: &RunContext) -> Result<Vec<u8>,
     out.raw(b"}")?;
     run.check()?;
     Ok(out.bytes)
+}
+
+impl Sink<'_> {
+    fn predicates(&mut self, predicates: &[super::Predicate]) -> Result<(), CompileError> {
+        fn id(p: &super::Predicate) -> &str {
+            use super::Predicate::*;
+            match p {
+                ElementExists { id, .. }
+                | RelationshipExists { id, .. }
+                | ContractRefEquals { id, .. }
+                | Reachable { id, .. }
+                | NoBypass { id, .. } => id.as_str(),
+            }
+        }
+        let mut sorted = Vec::new();
+        sorted
+            .try_reserve(predicates.len())
+            .map_err(|_| CompileError::simple("resource_limit", "allocation failed"))?;
+        sorted.extend(predicates.iter());
+        self.run.check()?;
+        super::identity::canonical::sort_by(&mut sorted, self.run, |a, b| id(a).cmp(id(b)))?;
+        self.run.check()?;
+        self.raw(b"[")?;
+        for (index, predicate) in sorted.iter().enumerate() {
+            self.run.check()?;
+            if index != 0 {
+                self.raw(b",")?;
+            }
+            self.value(predicate)?;
+        }
+        self.raw(b"]")
+    }
+}
+
+pub(super) fn hash_value<T: Serialize + ?Sized>(
+    domain: &str,
+    value: &T,
+    run: &RunContext,
+) -> Result<crate::architecture::Digest, CompileError> {
+    let mut out = Sink {
+        bytes: Vec::new(),
+        limit: u64::MAX,
+        run,
+        failure: None,
+        normalized: false,
+        hash: Some(Sha256::new()),
+        count_only: false,
+        written: 0,
+    };
+    out.raw(domain.as_bytes())?;
+    out.raw(b"/0.1\n")?;
+    out.value(value)?;
+    finish_hash(out)
+}
+fn finish_hash(mut out: Sink<'_>) -> Result<crate::architecture::Digest, CompileError> {
+    out.run.check()?;
+    let bytes = out.hash.take().expect("hash sink").finalize();
+    crate::architecture::Digest::new(format!("sha256:{bytes:x}"))
+        .map_err(|e| CompileError::simple("architecture_internal_error", e))
+}
+
+pub(super) fn intent_hash(
+    model: &CompiledModel,
+    run: &RunContext,
+) -> Result<crate::architecture::Digest, CompileError> {
+    let mut out = Sink {
+        bytes: Vec::new(),
+        limit: u64::MAX,
+        run,
+        failure: None,
+        normalized: true,
+        hash: Some(Sha256::new()),
+        count_only: false,
+        written: 0,
+    };
+    out.raw(b"architecture-intent/0.1\n{")?;
+    macro_rules! records {
+        ($name:literal, $docs:expr, $field:ident) => {{
+            out.raw(concat!("\"", $name, "\":").as_bytes())?;
+            let mut entries = Vec::new();
+            for doc in $docs {
+                run.check()?;
+                entries
+                    .try_reserve(doc.$field.len())
+                    .map_err(|_| CompileError::simple("resource_limit", "allocation failed"))?;
+                entries.extend(doc.$field.iter());
+            }
+            run.check()?;
+            super::identity::canonical::sort_by(&mut entries, run, |a, b| {
+                a.id.as_str().cmp(b.id.as_str())
+            })?;
+            run.check()?;
+            out.raw(b"[")?;
+            for (i, item) in entries.iter().enumerate() {
+                run.check()?;
+                if i != 0 {
+                    out.raw(b",")?;
+                }
+                out.value(item)?;
+            }
+            out.raw(b"],")?;
+        }};
+    }
+    records!("allow", &model.constraints, allow);
+    records!("budgets", &model.constraints, budgets);
+    records!("components", &model.architecture, components);
+    records!("containers", &model.architecture, containers);
+    out.raw(b"\"model_id\":")?;
+    out.value(&model.root.model_id)?;
+    out.raw(b",")?;
+    records!("ownership_rules", &model.constraints, ownership_rules);
+    records!("relationships", &model.architecture, relationships);
+    records!("require", &model.constraints, require);
+    out.raw(b"\"scenarios\":")?;
+    let mut all = Vec::new();
+    for doc in &model.constraints {
+        run.check()?;
+        all.try_reserve(doc.scenarios.len())
+            .map_err(|_| CompileError::simple("resource_limit", "allocation failed"))?;
+        all.extend(doc.scenarios.iter());
+    }
+    run.check()?;
+    super::identity::canonical::sort_by(&mut all, run, |a, b| a.id.as_str().cmp(b.id.as_str()))?;
+    run.check()?;
+    scenarios(&mut out, all.iter().copied())?;
+    out.raw(b",\"schema_version\":\"0.1\",")?;
+    records!("systems", &model.architecture, systems);
+    out.raw(b"\"waivers\":")?;
+    let mut waivers = Vec::new();
+    for doc in &model.constraints {
+        run.check()?;
+        waivers
+            .try_reserve(doc.waivers.len())
+            .map_err(|_| CompileError::simple("resource_limit", "allocation failed"))?;
+        waivers.extend(doc.waivers.iter());
+    }
+    run.check()?;
+    super::identity::canonical::sort_by(&mut waivers, run, |a, b| {
+        a.id.as_str().cmp(b.id.as_str())
+    })?;
+    run.check()?;
+    out.raw(b"[")?;
+    for (i, item) in waivers.iter().enumerate() {
+        run.check()?;
+        if i != 0 {
+            out.raw(b",")?;
+        }
+        out.value(item)?;
+    }
+    out.raw(b"]}")?;
+    finish_hash(out)
+}
+
+pub(super) fn measure_serialized<T: Serialize>(
+    value: &T,
+    limit: u64,
+    run: &RunContext,
+) -> Result<u64, CompileError> {
+    let mut out = Sink {
+        bytes: Vec::new(),
+        limit,
+        run,
+        failure: None,
+        normalized: false,
+        hash: None,
+        count_only: false,
+        written: 0,
+    };
+    out.count_only = true;
+    serde_json::to_writer(&mut out, value).map_err(|_| out.failure())?;
+    run.check()?;
+    Ok(out.written)
+}
+
+pub(super) fn closure_hash(
+    model: &CompiledModel,
+    run: &RunContext,
+) -> Result<crate::architecture::Digest, CompileError> {
+    let mut out = Sink {
+        bytes: Vec::new(),
+        limit: u64::MAX,
+        run,
+        failure: None,
+        normalized: false,
+        hash: Some(Sha256::new()),
+        count_only: false,
+        written: 0,
+    };
+    out.raw(b"architecture-closure/0.1\n[")?;
+    for (i, file) in model.closure.iter().enumerate() {
+        run.check()?;
+        if i != 0 {
+            out.raw(b",")?;
+        }
+        out.raw(b"[")?;
+        out.value(file.path())?;
+        out.raw(b",")?;
+        out.value(&super::identity::raw_digest(file.bytes(), run)?)?;
+        out.raw(b"]")?;
+    }
+    out.raw(b"]")?;
+    finish_hash(out)
 }
