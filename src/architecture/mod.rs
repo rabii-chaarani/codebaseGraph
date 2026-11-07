@@ -1,5 +1,6 @@
-//! Transport-neutral architecture contract. This module does not install a schema
-//! or verify referenced Git objects, file bytes, or evidence.
+//! Transport-neutral architecture contract. Primitive and reference constructors
+//! do not qualify linked artifacts or evidence. The compiler verifies its pinned
+//! model source closure; it does not install a schema or establish artifact trust.
 use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::{HashMap, HashSet};
 
@@ -258,6 +259,17 @@ pub struct Diagnostic {
 /// Validate the complete explicitly assembled architecture document set. The caller
 /// must also validate IDs in constraint/scenario documents when assembling those.
 pub fn validate(documents: &[ArchitectureDocument]) -> Vec<Diagnostic> {
+    match validate_with_checkpoint(documents, || Ok::<(), std::convert::Infallible>(())) {
+        Ok(diagnostics) => diagnostics,
+        Err(never) => match never {},
+    }
+}
+
+fn validate_with_checkpoint<E>(
+    documents: &[ArchitectureDocument],
+    mut checkpoint: impl FnMut() -> Result<(), E>,
+) -> Result<Vec<Diagnostic>, E> {
+    checkpoint()?;
     let mut out = Vec::new();
     let mut ids = HashSet::new();
     let mut systems = HashSet::new();
@@ -272,34 +284,44 @@ pub fn validate(documents: &[ArchitectureDocument]) -> Vec<Diagnostic> {
         }
     };
     for d in documents {
+        checkpoint()?;
         for s in &d.systems {
+            checkpoint()?;
             add(&s.id);
             systems.insert(s.id.as_str());
             for r in &s.responsibilities {
+                checkpoint()?;
                 add(&r.id);
             }
         }
         for c in &d.containers {
+            checkpoint()?;
             add(&c.id);
             containers.insert(c.id.as_str());
             for r in &c.responsibilities {
+                checkpoint()?;
                 add(&r.id);
             }
         }
         for c in &d.components {
+            checkpoint()?;
             add(&c.id);
             components.insert(c.id.as_str());
             for r in &c.responsibilities {
+                checkpoint()?;
                 add(&r.id);
             }
         }
         for r in &d.relationships {
+            checkpoint()?;
             add(&r.id);
         }
     }
     let mut counts = HashMap::new();
     for d in documents {
+        checkpoint()?;
         for s in &d.systems {
+            checkpoint()?;
             if s.responsibilities.is_empty() {
                 out.push(Diagnostic {
                     subject: s.id.as_str().into(),
@@ -308,6 +330,7 @@ pub fn validate(documents: &[ArchitectureDocument]) -> Vec<Diagnostic> {
             }
         }
         for c in &d.containers {
+            checkpoint()?;
             if c.responsibilities.is_empty() {
                 out.push(Diagnostic {
                     subject: c.id.as_str().into(),
@@ -323,6 +346,7 @@ pub fn validate(documents: &[ArchitectureDocument]) -> Vec<Diagnostic> {
             *counts.entry(c.id.as_str()).or_insert(0usize) += 1;
         }
         for c in &d.components {
+            checkpoint()?;
             if c.responsibilities.is_empty() {
                 out.push(Diagnostic {
                     subject: c.id.as_str().into(),
@@ -338,6 +362,7 @@ pub fn validate(documents: &[ArchitectureDocument]) -> Vec<Diagnostic> {
             *counts.entry(c.id.as_str()).or_insert(0usize) += 1;
         }
         for r in &d.relationships {
+            checkpoint()?;
             let allowed = match r.level {
                 Level::Container => &containers,
                 Level::Component => &components,
@@ -351,6 +376,7 @@ pub fn validate(documents: &[ArchitectureDocument]) -> Vec<Diagnostic> {
         }
     }
     for (id, n) in counts {
+        checkpoint()?;
         if n > 1 {
             out.push(Diagnostic {
                 subject: id.into(),
@@ -358,6 +384,11 @@ pub fn validate(documents: &[ArchitectureDocument]) -> Vec<Diagnostic> {
             });
         }
     }
+    checkpoint()?;
     out.sort_by(|a, b| (&a.subject, a.code).cmp(&(&b.subject, b.code)));
-    out
+    checkpoint()?;
+    Ok(out)
 }
+
+/// Strict, bounded architecture model compilation.
+pub mod compile;
