@@ -1,6 +1,6 @@
-# COD-21 execution brief — revision 2, authorized scope
+# COD-21 execution brief — revision 3, implementation start
 
-Work: CBG-C4-01/F02/S02 / [COD-21](https://linear.app/codebasegraph/issue/COD-21), parent COD-6, M1/P1. Status: actual C21-D01/D02 human decisions recorded; bounded implementation authorized under existing Scope A once the owner plan/signatures below are settled; **product implementation not yet started at this revision**. Maintainers retain aggregate closure.
+Work: CBG-C4-01/F02/S02 / [COD-21](https://linear.app/codebasegraph/issue/COD-21), parent COD-6, M1/P1. Status: actual C21-D01/D02 human decisions recorded; owner plan/signatures settled below; bounded implementation authorized under existing Scope A after this brief is committed and coordinator signals GO. **Product implementation not yet started at this revision's creation.** Maintainers retain aggregate closure.
 
 ## Authority, baseline and starting conditions
 
@@ -25,7 +25,31 @@ After the start gate, that owner alone may edit:
 
 Root alone owns `docs/specs/CBG-C4-01/cod21-contracts.md`, this brief, `approvals/cod21-approval.md`, `cod21-evidence.md` and evidence under `cod21-evidence/`. The supplement stays byte-identical to the approved subject unless a new revision/decision is required. Existing COD-20 product/evidence, assets/graph_schema.json, assets/architecture_schema.json, tests/architecture_model.rs, src/lib.rs, API/adapters/storage/config/workflows, Scryer and wiki files are outside this technical assignment. Further required files return to coordinator for exact reassignment before edits.
 
-Place parsing/source capture/typed compilation/semantic validation under the existing transport-neutral architecture owner. One canonical grammar and validator; no graph→k-wiki dependency, adapter evaluator, native agent runtime or speculative crate. Existing schema/types remain compatible. Compiler service returns complete typed model/raw closure or structured errors; no hashes/acceptance IDs/publication or storage mutation. Proposed internal boundary is compile(ModelInput, validated policy/context) → CompiledModel or CompileError; establish the exact Rust signatures in the owner plan after the human contract decision, before dependents.
+Place parsing/source capture/typed compilation/semantic validation under the existing transport-neutral architecture owner. One canonical grammar and validator; no graph→k-wiki dependency, adapter evaluator, native agent runtime or speculative crate. Existing schema/types remain compatible. Compiler service returns complete typed model/raw closure or structured errors; no model/closure hashes or acceptance IDs/publication/storage mutation. Git object integrity checks serve immutable source capture, not COD-22's model/input hashing implementation.
+
+### Settled owner plan and Rust boundary
+
+The owner returned this complete plan after the actual human answers. Public service entry under `architecture::compile`:
+
+```rust
+pub fn compile(
+    input: ModelInput,
+    repository: Option<&RepositoryBinding>,
+    policy: &ArchitectureExecutionPolicy,
+    overrides: Option<&ArchitectureExecutionPolicyOverride>,
+    context: &ExecutionContext,
+) -> Result<CompiledModel, CompileError>;
+```
+
+ModelInput has exactly the approved PinnedRoot/InlineFiles logical alternatives. Use an opaque struct with validated constructors, or a non-exhaustive enum of validated private-field payload wrappers; no new mutable public success-state fields. RepositoryBinding binds configured repository Text identity to a local Git directory, and is mandatory/identity-matched for pinned input, unused for inline. ExecutionContext owns a shared cooperative cancellation flag plus optional absolute Instant caller deadline; compile derives the earlier configured duration from invocation start. Full policy has all17 explicit positive u64 fields; optional overrides have corresponding Option<u64> values, must be positive and cannot raise the repository value. Retain the complete effective policy.
+
+CompiledModel holds root, ordered architecture/constraint documents, sorted raw closure entries, effective policy and optional pinned repository/commit/tree provenance. Closure entries retain normalized path, raw bytes and optional immutable blob object ID. New types use private fields, validated constructors/builders/immutable accessors; structured deserialization invokes validation. Complete successful output has no unchecked constructor/deserializer. Existing COD-20 types/legacy APIs remain compatible.
+
+CompileError carries a stable C16 code and ordered CompileDiagnostics (code, reason, optional subject/location). SourceLocation retains path, UTF-8 start/end byte positions and one-based line/column. Omit a file position only when no source position exists (configuration/context failure or unavailable source); no fabricated position or partial successful model. Output diagnostics sort deterministically.
+
+Implement in order: policy/context; bounded cancellable immutable Git object source and exact inline capture; span-preserving strict libyaml event parser; complete strict constraint/scenario grammar and local typed substitutions; whole-closure validation/bounded Cartesian policy checks; complete output size accounting and acceptance/compatibility checks. Source Git plumbing uses structured command arguments, exact immutable IDs and literal paths, disables replacement objects/lazy fetch/config-driven filters/optional locks, and verifies commit/tree/blob types, contents and hashes. Bounded cancellable `git hash-object` may supply the repository's object hash format without a new SHA-1 dependency. Handle legal unusual path bytes without line-framed command injection. Own child cleanup through actual completion; no shell, network fetch or unchecked blocking/unbounded process output.
+
+The owner owns implementation/checks within the already listed files; root owns this plan/approval/evidence and all serialized Git. Any material signature/behavior/ownership change returns to coordinator before dependent edits; routine internal layout can proceed within the settled contracts.
 
 ## Scope, acceptance and failures
 
