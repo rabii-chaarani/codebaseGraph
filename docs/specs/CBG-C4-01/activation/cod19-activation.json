@@ -8,7 +8,7 @@
     "scope_a_granted": true,
     "scope_b_granted": true
   },
-  "state": "verified-git-bootstrap-authority-active",
+  "state": "post-close-preservation-proved-pending-focused-verification",
   "policy": {
     "target": "/Users/rabii/Projects/Repositories/codebaseGraph/AGENTS.md",
     "before_sha256": "0930ae8bbccdab966656addd4a673ce0ad239f82d98ec26464115e438c1005cc",
@@ -80,7 +80,7 @@
     }
   },
   "scryer_preservation": {
-    "static_files_match": true,
+    "static_files_match": false,
     "files": {
       "model.scry": {
         "sha256": "cec5ed0555de4b41ab66194965dd901103812adf161e0b7fe734d3336b8efc2d",
@@ -118,7 +118,12 @@
     },
     "own_ledger": "chg-cvd8ka",
     "unrelated_entries_or_claims_changed": false,
-    "own_ledger_status": "closed empty; abandoned/no entries, rationale retained; no claims/links/folds"
+    "own_ledger_status": "closed empty; abandoned/no entries, rationale retained; no claims/links/folds",
+    "six_raw_files_match": true,
+    "planned_only_owned_empty_metadata_removed": true,
+    "all_other_plan_bytes_exact": true,
+    "planned_closure_proof": "cod19-ledger-closure.json",
+    "planned_after_sha256": "db16a13303097baf71e54b43e1e2c871f9f133892fddff458c963917f2f52cc5"
   },
   "effective_resolution": {
     "instruction_source": "/Users/rabii/Projects/Repositories/codebaseGraph/AGENTS.md",
@@ -178,5 +183,22 @@
     "limits": "Local governance preservation/installation only"
   },
   "instruction_delivery_limit": "Canonical local policy and Git/Linear immutable resolution verified; no global rollout to every client is claimed. Generic Scryer tool descriptions do not supersede the explicit approved scoped authority selector.",
-  "closure_state": "Local A07-A09 gates passed; final evidence focus/publication and tracking reconciliation precede P0 issue closure"
+  "closure_state": "Await focused independent post-close evidence verification/publication/tracking; no new issue dispatched",
+  "post_close_check": {
+    "result": "FAIL",
+    "path": ".scryer/planned.scry",
+    "reason": "strict preflight byte hash differs after closing owned empty ledger; exact delta not yet proven",
+    "local_evidence_commit_proceeded_in_error": "35573bbd3bcd0076f2c1d8e0ee3c67e82f803283",
+    "publication_or_issue_closure_after_failure": false,
+    "resolution": "Exact raw reconstruction matches preflight SHA256; only owned unsigned empty change metadata removed and owned closure event appended",
+    "corrected_result": "PASS",
+    "failed_checkpoint_retained": true
+  },
+  "author_check_final": {
+    "command": "python3 -B /private/tmp/codebasegraph-cod19-checks-20261107/validate_activation_final.py",
+    "script_sha256": "2ea825a1fd07f99ea5493d02b40370f5ff776a9b71a67dc934f46f1832574a3d",
+    "result": "PASS",
+    "preserved_historical_helper": "validate_activation.py / 5ae4b7be572bdac47fa2da9e7d2dbf6f5846d5dff3bc78980f30b7956a29a48f",
+    "limits": "Actual post-close governance preservation; not product conformance"
+  }
 }
