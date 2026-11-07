@@ -1,0 +1,23 @@
+   Compiling codebase-graph v4.2.0 (/private/tmp/codebasegraph-cod20-20261107)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.21s
+     Running unittests src/lib.rs (target/debug/deps/codebase_graph-e683aecf8f8e6900)
+
+running 15 tests
+test adapters::cli::tests::graph::graph_schema_outputs_block_and_json ... ok
+test adapters::cli::tests::install::install_writes_schema_v3_managed_config_without_static_database_or_manifest_paths ... ok
+test api::catalog::support::tests::declared_schema_includes_ordered_syntax_relationship_columns ... ok
+test api::core::tests::health_schema_documents_explicit_default_false_quiescence ... ok
+test api::normalization::tests::operation_schema_requirements_share_normalization_policy ... ok
+test db_writer::schema::tests::classifies_fts_indexes_after_copy_without_reordering_each_phase ... ok
+test db_writer::schema::tests::disabled_fts_filters_provided_extension_and_index_statements ... ok
+test db_writer::schema::tests::extension_setup_is_always_pre_copy ... ok
+test execution::parallel::tests::prior_manifest_schema_forces_rebuild_even_when_artifact_key_matches ... ok
+test scan::tests::prior_manifest_schema_forces_a_full_rebuild ... ok
+test storage::maintenance_legacy_association::checkpoint_tests::dc_legacy_streaming_native_schema_matches_current_assets ... ok
+test storage::maintenance_references::tests::dc_references_duplicate_schema_fields_are_unknown ... ok
+test storage::maintenance_validation::tests::dc_validation_borrowed_fd_schema_replay_without_payload_copy ... ok
+test storage::maintenance_validation::tests::dc_validation_oracle_schema_hash_numeric_and_nonfinite ... ok
+test storage::maintenance_validation::tests::dc_validation_partition_id_streaming_oracle_and_schema_rejects ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 849 filtered out; finished in 4.90s
+

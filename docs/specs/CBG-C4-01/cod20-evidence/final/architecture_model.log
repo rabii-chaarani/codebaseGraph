@@ -1,0 +1,16 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.07s
+     Running tests/architecture_model.rs (target/debug/deps/architecture_model-56a680301e6750e7)
+
+running 9 tests
+test cross_system_same_level_relationships_are_valid_and_parent_conflicts_reported ... ok
+test ontology_endpoint_contract_and_legacy_names_are_preserved ... ok
+test ontology_is_additive_and_separate_from_legacy_schema ... ok
+test ontology_names_and_authored_fields_match_contract ... ok
+test primitives_and_strict_shapes_reject_invalid_values ... ok
+test references_round_trip_but_do_not_qualify_bytes ... ok
+test state_and_identity_remain_distinct ... ok
+test strict_shapes_and_global_architecture_ids ... ok
+test validates_complete_hierarchy_and_reports_errors ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
