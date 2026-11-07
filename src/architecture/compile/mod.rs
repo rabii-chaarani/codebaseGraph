@@ -70,11 +70,13 @@ impl CompileDiagnostic {
 pub struct CompileError {
     code: &'static str,
     diagnostics: Vec<CompileDiagnostic>,
+    object_integrity_failure: bool,
 }
 impl CompileError {
     fn simple(code: &'static str, reason: impl Into<String>) -> Self {
         Self {
             code,
+            object_integrity_failure: false,
             diagnostics: vec![CompileDiagnostic {
                 code,
                 reason: reason.into(),
