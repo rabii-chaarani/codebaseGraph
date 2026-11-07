@@ -20,4 +20,3 @@ test storage::maintenance_validation::tests::dc_validation_oracle_schema_hash_nu
 test storage::maintenance_validation::tests::dc_validation_partition_id_streaming_oracle_and_schema_rejects ... ok
 
 test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 849 filtered out; finished in 4.90s
-
