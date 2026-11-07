@@ -287,7 +287,7 @@ impl<'a> Scanner<'a> {
             return Err(LegacyIssue::Unknown);
         }
         let mut key = [0; 32];
-        for (i, pair) in bytes.chunks_exact(2).enumerate() {
+        for (i, pair) in bytes.as_chunks::<2>().0.iter().enumerate() {
             let digit = |b| match b {
                 b'0'..=b'9' => Some(b - b'0'),
                 b'a'..=b'f' => Some(b - b'a' + 10),

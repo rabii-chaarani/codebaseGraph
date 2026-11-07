@@ -479,7 +479,7 @@ fn active_origin_matches_payload(directory: &Path, key: &str) -> bool {
     let Ok(bytes) = fs::read(directory.join(".entry-origin")) else {
         return false;
     };
-    for (phase, frame) in bytes.chunks_exact(512).enumerate() {
+    for (phase, frame) in bytes.as_chunks::<512>().0.iter().enumerate() {
         if &frame[..8] != b"CGORIG01"
             || frame[24] != phase as u8
             || frame[480..] != Sha256::digest(&frame[..480])[..]
@@ -2148,7 +2148,7 @@ fn dc_s5_real_producer_prepared_temporary_is_collected_without_source_edit() {
         3 * 512,
         "prepared interruption lacks real Complete origin"
     );
-    for (phase, frame) in receipt.chunks_exact(512).enumerate() {
+    for (phase, frame) in receipt.as_chunks::<512>().0.iter().enumerate() {
         assert_eq!(&frame[..8], b"CGORIG01");
         assert_eq!(frame[24], phase as u8);
         assert_eq!(frame[480..], Sha256::digest(&frame[..480])[..]);
