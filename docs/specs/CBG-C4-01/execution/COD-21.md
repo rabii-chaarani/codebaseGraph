@@ -1,4 +1,4 @@
-# COD-21 execution brief — revision 5, cancellable canonical validation
+# COD-21 execution brief — revision 6, complete result boundary
 
 Work: CBG-C4-01/F02/S02 / [COD-21](https://linear.app/codebasegraph/issue/COD-21), parent COD-6, M1/P1. Status: actual C21-D01/D02 human decisions recorded; owner plan/signatures settled below; first implementation attempt returned incomplete; fresh owner authorized under existing Scope A after this reassignment is committed and coordinator signals GO. **Compiler acceptance is unsatisfied.** Maintainers retain aggregate closure.
 
@@ -19,7 +19,7 @@ Workflow: **delegated**, one complete technical owner, default/gpt-6.1-terra/med
 After the start gate, that owner alone may edit:
 
 - `src/architecture/mod.rs` for narrow compiler exports/documentation and the backward-compatible canonical validation checkpoint extraction described below;
-- new `src/architecture/compile/{mod,source,yaml,policy,constraints,scenarios,validate}.rs` (split these responsibilities further only through coordinator reassignment);
+- new `src/architecture/compile/{mod,source,yaml,policy,constraints,scenarios,validate,output}.rs` (output.rs is the optional cohesive result-size/serialization helper authorized below; split other responsibilities only through coordinator reassignment);
 - new `tests/architecture_compile.rs` and `tests/fixtures/architecture_compile/**`;
 - `Cargo.toml` and `Cargo.lock`, solely the justified direct parser dependency using the existing locked version; no unrelated updates/features/version change.
 
@@ -60,6 +60,12 @@ The maintainer subsequently instructed that PRs include only essential files and
 ### Canonical validator checkpoint extraction
 
 Coordinator assigns the same sole owner the exact additional mod.rs change needed for C21-A05/R12 cancellation without duplicating C4 semantics: extract the existing validator implementation into a private `validate_with_checkpoint<E>` helper taking the document slice and a fallible mutable checkpoint callback; retain public `validate(&[ArchitectureDocument]) -> Vec<Diagnostic>` unchanged, delegating with an infallible no-op callback. The compiler invokes that helper with its RunContext check. Keep one implementation of identity/hierarchy/endpoint/responsibility checks and deterministic diagnostic ordering, check at safe points within owned semantic loops and around sorting, and preserve legacy results. No public signature/trait/error/default/ontology or dependency-direction change, new numerical cap or runtime authority follows. Existing architecture tests plus focused cancellation/deadline checks verify the extraction. This is a bounded prerequisite within the already approved C16/C21 behavior; it changes HOW, not intended behavior/acceptance, so the existing human approvals remain applicable. The coordinator commits this file assignment before the owner edits that validator body.
+
+### Complete compiler integration and output helper
+
+The same owner may add `compile/output.rs` solely for cohesive stack-safe logical-result size/encoding support, keeping compiler orchestration in mod.rs. No new external dependency, transport-specific default, durable report, operation registry or publication is introduced. Join immutable source capture, exact root-relative file roles, strict typed decoding and semantic validation through the already settled public compile signature. A complete result exposes immutable usable accessors to all logical records, closure, effective policy and provenance. Full result accounting includes retained closure and expanded substitutions; prevent amplification before copying/allocating expanded payloads, preserve ordered operations and schema-declared set normalization, and never return partial success. If an in-memory JSON representation supports accounting, it must describe the same complete logical records and avoid recursive serde/clone hazards; no derived cache enters its own representation or input identity. Model/input hashing and transport/CI output remain downstream.
+
+Stage checks remain partial evidence until end-to-end API tests and complete owner checks pass. Tests cover valid inline/pinned equivalence, all relevant resource boundaries and tighten-only policy, complete closure failures, precise invalid-input diagnostics, scenario typing/scopes/operations, cancellation/deadline and preserved accepted/source state, legacy schema/type compatibility and stack-safe deep input/output. Then run formatting and strict applicable Clippy; root freezes the essential-file delivery snapshot for independent verification and fresh final review explicitly against COD-5/C16/C1/Q1 boundaries. Session logs/reports remain outside the PR. No approval or outcome identity changes in this assignment.
 
 ## Scope, acceptance and failures
 
