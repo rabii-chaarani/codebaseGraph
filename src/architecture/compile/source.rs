@@ -344,6 +344,11 @@ mod git {
     fn unavailable(reason: impl Into<String>) -> CompileError {
         CompileError::simple("architecture_input_unavailable", reason)
     }
+    fn integrity_failure(reason: impl Into<String>) -> CompileError {
+        let mut error = unavailable(reason);
+        error.object_integrity_failure = true;
+        error
+    }
     fn drain(mut source: impl Read, limit: usize) -> (Vec<u8>, bool) {
         let mut result = Vec::new();
         let mut buffer = [0u8; 8192];
@@ -431,7 +436,7 @@ mod git {
                 .map_err(|e| unavailable(e.to_string()))?
                 .success()
             {
-                return Err(unavailable("git object operation failed"));
+                return Err(integrity_failure("git object operation failed"));
             }
         }
         Ok(())
@@ -443,6 +448,17 @@ mod git {
         limit: usize,
         run: &RunContext,
     ) -> Result<Vec<u8>, CompileError> {
+        output_with_stderr_flag(binding, args, input, limit, run).map(|(bytes, _)| bytes)
+    }
+    // Retain whether Git reported an object error without depending on localized
+    // diagnostic text; ordinary compiler calls still discard this flag.
+    fn output_with_stderr_flag(
+        binding: &RepositoryBinding,
+        args: &[&str],
+        input: Option<Vec<u8>>,
+        limit: usize,
+        run: &RunContext,
+    ) -> Result<(Vec<u8>, bool), CompileError> {
         run.check()?;
         let mut child = command(binding)
             .args(args)
@@ -471,7 +487,7 @@ mod git {
         };
         let status = wait(&mut [&mut child], run);
         let (bytes, overflow) = out.join().map_err(|_| unavailable("git reader failed"))?;
-        let _ = err.join().map_err(|_| unavailable("git reader failed"))?;
+        let (_, stderr_nonempty) = err.join().map_err(|_| unavailable("git reader failed"))?;
         if let Some(writer) = writer {
             let _ = writer.join();
         }
@@ -482,7 +498,7 @@ mod git {
                 "git output limit exceeded",
             ));
         }
-        Ok(bytes)
+        Ok((bytes, stderr_nonempty))
     }
     fn verify_bytes(
         binding: &RepositoryBinding,
@@ -504,7 +520,7 @@ mod git {
             run,
         )?;
         if hash.strip_suffix(b"\n") != Some(expected.as_bytes()) {
-            return Err(unavailable("git object hash mismatch"));
+            return Err(integrity_failure("git object hash mismatch"));
         }
         Ok(())
     }
@@ -695,9 +711,15 @@ mod git {
         let _ = tb.join().map_err(|_| unavailable("git reader failed"))?;
         let (digest, co) = tc.join().map_err(|_| unavailable("git reader failed"))?;
         status?;
-        let result = prefix.map_err(|e| unavailable(e.to_string()))?;
+        let result = prefix.map_err(|e| {
+            if e.kind() == std::io::ErrorKind::InvalidData {
+                integrity_failure(e.to_string())
+            } else {
+                unavailable(e.to_string())
+            }
+        })?;
         if co || digest.strip_suffix(b"\n") != Some(id.as_bytes()) {
-            return Err(unavailable("object hash mismatch"));
+            return Err(integrity_failure("object hash mismatch"));
         }
         Ok(result)
     }
@@ -714,23 +736,30 @@ mod git {
         run: &RunContext,
         strict: bool,
     ) -> Result<GitObjectId, CompileError> {
-        if strict {
-            check_object_type(binding, commit.as_str(), "commit", run)?;
-        }
-        let (prefix, _) = verify_object(binding, "commit", commit.as_str(), run, None)?;
+        let (prefix, _) = if strict {
+            checked_object(binding, commit.as_str(), "commit", run, || {
+                verify_object(binding, "commit", commit.as_str(), run, None)
+            })?
+        } else {
+            verify_object(binding, "commit", commit.as_str(), run, None)?
+        };
         let line = prefix
             .strip_suffix(b"\n")
             .and_then(|v| v.strip_prefix(b"tree "))
-            .ok_or_else(|| unavailable("missing commit tree"))?;
-        let tree = std::str::from_utf8(line).map_err(|_| unavailable("invalid commit tree"))?;
-        let tree = GitObjectId::new(tree).map_err(unavailable)?;
+            .ok_or_else(|| integrity_failure("missing commit tree"))?;
+        let tree =
+            std::str::from_utf8(line).map_err(|_| integrity_failure("invalid commit tree"))?;
+        let tree = GitObjectId::new(tree).map_err(integrity_failure)?;
         if tree.as_str().len() != commit.as_str().len() {
-            return Err(unavailable("object format mismatch"));
+            return Err(integrity_failure("object format mismatch"));
         }
         if strict {
-            check_object_type(binding, tree.as_str(), "tree", run)?;
+            checked_object(binding, tree.as_str(), "tree", run, || {
+                verify_tree(binding, tree.as_str(), run)
+            })?;
+        } else {
+            verify_tree(binding, tree.as_str(), run)?;
         }
-        verify_tree(binding, tree.as_str(), run)?;
         Ok(tree)
     }
     fn check_object_type(
@@ -739,14 +768,58 @@ mod git {
         expected: &str,
         run: &RunContext,
     ) -> Result<(), CompileError> {
-        let typ = output(binding, &["cat-file", "-t", id], None, 64, run)?;
-        if typ.strip_suffix(b"\n") != Some(expected.as_bytes()) {
+        let input = format!("{id}\n").into_bytes();
+        let (result, reported_error) = output_with_stderr_flag(
+            binding,
+            &["cat-file", "--batch-check=%(objectname) %(objecttype)"],
+            Some(input),
+            160,
+            run,
+        )
+        .map_err(|mut error| {
+            // A failed probe cannot establish that an object exists; preserve
+            // unavailable for a missing or inaccessible repository/tool.
+            error.object_integrity_failure = false;
+            error
+        })?;
+        if result == format!("{id} missing\n").as_bytes() {
+            return if reported_error {
+                Err(CompileError::simple(
+                    "invalid_reference",
+                    "Git object is unreadable",
+                ))
+            } else {
+                Err(unavailable("Git object missing"))
+            };
+        }
+        if reported_error || result != format!("{id} {expected}\n").as_bytes() {
             return Err(CompileError::simple(
                 "invalid_reference",
-                "Git object has wrong type",
+                "Git object has wrong type or is unreadable",
             ));
         }
         Ok(())
+    }
+    // After an object was found, distinguish a concurrent disappearance from an
+    // unreadable or malformed object stream without interpreting stderr text.
+    fn checked_object<T>(
+        binding: &RepositoryBinding,
+        id: &str,
+        expected: &str,
+        run: &RunContext,
+        action: impl FnOnce() -> Result<T, CompileError>,
+    ) -> Result<T, CompileError> {
+        check_object_type(binding, id, expected, run)?;
+        match action() {
+            Err(error) if error.object_integrity_failure => {
+                check_object_type(binding, id, expected, run)?;
+                Err(CompileError::simple(
+                    "invalid_reference",
+                    "Git object stream failed verification",
+                ))
+            }
+            result => result,
+        }
     }
     pub(super) fn file(
         binding: &RepositoryBinding,
@@ -760,7 +833,13 @@ mod git {
         let mut components = path.split('/').peekable();
         while let Some(part) = components.next() {
             run.check()?;
-            let (_, selected) = verify_object(binding, "tree", tree.as_str(), run, Some(part))?;
+            let (_, selected) = if strict {
+                checked_object(binding, tree.as_str(), "tree", run, || {
+                    verify_object(binding, "tree", tree.as_str(), run, Some(part))
+                })?
+            } else {
+                verify_object(binding, "tree", tree.as_str(), run, Some(part))?
+            };
             let (mode, raw_id) = selected.ok_or_else(|| unavailable("missing tree entry"))?;
             let mut encoded = String::new();
             encoded
@@ -780,9 +859,12 @@ mod git {
                     ));
                 }
                 if strict {
-                    check_object_type(binding, id.as_str(), "tree", run)?;
+                    checked_object(binding, id.as_str(), "tree", run, || {
+                        verify_tree(binding, id.as_str(), run)
+                    })?;
+                } else {
+                    verify_tree(binding, id.as_str(), run)?;
                 }
-                verify_tree(binding, id.as_str(), run)?;
                 tree = id;
             } else {
                 if !matches!(mode, 0o100644 | 0o100755) {
@@ -791,31 +873,36 @@ mod git {
                         "nonregular file entry",
                     ));
                 }
-                if strict {
-                    check_object_type(binding, id.as_str(), "blob", run)?;
-                }
-                let size = output(binding, &["cat-file", "-s", id.as_str()], None, 64, run)?;
-                let size = std::str::from_utf8(&size)
-                    .ok()
-                    .and_then(|s| s.trim().parse::<u64>().ok())
-                    .ok_or_else(|| unavailable("invalid blob size"))?;
-                if size > limit || size > usize::MAX as u64 {
-                    return Err(CompileError::simple(
-                        "resource_limit",
-                        "blob size exceeds limit",
-                    ));
-                }
-                let bytes = output(
-                    binding,
-                    &["cat-file", "blob", id.as_str()],
-                    None,
-                    size as usize,
-                    run,
-                )?;
-                if bytes.len() as u64 != size {
-                    return Err(unavailable("blob size mismatch"));
-                }
-                verify_bytes(binding, "blob", id.as_str(), &bytes, run)?;
+                let read_blob = || -> Result<Vec<u8>, CompileError> {
+                    let size = output(binding, &["cat-file", "-s", id.as_str()], None, 64, run)?;
+                    let size = std::str::from_utf8(&size)
+                        .ok()
+                        .and_then(|s| s.trim().parse::<u64>().ok())
+                        .ok_or_else(|| integrity_failure("invalid blob size"))?;
+                    if size > limit || size > usize::MAX as u64 {
+                        return Err(CompileError::simple(
+                            "resource_limit",
+                            "blob size exceeds limit",
+                        ));
+                    }
+                    let bytes = output(
+                        binding,
+                        &["cat-file", "blob", id.as_str()],
+                        None,
+                        size as usize,
+                        run,
+                    )?;
+                    if bytes.len() as u64 != size {
+                        return Err(integrity_failure("blob size mismatch"));
+                    }
+                    verify_bytes(binding, "blob", id.as_str(), &bytes, run)?;
+                    Ok(bytes)
+                };
+                let bytes = if strict {
+                    checked_object(binding, id.as_str(), "blob", run, read_blob)?
+                } else {
+                    read_blob()?
+                };
                 return Ok((bytes, Some(id)));
             }
         }
@@ -839,22 +926,7 @@ pub(super) fn capture_artifact(
         Ok((tree, object.expect("Git capture returns blob ID"), bytes))
     };
     capture().map_err(|mut error: CompileError| {
-        if error.code == "architecture_input_unavailable"
-            && error.diagnostics.iter().any(|d| {
-                matches!(
-                    d.reason.as_str(),
-                    "git object hash mismatch"
-                        | "object hash mismatch"
-                        | "invalid commit tree"
-                        | "missing commit tree"
-                        | "object format mismatch"
-                        | "invalid blob size"
-                        | "blob size mismatch"
-                        | "invalid tree object"
-                        | "truncated tree object"
-                )
-            })
-        {
+        if error.object_integrity_failure {
             error.code = "invalid_reference";
             for diagnostic in &mut error.diagnostics {
                 diagnostic.code = "invalid_reference";

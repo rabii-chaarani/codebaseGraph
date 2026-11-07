@@ -659,3 +659,78 @@ fn nonempty_intent_matches_independent_canonical_payload() {
         structured("architecture-intent", expected)
     );
 }
+
+#[test]
+fn unreadable_commit_tree_and_blob_are_distinct_from_missing_objects() {
+    for kind in ["commit", "tree", "blob"] {
+        let dir = std::env::temp_dir().join(format!(
+            "cod22-corrupt-{kind}-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        std::fs::create_dir_all(&dir).unwrap();
+        git(&dir, &["init", "-q"]);
+        git(&dir, &["config", "user.name", "test"]);
+        git(&dir, &["config", "user.email", "test@example.invalid"]);
+        std::fs::write(dir.join("file"), b"content").unwrap();
+        std::fs::write(dir.join("other"), b"other").unwrap();
+        git(&dir, &["add", "--all"]);
+        git(&dir, &["commit", "-qm", "first"]);
+        let commit = git(&dir, &["rev-parse", "HEAD"]);
+        let id = match kind {
+            "commit" => commit.clone(),
+            "tree" => git(&dir, &["rev-parse", "HEAD^{tree}"]),
+            "blob" => git(&dir, &["rev-parse", "HEAD:file"]),
+            _ => unreachable!(),
+        };
+        let obj = dir.join(".git/objects").join(&id[..2]).join(&id[2..]);
+        let valid = std::fs::read(&obj).unwrap();
+        let binding = RepositoryBinding::new(Text::new("repo").unwrap(), dir.join(".git")).unwrap();
+        let refs = [
+            reference(&commit, "file", b"content"),
+            reference(&commit, "other", b"other"),
+        ];
+        let unavailable_binding =
+            RepositoryBinding::new(Text::new("repo").unwrap(), dir.join("missing-repository"))
+                .unwrap();
+        assert_eq!(
+            qualify_artifacts(&refs, &[unavailable_binding], &policy(), None, &ctx())
+                .err()
+                .unwrap()
+                .code(),
+            "architecture_input_unavailable"
+        );
+        for (label, corrupt) in [
+            ("invalid-zlib", b"not-zlib".as_slice()),
+            ("truncated", &valid[..valid.len() / 2]),
+        ] {
+            std::fs::remove_file(&obj).unwrap();
+            std::fs::write(&obj, corrupt).unwrap();
+            let error = qualify_artifacts(
+                &refs,
+                std::slice::from_ref(&binding),
+                &policy(),
+                None,
+                &ctx(),
+            )
+            .err()
+            .expect("corrupt object cannot yield partial success");
+            assert_eq!(error.code(), "invalid_reference", "corrupt {kind} {label}");
+            assert_eq!(error.diagnostics()[0].subject(), Some("file"));
+        }
+        std::fs::remove_file(&obj).unwrap();
+        let error = qualify_artifacts(&refs, &[binding], &policy(), None, &ctx())
+            .err()
+            .expect("missing object cannot yield partial success");
+        assert_eq!(
+            error.code(),
+            "architecture_input_unavailable",
+            "missing {kind}"
+        );
+        assert_eq!(error.diagnostics()[0].subject(), Some("file"));
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+}
