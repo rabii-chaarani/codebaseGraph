@@ -1,6 +1,14 @@
-# COD-25 execution brief — revision 1, contract preparation
+# COD-25 execution brief — revision 2, actual approval and bounded assignment
 
-Work: **CBG-C4-01/F04/S01 / COD-25**, parent COD-8, M1/P2, R04/R12, A06. Date: 12 November 2026, Australia/Darwin. Coordinator: the user's fresh Sol/Max chat. Status: **concrete contract preparation authorized; exact published-subject approval and product GO pending**.
+Work: **CBG-C4-01/F04/S01 / COD-25**, parent COD-8, M1/P2, R04/R12, A06. Date: 12 November 2026, Australia/Darwin. Coordinator: the user's fresh Sol/Max chat. Status: **actual exact-subject approval received; publication/readiness readback precedes explicit root product GO**.
+
+## Actual approval and assignment binding
+
+The maintainer answered **Approve exact subject** to `request_user_input_async` call `call_d142e06aee764164b5d3ad5b673b8d5b`, item 0, explicitly approving [supplement0.1](https://github.com/rabii-chaarani/codebaseGraph/blob/f7f10a21c45914b369fdfb9e8f0f364f10efc235/docs/specs/CBG-C4-01/cod25-contracts.md) and [brief1](https://github.com/rabii-chaarani/codebaseGraph/blob/f7f10a21c45914b369fdfb9e8f0f364f10efc235/docs/specs/CBG-C4-01/execution/COD-25.md) at full SHA **f7f10a21c45914b369fdfb9e8f0f364f10efc235**. [The actual approval record](../approvals/cod25-approval.md) preserves the question, subject hashes, bounded scope and exclusions. PR194 remains frozen; its pending-at-creation wording is historical and does not negate this later actual decision.
+
+Root owns this records branch `codex/cod-25-execution`, separate from the frozen contract PR and product branch. The one complete technical owner will be `/root/cod25_implementation`, native default/gpt-6.1-terra/medium/fork_turns:none, under the exact product file list below. Product worktree `/private/tmp/codebasegraph-cod25-product-20261112-tn85kw7d`, branch `codex/cod-25-evidence`, starts at exact7c; its normal target `/private/tmp/codebasegraph-cod25-product-20261112-tn85kw7d/target` is reserved for new issue-owned builds. It is not a predecessor cache. Root retains Git/tracking/records ownership; the worker shares the workspace, preserves all other edits and cannot dispatch or widen ownership.
+
+Fresh execution evidence and frozen binaries/dependencies belong outside PRs under `/Users/rabii/.codex/visualizations/2026/11/08/01a1b8bc-9598-7983-a4f1-f25ecf71fb55/cod25-product-evidence`. Before GO, recheck required retained prerequisite copies and installed toolchain/free space, then verify this approval/brief commit remotely. No technical code, build or implementer dispatch precedes that GO. Starting checks and later executed results belong in linked records/Linear and external receipts, without adding session evidence to PRs.
 
 ## Authority and human request
 
