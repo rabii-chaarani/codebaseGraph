@@ -1,6 +1,18 @@
-# COD-25 execution brief — revision 4, actual lifecycle approval and resumed assignment
+# COD-25 execution brief — revision 5, local lifecycle milestone and producer implementation
 
-Work: **CBG-C4-01/F04/S01 / COD-25**, parent COD-8, M1/P2, R04/R12, A06. Date: 12 November 2026, Australia/Darwin. Coordinator: the user's fresh Sol/Max chat. Status: **original and lifecycle exact-subject approvals received; record publication/readiness readback precedes resumed root GO**.
+Work: **CBG-C4-01/F04/S01 / COD-25**, parent COD-8, M1/P2, R04/R12, A06. Progress date: 13 November 2026, Australia/Darwin. Coordinator: the user's fresh Sol/Max chat. Status: **both exact-subject approvals recorded; bounded lifecycle code locally checked/review-corrected; producer implementation and final qualification open**.
+
+## Local lifecycle milestone and remaining producer work
+
+Local product snapshots `7ab8a5c22f27857907a2ecf78f988af6151c4b2f` (tree `e5472debc4a281b023b790dbaa97d1e630c6b72e`) and its correction `e8f0a9ca9eb429c0128162b1dd075bf7270b8acf` (tree `ff19b326687eef2ac98b93829974631780ecb567`) implement the bounded lifecycle prerequisite in `src/process_lifecycle/mod.rs`. They are local intermediate product snapshots, not a delivered/qualified full producer. The same sole technical owner continues the approved source inventory/capture/provider work.
+
+Owner execution covered controlled pre-dispatch stops and supervisor-creation failure, actual pre-READY cancellation/deadline, malformed READY, successful start/wait, and retained recovery across missing evidence and a caught probe panic. An independent read-only Sol/xhigh review found P2 at the first snapshot: caller-confirmed terminal recovery did not finish its supervisor, so removing its workspace could leak the thread. The owner corrected this under the state lock, cached the actual terminal outcome, and added actual helper coverage for terminal poll → workspace removal → identical repeat result → Drop → supervisor exit without replay/START/recreation. Focused independent review verified the fix at e8f with no additional confirmed P0–P3 in that bounded review.
+
+The corrected owner suite reported six explicitly configured real-helper invocations passed, plus default lifecycle filter **10 passed / 5 ignored**. Ignored helper tests fail if explicitly invoked without required setup; the intended missing-helper failure and initial sandbox EPERM loopback failure remain retained. Actual native cases used precisely authorized loopback-capable execution. Fmt/whitespace checks passed. This is owner execution plus independent static review, not independent product execution, LA04 integration, Clippy, full C25, release-profile pilot, other-platform or hosted qualification.
+
+Execute-time provenance is preserved: run13/14 used exact7c plus their complete working diff; lifecycle-fix-run02/03 used exact7ab plus a complete working diff that also included in-progress compiler/corpus edits. They were not relabeled as execution of a later lifecycle-only commit. Root compared the relevant lifecycle source SHA-256 (`1d63672e0a1ba94fd31a37d36fbda69b8d31a2701d0ca068d86b9f585ca41e34` for the correction) and rehashed retained helper/lib-test executables and non-system loader closures. Original commands, profiles, source/diff/manifest/binary identities and failures are retained outside PRs under the already assigned external evidence root, including `lifecycle-code-checkpoint.json` and `lifecycle-P2-correction-checkpoint.json`. No log, checker, binary or evidence artifact is added to any PR.
+
+The verified-tree/canonical-key prerequisite has initial passing owner fixtures but remains under cooperative-accounting/negative-control audit; it is not a successful PreparedSourceEvidence or a Q1 result. Actual snapshots retain/charge the fixed summary file; only SourceContentKey applies its exact exclusion. Directory logical path/mode remains an input and raw tree OIDs remain provenance. All C25-A01–A08 and the integrated lifecycle gate remain open until genuine final evidence. The original and amendment approval SHAs/file lists are unchanged.
 
 ## Actual lifecycle approval and resumed assignment
 
@@ -95,7 +107,7 @@ The exact proposed new layout is an ownership assignment, not a requirement to f
 6. Complete affected integration/negative/resource/compatibility checks. Independently execute evidence and review the integrated final snapshot. Fix every confirmed P0–P3 defect, rerun affected methods and require focused independent reviewer verification.
 7. Publish only essential product/prerequisite/test files in a dev-targeted PR, referencing canonical contracts/approval/evidence separately. Independently verify publication. No merge/release, feature/milestone closure or downstream issue advancement is automatic.
 
-C25-A01–A08 in the original approved supplement plus C25-LA01–LA04 in the proposed lifecycle prerequisite are the acceptance matrix. Evidence records must bind each method to exact source/tree, toolchain/environment, command/configuration, result and limitations. No product check has executed in this documentation phase.
+C25-A01–A08 in the original approved supplement plus C25-LA01–LA04 in the approved lifecycle prerequisite are the acceptance matrix. Evidence records bind each method to its actual source/tree or fully identified working snapshot, toolchain/environment, command/configuration, result and limitations. The local milestone above distinguishes executed bounded checks from still-open integration and final qualification.
 
 ## Verification and evidence retention
 
