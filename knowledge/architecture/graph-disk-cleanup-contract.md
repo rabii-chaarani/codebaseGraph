@@ -179,7 +179,7 @@ Unnecessary files must be reclaimed without requiring another successful graph b
 | --- | --- |
 | DC-S4-R1 | Schedule maintenance at coordinator startup, after build success/failure/cancellation, after unchanged refresh, and periodically while the coordinator runs. With no long-lived coordinator, ordinary runtime entries request bounded maintenance through the same protocol. |
 | DC-S4-R2 | At most one collector acts on a destination at a time. Coalesce duplicate triggers; do not compete with an active writer or create a graph rebuild because cleanup changed internal files. |
-| DC-S4-R3 | Approved defaults: a 60-second background interval and immediate eligible event requests. Fresh authoritative admission/checks/mutations share up to 100 filesystem entries or 100 ms of cooperative work, then yield. Advisory preparation and at most one payload validation/disposal may run longer outside storage/execution authority, with bounded aggregate memory/jobs. Individual calls can overrun; no syscall, invocation or completed-shutdown deadline is promised. See the approved revision-0.2 budget contract below. |
+| DC-S4-R3 | Approved defaults under COD-113/R03: a 60-second background interval and immediate eligible event requests. Fresh authoritative admission/checks/mutations share a 100 ms cooperative time budget with no filesystem-entry-count cap, then yield. Advisory preparation and at most one payload validation/disposal may run longer outside storage/execution authority, with bounded aggregate memory/jobs. Individual calls can overrun; no syscall, invocation or completed-shutdown deadline is promised. The revision-0.2 safety and authority constraints below remain binding, with only the entry-count cap superseded by the approved R03 amendment. |
 | DC-S4-R4 | Retry later without source edits; preserve fair selection and retirement progress across resident opportunities and repeated transient invocations. Long preparation cannot consume the following mutation allowance. A blocked first candidate cannot monopolize attempts. Persistent preparation holds no real dispatcher permit; transient calls/shutdown may wait for preparation/one validation/disposal. Do not busy-loop. |
 | DC-S4-R5 | Proposed reporting surface: additive storage-maintenance fields on existing health/materialization reporting, available through existing CLI/MCP operation paths. No new GUI or standalone command is assumed. Existing response fields and error meanings remain compatible unless a specific change is separately approved. |
 | DC-S4-R6 | Expose observation time/completeness, logical/allocated bytes by category, potential reclaimable bytes, deferred/unknown bytes, last attempt/outcome, reclaimed allocation estimates, and concrete blocked reasons. Do not report a live build as confirmed garbage or report unknown space as zero. |
@@ -285,6 +285,8 @@ A reviewed reusable lesson is recorded in [the Unicode-alias ownership memory](.
 
 
 ## Approved DC-S3/DC-S4 mutation budget — revision 0.2
+
+**Historical budget revision:** the 100-entry component in this section is superseded by approved COD-113/R03 revision 0.1 below. The 100 ms cooperative budget, safety checks, authority lifetimes, cancellation, memory/job limits and all other revision-0.2 requirements remain unchanged. Historical tests and decisions below retain their original meaning; their entry-count assertions are not the current production contract.
 
 **Status: approved on 2026-10-21 by the explicit user instruction above; revision 0.2 governs affected requirements.** A fresh GPT-6.1 Sol Max proposal review found this alternative coherent, subject to memory and admission prerequisites. This does not approve a reduced safety boundary or establish implementation readiness. The maintainer/user owns this decision under the repository rule requiring validation of acceptance-criteria changes.
 
@@ -450,3 +452,29 @@ The original post-reader-release aggregate-drain failure remains unexplained and
 COD-113 PR delivery requires the final implementation's ordinary **trace-off reader regression and all required recovery checks to pass**, together with independent Terra/medium execution, fresh Sol/xhigh adversarial review and all unchanged R01/R02 safety, compatibility, evidence and delivery gates. A final failure remains a gate requiring resolution or a further owner decision; this approval does not waive it. COD-113/Q01 retains local macOS-only execution and Rust/Cargo1.98.1.
 
 This decision does not mark COD-124 resolved, approve a Published-run fix, activate another issue, weaken assertions, change supported-platform/aggregate qualification, or authorize merge/release. The current chat continues COD-113 implementation and conditional PR delivery only; a future investigation retains its own owner, scope and approval prerequisites.
+
+
+## COD-113/R03 — time-only cooperative mutation budget, approved 2026-11-13
+
+**Status: approved policy amendment; implementation and qualification pending.** This amendment applies to the shared production mutation grant used by DC-S3/DC-S4 collection and COD-113 recovery. It supersedes only the filesystem-entry-count limit in the earlier revision-0.2 budget. Stable work, requirement and acceptance identities, earlier approvals, canonical page location, other ownership and aggregate closure responsibilities remain unchanged.
+
+**Explicit human decision:** the maintainer instructed: “Remove the 100-entry limit, keep the 100 ms cooperative budget and all safety checks, and resume fixing COD-113 using the streamlined implementation plan.” This is the exact approval for R03 revision **0.1**. The new resume instruction reactivates COD-113 after its prior timeboxed stop; it supplies no new deadline and grants no merge or release authority. The immutable approved-file SHA and this decision reference are recorded separately in Linear and the signed Scryer execution record after the contract commit.
+
+### Changed budget contract and retained safety
+
+- Production authoritative admission, checks and mutations have a **100 ms cooperative time budget and no filesystem-entry-count cap**. More than 100 filesystem-entry operations may execute while time remains. Entry counts remain accurate telemetry and never become an unlimited-size allocation or loop sentinel.
+- Check elapsed time and applicable cancellation before starting each independent operation, including validation, journal/control writes and namespace changes. Do not reset or substitute a fresh grant inside an admission. An in-flight filesystem operation may overrun; no new syscall or invocation deadline is promised.
+- Retain every existing ownership, lock-order, epoch/cohort, containment, source/origin/parent binding, identity/content, publication, substitution, journal intent/sync/completion and preservation check. All checks must actually execute even when their former count allowance would have been exhausted. Time exhaustion yields with durable resumable evidence and releases held authority.
+- Advisory preparation stays outside storage/execution authority. Memory/job ceilings, bounded buffers, format/shape validation, cancellation, fair continuation, nonblocking lock deferral, the generation empty-run guard and unknown/live/foreign-state preservation remain unchanged.
+- Explicit finite entry allowances may remain solely as test fault-injection controls for interruption/zero/single-operation coverage. They are not production configuration or a production work limit. Existing fixed-format cardinality and containment checks are safety/format constraints, not this removed scheduling cap.
+
+### Acceptance and execution impact
+
+| Amendment criterion | Required outcome |
+| --- | --- |
+| COD113-R03-A1 | The production grant accepts more than 100 charged entry operations while the time budget remains, and reports their actual count without a sentinel or overflow. |
+| COD113-R03-A2 | Time expiry and cancellation still stop new operations, preserve durable state and release authority. The unchanged cooperative-overrun behavior is explicit. |
+| COD113-R03-A3 | Every authoritative preflight and effect retains all original safety checks. Finite test-only failure injection continues to exercise partial effects and recovery without imposing a production cap. |
+| COD113-R03-A4 | Genuine COD-113 empty-run recovery reaches terminal cursor state and reopens safely under the time-only grant; the public confirmation/continuation and historical-generation acceptance, COPY/JSON validation, preservation matrix and unchanged R01/R02/Q01/Q02 gates must pass before PR delivery. |
+
+The streamlined implementation sequence remains: complete the time-budget/default-grant change and genuine empty-run path; connect the single authoritative pre-epoch public dispatcher and prove public end-to-end retirement; extend the same controller to fully validated producer COPY/JSON; remove superseded scaffolding and resolve warnings; freeze the exact implementation for independent Terra/medium execution and fresh Sol/xhigh adversarial review. Detailed prerequisites, exact file ownership and executed evidence remain in Scryer. This amendment does not qualify the existing partial implementation or turn earlier entry-budget failures into passes.
