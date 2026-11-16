@@ -1,0 +1,257 @@
+{
+  "format": "CBG-REBUILD-01.scryer-proposal/0.1",
+  "status": "unsigned proposal; not accepted intent or implementation",
+  "prepared_at": "2026-11-16",
+  "project": "/Users/rabii/Projects/Repositories/codebaseGraph",
+  "change_id": "chg-c9eh2t",
+  "execution_record": "chg-e1cw51",
+  "spec": "docs/specs/CBG-REBUILD-01/spec.md",
+  "preservation": {
+    "existing_pending_entries": 25,
+    "unchanged": true,
+    "pending_resource_and_worktree_claims_not_reassigned": true
+  },
+  "limits": [
+    "Graph CLI discovery/context returns generation_gate_binding_changed; caller inventory is incomplete.",
+    "COD-111 pending watcher claim resp-1fzx2r remains owned by its original change; component retirement is not complete.",
+    "No exact-revision human approval, model sign-off, implemented claim or product test verdict.",
+    "COD-111 spec0.3 is locally identified and Linear-reported; its ref is unavailable on GitHub and exact later approval remains unverified."
+  ],
+  "entries": [
+    {
+      "id": "node-144",
+      "kind": "node",
+      "change_id": "chg-c9eh2t",
+      "changes": [
+        {
+          "field": "description",
+          "from": "Transport-neutral repository monitoring and refresh coordination.",
+          "to": "Repository monitoring and refresh coordination. Retirement proposed by chg-c9eh2t; pending COD-111 resp-1fzx2r remains owned by its original change until scoped reconciliation.",
+          "type": "reworded"
+        }
+      ]
+    },
+    {
+      "id": "node-56",
+      "kind": "node",
+      "change_id": "chg-c9eh2t",
+      "changes": [
+        {
+          "field": "description",
+          "from": "Public materialization planning and execution boundary.",
+          "to": "Public materialization planning and execution boundary. CBG-REBUILD-01 unsigned execution record: chg-e1cw51; proposal chg-c9eh2t. No product sign-off.",
+          "type": "reworded"
+        }
+      ]
+    },
+    {
+      "id": "node-88",
+      "kind": "node",
+      "change_id": "chg-c9eh2t",
+      "changes": [
+        {
+          "field": "description",
+          "from": "Embedded graph database access, lifecycle, and concurrency.",
+          "to": "Embedded graph database access, lifecycle, and concurrency. CBG-REBUILD-01 unsigned execution record: chg-e1cw51; proposal chg-c9eh2t.",
+          "type": "reworded"
+        }
+      ]
+    },
+    {
+      "id": "resp-108",
+      "kind": "responsibility",
+      "owner_id": "node-88",
+      "change_id": "chg-c9eh2t",
+      "changes": [
+        {
+          "field": "statement",
+          "from": "**Publish** complete graph generations.",
+          "to": "**When** a replacement snapshot validates, **publish** its complete bundle atomically.",
+          "type": "reworded"
+        }
+      ]
+    },
+    {
+      "id": "resp-109",
+      "kind": "responsibility",
+      "owner_id": "node-88",
+      "change_id": "chg-c9eh2t",
+      "changes": [
+        {
+          "field": "statement",
+          "from": "**Coordinate** concurrent readers and writers across committed graph generations.",
+          "to": "**Coordinate** target-store read admission with exclusive rebuild ownership.",
+          "type": "reworded"
+        }
+      ]
+    },
+    {
+      "id": "resp-137",
+      "kind": "responsibility",
+      "owner_id": "node-136",
+      "change_id": "chg-c9eh2t",
+      "changes": [
+        {
+          "field": "statement",
+          "from": "**Create** generation-backed repository installations.",
+          "to": "**When** setup is requested, **configure** a managed installation without building a graph.",
+          "type": "reworded"
+        }
+      ]
+    },
+    {
+      "id": "resp-138",
+      "kind": "responsibility",
+      "owner_id": "node-136",
+      "change_id": "chg-c9eh2t",
+      "changes": [
+        {
+          "field": "statement",
+          "from": "**When** a legacy installation is reinstalled, **replace** it only after candidate activation.",
+          "to": "**When** managed-v2 migration is requested, **switch** installations only after replacement validation.",
+          "type": "reworded"
+        }
+      ]
+    },
+    {
+      "id": "resp-144",
+      "kind": "responsibility",
+      "owner_id": "node-143",
+      "change_id": "chg-c9eh2t",
+      "changes": [
+        {
+          "field": "statement",
+          "from": "**When** an operation selects a repository, **resolve** its storage mode and one committed graph generation.",
+          "to": "**When** an operation selects a repository, **resolve** its managed store and selected snapshot.",
+          "type": "reworded"
+        }
+      ]
+    },
+    {
+      "id": "resp-231",
+      "kind": "responsibility",
+      "owner_id": "node-56",
+      "change_id": "chg-c9eh2t",
+      "changes": [
+        {
+          "field": "statement",
+          "from": "**When** materialization begins, **isolate** its transient workspace.",
+          "to": "**When** materialization begins, **isolate** its data in the inactive snapshot slot.",
+          "type": "reworded"
+        }
+      ]
+    },
+    {
+      "id": "resp-232",
+      "kind": "responsibility",
+      "owner_id": "node-88",
+      "change_id": "chg-c9eh2t",
+      "changes": [
+        {
+          "field": "statement",
+          "from": "**When** a materialization run is abandoned, **recover** its workspace.",
+          "to": "**When** a build is interrupted, **recover** its owned replacement state.",
+          "type": "reworded"
+        }
+      ]
+    },
+    {
+      "id": "resp-233",
+      "kind": "responsibility",
+      "owner_id": "node-88",
+      "change_id": "chg-c9eh2t",
+      "changes": [
+        {
+          "field": "statement",
+          "from": "**When** a graph generation is superseded, **retire** it after readers release it.",
+          "to": "**When** publication commits, **retire** the former snapshot synchronously.",
+          "type": "reworded"
+        }
+      ]
+    },
+    {
+      "id": "resp-234",
+      "kind": "responsibility",
+      "owner_id": "node-88",
+      "change_id": "chg-c9eh2t",
+      "changes": [
+        {
+          "field": "statement",
+          "from": "**Reuse** validated source partitions across graph generations.",
+          "to": "**Reuse** validated source partitions within self-contained replacement snapshots.",
+          "type": "reworded"
+        }
+      ]
+    },
+    {
+      "id": "resp-237",
+      "kind": "responsibility",
+      "owner_id": "node-136",
+      "change_id": "chg-c9eh2t",
+      "changes": [
+        {
+          "field": "statement",
+          "from": "**If** a legacy installation receives a write request, **require** explicit reinstallation.",
+          "to": "**If** managed-v2 storage receives an ordinary write, **require** explicit migration.",
+          "type": "reworded"
+        }
+      ]
+    },
+    {
+      "id": "resp-238",
+      "kind": "responsibility",
+      "owner_id": "node-56",
+      "change_id": "chg-c9eh2t",
+      "changes": [
+        {
+          "field": "statement",
+          "from": "**When** source changes are materialized, **assemble** one complete candidate graph generation.",
+          "to": "**When** a build captures source inputs, **assemble** one complete replacement snapshot.",
+          "type": "reworded"
+        }
+      ]
+    },
+    {
+      "id": "resp-253",
+      "kind": "responsibility",
+      "owner_id": "node-136",
+      "change_id": "chg-c9eh2t",
+      "changes": [
+        {
+          "field": "statement",
+          "from": "**Provide** current graph-retrieval guidance to installed agents.",
+          "to": "**Provide** explicit-build snapshot guidance to installed agents.",
+          "type": "reworded"
+        }
+      ]
+    },
+    {
+      "id": "resp-270",
+      "kind": "responsibility",
+      "owner_id": "node-56",
+      "change_id": "chg-c9eh2t",
+      "changes": [
+        {
+          "field": "statement",
+          "from": "**When** requested changes are already present in the active generation, **complete** materialization without writing a candidate.",
+          "to": "**When** an explicit build is requested, **construct** a complete candidate even when source inputs are unchanged.",
+          "type": "reworded"
+        }
+      ]
+    },
+    {
+      "id": "resp-71",
+      "kind": "responsibility",
+      "owner_id": "node-56",
+      "change_id": "chg-c9eh2t",
+      "changes": [
+        {
+          "field": "statement",
+          "from": "**Coordinate** full and incremental graph generation builds.",
+          "to": "**When** an explicit build is requested, **coordinate** complete snapshot construction.",
+          "type": "reworded"
+        }
+      ]
+    }
+  ]
+}
