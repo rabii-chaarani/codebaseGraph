@@ -1,0 +1,48 @@
+{
+  "command": "python3 /private/tmp/codebasegraph-identity-evidence-20261117/apfs-probe/fifo_probe.py",
+  "sw_vers": "ProductName:\t\tmacOS\nProductVersion:\t\t26.6.2\nBuildVersion:\t\t25G83\n",
+  "uname": {
+    "system": "Darwin",
+    "node": "Rabiis-MacBook-Pro.local",
+    "release": "25.6.0",
+    "version": "Darwin Kernel Version 25.6.0: Fri Jul 31 19:16:20 PDT 2026; root:xnu-12377.161.14~5/RELEASE_ARM64_T8142",
+    "machine": "arm64"
+  },
+  "flags": "FIFO O_RDWR | O_NONBLOCK; parent O_RDONLY",
+  "fixture": "/private/tmp/codebasegraph-identity-evidence-20261117/apfs-probe/fifo-fixture/probe.fifo",
+  "parent": {
+    "returncode": 0,
+    "errno": 0,
+    "error": null,
+    "returned_size": 20,
+    "uuid_hex": "732c14f4af604c808ec053fbfbeaad42",
+    "before": {
+      "device": 16777235,
+      "inode": 89118825,
+      "mode": "0o40755"
+    },
+    "after": {
+      "device": 16777235,
+      "inode": 89118825,
+      "mode": "0o40755"
+    }
+  },
+  "fifo": {
+    "returncode": 0,
+    "errno": 0,
+    "error": null,
+    "returned_size": 20,
+    "uuid_hex": "732c14f4af604c808ec053fbfbeaad42",
+    "before": {
+      "device": 16777235,
+      "inode": 89118826,
+      "mode": "0o10600"
+    },
+    "after": {
+      "device": 16777235,
+      "inode": 89118826,
+      "mode": "0o10600"
+    }
+  },
+  "same_nonzero_uuid": true
+}

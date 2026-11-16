@@ -1,0 +1,11 @@
+# CBG-IDENTITY-01 execution supplements
+
+This records routine ownership/progress under [approval.md](approval.md); it changes no approved behavior or acceptance criterion. The immutable architecture-proposal.json remains the approved snapshot.
+
+2026-11-17: under the existing Scryer chg-r9y7bh node-110.description execution brief, root activated the single complete Terra/medium owner /root/identity_implementation over the 59 unique reserved source/test paths. Root retains documentation/evidence/wiki/model/tracking/Git. Writer quiescence was verified; cancelled COD-113 WIP is preserved.
+
+Root assigns one additional path to that same owner, before edits: `src/adapters/mcp/tools.rs`, only for the already approved raw retired-health-key rejection and adapter tests (spec section4, ID-A03/A04). Retained graph hash and worktree SHA256 both `b70b1c7ecc2933852787d7442cbcfc560d244641a8002afa0f2283de9ee29d6b`. No other file or contract is reassigned. The original 59 paths plus this path total60unique reservations. Source mapping/dependency direction and all execution/review/live-preview gates remain binding.
+
+The approved Scryer brief expressly requires coordinator reassignment before an unlisted file edit. This record supplies that routine assignment under the unchanged contract; it does not add architectural intent. An attempted descriptive progress append was classified as a Scryer node amendment, so root restored the exact approved description rather than manufacturing another sign-off. The authoritative intent/model snapshot remains unchanged; execution evidence records this administrative event.
+
+Compatibility clarification under ID-R06: existing coordinator/worker/refresh constructor semantics may initialize the new scheme only when they actually create a genuinely new root, carry the real creator token and bound source/config provenance, and hold complete required authority. A public read trigger alone does not establish or invalidate genuine creation authority. Existing roots cannot be enrolled by reads or inferred fresh from emptiness. Proposed deferred coordinator/direct-read routing was withdrawn before changes because it would add unrelated behavior. Global watcher removal remains excluded; the specific restored repository configuration is watcher-off as already approved.

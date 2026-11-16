@@ -1,0 +1,42 @@
+{
+  "frozen_date": "2026-11-17 Australia/Darwin",
+  "binary_source_attestation": "Installed Cargo metadata says release4.2.0 from canonical repository; exact source is not proven. Frozen bytes are actual prior installed runtime.",
+  "files": [
+    {
+      "source": "/Users/rabii/.cargo/bin/codebase-graph",
+      "resolved": "/Users/rabii/.cargo/bin/codebase-graph",
+      "frozen": "/private/tmp/codebasegraph-identity-evidence-20261117/old-runtime/bin/codebase-graph",
+      "sha256": "bcf583dfea22df32b6817d0910899a1a1374088bb1d3ec12720ac306da54d832",
+      "bytes": 48265216
+    },
+    {
+      "source": "/opt/homebrew/opt/openssl@3/lib/libssl.3.dylib",
+      "resolved": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib/libssl.3.dylib",
+      "frozen": "/private/tmp/codebasegraph-identity-evidence-20261117/old-runtime/lib/libssl.3.dylib",
+      "sha256": "26ecfd43c742914a142c8b414b1f308cefe0531fcc6e38b6d45021649850e758",
+      "bytes": 884560
+    },
+    {
+      "source": "/opt/homebrew/opt/openssl@3/lib/libcrypto.3.dylib",
+      "resolved": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib/libcrypto.3.dylib",
+      "frozen": "/private/tmp/codebasegraph-identity-evidence-20261117/old-runtime/lib/libcrypto.3.dylib",
+      "sha256": "ef2239cec921003b54b61968f00489271e2a2805d7d1b4e69d632423f38efe1e",
+      "bytes": 4845712
+    },
+    {
+      "source": "/Users/rabii/.lbdb/extension/0.19.0/osx_arm64/json/libjson.lbug_extension",
+      "frozen": "/private/tmp/codebasegraph-identity-evidence-20261117/old-runtime/home/.lbdb/extension/0.19.0/osx_arm64/json/libjson.lbug_extension",
+      "sha256": "e6482a025de31d662ee4b32a39c991706b8cc3c2ec49673ef5d8ce45cc23ce7a",
+      "bytes": 630440
+    },
+    {
+      "source": "/Users/rabii/.lbdb/extension/0.19.0/osx_arm64/fts/libfts.lbug_extension",
+      "frozen": "/private/tmp/codebasegraph-identity-evidence-20261117/old-runtime/home/.lbdb/extension/0.19.0/osx_arm64/fts/libfts.lbug_extension",
+      "sha256": "83ae4be9fa718577ca971f27ff890b3aea5789c9dd908784e28f52917febbfdb",
+      "bytes": 1562680
+    }
+  ],
+  "system_dependencies": "OS system libraries/frameworks; otool closure recorded separately",
+  "non_system_load_env": "DYLD_LIBRARY_PATH=/private/tmp/codebasegraph-identity-evidence-20261117/old-runtime/lib",
+  "extension_cache": "Frozen 0.19.0 JSON/FTS cache for subprocess HOME only; no user HOME or shared cache change."
+}

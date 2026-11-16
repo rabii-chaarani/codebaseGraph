@@ -1,0 +1,43 @@
+{
+  "scope": "actual old binary baseline only",
+  "commands": [
+    {
+      "name": "health",
+      "command": [
+        "/private/tmp/codebasegraph-identity-evidence-20261117/old-runtime/bin/codebase-graph",
+        "check-health",
+        "--source-root",
+        "/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source",
+        "--json"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.21026206016540527,
+      "stdout": "health.stdout.log",
+      "stderr": "health.stderr.log"
+    },
+    {
+      "name": "search",
+      "command": [
+        "/private/tmp/codebasegraph-identity-evidence-20261117/old-runtime/bin/codebase-graph",
+        "codebase-search",
+        "identity_fixture",
+        "--source-root",
+        "/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source",
+        "--layer",
+        "semantic",
+        "--no-refresh",
+        "--detail",
+        "slim",
+        "--context-limit",
+        "1",
+        "--json"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.20902132987976074,
+      "stdout": "search.stdout.log",
+      "stderr": "search.stderr.log"
+    }
+  ],
+  "active_present": true,
+  "binding_sha256": "4060ba56472c6be66878f55ddebbb7cc018c75fb7e9d8caeac28e7cbe997cfa2"
+}

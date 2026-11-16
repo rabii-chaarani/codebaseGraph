@@ -1,0 +1,28 @@
+{
+  "checked_client_date": "2026-11-17 Australia/Darwin",
+  "official_sources": [
+    "https://support.apple.com/en-us/100100",
+    "https://support.apple.com/en-us/109033"
+  ],
+  "apple_current_stable_macos": "27.2.1",
+  "apple_release_date": "2026-11-09",
+  "local_probe_host": {
+    "version": "26.6.2",
+    "build": "25G83",
+    "architecture": "arm64"
+  },
+  "observed_pr_ci": {
+    "run_id": 43869111225,
+    "job_id": 133305557176,
+    "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/43869111225/job/133305557176",
+    "version": "26.7.2",
+    "build": "25G332",
+    "architecture": "arm64",
+    "runner_image": "macos-26-arm64",
+    "runner_image_version": "20261102.0473",
+    "tested_merge_sha": "6f25469027553a6b2c1693e0ba3f6c05ee113a3b",
+    "scope": "historical proposal CI, not final product source",
+    "overall_run_result": "failed"
+  },
+  "qualification": "Local and observed CI runs do not satisfy ID-A09 current-stable macOS. Current macOS ARM64 and Windows11 x86_64 host availability pending; no acceptance waiver or host/CI changes."
+}
