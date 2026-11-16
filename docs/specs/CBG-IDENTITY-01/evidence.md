@@ -20,6 +20,14 @@ The user's selected plan and implementation request authorize contract/authority
 
 No product source change, Rust build, new native qualification, passing identity-recovery test, current-store enrollment or implemented model verdict exists at this checkpoint. Independent static verification/review and immutable proposal references will be recorded after they genuinely exist. Other issue-specific qualification waivers are not inherited.
 
+## Independent static checks
+
+Frozen initial proposal `943884fe915f16be876c483ab077be31b4935056`, base above: independent Terra/medium verification passed exact three-file scope, JSON, diff/whitespace, all24 requirement IDs covered by10 criteria, two resolving local links, and four scoped entries matching live Scryer id/kind/owner/change/delta. It did not independently certify historical observations, approvals, source/runtime behavior or the42-entry preservation assertion.
+
+A fresh default/fork-none Sol/xhigh reviewer used adversarial-review-engineer, read the complete artifacts and found no confirmed P0-P3 document defect. It screened identity/admission, ownership, mixed versions, crash/cancellation, certainty, Direct compatibility and traceability. Actual fence refusal, persistent descriptor/boot behavior and fault tests remain future qualification. It identified an approval-readiness limitation: added claim IDs lacked statement text in the exported delta. The corrected export includes full statements/concerns read from their live owning nodes.
+
+Focused Final Review and independent Terra/medium verification passed at `6793034af1ca9a3cf3124d333f264f209c39017b`. The verifier matched four pending entries and all three statements/concerns to live Scryer owners; JSON, links, 24 requirement/10 criterion coverage and diff checks passed. The reviewer found no confirmed P0-P3 in the semantic-export delta. Specification SHA256 is `1352a8108a283b6070482a82b75387d90587744249827dce4fae0ccd01dac132`; architecture snapshot SHA256 is `1180e75d64c2538a1c77ce40b44fbd4af138126f3fa343ddf2abd6adb90e66ab`. These are static proposal results, not product/runtime/qualification results or exact model approval. This factual result update changes neither contract nor model semantics.
+
 ## Unsigned architecture preparation
 
 Scryer change `chg-r9y7bh` holds the three genuine responsibilities and its same-change execution brief in `node-110.description`, captured in [architecture-proposal.json](architecture-proposal.json). Server-assigned claim IDs are `resp-y5d311`, `resp-xpv8tb` and `resp-1e1m51`. The brief reserves the exact source/test set and one future complete owner; activation remains gated by committed-spec/model approval and verified quiescence. Unlisted files/manifests require coordinator reassignment before edit; no product writer is active.

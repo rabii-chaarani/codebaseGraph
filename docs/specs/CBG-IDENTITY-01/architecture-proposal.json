@@ -34,7 +34,9 @@
         {
           "type": "added"
         }
-      ]
+      ],
+      "statement": "**Exclude** automatic disk collection from runtime operations.",
+      "concern": "persistence"
     },
     {
       "id": "resp-xpv8tb",
@@ -45,7 +47,8 @@
         {
           "type": "added"
         }
-      ]
+      ],
+      "statement": "**When** managed identity recovery is invoked, **coordinate** its explicit preview or enrollment."
     },
     {
       "id": "resp-y5d311",
@@ -56,7 +59,9 @@
         {
           "type": "added"
         }
-      ]
+      ],
+      "statement": "**When** an exact managed identity-recovery preview is confirmed, **enrol** its store under persistent identity.",
+      "concern": "persistence"
     }
   ]
 }
