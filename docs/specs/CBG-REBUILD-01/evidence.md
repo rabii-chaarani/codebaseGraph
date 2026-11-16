@@ -13,6 +13,15 @@ Date: 2026-11-16, Australia/Darwin. Scope: CBG-REBUILD-01/D00 specification/mode
 - Scryer preparation change: `chg-c9eh2t`; detailed unsigned execution record: `chg-e1cw51`. The focused [architecture snapshot](architecture-proposal.json) captures 17 draft entries. Readback established all 25 pre-existing pending entries unchanged, including their ownership. Pending resource-removal and COD-111 claims retain their original ownership/history.
 - Scryer structural validation executed after authoring: no blocking finding; three unchanged pre-existing long-description advisories on `container-release-verifier`, `node-1` and `node-143`. The new proposal adds no advisory. Structural validity is not behavioral acceptance or sign-off.
 - The referenced adversarial-review skill is present. The user's AGENTS final-review table selects Sol/xhigh, overriding the skill's Max default. No product claim is marked implemented and no test/JUnit verdict is invented.
+- GitHub returned 404, “No commit found”, for COD-111's locally present `d05df72076b5a2016b95a70dd0cbe55bd9ac9f33`. Its local approvals directory contains only the November 2 implementation/emulation records, not the November 3 record referenced by spec 0.3. Later semantics are Linear-reported; exact-revision approval/publication remains unverified, and original approvals are preserved.
+
+## Independent checks and corrections
+
+Initial frozen proposal: `5b4c2427eac46fd0d846db7aaeff56267a9987d8`, against authoring base above. The branch was pushed; GitHub immutable readback returned the same spec Git blob identity as local `git rev-parse` (`5d1dc480e20733c530fb718c142c7ad098e9fdf0`). No PR or human approval is inferred from a branch push.
+
+The independent GPT-6.1 Terra/medium verifier passed diff scope/check, JSON parsing, 37 requirement-to-acceptance mappings, eight S-series/four D00 criteria and three local links. Live read-only Scryer comparison matched all 17 captured entries. This was static verification; no product/native tests ran and original acceptance identity provenance was not independently certified.
+
+The first Sol/xhigh review attempt ended incomplete after partial/truncated artifact inspection and supplies no Final Review clearance. A fresh Sol/xhigh bounded retry read all three complete artifacts and initially confirmed two P2 document defects: the broad `resp-237` legacy-migration claim contradicted v2-only migration, and the spec overstated COD-111 exact approval. The working correction narrows the live/captured claim to managed-v2 and qualifies the unverified approval/publication input. Final review and focused verification of corrected artifacts remain pending until actually returned.
 
 ## Original proposal acceptance status
 

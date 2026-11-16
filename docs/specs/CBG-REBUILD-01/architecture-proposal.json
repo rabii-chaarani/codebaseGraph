@@ -14,7 +14,8 @@
   "limits": [
     "Graph CLI discovery/context returns generation_gate_binding_changed; caller inventory is incomplete.",
     "COD-111 pending watcher claim resp-1fzx2r remains owned by its original change; component retirement is not complete.",
-    "No exact-revision human approval, model sign-off, implemented claim or product test verdict."
+    "No exact-revision human approval, model sign-off, implemented claim or product test verdict.",
+    "COD-111 spec0.3 is locally identified and Linear-reported; its ref is unavailable on GitHub and exact later approval remains unverified."
   ],
   "entries": [
     {
@@ -191,7 +192,7 @@
         {
           "field": "statement",
           "from": "**If** a legacy installation receives a write request, **require** explicit reinstallation.",
-          "to": "**If** legacy storage receives an ordinary write, **require** explicit migration.",
+          "to": "**If** managed-v2 storage receives an ordinary write, **require** explicit migration.",
           "type": "reworded"
         }
       ]
