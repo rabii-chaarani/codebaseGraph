@@ -1,0 +1,24 @@
+{
+  "scope": "genuine prior-runtime fixture baseline only, not final acceptance",
+  "command": [
+    "/private/tmp/codebasegraph-identity-evidence-20261117/old-runtime/bin/codebase-graph",
+    "build",
+    "--source-root",
+    "/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture/source",
+    "--mode",
+    "full",
+    "--no-git",
+    "--single-thread",
+    "--max-parallelism",
+    "1",
+    "--json"
+  ],
+  "cwd": "/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture/source",
+  "elapsed_seconds": 2.503232002258301,
+  "exit_code": 1,
+  "failure": null,
+  "executable_sha256": "bcf583dfea22df32b6817d0910899a1a1374088bb1d3ec12720ac306da54d832",
+  "stdout": "build.stdout.log",
+  "stderr": "build.stderr.log",
+  "current_store_access": false
+}

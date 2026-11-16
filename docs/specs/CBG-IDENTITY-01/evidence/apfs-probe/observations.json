@@ -1,0 +1,207 @@
+{
+  "create": {
+    "command": "hdiutil create -size 32m -fs APFS -volname CBGIdentityProbe -type UDIF -layout GPTSPUD identity.dmg",
+    "initial_sandbox": "Device not configured",
+    "escalated": "created"
+  },
+  "commands": [
+    {
+      "argv": [
+        "sw_vers"
+      ],
+      "returncode": 0,
+      "stdout": "ProductName:\t\tmacOS\nProductVersion:\t\t26.6.2\nBuildVersion:\t\t25G83\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "uname",
+        "-a"
+      ],
+      "returncode": 0,
+      "stdout": "Darwin Rabiis-MacBook-Pro.local 25.6.0 Darwin Kernel Version 25.6.0: Fri Jul 31 19:16:20 PDT 2026; root:xnu-12377.161.14~5/RELEASE_ARM64_T8142 arm64\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "hdiutil",
+        "attach",
+        "-plist",
+        "-nobrowse",
+        "-mountpoint",
+        "/private/tmp/codebasegraph-identity-evidence-20261117/apfs-probe/mount",
+        "/private/tmp/codebasegraph-identity-evidence-20261117/apfs-probe/identity.dmg"
+      ],
+      "returncode": 0,
+      "stdout": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n<dict>\n\t<key>system-entities</key>\n\t<array>\n\t\t<dict>\n\t\t\t<key>content-hint</key>\n\t\t\t<string>GUID_partition_scheme</string>\n\t\t\t<key>dev-entry</key>\n\t\t\t<string>/dev/disk4</string>\n\t\t\t<key>potentially-mountable</key>\n\t\t\t<false/>\n\t\t\t<key>unmapped-content-hint</key>\n\t\t\t<string>GUID_partition_scheme</string>\n\t\t</dict>\n\t\t<dict>\n\t\t\t<key>content-hint</key>\n\t\t\t<string>Apple_APFS</string>\n\t\t\t<key>dev-entry</key>\n\t\t\t<string>/dev/disk4s1</string>\n\t\t\t<key>potentially-mountable</key>\n\t\t\t<false/>\n\t\t\t<key>unmapped-content-hint</key>\n\t\t\t<string>7C3457EF-0000-11AA-AA11-00306543ECAC</string>\n\t\t</dict>\n\t\t<dict>\n\t\t\t<key>content-hint</key>\n\t\t\t<string>41504653-0000-11AA-AA11-00306543ECAC</string>\n\t\t\t<key>dev-entry</key>\n\t\t\t<string>/dev/disk5s1</string>\n\t\t\t<key>mount-point</key>\n\t\t\t<string>/private/tmp/codebasegraph-identity-evidence-20261117/apfs-probe/mount</string>\n\t\t\t<key>potentially-mountable</key>\n\t\t\t<true/>\n\t\t\t<key>unmapped-content-hint</key>\n\t\t\t<string>41504653-0000-11AA-AA11-00306543ECAC</string>\n\t\t\t<key>volume-kind</key>\n\t\t\t<string>apfs</string>\n\t\t</dict>\n\t\t<dict>\n\t\t\t<key>content-hint</key>\n\t\t\t<string>EF57347C-0000-11AA-AA11-00306543ECAC</string>\n\t\t\t<key>dev-entry</key>\n\t\t\t<string>/dev/disk5</string>\n\t\t\t<key>potentially-mountable</key>\n\t\t\t<false/>\n\t\t\t<key>unmapped-content-hint</key>\n\t\t\t<string>EF57347C-0000-11AA-AA11-00306543ECAC</string>\n\t\t</dict>\n\t</array>\n</dict>\n</plist>\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "hdiutil",
+        "detach",
+        "/private/tmp/codebasegraph-identity-evidence-20261117/apfs-probe/mount"
+      ],
+      "returncode": 0,
+      "stdout": "\"disk4\" ejected.\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "hdiutil",
+        "attach",
+        "-plist",
+        "-nobrowse",
+        "-mountpoint",
+        "/private/tmp/codebasegraph-identity-evidence-20261117/apfs-probe/mount",
+        "/private/tmp/codebasegraph-identity-evidence-20261117/apfs-probe/identity.dmg"
+      ],
+      "returncode": 0,
+      "stdout": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n<dict>\n\t<key>system-entities</key>\n\t<array>\n\t\t<dict>\n\t\t\t<key>content-hint</key>\n\t\t\t<string>GUID_partition_scheme</string>\n\t\t\t<key>dev-entry</key>\n\t\t\t<string>/dev/disk4</string>\n\t\t\t<key>potentially-mountable</key>\n\t\t\t<false/>\n\t\t\t<key>unmapped-content-hint</key>\n\t\t\t<string>GUID_partition_scheme</string>\n\t\t</dict>\n\t\t<dict>\n\t\t\t<key>content-hint</key>\n\t\t\t<string>Apple_APFS</string>\n\t\t\t<key>dev-entry</key>\n\t\t\t<string>/dev/disk4s1</string>\n\t\t\t<key>potentially-mountable</key>\n\t\t\t<false/>\n\t\t\t<key>unmapped-content-hint</key>\n\t\t\t<string>7C3457EF-0000-11AA-AA11-00306543ECAC</string>\n\t\t</dict>\n\t\t<dict>\n\t\t\t<key>content-hint</key>\n\t\t\t<string>41504653-0000-11AA-AA11-00306543ECAC</string>\n\t\t\t<key>dev-entry</key>\n\t\t\t<string>/dev/disk5s1</string>\n\t\t\t<key>mount-point</key>\n\t\t\t<string>/private/tmp/codebasegraph-identity-evidence-20261117/apfs-probe/mount</string>\n\t\t\t<key>potentially-mountable</key>\n\t\t\t<true/>\n\t\t\t<key>unmapped-content-hint</key>\n\t\t\t<string>41504653-0000-11AA-AA11-00306543ECAC</string>\n\t\t\t<key>volume-kind</key>\n\t\t\t<string>apfs</string>\n\t\t</dict>\n\t\t<dict>\n\t\t\t<key>content-hint</key>\n\t\t\t<string>EF57347C-0000-11AA-AA11-00306543ECAC</string>\n\t\t\t<key>dev-entry</key>\n\t\t\t<string>/dev/disk5</string>\n\t\t\t<key>potentially-mountable</key>\n\t\t\t<false/>\n\t\t\t<key>unmapped-content-hint</key>\n\t\t\t<string>EF57347C-0000-11AA-AA11-00306543ECAC</string>\n\t\t</dict>\n\t</array>\n</dict>\n</plist>\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "hdiutil",
+        "detach",
+        "/private/tmp/codebasegraph-identity-evidence-20261117/apfs-probe/mount"
+      ],
+      "returncode": 0,
+      "stdout": "\"disk4\" ejected.\n",
+      "stderr": ""
+    }
+  ],
+  "observations": [
+    {
+      "attempt": 1,
+      "entities": [
+        {
+          "content-hint": "GUID_partition_scheme",
+          "dev-entry": "/dev/disk4",
+          "potentially-mountable": false,
+          "unmapped-content-hint": "GUID_partition_scheme"
+        },
+        {
+          "content-hint": "Apple_APFS",
+          "dev-entry": "/dev/disk4s1",
+          "potentially-mountable": false,
+          "unmapped-content-hint": "7C3457EF-0000-11AA-AA11-00306543ECAC"
+        },
+        {
+          "content-hint": "41504653-0000-11AA-AA11-00306543ECAC",
+          "dev-entry": "/dev/disk5s1",
+          "mount-point": "/private/tmp/codebasegraph-identity-evidence-20261117/apfs-probe/mount",
+          "potentially-mountable": true,
+          "unmapped-content-hint": "41504653-0000-11AA-AA11-00306543ECAC",
+          "volume-kind": "apfs"
+        },
+        {
+          "content-hint": "EF57347C-0000-11AA-AA11-00306543ECAC",
+          "dev-entry": "/dev/disk5",
+          "potentially-mountable": false,
+          "unmapped-content-hint": "EF57347C-0000-11AA-AA11-00306543ECAC"
+        }
+      ],
+      "resources": [
+        {
+          "path": "mount/testdir",
+          "returncode": 0,
+          "errno": 0,
+          "returned_size": 20,
+          "uuid_hex": "c53d0af6fc6c430593e01cb7a005b831",
+          "before": {
+            "device": 16777240,
+            "inode": 16
+          },
+          "after": {
+            "device": 16777240,
+            "inode": 16
+          }
+        },
+        {
+          "path": "mount/testdir/testfile",
+          "returncode": 0,
+          "errno": 0,
+          "returned_size": 20,
+          "uuid_hex": "c53d0af6fc6c430593e01cb7a005b831",
+          "before": {
+            "device": 16777240,
+            "inode": 17
+          },
+          "after": {
+            "device": 16777240,
+            "inode": 17
+          }
+        }
+      ]
+    },
+    {
+      "attempt": 2,
+      "entities": [
+        {
+          "content-hint": "GUID_partition_scheme",
+          "dev-entry": "/dev/disk4",
+          "potentially-mountable": false,
+          "unmapped-content-hint": "GUID_partition_scheme"
+        },
+        {
+          "content-hint": "Apple_APFS",
+          "dev-entry": "/dev/disk4s1",
+          "potentially-mountable": false,
+          "unmapped-content-hint": "7C3457EF-0000-11AA-AA11-00306543ECAC"
+        },
+        {
+          "content-hint": "41504653-0000-11AA-AA11-00306543ECAC",
+          "dev-entry": "/dev/disk5s1",
+          "mount-point": "/private/tmp/codebasegraph-identity-evidence-20261117/apfs-probe/mount",
+          "potentially-mountable": true,
+          "unmapped-content-hint": "41504653-0000-11AA-AA11-00306543ECAC",
+          "volume-kind": "apfs"
+        },
+        {
+          "content-hint": "EF57347C-0000-11AA-AA11-00306543ECAC",
+          "dev-entry": "/dev/disk5",
+          "potentially-mountable": false,
+          "unmapped-content-hint": "EF57347C-0000-11AA-AA11-00306543ECAC"
+        }
+      ],
+      "resources": [
+        {
+          "path": "mount/testdir",
+          "returncode": 0,
+          "errno": 0,
+          "returned_size": 20,
+          "uuid_hex": "c53d0af6fc6c430593e01cb7a005b831",
+          "before": {
+            "device": 16777240,
+            "inode": 16
+          },
+          "after": {
+            "device": 16777240,
+            "inode": 16
+          }
+        },
+        {
+          "path": "mount/testdir/testfile",
+          "returncode": 0,
+          "errno": 0,
+          "returned_size": 20,
+          "uuid_hex": "c53d0af6fc6c430593e01cb7a005b831",
+          "before": {
+            "device": 16777240,
+            "inode": 17
+          },
+          "after": {
+            "device": 16777240,
+            "inode": 17
+          }
+        }
+      ]
+    }
+  ],
+  "prior_attempt": "Initial run failed writing observations: OS command outputs were bytes and not JSON serializable; detach was attempted in finally. No observation retained.",
+  "os": {
+    "sw_vers": "ProductName:\t\tmacOS\nProductVersion:\t\t26.6.2\nBuildVersion:\t\t25G83\n",
+    "uname": "Darwin Rabiis-MacBook-Pro.local 25.6.0 Darwin Kernel Version 25.6.0: Fri Jul 31 19:16:20 PDT 2026; root:xnu-12377.161.14~5/RELEASE_ARM64_T8142 arm64\n"
+  }
+}

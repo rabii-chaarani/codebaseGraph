@@ -1,0 +1,1 @@
+{"budget":600,"layer":"semantic","limit":3,"profile":"brief","query":"identity_fixture","results":[{"id":"Function:6543090ddc4db38a9931","label":"identity_fixture","layer":"semantic","path":"src/lib.rs","rank_score":1.0,"span":{"line_end":1,"line_start":1},"type":"Function"}]}

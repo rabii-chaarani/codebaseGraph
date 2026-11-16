@@ -1,0 +1,23 @@
+{
+  "format": "CBG-IDENTITY-01.qualification-authority-update/0.1",
+  "work": "COD-135",
+  "original_approved_commit": "067f3486fc136493d8d240d109fdb85a919d541f",
+  "original_snapshot": "architecture-proposal.json",
+  "change_id": "chg-r9y7bh",
+  "node_id": "node-110",
+  "field": "description",
+  "operation": "replace exactly one occurrence",
+  "from": "Required currentmacOSARM64+Windows11x86_64 qualification; no other-issue exceptions.",
+  "to": "COD-135 qualification uses localmacOS26.6.2ARM64 per explicituser2026-11-17 'use the local macos' (GitQ01), and hostedWindowsx86_64CI per 'windows qualification will be left to hosted CI' (GitQ02). RecordactualrunnerOS andgenuinefinalresults; no other-issue exceptions, globalplatform/aggregate/releasewaiver orliveapplyapproval.",
+  "unchanged_responsibilities": [
+    "resp-y5d311",
+    "resp-xpv8tb",
+    "resp-1e1m51"
+  ],
+  "decision_date": "2026-11-17 Australia/Darwin",
+  "decisions": [
+    "use the local macos",
+    "windows qualification will be left to hosted CI"
+  ],
+  "scope": "Only COD-135 Mac/Windows execution environments; no behavior or broader platform/release/live-enrollment approval."
+}

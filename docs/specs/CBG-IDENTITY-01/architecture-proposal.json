@@ -1,0 +1,67 @@
+{
+  "format": "CBG-IDENTITY-01.scryer-proposal/0.1",
+  "status": "unsigned proposal; no implementation or final-byte approval",
+  "project": "/Users/rabii/Projects/Repositories/codebaseGraph",
+  "change_id": "chg-r9y7bh",
+  "execution_record": "node-110.description in the same change",
+  "work": "COD-135",
+  "spec": "docs/specs/CBG-IDENTITY-01/spec.md",
+  "preserved_existing_pending": {
+    "count": 42,
+    "unchanged": true
+  },
+  "source_base": "90e2ab6fae2767bdb158e19f0072d43568e80dbc",
+  "entries": [
+    {
+      "id": "node-110",
+      "kind": "node",
+      "change_id": "chg-r9y7bh",
+      "changes": [
+        {
+          "field": "description",
+          "from": "Transport-neutral operation coordination and dispatch.",
+          "to": "Transport-neutral operation coordination and dispatch.\n\nCOD-135 / CBG-IDENTITY-01 unsigned execution record, 2026-11-16\n\nSame authority change chg-r9y7bh; no separate ledger. Proposed contracts docs/specs/CBG-IDENTITY-01/spec.md rev0.1. Main90e2ab6fae2767bdb158e19f0072d43568e80dbc; isolated /private/tmp/codebasegraph-identity-20261116 branchcodex/fix-managed-identity. User-selected plan and implementation request authorize preparation; exact committed-spec/model approval precedes code and exact preview approval precedes live enrollment. No approval/test verdict/claim fold/live repair is fabricated.\n\nCurrent direct root owns only spec.md,evidence.md,architecture-proposal.json under that work ID, model/tracking and serialized Git. No product writer is active. Future workflow ONE complete technical owner Terra/medium, no nested dispatch/Git/model/tracking, starts only after approval + verified quiescence/exact assignment. COD113 is Cancelled; preserve its WIP/branches/evidence and do not cherry-pick or infer quiescence. Independent Terra/medium verification and fresh default/forknone Sol/xhigh adversarial-review-engineer Final Review (user table overrides skillMax) with all confirmedP0-P3 fixed/focused-reverified. Required currentmacOSARM64+Windows11x86_64 qualification; no other-issue exceptions.\n\nContracts: managed-only durableidentity+explicit preview/apply/resume. Native dev/inode remains live only; new primary persisted keys MacFD-volumeUUID/fileID, existing Windowsserial semantics; creationnonce/membership/checksum retained. NewUnixproof durableFIFO+kernelBootSession, neverPID/age deletionauthority. Automaticcollection timers/idle/health/completion/drop effects removed; keep actual native leases/containment/publication/current-owned cleanup. Old collector records inert/preserved, no massmigration; CGCOOR03 artifact-use header underEX preserves inode+creationnonce, realoldruntimefence mandatory evenifdevicevaluesmatch. IdentityState/1+IdentityRecoveryJournal/1 only; DB/storagev2,configv3,manifestv5 stay. No Directrecovery, rootreplacement, SDK/dependency/MSRV/resource-policy change. Recovery bootstraps before normal failing graphinit, preview noncreating/fingerprint, apply requires originalstore/filesystem+quiescence confirmation and actual complete proof, journalbeforeimages→fence→primaryrecords→commit. Resume idempotent; ambiguousblocks, precommitrollbackonlyproven, no postcommitdowngrade. Metadata certainty separategraphreadiness; recovery neverbuilds.\n\nExact reserved future writable source/test list (reservation, NOT activation):\n- src/artifact_store.rs\n- src/bootstrap.rs\n- src/coordinator.rs\n- src/materialization_worker.rs\n- src/error.rs\n- src/api/mod.rs\n- src/api/contracts.rs\n- src/api/core.rs\n- src/api/context.rs\n- src/api/facade.rs\n- src/api/normalization.rs\n- src/api/presentation_support.rs\n- src/api/presenter.rs\n- src/api/materialization.rs\n- src/api/lifecycle.rs\n- src/api/refresh.rs\n- src/api/boundary_tests.rs\n- src/adapters/cli/mod.rs\n- src/adapters/cli/dispatch.rs\n- src/adapters/cli/format/mod.rs\n- src/adapters/cli/format/help.rs\n- src/db_writer/access.rs\n- src/db_writer/phase.rs\n- src/db_writer/tests.rs\n- src/process_lifecycle/mod.rs\n- src/process_lifecycle/unix.rs\n- src/process_lifecycle/windows.rs\n- src/storage/mod.rs\n- src/storage/locks.rs\n- src/storage/layout.rs\n- src/storage/managed.rs\n- src/storage/run_workspace.rs\n- src/storage/containment.rs\n- src/storage/maintenance.rs\n- src/storage/maintenance_ownership.rs\n- src/storage/maintenance_controls.rs\n- src/storage/maintenance_generation_gate.rs\n- src/storage/maintenance_workspace_gate.rs\n- src/storage/maintenance_origin.rs\n- src/storage/maintenance_legacy_guard.rs\n- src/adapters/cli/tests/mod.rs\n- src/adapters/cli/tests/fixtures.rs\n- src/adapters/cli/tests/dispatch_materialize.rs\n- src/adapters/cli/tests/graph.rs\n- src/adapters/cli/tests/install.rs\n- src/adapters/cli/tests/mcp.rs\n- src/adapters/cli/tests/watch.rs\n- tests/generation_storage.rs\n- tests/coordinator_process.rs\n- tests/http_daemon_process.rs\n- tests/native_request_identity.rs\n- tests/copy_phase_process.rs\n- tests/support/lifecycle_faults.rs\n- src/storage/identity.rs\n- src/storage/identity_recovery.rs\n- src/storage/identity_tests.rs\n- src/adapters/cli/identity_recovery.rs\n- tests/identity_recovery_process.rs\n- tests/identity_volume_process.rs\n- src/adapters/cli/format/mod.rs\n- src/adapters/cli/format/help.rs\n\nExisting listed files are retained-graph-index located/hash-matched; planned new identity/recovery modules and tests are explicit creations. Unlisted file/manifest/lock or intent boundary requires coordinator reassignment before edit. Edit only necessary code: classify live, survivingpersistent and retiredcollector uses; no reimplementation of cancelledcollector. Single owner holds coupledtypes/config/manifests if explicitly added. Sourcebootstrap uses current repository retainedmanifest+matchinghashes because CLI generation_gate_binding_changed/MCPunavailable; sourcecalltraces qualifysemanticgaps, no databaseguardbypass. Ordinarygraphcontext rerun afterfix.\n\nSequence: freezecontracts/approval; oneowner identity/provider/primaryadmission +collector detachment +recoverytxn/fence/helperprotocol/tests; freezeoriginal/fixedbinaries+runtimeclosureoutsidecleanup, uniqueRusttarget/df/no competingcleaner; affected/full/native/packaged tests, independentexecution/review; coordinatorConventionalcommit/pushPRmain; actualpreviewapproval then matchingruntime/currentrootrecovery/explicitfullbuild/health-search-context-readquery/daemonwatcheroff. Otherstoresnotautomaticallyenrolled/restarted; no merge/publicrelease/aggregateclosure. AcceptanceID-A01..A10 and requirementID-R01..R24 trace in canonical spec; planned methods never count as passes. Preserve unknown/foreign data and actual failures.",
+          "type": "reworded"
+        }
+      ]
+    },
+    {
+      "id": "resp-1e1m51",
+      "kind": "responsibility",
+      "owner_id": "node-110",
+      "change_id": "chg-r9y7bh",
+      "changes": [
+        {
+          "type": "added"
+        }
+      ],
+      "statement": "**Exclude** automatic disk collection from runtime operations.",
+      "concern": "persistence"
+    },
+    {
+      "id": "resp-xpv8tb",
+      "kind": "responsibility",
+      "owner_id": "node-136",
+      "change_id": "chg-r9y7bh",
+      "changes": [
+        {
+          "type": "added"
+        }
+      ],
+      "statement": "**When** managed identity recovery is invoked, **coordinate** its explicit preview or enrollment."
+    },
+    {
+      "id": "resp-y5d311",
+      "kind": "responsibility",
+      "owner_id": "node-88",
+      "change_id": "chg-r9y7bh",
+      "changes": [
+        {
+          "type": "added"
+        }
+      ],
+      "statement": "**When** an exact managed identity-recovery preview is confirmed, **enrol** its store under persistent identity.",
+      "concern": "persistence"
+    }
+  ]
+}

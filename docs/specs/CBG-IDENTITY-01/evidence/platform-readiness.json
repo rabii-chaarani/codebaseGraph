@@ -1,0 +1,37 @@
+{
+  "checked_client_date": "2026-11-17 Australia/Darwin",
+  "official_sources": [
+    "https://support.apple.com/en-us/100100",
+    "https://support.apple.com/en-us/109033"
+  ],
+  "apple_current_stable_macos": "27.2.1",
+  "apple_release_date": "2026-11-09",
+  "local_probe_host": {
+    "version": "26.6.2",
+    "build": "25G83",
+    "architecture": "arm64"
+  },
+  "observed_pr_ci": {
+    "run_id": 43869111225,
+    "job_id": 133305557176,
+    "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/43869111225/job/133305557176",
+    "version": "26.7.2",
+    "build": "25G332",
+    "architecture": "arm64",
+    "runner_image": "macos-26-arm64",
+    "runner_image_version": "20261102.0473",
+    "tested_merge_sha": "6f25469027553a6b2c1693e0ba3f6c05ee113a3b",
+    "scope": "historical proposal CI, not final product source",
+    "overall_run_result": "failed"
+  },
+  "qualification": "The local/observed CI hosts do not establish original revision0.1 platform qualification. The maintainer subsequently chose COD-135/Q01 local macOS26.6.2 ARM64 and Q02 hosted Windows x86_64 CI; spec0.2 commit1e8fcdcccac77d83eec07556076dc20a288238ec codifies those actual decisions. No final-source passing result or broader platform/release waiver is inferred.",
+  "potential_hosted_macos_runner": {
+    "label": "xcode-27",
+    "official_label_documentation": "https://docs.github.com/en/actions/how-tos/write-workflows/choose-where-workflows-run/choose-the-runner-for-a-job",
+    "official_image_release": "https://github.com/actions/runner-images/releases/tag/xcode-27-arm64/20261112.0361",
+    "release_published_at": "2026-11-12T14:36:27Z",
+    "reported_os": "macOS 27.2 (26B123)",
+    "reported_architecture": "arm64",
+    "status": "Available label documented; not selected or executed for COD-135. Reported image is not Apple's latest 27.2.1 patch. Actual execution OS and applicable current-stable criterion remain to be established; no qualification inference."
+  }
+}

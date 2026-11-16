@@ -1,0 +1,235 @@
+{
+  "active_generation": "93327-1794863632956435000-1",
+  "artifacts_rebuilt": 1,
+  "artifacts_reused": 0,
+  "cleanup_pending": true,
+  "connector_rows": 50,
+  "copy_calls": 47,
+  "copy_statements": [
+    "COPY `File` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/file.json\";",
+    "COPY `Function` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/function.json\";",
+    "COPY `Module` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/module.json\";",
+    "COPY `Reference` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/reference.json\";",
+    "COPY `Repository` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/repository.json\";",
+    "COPY `Scope` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/scope.json\";",
+    "COPY `SourceRoot` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/sourceroot.json\";",
+    "COPY `SyntaxCapture` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/syntaxcapture.json\";",
+    "COPY `Contains` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/contains.json\";",
+    "COPY `Declares` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/declares.json\";",
+    "COPY `Defines` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/defines.json\";",
+    "COPY `DerivedFrom` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/derivedfrom.json\";",
+    "COPY `EvidencedBy` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/evidencedby.json\";",
+    "COPY `HasScope` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/hasscope.json\";",
+    "COPY `References` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/references.json\";",
+    "COPY `ResolvesTo` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/resolvesto.json\";",
+    "COPY `SyntaxChild` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/syntaxchild.json\";",
+    "COPY `FROM_Contains` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/from_contains__file__contains.csv\" (header=true, from=\"File\", to=\"Contains\");",
+    "COPY `FROM_Contains` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/from_contains__function__contains.csv\" (header=true, from=\"Function\", to=\"Contains\");",
+    "COPY `FROM_Contains` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/from_contains__module__contains.csv\" (header=true, from=\"Module\", to=\"Contains\");",
+    "COPY `FROM_Contains` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/from_contains__repository__contains.csv\" (header=true, from=\"Repository\", to=\"Contains\");",
+    "COPY `FROM_Contains` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/from_contains__scope__contains.csv\" (header=true, from=\"Scope\", to=\"Contains\");",
+    "COPY `FROM_Contains` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/from_contains__sourceroot__contains.csv\" (header=true, from=\"SourceRoot\", to=\"Contains\");",
+    "COPY `TO_Contains` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/to_contains__contains__file.csv\" (header=true, from=\"Contains\", to=\"File\");",
+    "COPY `TO_Contains` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/to_contains__contains__function.csv\" (header=true, from=\"Contains\", to=\"Function\");",
+    "COPY `TO_Contains` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/to_contains__contains__module.csv\" (header=true, from=\"Contains\", to=\"Module\");",
+    "COPY `TO_Contains` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/to_contains__contains__reference.csv\" (header=true, from=\"Contains\", to=\"Reference\");",
+    "COPY `TO_Contains` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/to_contains__contains__scope.csv\" (header=true, from=\"Contains\", to=\"Scope\");",
+    "COPY `TO_Contains` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/to_contains__contains__sourceroot.csv\" (header=true, from=\"Contains\", to=\"SourceRoot\");",
+    "COPY `FROM_Declares` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/from_declares__module__declares.csv\" (header=true, from=\"Module\", to=\"Declares\");",
+    "COPY `TO_Declares` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/to_declares__declares__function.csv\" (header=true, from=\"Declares\", to=\"Function\");",
+    "COPY `FROM_Defines` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/from_defines__module__defines.csv\" (header=true, from=\"Module\", to=\"Defines\");",
+    "COPY `TO_Defines` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/to_defines__defines__function.csv\" (header=true, from=\"Defines\", to=\"Function\");",
+    "COPY `FROM_DerivedFrom` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/from_derivedfrom__function__derivedfrom.csv\" (header=true, from=\"Function\", to=\"DerivedFrom\");",
+    "COPY `FROM_DerivedFrom` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/from_derivedfrom__reference__derivedfrom.csv\" (header=true, from=\"Reference\", to=\"DerivedFrom\");",
+    "COPY `TO_DerivedFrom` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/to_derivedfrom__derivedfrom__syntaxcapture.csv\" (header=true, from=\"DerivedFrom\", to=\"SyntaxCapture\");",
+    "COPY `FROM_EvidencedBy` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/from_evidencedby__file__evidencedby.csv\" (header=true, from=\"File\", to=\"EvidencedBy\");",
+    "COPY `TO_EvidencedBy` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/to_evidencedby__evidencedby__syntaxcapture.csv\" (header=true, from=\"EvidencedBy\", to=\"SyntaxCapture\");",
+    "COPY `FROM_HasScope` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/from_hasscope__function__hasscope.csv\" (header=true, from=\"Function\", to=\"HasScope\");",
+    "COPY `FROM_HasScope` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/from_hasscope__module__hasscope.csv\" (header=true, from=\"Module\", to=\"HasScope\");",
+    "COPY `TO_HasScope` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/to_hasscope__hasscope__scope.csv\" (header=true, from=\"HasScope\", to=\"Scope\");",
+    "COPY `FROM_References` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/from_references__reference__references.csv\" (header=true, from=\"Reference\", to=\"References\");",
+    "COPY `TO_References` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/to_references__references__function.csv\" (header=true, from=\"References\", to=\"Function\");",
+    "COPY `FROM_ResolvesTo` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/from_resolvesto__reference__resolvesto.csv\" (header=true, from=\"Reference\", to=\"ResolvesTo\");",
+    "COPY `TO_ResolvesTo` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/to_resolvesto__resolvesto__function.csv\" (header=true, from=\"ResolvesTo\", to=\"Function\");",
+    "COPY `FROM_SyntaxChild` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/from_syntaxchild__syntaxcapture__syntaxchild.csv\" (header=true, from=\"SyntaxCapture\", to=\"SyntaxChild\");",
+    "COPY `TO_SyntaxChild` FROM \"/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/to_syntaxchild__syntaxchild__syntaxcapture.csv\" (header=true, from=\"SyntaxChild\", to=\"SyntaxCapture\");"
+  ],
+  "database_written": true,
+  "diagnostics": [],
+  "diff": {
+    "added": [
+      "src/lib.rs"
+    ],
+    "deleted": [],
+    "force_rebuild": true,
+    "modified": [],
+    "unchanged": []
+  },
+  "edge_rows": 25,
+  "graph_build_digest": "f50064c09e9cab2210013a190c6930ba4ec7e31f113c2afe6bf1bf11b1358723",
+  "graph_summary": {
+    "edge_count": 25,
+    "node_count": 16
+  },
+  "maintenance": {
+    "bytes": {
+      "by_category": {
+        "active_cache": {
+          "allocated_bytes": 36864,
+          "logical_bytes": 31011
+        },
+        "active_graph": {
+          "allocated_bytes": 6361088,
+          "logical_bytes": 5553237
+        },
+        "artifact_temporary": {
+          "allocated_bytes": null,
+          "logical_bytes": null
+        },
+        "coordination": {
+          "allocated_bytes": 585728,
+          "logical_bytes": 22102
+        },
+        "leased_generation": {
+          "allocated_bytes": null,
+          "logical_bytes": null
+        },
+        "legacy_staging": {
+          "allocated_bytes": null,
+          "logical_bytes": null
+        },
+        "live_run": {
+          "allocated_bytes": 229376,
+          "logical_bytes": 33257
+        },
+        "recovery_evidence": {
+          "allocated_bytes": 6922240,
+          "logical_bytes": 2062466
+        },
+        "retired_direct": {
+          "allocated_bytes": null,
+          "logical_bytes": null
+        },
+        "unknown": {
+          "allocated_bytes": null,
+          "logical_bytes": null
+        }
+      },
+      "deferred": {
+        "allocated_bytes": 229376,
+        "logical_bytes": 33257
+      },
+      "potential_reclamation": {
+        "allocated_bytes": null,
+        "logical_bytes": null
+      },
+      "retained": {
+        "allocated_bytes": 13905920,
+        "logical_bytes": 7668816
+      },
+      "total": {
+        "allocated_bytes": null,
+        "logical_bytes": null
+      },
+      "unknown": {
+        "allocated_bytes": null,
+        "logical_bytes": null
+      }
+    },
+    "errors": [],
+    "inventory_status": null,
+    "last_attempt": {
+      "attempted_entries": 19,
+      "continuation_phase": null,
+      "deleted_entries": 0,
+      "finished_at_unix_ms": 1794863671451,
+      "reclaimed_allocated_bytes": null,
+      "started_at_unix_ms": 1794863671398,
+      "status": "deferred"
+    },
+    "measurement_complete": false,
+    "observation_age_ms": 15,
+    "observation_complete": false,
+    "observed_at_unix_ms": 1794863671436,
+    "pending": true,
+    "reasons": [
+      "maintenance_measurement_partial_lower_bounds",
+      "unknown_entries_retained",
+      "reference_in_use",
+      "maintenance_candidate_deferred",
+      "maintenance_observation_incomplete",
+      "maintenance_stopped"
+    ],
+    "requested": true,
+    "running": false
+  },
+  "materialized_entries": {
+    "src/lib.rs": {
+      "artifact_key": "9381c6fe426f7d89bd2b930cee6e9ee6b0d67912a5ec001b4af5f1f7b9ead67c",
+      "content_hash": "4628da641e28fe844da9d892460df314b71d4bf4acd45d2c8d884151a567f516",
+      "edge_count": 25,
+      "language": "rust",
+      "materialized_at": "unix:0",
+      "node_count": 16,
+      "partition_id": "b24749917179fb5e3e61",
+      "path": "src/lib.rs"
+    }
+  },
+  "node_rows": 16,
+  "pending_runs": 0,
+  "phase_high_water_marks": {
+    "database_write": 148391040,
+    "parse": 171850,
+    "search_index": 3536,
+    "staging": 36441
+  },
+  "phase_timings": {
+    "database_write_seconds": 36.245234084,
+    "graph_build_seconds": 0.000559833,
+    "native_cli_seconds": 37.993713375,
+    "parse_seconds": 0.000678083,
+    "scan_seconds": 0.058729042,
+    "search_index_seconds": 0.002392333,
+    "staging_seconds": 1.6385102919999999
+  },
+  "progress_events": [],
+  "rebuilt_entries": {
+    "src/lib.rs": {
+      "artifact_key": "9381c6fe426f7d89bd2b930cee6e9ee6b0d67912a5ec001b4af5f1f7b9ead67c",
+      "content_hash": "4628da641e28fe844da9d892460df314b71d4bf4acd45d2c8d884151a567f516",
+      "edge_count": 25,
+      "language": "rust",
+      "materialized_at": "unix:0",
+      "node_count": 16,
+      "partition_id": "b24749917179fb5e3e61",
+      "path": "src/lib.rs"
+    }
+  },
+  "search_backend": {
+    "backend": "disk_bm25_v1",
+    "document_count": 13,
+    "files": {
+      "search.doc_lengths.bin": "07dda8927404374a1880b9510f9ad78f00c20386e3ec9e1fe2ba1017cb204f5c",
+      "search.document_offsets.bin": "865a09543faa560567d79af853cc8bc1761ee40f297456031c6def56c4db24bd",
+      "search.documents.bin": "dd3438f1d8f356ce901bd1a04f06be6ad7ddc3f185bd1d4dc4093927dcf3326f",
+      "search.lexicon.bin": "14b336d44e9edb47712c15f1781c76d921515d9d82c77862a3c860efc135042b",
+      "search.meta.json": "f0bc8a8928591f711ad006ddeb574c94ebca93b6a6a34e72a1376ca22fec6553",
+      "search.postings.bin": "bc49727bc8238c8280b64be3039e81cc9319908a97fdf5b10ca047406b68a4b8"
+    },
+    "format_version": 1,
+    "term_count": 28,
+    "total_tokens": 83
+  },
+  "skipped": false,
+  "snapshots": {
+    "src/lib.rs": {
+      "absolute_path": "/private/tmp/codebasegraph-identity-evidence-20261117/legacy-fixture-native/source/.codebaseGraph/storage/runs/run-93327-1794863632783635000-0/staging/source-snapshots/b2/b24749917179fb5e3e61-4628da641e28fe844da9d892460df314b71d4bf4acd45d2c8d884151a567f516.snapshot",
+      "byte_len": 41,
+      "content_hash": "4628da641e28fe844da9d892460df314b71d4bf4acd45d2c8d884151a567f516",
+      "language": "rust",
+      "path": "src/lib.rs"
+    }
+  },
+  "spill_bytes": 58611,
+  "storage_format": "managed_v2"
+}
