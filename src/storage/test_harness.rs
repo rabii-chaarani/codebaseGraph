@@ -667,6 +667,121 @@ fn direct_write_session_holds_writer_lock_and_drop_cleans_unpublished_candidates
     assert!(!PathBuf::from(format!("{}.wal", layout.db_candidate_path().display())).exists());
 }
 
+#[cfg(unix)]
+#[test]
+fn direct_read_preserves_no_journal_symlink_candidate() {
+    use std::os::unix::fs::symlink;
+    let root = temp_dir("dr-sym");
+    let layout = DirectLayout::new(root.join("g.ldb"), root.join("m.json"));
+    fs::write(layout.db_path(), b"committed-db").unwrap();
+    fs::write(layout.manifest_path(), b"committed-manifest").unwrap();
+    let foreign = root.join("foreign");
+    fs::write(&foreign, b"foreign-data").unwrap();
+    symlink(&foreign, layout.db_candidate_path()).unwrap();
+    let store = DirectStore::new(layout.clone()).unwrap();
+    let lease = store.begin_read().expect("committed pair remains readable");
+    assert!(fs::symlink_metadata(layout.db_candidate_path())
+        .unwrap()
+        .file_type()
+        .is_symlink());
+    assert_eq!(fs::read(&foreign).unwrap(), b"foreign-data");
+    assert_eq!(fs::read(layout.db_path()).unwrap(), b"committed-db");
+    assert_eq!(
+        fs::read(layout.manifest_path()).unwrap(),
+        b"committed-manifest"
+    );
+    assert!(!layout.journal_path().exists());
+    drop(lease);
+}
+
+#[test]
+fn direct_read_reports_candidate_residue_and_preserves_shared_writer_exclusion() {
+    let root = temp_dir("dr-cand");
+    let layout = DirectLayout::new(root.join("g.ldb"), root.join("m.json"));
+    fs::write(layout.db_path(), b"base").unwrap();
+    fs::write(layout.manifest_path(), b"manifest").unwrap();
+    let store = DirectStore::new(layout.clone()).unwrap();
+    assert!(!store.candidate_cleanup_pending());
+    fs::write(layout.db_candidate_path(), b"residue").unwrap();
+    let sidecar = direct_sidecar(&layout.db_candidate_path(), "wal");
+    fs::write(&sidecar, b"candidate-sidecar").unwrap();
+    fs::create_dir(layout.manifest_candidate_path()).unwrap();
+    assert!(store.candidate_cleanup_pending());
+    let lease = store.begin_read().unwrap();
+    assert_eq!(fs::read(layout.db_candidate_path()).unwrap(), b"residue");
+    assert_eq!(fs::read(&sidecar).unwrap(), b"candidate-sidecar");
+    assert!(layout.manifest_candidate_path().is_dir());
+    assert!(
+        try_open_locked(layout.writer_lock_path(), LockMode::Exclusive)
+            .unwrap()
+            .is_none()
+    );
+    drop(lease);
+    fs::remove_dir(layout.manifest_candidate_path()).unwrap();
+    drop(store.begin_write().unwrap());
+    assert!(!store.candidate_cleanup_pending());
+    assert_eq!(fs::read(layout.db_path()).unwrap(), b"base");
+    assert_eq!(fs::read(layout.manifest_path()).unwrap(), b"manifest");
+}
+
+#[test]
+fn direct_read_rejects_malformed_required_journal_and_keeps_evidence() {
+    let root = temp_dir("dr-bad-j");
+    let layout = DirectLayout::new(root.join("g.ldb"), root.join("m.json"));
+    fs::write(layout.db_path(), b"base").unwrap();
+    fs::write(layout.manifest_path(), b"manifest").unwrap();
+    fs::write(layout.db_candidate_path(), b"candidate").unwrap();
+    fs::write(layout.journal_path(), b"malformed").unwrap();
+    let store = DirectStore::new(layout.clone()).unwrap();
+    assert!(store.begin_read().is_err());
+    assert_eq!(fs::read(layout.journal_path()).unwrap(), b"malformed");
+    assert_eq!(fs::read(layout.db_candidate_path()).unwrap(), b"candidate");
+    assert_eq!(fs::read(layout.db_path()).unwrap(), b"base");
+}
+
+#[cfg(windows)]
+#[test]
+fn direct_read_survives_candidate_open_without_share_delete() {
+    use std::os::windows::fs::OpenOptionsExt;
+    let root = temp_dir("dr-win");
+    let layout = DirectLayout::new(root.join("g.ldb"), root.join("m.json"));
+    fs::write(layout.db_path(), b"base").unwrap();
+    fs::write(layout.manifest_path(), b"manifest").unwrap();
+    fs::write(layout.db_candidate_path(), b"candidate").unwrap();
+    let held = fs::OpenOptions::new()
+        .read(true)
+        .share_mode(0x3)
+        .open(layout.db_candidate_path())
+        .unwrap();
+    let store = DirectStore::new(layout.clone()).unwrap();
+    let lease = store.begin_read().unwrap();
+    assert!(store.candidate_cleanup_pending());
+    assert_eq!(fs::read(layout.db_candidate_path()).unwrap(), b"candidate");
+    drop(lease);
+    assert!(store.begin_write().is_err());
+    drop(held);
+    drop(store.begin_write().unwrap());
+    assert!(!store.candidate_cleanup_pending());
+}
+
+#[cfg(unix)]
+#[test]
+fn direct_read_detects_dangling_candidate_and_required_symlink_journal() {
+    use std::os::unix::fs::symlink;
+    let root = temp_dir("dr-dangle");
+    let layout = DirectLayout::new(root.join("g.ldb"), root.join("m.json"));
+    fs::write(layout.db_path(), b"base").unwrap();
+    fs::write(layout.manifest_path(), b"manifest").unwrap();
+    symlink(root.join("missing"), layout.db_candidate_path()).unwrap();
+    let store = DirectStore::new(layout.clone()).unwrap();
+    assert!(store.candidate_cleanup_pending());
+    drop(store.begin_read().unwrap());
+    assert!(fs::symlink_metadata(layout.db_candidate_path()).is_ok());
+    symlink(root.join("missing-journal"), layout.journal_path()).unwrap();
+    assert!(store.begin_read().is_err());
+    assert!(fs::symlink_metadata(layout.journal_path()).is_ok());
+}
+
 #[test]
 fn direct_store_recovers_interrupted_publication_with_sidecars_and_split_parents() {
     let root =

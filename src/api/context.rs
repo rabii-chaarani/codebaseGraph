@@ -517,6 +517,7 @@ pub(crate) fn resolve_runtime(selector: &RepoSelector) -> Result<RepoRuntime, St
                 .unwrap_or(paths.manifest_path.clone()),
         };
         let direct_read = resolve_direct_read(&db_path, &manifest_path)?;
+        let candidate_pending = direct_candidate_cleanup_pending(&db_path, &manifest_path)?;
         let direct_cleanup = RunWorkspace::cleanup_orphans(paths.state_dir.join("direct-runs"))
             .map_err(|error| format!("failed to clean direct run workspaces: {error}"))?;
         return Ok(RepoRuntime {
@@ -529,7 +530,7 @@ pub(crate) fn resolve_runtime(selector: &RepoSelector) -> Result<RepoRuntime, St
             storage_root: None,
             active_generation: None,
             writable: true,
-            cleanup_pending: direct_cleanup.skipped_locked > 0,
+            cleanup_pending: direct_cleanup.skipped_locked > 0 || candidate_pending,
             pending_runs: direct_cleanup.skipped_locked,
             active_read: None,
             direct_read,
@@ -579,6 +580,7 @@ pub(crate) fn resolve_runtime(selector: &RepoSelector) -> Result<RepoRuntime, St
                 .map(|path| resolve_config_path(path, &config_path))
                 .unwrap_or(paths.manifest_path);
             let direct_read = resolve_direct_read(&db_path, &manifest_path)?;
+            let candidate_pending = direct_candidate_cleanup_pending(&db_path, &manifest_path)?;
             let direct_cleanup = RunWorkspace::cleanup_orphans(paths.state_dir.join("direct-runs"))
                 .map_err(|error| format!("failed to clean direct run workspaces: {error}"))?;
             Ok(RepoRuntime {
@@ -591,7 +593,7 @@ pub(crate) fn resolve_runtime(selector: &RepoSelector) -> Result<RepoRuntime, St
                 storage_root: None,
                 active_generation: None,
                 writable: true,
-                cleanup_pending: direct_cleanup.skipped_locked > 0,
+                cleanup_pending: direct_cleanup.skipped_locked > 0 || candidate_pending,
                 pending_runs: direct_cleanup.skipped_locked,
                 active_read: None,
                 direct_read,
@@ -657,6 +659,12 @@ fn resolve_managed_runtime(
     })
 }
 
+fn direct_candidate_cleanup_pending(db_path: &Path, manifest_path: &Path) -> Result<bool, String> {
+    DirectStore::new(DirectLayout::new(db_path, manifest_path))
+        .map(|store| store.candidate_cleanup_pending())
+        .map_err(|error| format!("failed to inspect direct graph publication: {error}"))
+}
+
 fn resolve_direct_read(
     db_path: &Path,
     manifest_path: &Path,
@@ -664,9 +672,8 @@ fn resolve_direct_read(
     let layout = DirectLayout::new(db_path, manifest_path);
     if !db_path.exists()
         && !manifest_path.exists()
-        && !layout.journal_path().exists()
-        && !layout.db_candidate_path().exists()
-        && !layout.manifest_candidate_path().exists()
+        && matches!(std::fs::symlink_metadata(layout.journal_path()), Err(error) if error.kind() == std::io::ErrorKind::NotFound)
+        && !direct_candidate_cleanup_pending(db_path, manifest_path)?
     {
         return Ok(None);
     }
@@ -1340,6 +1347,135 @@ mod tests {
         let report = RunWorkspace::cleanup_orphans(state.join("direct-runs")).unwrap();
         assert_eq!(report.deleted, 1);
         assert!(!run.exists());
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn direct_read_selectors_report_candidate_residue_without_disposal() {
+        use crate::api::{
+            CodebaseGraphApi, HealthRequest, MaterializationRequest, OperationRequest,
+            OutputFormat, QueryRequest,
+        };
+        let root = unique_temp_dir("dr-api");
+        fs::create_dir_all(root.join("src")).unwrap();
+        fs::write(root.join("src/lib.rs"), "pub fn direct_symbol() {}\n").unwrap();
+        let db = root.join("g.lbug");
+        let manifest = root.join("m.json");
+        let layout = DirectLayout::new(&db, &manifest);
+        let explicit = RepoSelector {
+            repo_root: Some(root.clone()),
+            config_path: None,
+            db_path: Some(db.clone()),
+            manifest_path: Some(manifest.clone()),
+        };
+        CodebaseGraphApi::new()
+            .execute_operation(&OperationRequest::Materialize(MaterializationRequest {
+                repo: explicit.clone(),
+                native_request_path: None,
+                source_root: None,
+                mode: "full".into(),
+                include_fts: false,
+                use_git: false,
+                git_diff: false,
+                git_base: None,
+                include_patterns: vec![],
+                exclude_patterns: vec![],
+                candidate_paths: vec![],
+                parallel: false,
+                spill_chunk_mib: None,
+                max_parallelism: None,
+                progress: false,
+                output_format: OutputFormat::Typed,
+            }))
+            .unwrap();
+        let config = root.join(".codebaseGraph/config.json");
+        fs::write(
+            &config,
+            serde_json::to_vec(
+                &json!({"repo_root": root, "database_path": db, "manifest_path": manifest}),
+            )
+            .unwrap(),
+        )
+        .unwrap();
+        let configured = RepoSelector {
+            repo_root: Some(root.clone()),
+            config_path: Some(config),
+            db_path: None,
+            manifest_path: None,
+        };
+        let api = CodebaseGraphApi::new();
+        let health = |selector: RepoSelector| {
+            api.execute_operation(&OperationRequest::Health(HealthRequest {
+                repo: selector,
+                refresh_status: None,
+                output_format: OutputFormat::Typed,
+            }))
+            .unwrap()
+        };
+        assert_eq!(health(explicit.clone()).payload["cleanup_pending"], false);
+        let before_db = sha256(&fs::read(&db).unwrap());
+        let before_manifest = sha256(&fs::read(&manifest).unwrap());
+        #[cfg(unix)]
+        let foreign = {
+            use std::os::unix::fs::symlink;
+            let foreign = root.join("foreign");
+            fs::write(&foreign, b"candidate-residue").unwrap();
+            symlink(&foreign, layout.db_candidate_path()).unwrap();
+            foreign
+        };
+        #[cfg(windows)]
+        fs::write(layout.db_candidate_path(), b"candidate-residue").unwrap();
+        #[cfg(windows)]
+        let held = {
+            use std::os::windows::fs::OpenOptionsExt;
+            fs::OpenOptions::new()
+                .read(true)
+                .share_mode(0x3)
+                .open(layout.db_candidate_path())
+                .unwrap()
+        };
+        for selector in [explicit.clone(), configured.clone()] {
+            let result = health(selector.clone());
+            assert_eq!(result.payload["graph_readable"], true);
+            assert_eq!(result.payload["cleanup_pending"], true);
+            assert_eq!(result.payload["pending_runs"], 0);
+            let query = api
+                .execute_operation(&OperationRequest::Query(QueryRequest {
+                    repo: selector,
+                    statement: "MATCH (n) RETURN count(n) AS total_nodes LIMIT 1".into(),
+                    parameters: json!({}),
+                    limit: 1,
+                    output_format: OutputFormat::Typed,
+                }))
+                .unwrap();
+            assert!(query.payload["rows"][0][0].as_u64().unwrap() > 0);
+            assert_eq!(
+                fs::read(layout.db_candidate_path()).unwrap(),
+                b"candidate-residue"
+            );
+            #[cfg(unix)]
+            {
+                assert!(fs::symlink_metadata(layout.db_candidate_path())
+                    .unwrap()
+                    .file_type()
+                    .is_symlink());
+                assert_eq!(fs::read(&foreign).unwrap(), b"candidate-residue");
+            }
+            assert_eq!(sha256(&fs::read(&db).unwrap()), before_db);
+            assert_eq!(sha256(&fs::read(&manifest).unwrap()), before_manifest);
+            assert!(!layout.journal_path().exists());
+        }
+        #[cfg(windows)]
+        drop(held);
+        #[cfg(unix)]
+        fs::remove_file(layout.db_candidate_path()).unwrap();
+        drop(
+            crate::storage::direct::DirectStore::new(layout.clone())
+                .unwrap()
+                .begin_write()
+                .unwrap(),
+        );
+        assert_eq!(health(configured).payload["cleanup_pending"], false);
         fs::remove_dir_all(root).unwrap();
     }
 

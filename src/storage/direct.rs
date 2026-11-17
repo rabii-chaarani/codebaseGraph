@@ -111,20 +111,31 @@ impl DirectStore {
 
     pub(crate) fn begin_read(&self) -> Result<WriterLease, NativeError> {
         let writer_lease = self.open_writer_lock()?;
+        match fs::symlink_metadata(self.layout.journal_path()) {
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+                return writer_lease.relock_shared();
+            }
+            Err(error) => return Err(error.into()),
+            Ok(_) => {}
+        }
         if !matches!(
             probe_registry(&self.layout.phase_workspace_root()),
             Ok(true)
         ) {
-            if self.layout.journal_path().exists() {
-                return Err(NativeError::InvalidInput(
-                    "containment_unknown: direct publish replay blocked by protected phase".into(),
-                ));
-            }
-            return writer_lease.relock_shared();
+            return Err(NativeError::InvalidInput(
+                "containment_unknown: direct publish replay blocked by protected phase".into(),
+            ));
         }
         self.recover_with_lock()?;
-        cleanup_candidate_set(&self.layout)?;
         writer_lease.relock_shared()
+    }
+
+    pub(crate) fn candidate_cleanup_pending(&self) -> bool {
+        let mut paths = direct_bundle_paths(&self.layout.db_candidate_path());
+        paths.push(self.layout.manifest_candidate_path());
+        paths.iter().any(|path| {
+            !matches!(fs::symlink_metadata(path), Err(error) if error.kind() == std::io::ErrorKind::NotFound)
+        })
     }
 
     fn publish_candidate_with_lock(
@@ -158,8 +169,10 @@ impl DirectStore {
         ensure_registry_empty(&self.layout.phase_workspace_root())
             .map_err(NativeError::InvalidInput)?;
         let journal_path = self.layout.journal_path();
-        if !journal_path.exists() {
-            return Ok(());
+        match fs::symlink_metadata(&journal_path) {
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+            Err(error) => return Err(error.into()),
+            Ok(_) => {}
         }
         let journal = self.read_journal()?;
         self.validate_journal_destinations(&journal)?;
