@@ -1146,6 +1146,191 @@ fn managed_retirement_failure_retains_retry_journal_until_reader_safe_recovery()
 }
 
 #[test]
+fn recovered_pointer_failure_records_published_proof_before_later_generation() {
+    use storage::managed::{set_publication_fault, ManagedPublicationFault};
+    for fault in [
+        ManagedPublicationFault::PointerAfterRename,
+        ManagedPublicationFault::RootSync,
+    ] {
+        let root = temp_dir("managed-pointer-and-retirement-fault");
+        let store = open_managed_store(root.join("storage"));
+        let first = publish_managed_generation(&store, b"db-a", json!({"files": []}));
+        let first_paths = store.layout().generation(&first).unwrap();
+        let first_reader = store.open_read().unwrap();
+        fs::create_dir(first_paths.retired_path()).unwrap();
+        let mut second = store.begin_write().unwrap();
+        let second_id = second.candidate.generation_id.clone();
+        let run = second
+            .staging_root()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .to_path_buf();
+        write_candidate_generation(
+            &second.candidate.paths,
+            b"db-b",
+            json!({"files": []}),
+            false,
+        );
+        second
+            .mark_ready_with_stats(&GraphSummary::default())
+            .unwrap();
+        set_publication_fault(Some(fault));
+        assert!(second.publish_with_stats(&GraphSummary::default()).is_err());
+        set_publication_fault(None);
+        let pending = store.recover_for_read().unwrap();
+        assert!(pending.run_recovery.optional_cleanup_error.is_some());
+        let journal: RunJournal =
+            serde_json::from_slice(&fs::read(run.join("journal.json")).unwrap()).unwrap();
+        assert_eq!(journal.phase, RunPhase::Published);
+        assert_eq!(
+            journal.active_generation_id.as_deref(),
+            Some(second_id.as_str())
+        );
+        assert_eq!(journal.base_generation_id.as_deref(), Some(first.as_str()));
+        let second_reader = store.open_read().unwrap();
+        let third = publish_managed_generation(&store, b"db-c", json!({"files": []}));
+        assert!(store
+            .recover_for_read()
+            .unwrap()
+            .run_recovery
+            .optional_cleanup_error
+            .is_some());
+        assert!(run.exists());
+        assert_eq!(store.open_read().unwrap().generation_id, third);
+        fs::remove_dir(first_paths.retired_path()).unwrap();
+        store.cleanup().unwrap();
+        assert!(!run.exists());
+        assert!(first_paths.root().exists());
+        assert_eq!(fs::read(&first_reader.db_path).unwrap(), b"db-a");
+        assert_eq!(fs::read(&second_reader.db_path).unwrap(), b"db-b");
+        drop(first_reader);
+        drop(second_reader);
+        store.cleanup().unwrap();
+        store.cleanup().unwrap();
+        assert!(!first_paths.root().exists());
+        assert_eq!(store.open_read().unwrap().generation_id, third);
+    }
+}
+
+#[test]
+fn unconfirmed_superseded_publication_retains_journal_after_candidate_is_deleted() {
+    use storage::managed::{set_publication_fault, ManagedPublicationFault};
+    let root = temp_dir("managed-unconfirmed-proof-superseded");
+    let store = open_managed_store(root.join("storage"));
+    let first = publish_managed_generation(&store, b"db-a", json!({"files": []}));
+    let first_paths = store.layout().generation(&first).unwrap();
+    let first_reader = store.open_read().unwrap();
+    fs::create_dir(first_paths.retired_path()).unwrap();
+    let mut second = store.begin_write().unwrap();
+    let second_id = second.candidate.generation_id.clone();
+    let run = second
+        .staging_root()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .to_path_buf();
+    write_candidate_generation(
+        &second.candidate.paths,
+        b"db-b",
+        json!({"files": []}),
+        false,
+    );
+    second
+        .mark_ready_with_stats(&GraphSummary::default())
+        .unwrap();
+    set_publication_fault(Some(ManagedPublicationFault::PointerAfterRename));
+    assert!(second.publish_with_stats(&GraphSummary::default()).is_err());
+    set_publication_fault(Some(ManagedPublicationFault::RecoveryProofBeforeRename));
+    let pending = store.recover_for_read().unwrap();
+    assert!(pending
+        .run_recovery
+        .optional_cleanup_error
+        .as_deref()
+        .unwrap()
+        .contains("publication proof"));
+    let journal: RunJournal =
+        serde_json::from_slice(&fs::read(run.join("journal.json")).unwrap()).unwrap();
+    assert_eq!(journal.phase, RunPhase::Publishing);
+    let second_reader = store.open_read().unwrap();
+    let third = publish_managed_generation(&store, b"db-c", json!({"files": []}));
+    set_publication_fault(None);
+    drop(second_reader);
+    let second_paths = store.layout().generation(&second_id).unwrap();
+    assert!(
+        !second_paths.root().exists(),
+        "last reader should retire B independently"
+    );
+    let pending = store.recover_for_read().unwrap();
+    assert!(pending.run_recovery.optional_cleanup_error.is_some());
+    assert!(run.join("journal.json").exists());
+    assert!(first_paths.retired_path().is_dir());
+    assert_eq!(fs::read(&first_reader.db_path).unwrap(), b"db-a");
+    assert_eq!(store.open_read().unwrap().generation_id, third);
+    fs::remove_dir(first_paths.retired_path()).unwrap();
+    assert!(store
+        .recover_for_read()
+        .unwrap()
+        .run_recovery
+        .optional_cleanup_error
+        .is_some());
+    assert!(run.exists());
+    assert!(
+        !first_paths.retired_path().exists(),
+        "unconfirmed outcome must not guess predecessor retirement"
+    );
+    drop(first_reader);
+}
+
+#[test]
+fn recovered_promotion_records_published_proof_when_retirement_is_pending() {
+    for stage in [
+        OrphanPublishStage::BeforeRename,
+        OrphanPublishStage::AfterRename,
+    ] {
+        let root = temp_dir("managed-recovered-promotion-proof");
+        let store = open_managed_store(root.join("storage"));
+        let first = publish_managed_generation(&store, b"db-a", json!({"files": []}));
+        let first_paths = store.layout().generation(&first).unwrap();
+        let reader = store.open_read().unwrap();
+        fs::create_dir(first_paths.retired_path()).unwrap();
+        let (run, second) = orphan_publishing_run(
+            &store,
+            Some(first.clone()),
+            b"db-b",
+            json!({"files": []}),
+            stage,
+        );
+        let pending = store.recover_for_read().unwrap();
+        assert!(pending.run_recovery.optional_cleanup_error.is_some());
+        let journal: RunJournal =
+            serde_json::from_slice(&fs::read(run.join("journal.json")).unwrap()).unwrap();
+        assert_eq!(journal.phase, RunPhase::Published);
+        assert_eq!(
+            journal.active_generation_id.as_deref(),
+            Some(second.as_str())
+        );
+        assert_eq!(store.open_read().unwrap().generation_id, second);
+        let third = publish_managed_generation(&store, b"db-c", json!({"files": []}));
+        assert!(store
+            .recover_for_read()
+            .unwrap()
+            .run_recovery
+            .optional_cleanup_error
+            .is_some());
+        assert!(run.exists());
+        fs::remove_dir(first_paths.retired_path()).unwrap();
+        store.cleanup().unwrap();
+        assert!(!run.exists());
+        assert!(first_paths.root().exists());
+        drop(reader);
+        store.cleanup().unwrap();
+        assert!(!first_paths.root().exists());
+        assert_eq!(store.open_read().unwrap().generation_id, third);
+    }
+}
+
+#[test]
 fn repaired_retirement_before_reconcile_reports_no_outstanding_cleanup() {
     let root = temp_dir("managed-retirement-repaired-before-reconcile");
     let store = open_managed_store(root.join("storage"));

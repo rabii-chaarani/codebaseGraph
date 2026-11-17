@@ -106,6 +106,7 @@ impl Drop for GenerationLease {
 pub(crate) enum ManagedPublicationFault {
     PointerAfterRename,
     RootSync,
+    RecoveryProofBeforeRename,
 }
 
 #[cfg(test)]
@@ -840,12 +841,13 @@ impl ManagedStore {
                 .finalize_previous_retirement(journal.base_generation_id.as_deref())
                 .err()
                 .map(|error| error.to_string());
-            if cleanup_run_root && optional.is_none() {
-                return Ok(remove_run_root_confined(run_root, &self.layout.runs_root())
-                    .err()
-                    .map(|error| error.to_string()));
-            }
-            return Ok(optional);
+            return Ok(self.finish_resolved_recovery(
+                run_root,
+                journal,
+                candidate_id,
+                cleanup_run_root,
+                optional,
+            ));
         }
 
         if !base_matches && cleanup_run_root && journal.phase == RunPhase::Published {
@@ -886,7 +888,7 @@ impl ManagedStore {
             // An unconfirmed Publishing run may represent a pointer write whose
             // acknowledgement was lost. Do not discard its predecessor identity
             // after a later generation supersedes it without proof of commit.
-            if cleanup_run_root && journal.phase == RunPhase::Publishing && published_valid {
+            if cleanup_run_root && journal.phase == RunPhase::Publishing {
                 return Ok(Some(
                     "superseded publication outcome remains unconfirmed".into(),
                 ));
@@ -935,12 +937,13 @@ impl ManagedStore {
                 journal.base_generation_id.as_deref(),
             )?;
             *active = Some(activated);
-            if cleanup_run_root && optional.is_none() {
-                return Ok(remove_run_root_confined(run_root, &self.layout.runs_root())
-                    .err()
-                    .map(|error| error.to_string()));
-            }
-            return Ok(optional);
+            return Ok(self.finish_resolved_recovery(
+                run_root,
+                journal,
+                candidate_id,
+                cleanup_run_root,
+                optional,
+            ));
         }
 
         if staged_valid && base_matches {
@@ -950,12 +953,13 @@ impl ManagedStore {
                 journal.base_generation_id.as_deref(),
             )?;
             *active = Some(activated);
-            if cleanup_run_root && optional.is_none() {
-                return Ok(remove_run_root_confined(run_root, &self.layout.runs_root())
-                    .err()
-                    .map(|error| error.to_string()));
-            }
-            return Ok(optional);
+            return Ok(self.finish_resolved_recovery(
+                run_root,
+                journal,
+                candidate_id,
+                cleanup_run_root,
+                optional,
+            ));
         }
 
         if published_present {
@@ -975,6 +979,51 @@ impl ManagedStore {
                 .map(|error| error.to_string()));
         }
         Ok(None)
+    }
+
+    fn finish_resolved_recovery(
+        &self,
+        run_root: &Path,
+        journal: &RunJournal,
+        candidate_id: &str,
+        cleanup_run_root: bool,
+        optional_error: Option<String>,
+    ) -> Option<String> {
+        if !cleanup_run_root {
+            return optional_error;
+        }
+        // Mandatory pointer/root durability is established. Persist that fact
+        // before retaining any optional work or attempting run disposal, so a
+        // later active generation cannot make predecessor identity ambiguous.
+        let mut proof = journal.clone();
+        proof.phase = RunPhase::Published;
+        proof.active_generation_id = Some(candidate_id.to_string());
+        proof.last_error = None;
+        #[cfg(test)]
+        let proof_result = if PUBLICATION_FAULT.with(|fault| fault.get())
+            == Some(ManagedPublicationFault::RecoveryProofBeforeRename)
+        {
+            super::atomic::write_json_atomically_with_fault(
+                &run_root.join("journal.json"),
+                &proof,
+                super::atomic::AtomicWriteFailure::AfterFileSync,
+            )
+        } else {
+            write_json_atomically(&run_root.join("journal.json"), &proof)
+        };
+        #[cfg(not(test))]
+        let proof_result = write_json_atomically(&run_root.join("journal.json"), &proof);
+        if let Err(error) = proof_result {
+            return Some(format!(
+                "failed to record recovered publication proof: {error}"
+            ));
+        }
+        if optional_error.is_some() {
+            return optional_error;
+        }
+        remove_run_root_confined(run_root, &self.layout.runs_root())
+            .err()
+            .map(|error| error.to_string())
     }
 
     fn promote_candidate_generation_locked(
