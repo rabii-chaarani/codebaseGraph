@@ -19,6 +19,213 @@ use std::sync::{Arc, Condvar, Mutex, MutexGuard, Weak};
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
+#[cfg(debug_assertions)]
+mod fixture_trace {
+    use std::fmt::Write as _;
+    use std::io::Write as _;
+    use std::sync::atomic::{AtomicBool, Ordering};
+    use std::sync::Mutex;
+
+    const CAPACITY: usize = 32;
+    const OUTPUT_LIMIT: usize = 2048;
+    static ENABLED: AtomicBool = AtomicBool::new(false);
+    static RENDERED: AtomicBool = AtomicBool::new(false);
+    static EVENTS: Mutex<Ring> = Mutex::new(Ring::new());
+
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    pub(super) enum Kind {
+        Empty,
+        OwnerStart,
+        OwnerStop,
+        Accept,
+        RegisterFailed,
+        NonblockingFailed,
+        ExecutorSpawnFailed,
+        HandlerSpawnFailed,
+        Dispatch,
+        CloneFailed,
+        Busy,
+        WorkerStart,
+        WorkerReply,
+        WorkerPanic,
+        WorkerAbandon,
+        ResponseWritten,
+        ResponseWriteFailed,
+        ResponseSpawnFailed,
+        CloseAll,
+        ClientReadFailed,
+    }
+    impl Kind {
+        fn label(self) -> &'static str {
+            match self {
+                Self::Empty => "empty",
+                Self::OwnerStart => "owner_start",
+                Self::OwnerStop => "owner_stop",
+                Self::Accept => "accept",
+                Self::RegisterFailed => "register_failed",
+                Self::NonblockingFailed => "nonblocking_failed",
+                Self::ExecutorSpawnFailed => "executor_spawn_failed",
+                Self::HandlerSpawnFailed => "handler_spawn_failed",
+                Self::Dispatch => "dispatch",
+                Self::CloneFailed => "clone_failed",
+                Self::Busy => "busy",
+                Self::WorkerStart => "worker_start",
+                Self::WorkerReply => "worker_reply",
+                Self::WorkerPanic => "worker_panic",
+                Self::WorkerAbandon => "worker_abandon",
+                Self::ResponseWritten => "response_written",
+                Self::ResponseWriteFailed => "response_write_failed",
+                Self::ResponseSpawnFailed => "response_spawn_failed",
+                Self::CloseAll => "close_all",
+                Self::ClientReadFailed => "client_read_failed",
+            }
+        }
+    }
+    #[derive(Clone, Copy)]
+    struct Event {
+        kind: Kind,
+        connection: u64,
+    }
+    const EMPTY: Event = Event {
+        kind: Kind::Empty,
+        connection: 0,
+    };
+    pub(super) struct Ring {
+        entries: [Event; CAPACITY],
+        next: usize,
+        len: usize,
+    }
+    impl Ring {
+        const fn new() -> Self {
+            Self {
+                entries: [EMPTY; CAPACITY],
+                next: 0,
+                len: 0,
+            }
+        }
+        fn push(&mut self, kind: Kind, connection: u64) {
+            self.entries[self.next] = Event { kind, connection };
+            self.next = (self.next + 1) % CAPACITY;
+            self.len = (self.len + 1).min(CAPACITY);
+        }
+        fn render(&self, pid: u32, owner_pid_matches: bool) -> Buffer {
+            let mut output = Buffer {
+                bytes: [0; OUTPUT_LIMIT],
+                len: 0,
+            };
+            let _ = writeln!(output, "CGR_COORD_TRACE v1 pid={pid} owner_pid_matches={owner_pid_matches} server_trace_may_be_incomplete=true");
+            let start = (self.next + CAPACITY - self.len) % CAPACITY;
+            for offset in 0..self.len {
+                let event = self.entries[(start + offset) % CAPACITY];
+                let _ = writeln!(
+                    output,
+                    "CGR_COORD_TRACE {} {}",
+                    event.kind.label(),
+                    event.connection
+                );
+            }
+            output
+        }
+    }
+    struct Buffer {
+        bytes: [u8; OUTPUT_LIMIT],
+        len: usize,
+    }
+    impl std::fmt::Write for Buffer {
+        fn write_str(&mut self, value: &str) -> std::fmt::Result {
+            let remaining = self.bytes.len().saturating_sub(self.len);
+            let count = remaining.min(value.len());
+            self.bytes[self.len..self.len + count].copy_from_slice(&value.as_bytes()[..count]);
+            self.len += count;
+            Ok(())
+        }
+    }
+    fn enabled_value(value: Option<&std::ffi::OsStr>) -> bool {
+        value == Some(std::ffi::OsStr::new("1"))
+    }
+    pub(super) fn init() {
+        if enabled_value(std::env::var_os("CODEBASE_GRAPH_TEST_COORDINATOR_TRACE").as_deref()) {
+            ENABLED.store(true, Ordering::Relaxed);
+        }
+    }
+    fn try_record(ring: &Mutex<Ring>, kind: Kind, connection: u64) -> bool {
+        if let Ok(mut ring) = ring.try_lock() {
+            ring.push(kind, connection);
+            true
+        } else {
+            false
+        }
+    }
+    fn claim_once(rendered: &AtomicBool) -> bool {
+        !rendered.swap(true, Ordering::Relaxed)
+    }
+    pub(super) fn record(kind: Kind, connection: u64) {
+        if ENABLED.load(Ordering::Relaxed) {
+            let _ = try_record(&EVENTS, kind, connection);
+        }
+    }
+    pub(super) fn render_once(owner_pid_matches: bool) {
+        if !ENABLED.load(Ordering::Relaxed) || !claim_once(&RENDERED) {
+            return;
+        }
+        let output = match EVENTS.try_lock() {
+            Ok(ring) => ring.render(std::process::id(), owner_pid_matches),
+            Err(_) => return,
+        };
+        // No request or response thread waits for diagnostic I/O. The explicitly
+        // enabled fixture continuously drains stderr; failure to spawn is ignored.
+        let _ = std::thread::Builder::new()
+            .name("cgraph-fixture-trace".into())
+            .spawn(move || {
+                let _ = std::io::stderr().write_all(&output.bytes[..output.len]);
+            });
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[test]
+        fn fixture_trace_is_default_off_and_requires_exact_opt_in() {
+            assert!(!enabled_value(None));
+            assert!(!enabled_value(Some(std::ffi::OsStr::new("true"))));
+            assert!(enabled_value(Some(std::ffi::OsStr::new("1"))));
+        }
+
+        #[test]
+        fn fixture_trace_contention_drops_observation_and_render_is_one_shot() {
+            let ring = Mutex::new(Ring::new());
+            let held = ring.lock().unwrap();
+            assert!(!try_record(&ring, Kind::Dispatch, 7));
+            drop(held);
+            assert!(try_record(&ring, Kind::Dispatch, 8));
+            let rendered = AtomicBool::new(false);
+            assert!(claim_once(&rendered));
+            assert!(!claim_once(&rendered));
+        }
+
+        #[test]
+        fn fixture_trace_ring_wraps_and_render_is_bounded_static_data() {
+            let mut ring = Ring::new();
+            for id in 0..80 {
+                ring.push(Kind::Dispatch, id);
+            }
+            ring.push(Kind::ClientReadFailed, 0);
+            let output = ring.render(17, false);
+            assert!(output.len <= OUTPUT_LIMIT);
+            let text = std::str::from_utf8(&output.bytes[..output.len]).unwrap();
+            assert!(text.contains("owner_pid_matches=false"));
+            assert!(text.contains("server_trace_may_be_incomplete=true"));
+            assert!(text.contains("client_read_failed"));
+            assert!(!text.contains("dispatch 0\n"));
+            assert_eq!(text.lines().count(), CAPACITY + 1);
+            assert!(text
+                .lines()
+                .all(|line| line.starts_with("CGR_COORD_TRACE ")));
+        }
+    }
+}
+
 const COORDINATOR_PROTOCOL_VERSION: u64 = 1;
 const COORDINATOR_AUTHENTICATION_FAILED: &str = "coordinator_authentication_failed";
 const COORDINATOR_REQUEST_RECEIVE_FAILED: &str = "coordinator_request_receive_failed";
@@ -331,6 +538,8 @@ impl ConnectionRegistry {
     }
 
     fn close_all(&self) {
+        #[cfg(debug_assertions)]
+        fixture_trace::record(fixture_trace::Kind::CloseAll, 0);
         let streams = self
             .streams
             .lock()
@@ -346,16 +555,33 @@ impl ConnectionRegistry {
         reply: CoordinatorReply,
         connection: ConnectionPermit,
     ) {
+        #[cfg(debug_assertions)]
+        let connection_id = connection.id;
         let writer = thread::Builder::new()
             .name("codebase-graph-coordinator-response".to_string())
             .spawn(move || {
-                let _ = write_frame_until(
+                let result = write_frame_until(
                     &mut stream,
                     &reply,
                     Instant::now() + COORDINATOR_FRAME_TIMEOUT,
                 );
+                #[cfg(debug_assertions)]
+                fixture_trace::record(
+                    if result.is_ok() {
+                        fixture_trace::Kind::ResponseWritten
+                    } else {
+                        fixture_trace::Kind::ResponseWriteFailed
+                    },
+                    connection_id,
+                );
+                #[cfg(not(debug_assertions))]
+                let _ = result;
                 drop(connection);
             });
+        #[cfg(debug_assertions)]
+        if writer.is_err() {
+            fixture_trace::record(fixture_trace::Kind::ResponseSpawnFailed, connection_id);
+        }
         if let Ok(writer) = writer {
             let mut writers = self
                 .writers
@@ -423,6 +649,8 @@ enum CoordinatorReply {
 
 impl CoordinatorClient {
     pub(crate) fn connect_or_start(mut config: CoordinatorApiConfig) -> Result<Self, String> {
+        #[cfg(debug_assertions)]
+        fixture_trace::init();
         config.selector = bind_repo_selector(&config.selector)?;
         config.identity = Some(RepositoryIdentity::capture(&config.selector)?);
         let control = coordinator_control_paths(&config.selector)?;
@@ -916,6 +1144,8 @@ fn serve_owner_with_executor<P, E>(
         + Sync
         + 'static,
 {
+    #[cfg(debug_assertions)]
+    fixture_trace::record(fixture_trace::Kind::OwnerStart, 0);
     let dispatcher = Arc::clone(dispatcher);
     let worker_dispatcher = Arc::clone(&dispatcher);
     let worker_state = state.clone();
@@ -924,6 +1154,8 @@ fn serve_owner_with_executor<P, E>(
     let worker_execute = Arc::clone(&execute);
     let worker = spawn_execution_worker(move || {
         while let Some(job) = worker_dispatcher.take() {
+            #[cfg(debug_assertions)]
+            fixture_trace::record(fixture_trace::Kind::WorkerStart, job._connection.id);
             let reply = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                 if job.context.remaining().is_err() {
                     None
@@ -939,13 +1171,25 @@ fn serve_owner_with_executor<P, E>(
                         Err(error) => Some(CoordinatorReply::Failure(error)),
                     }
                 }
-            }))
-            .unwrap_or(None);
+            }));
+            let reply = match reply {
+                Ok(reply) => reply,
+                Err(payload) => {
+                    #[cfg(debug_assertions)]
+                    fixture_trace::record(fixture_trace::Kind::WorkerPanic, job._connection.id);
+                    drop(payload);
+                    None
+                }
+            };
             worker_dispatcher.finish_one();
             if let Some(reply) = reply {
+                #[cfg(debug_assertions)]
+                fixture_trace::record(fixture_trace::Kind::WorkerReply, job._connection.id);
                 let registry = Arc::clone(&job._connection.registry);
                 registry.send_response(job.stream, reply, job._connection);
             } else {
+                #[cfg(debug_assertions)]
+                fixture_trace::record(fixture_trace::Kind::WorkerAbandon, job._connection.id);
                 let _ = job.stream.shutdown(std::net::Shutdown::Both);
                 drop(job._connection);
             }
@@ -953,6 +1197,8 @@ fn serve_owner_with_executor<P, E>(
     });
 
     let Ok(worker) = worker else {
+        #[cfg(debug_assertions)]
+        fixture_trace::record(fixture_trace::Kind::ExecutorSpawnFailed, 0);
         dispatcher.stop_admission();
         return;
     };
@@ -963,12 +1209,20 @@ fn serve_owner_with_executor<P, E>(
             Ok((mut stream, _)) => {
                 let accepted_at = Instant::now();
                 if stream.set_nonblocking(true).is_err() {
+                    #[cfg(debug_assertions)]
+                    fixture_trace::record(fixture_trace::Kind::NonblockingFailed, 0);
                     continue;
                 }
                 let Ok(connection) = registry.register(&stream) else {
+                    #[cfg(debug_assertions)]
+                    fixture_trace::record(fixture_trace::Kind::RegisterFailed, 0);
                     let _ = stream.shutdown(std::net::Shutdown::Both);
                     continue;
                 };
+                #[cfg(debug_assertions)]
+                let connection_id = connection.id;
+                #[cfg(debug_assertions)]
+                fixture_trace::record(fixture_trace::Kind::Accept, connection_id);
                 let server_state = state.clone();
                 let server_dispatcher = Arc::clone(&dispatcher);
                 let server_prepare = Arc::clone(&prepare);
@@ -986,6 +1240,9 @@ fn serve_owner_with_executor<P, E>(
                     })
                 {
                     handlers.push(handler);
+                } else {
+                    #[cfg(debug_assertions)]
+                    fixture_trace::record(fixture_trace::Kind::HandlerSpawnFailed, connection_id);
                 }
                 let mut index = 0;
                 while index < handlers.len() {
@@ -1003,6 +1260,8 @@ fn serve_owner_with_executor<P, E>(
             Err(_) => thread::sleep(COORDINATOR_POLL_INTERVAL),
         }
     }
+    #[cfg(debug_assertions)]
+    fixture_trace::record(fixture_trace::Kind::OwnerStop, 0);
     dispatcher.stop_admission();
     registry.close_all();
     for handler in handlers {
@@ -1110,8 +1369,12 @@ fn handle_connection_dispatch<P>(
                 return;
             }
             let Ok(job_stream) = stream.try_clone() else {
+                #[cfg(debug_assertions)]
+                fixture_trace::record(fixture_trace::Kind::CloneFailed, connection.id);
                 return;
             };
+            #[cfg(debug_assertions)]
+            fixture_trace::record(fixture_trace::Kind::Dispatch, connection.id);
             let job = ExecutionJob {
                 operation_id,
                 invocation,
@@ -1120,6 +1383,8 @@ fn handle_connection_dispatch<P>(
                 _connection: connection,
             };
             if let Err(job) = dispatcher.try_submit(job) {
+                #[cfg(debug_assertions)]
+                fixture_trace::record(fixture_trace::Kind::Busy, job._connection.id);
                 let reply = CoordinatorReply::Failure(
                     ApiError::new(
                         "graph_busy",
@@ -1267,6 +1532,11 @@ fn send_to_state_with_context(
     let read_deadline =
         execution_deadline.or_else(|| ping.then_some(Instant::now() + STREAM_IO_TIMEOUT));
     read_frame_with_policy(&mut stream, read_deadline, read_deadline.is_none()).map_err(|error| {
+        #[cfg(debug_assertions)]
+        if !ping && !execution_deadline.is_some_and(|deadline| Instant::now() >= deadline) {
+            fixture_trace::record(fixture_trace::Kind::ClientReadFailed, 0);
+            fixture_trace::render_once(state.pid == std::process::id());
+        }
         if execution_deadline.is_some_and(|deadline| Instant::now() >= deadline) {
             ExecutionContext::expired_error()
         } else {

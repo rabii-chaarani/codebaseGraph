@@ -728,10 +728,20 @@ struct Fixture {
     descriptor: Value,
     phase_pid: u32,
     paused: Vec<u32>,
+    trace_enabled: bool,
+    trace_drains: Vec<FixtureStderrDrain>,
 }
 
 impl Fixture {
     fn new(timing: bool) -> Self {
+        Self::new_internal(timing, false)
+    }
+
+    fn traced(timing: bool) -> Self {
+        Self::new_internal(timing, true)
+    }
+
+    fn new_internal(timing: bool, trace_enabled: bool) -> Self {
         let root = temp_repo();
         fs::write(
             root.join("initial.py"),
@@ -761,7 +771,15 @@ impl Fixture {
         if timing {
             environment.push(("CODEBASE_GRAPH_PHASE_TIMING_DIR", timing_dir.as_path()));
         }
-        let (daemon, port) = start_http_server_with_env(&config, &root, &[], &environment);
+        if trace_enabled {
+            environment.push(("CODEBASE_GRAPH_TEST_COORDINATOR_TRACE", Path::new("1")));
+        }
+        let (mut daemon, port) = start_http_server_with_env(&config, &root, &[], &environment);
+        let trace_drains = if trace_enabled {
+            vec![FixtureStderrDrain::attach(&mut daemon)]
+        } else {
+            Vec::new()
+        };
         let session = McpSession::start(port);
         // Start the faulted build only after client setup is complete, so its
         // bounded native barrier cannot expire while MCP is initializing.
@@ -809,7 +827,16 @@ impl Fixture {
             descriptor,
             phase_pid,
             paused: Vec::new(),
+            trace_enabled,
+            trace_drains,
         }
+    }
+    fn set_daemon(&mut self, mut daemon: ChildGuard) {
+        if self.trace_enabled {
+            self.trace_drains
+                .push(FixtureStderrDrain::attach(&mut daemon));
+        }
+        self.daemon = Some(daemon);
     }
     fn worker(&self) -> u32 {
         self.descriptor["worker_pid"].as_u64().unwrap() as u32
@@ -918,6 +945,9 @@ impl Drop for Fixture {
             thread::sleep(Duration::from_millis(25));
         }
         if thread::panicking() {
+            for drain in &self.trace_drains {
+                drain.report_after_child_exit();
+            }
             report_fixture_state_metadata(&self.root);
             eprintln!("retained failed lifecycle fixture: {}", self.root.display());
         } else if !alive(self.phase_pid) {
@@ -928,7 +958,7 @@ impl Drop for Fixture {
 
 #[test]
 fn paused_database_loader_exits_after_outer_worker_failure_and_refresh_recovers() {
-    let mut fixture = Fixture::new(false);
+    let mut fixture = Fixture::traced(false);
     fixture.pause(fixture.phase_pid);
     terminate(fixture.worker());
     wait_until("paused loader survived termination of its worker", || {
@@ -1044,7 +1074,7 @@ fn loader_allocation_is_observed_without_resource_budget_cancellation() {
 
 #[test]
 fn owner_exit_cleans_paused_worker_and_loader_before_recovery() {
-    let mut fixture = Fixture::new(false);
+    let mut fixture = Fixture::traced(false);
     fixture.pause(fixture.phase_pid);
     fixture.pause(fixture.worker());
     let worker = fixture.worker();
@@ -1059,12 +1089,15 @@ fn owner_exit_cleans_paused_worker_and_loader_before_recovery() {
         &fixture.config,
         &fixture.root,
         &[],
-        &[(
-            "CODEBASE_GRAPH_TEST_PHASE_BARRIER_DIR",
-            fixture.barrier.as_path(),
-        )],
+        &[
+            (
+                "CODEBASE_GRAPH_TEST_PHASE_BARRIER_DIR",
+                fixture.barrier.as_path(),
+            ),
+            ("CODEBASE_GRAPH_TEST_COORDINATOR_TRACE", Path::new("1")),
+        ],
     );
-    fixture.daemon = Some(daemon);
+    fixture.set_daemon(daemon);
     fixture.session = McpSession::start(port);
     fixture.verify_recovery();
 }

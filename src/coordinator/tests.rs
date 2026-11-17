@@ -414,6 +414,73 @@ fn deadline_calls_fail_promptly_when_owner_state_is_legacy() {
     assert_eq!(error.code, "coordinator_deadline_unsupported");
 }
 
+#[cfg(debug_assertions)]
+#[test]
+fn fixture_trace_emits_once_without_payload_on_disconnect() {
+    const CHILD: &str = "CGR_TRACE_SAFETY_CHILD";
+    const SENTINEL: &str = "CGR_SYNTHETIC_SECRET_SENTINEL";
+    if std::env::var_os(CHILD).is_some() {
+        fixture_trace::init();
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let endpoint = listener.local_addr().unwrap();
+        let server = thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let _: CoordinatorRequest = read_frame(&mut stream).unwrap();
+        });
+        let root = temp_dir("fixture-trace-disconnect");
+        let mut state = test_state(endpoint);
+        state.token = "a".repeat(64);
+        let client = test_client_with_state(&root, state);
+        let mut invocation = test_invocation();
+        invocation.arguments = serde_json::json!({"query": SENTINEL});
+        let error = client
+            .execute_invocation("health", &invocation)
+            .unwrap_err();
+        assert_eq!(error.code, "coordinator_transport_error");
+        assert!(!error.retryable);
+        server.join().unwrap();
+        // The diagnostic writer is intentionally detached from request handling.
+        thread::sleep(Duration::from_millis(100));
+        return;
+    }
+    let run_child = |enabled: bool| {
+        let mut command = std::process::Command::new(std::env::current_exe().unwrap());
+        command
+            .args([
+                "--exact",
+                "coordinator::tests::fixture_trace_emits_once_without_payload_on_disconnect",
+                "--nocapture",
+            ])
+            .env(CHILD, "1");
+        if enabled {
+            command.env("CODEBASE_GRAPH_TEST_COORDINATOR_TRACE", "1");
+        } else {
+            command.env_remove("CODEBASE_GRAPH_TEST_COORDINATOR_TRACE");
+        }
+        command.output().unwrap()
+    };
+    let disabled = run_child(false);
+    assert!(disabled.status.success());
+    assert!(!String::from_utf8_lossy(&disabled.stderr).contains("CGR_COORD_TRACE"));
+    let output = run_child(true);
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert_eq!(stderr.matches("CGR_COORD_TRACE v1").count(), 1, "{stderr}");
+    assert!(stderr.contains("owner_pid_matches=true"), "{stderr}");
+    assert!(
+        stderr.contains("server_trace_may_be_incomplete=true"),
+        "{stderr}"
+    );
+    assert!(stderr.contains("client_read_failed"), "{stderr}");
+    assert!(!stderr.contains(SENTINEL), "{stderr}");
+    assert!(!stderr.contains(&"a".repeat(64)), "{stderr}");
+    assert!(output.stderr.len() <= 2048, "{} bytes", output.stderr.len());
+}
+
 #[test]
 fn ambiguous_operation_disconnect_is_not_replayed_or_retryable() {
     let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
