@@ -1,0 +1,782 @@
+{
+  "version": "0.1",
+  "node_types": [
+    {
+      "name": "ArchitectureSystem",
+      "description": "Architecture logical record",
+      "fields": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "description": "id"
+        },
+        {
+          "name": "model_id",
+          "type": "string",
+          "required": true,
+          "description": "model id"
+        },
+        {
+          "name": "snapshot_id",
+          "type": "string",
+          "required": true,
+          "description": "snapshot id"
+        },
+        {
+          "name": "state_kind",
+          "type": "string",
+          "required": true,
+          "description": "state kind"
+        },
+        {
+          "name": "schema_version",
+          "type": "string",
+          "required": true,
+          "description": "schema version"
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true,
+          "description": "name"
+        },
+        {
+          "name": "responsibilities",
+          "type": "json",
+          "required": true,
+          "description": "responsibilities"
+        }
+      ],
+      "constraints": [],
+      "parser_node_types": []
+    },
+    {
+      "name": "ArchitectureContainer",
+      "description": "Architecture logical record",
+      "fields": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "description": "id"
+        },
+        {
+          "name": "model_id",
+          "type": "string",
+          "required": true,
+          "description": "model id"
+        },
+        {
+          "name": "snapshot_id",
+          "type": "string",
+          "required": true,
+          "description": "snapshot id"
+        },
+        {
+          "name": "state_kind",
+          "type": "string",
+          "required": true,
+          "description": "state kind"
+        },
+        {
+          "name": "schema_version",
+          "type": "string",
+          "required": true,
+          "description": "schema version"
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true,
+          "description": "name"
+        },
+        {
+          "name": "responsibilities",
+          "type": "json",
+          "required": true,
+          "description": "responsibilities"
+        },
+        {
+          "name": "system",
+          "type": "string",
+          "required": true,
+          "description": "system"
+        },
+        {
+          "name": "kind",
+          "type": "string",
+          "required": true,
+          "description": "kind"
+        }
+      ],
+      "constraints": [],
+      "parser_node_types": []
+    },
+    {
+      "name": "ArchitectureComponent",
+      "description": "Architecture logical record",
+      "fields": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "description": "id"
+        },
+        {
+          "name": "model_id",
+          "type": "string",
+          "required": true,
+          "description": "model id"
+        },
+        {
+          "name": "snapshot_id",
+          "type": "string",
+          "required": true,
+          "description": "snapshot id"
+        },
+        {
+          "name": "state_kind",
+          "type": "string",
+          "required": true,
+          "description": "state kind"
+        },
+        {
+          "name": "schema_version",
+          "type": "string",
+          "required": true,
+          "description": "schema version"
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true,
+          "description": "name"
+        },
+        {
+          "name": "responsibilities",
+          "type": "json",
+          "required": true,
+          "description": "responsibilities"
+        },
+        {
+          "name": "container",
+          "type": "string",
+          "required": true,
+          "description": "container"
+        }
+      ],
+      "constraints": [],
+      "parser_node_types": []
+    },
+    {
+      "name": "ArchitectureRelationship",
+      "description": "Architecture logical record",
+      "fields": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "description": "id"
+        },
+        {
+          "name": "model_id",
+          "type": "string",
+          "required": true,
+          "description": "model id"
+        },
+        {
+          "name": "snapshot_id",
+          "type": "string",
+          "required": true,
+          "description": "snapshot id"
+        },
+        {
+          "name": "state_kind",
+          "type": "string",
+          "required": true,
+          "description": "state kind"
+        },
+        {
+          "name": "schema_version",
+          "type": "string",
+          "required": true,
+          "description": "schema version"
+        },
+        {
+          "name": "level",
+          "type": "string",
+          "required": true,
+          "description": "level"
+        },
+        {
+          "name": "from",
+          "type": "string",
+          "required": true,
+          "description": "from"
+        },
+        {
+          "name": "to",
+          "type": "string",
+          "required": true,
+          "description": "to"
+        },
+        {
+          "name": "description",
+          "type": "string",
+          "required": true,
+          "description": "description"
+        },
+        {
+          "name": "contract_refs",
+          "type": "json",
+          "required": true,
+          "description": "contract refs"
+        }
+      ],
+      "constraints": [],
+      "parser_node_types": []
+    },
+    {
+      "name": "ArchitectureConstraint",
+      "description": "Architecture logical record",
+      "fields": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "description": "id"
+        },
+        {
+          "name": "model_id",
+          "type": "string",
+          "required": true,
+          "description": "model id"
+        },
+        {
+          "name": "snapshot_id",
+          "type": "string",
+          "required": true,
+          "description": "snapshot id"
+        },
+        {
+          "name": "state_kind",
+          "type": "string",
+          "required": true,
+          "description": "state kind"
+        },
+        {
+          "name": "schema_version",
+          "type": "string",
+          "required": true,
+          "description": "schema version"
+        }
+      ],
+      "constraints": [],
+      "parser_node_types": []
+    },
+    {
+      "name": "ArchitectureScenario",
+      "description": "Architecture logical record",
+      "fields": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "description": "id"
+        },
+        {
+          "name": "model_id",
+          "type": "string",
+          "required": true,
+          "description": "model id"
+        },
+        {
+          "name": "snapshot_id",
+          "type": "string",
+          "required": true,
+          "description": "snapshot id"
+        },
+        {
+          "name": "state_kind",
+          "type": "string",
+          "required": true,
+          "description": "state kind"
+        },
+        {
+          "name": "schema_version",
+          "type": "string",
+          "required": true,
+          "description": "schema version"
+        }
+      ],
+      "constraints": [],
+      "parser_node_types": []
+    },
+    {
+      "name": "ArchitectureSnapshot",
+      "description": "Architecture logical record",
+      "fields": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "description": "id"
+        },
+        {
+          "name": "model_id",
+          "type": "string",
+          "required": true,
+          "description": "model id"
+        },
+        {
+          "name": "snapshot_id",
+          "type": "string",
+          "required": true,
+          "description": "snapshot id"
+        },
+        {
+          "name": "state_kind",
+          "type": "string",
+          "required": true,
+          "description": "state kind"
+        },
+        {
+          "name": "schema_version",
+          "type": "string",
+          "required": true,
+          "description": "schema version"
+        }
+      ],
+      "constraints": [],
+      "parser_node_types": []
+    },
+    {
+      "name": "ArchitectureMapping",
+      "description": "Architecture logical record",
+      "fields": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "description": "id"
+        },
+        {
+          "name": "model_id",
+          "type": "string",
+          "required": true,
+          "description": "model id"
+        },
+        {
+          "name": "snapshot_id",
+          "type": "string",
+          "required": true,
+          "description": "snapshot id"
+        },
+        {
+          "name": "state_kind",
+          "type": "string",
+          "required": true,
+          "description": "state kind"
+        },
+        {
+          "name": "schema_version",
+          "type": "string",
+          "required": true,
+          "description": "schema version"
+        }
+      ],
+      "constraints": [],
+      "parser_node_types": []
+    },
+    {
+      "name": "ArchitectureEvaluation",
+      "description": "Architecture logical record",
+      "fields": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "description": "id"
+        },
+        {
+          "name": "model_id",
+          "type": "string",
+          "required": true,
+          "description": "model id"
+        },
+        {
+          "name": "snapshot_id",
+          "type": "string",
+          "required": true,
+          "description": "snapshot id"
+        },
+        {
+          "name": "state_kind",
+          "type": "string",
+          "required": true,
+          "description": "state kind"
+        },
+        {
+          "name": "schema_version",
+          "type": "string",
+          "required": true,
+          "description": "schema version"
+        }
+      ],
+      "constraints": [],
+      "parser_node_types": []
+    }
+  ],
+  "relation_types": [
+    {
+      "name": "ArchitectureContains",
+      "description": "Architecture logical relationship",
+      "fields": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "description": "id"
+        },
+        {
+          "name": "source_id",
+          "type": "string",
+          "required": true,
+          "description": "source id"
+        },
+        {
+          "name": "target_id",
+          "type": "string",
+          "required": true,
+          "description": "target id"
+        },
+        {
+          "name": "model_id",
+          "type": "string",
+          "required": true,
+          "description": "model id"
+        },
+        {
+          "name": "snapshot_id",
+          "type": "string",
+          "required": true,
+          "description": "snapshot id"
+        },
+        {
+          "name": "state_kind",
+          "type": "string",
+          "required": true,
+          "description": "state kind"
+        },
+        {
+          "name": "schema_version",
+          "type": "string",
+          "required": true,
+          "description": "schema version"
+        }
+      ],
+      "constraints": [
+        "System to Container or Container to Component; exactly one parent for each Container and Component"
+      ],
+      "source_types": [
+        "ArchitectureSystem",
+        "ArchitectureContainer"
+      ],
+      "target_types": [
+        "ArchitectureContainer",
+        "ArchitectureComponent"
+      ]
+    },
+    {
+      "name": "ArchitectureRelates",
+      "description": "Architecture logical relationship",
+      "fields": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "description": "id"
+        },
+        {
+          "name": "source_id",
+          "type": "string",
+          "required": true,
+          "description": "source id"
+        },
+        {
+          "name": "target_id",
+          "type": "string",
+          "required": true,
+          "description": "target id"
+        },
+        {
+          "name": "model_id",
+          "type": "string",
+          "required": true,
+          "description": "model id"
+        },
+        {
+          "name": "snapshot_id",
+          "type": "string",
+          "required": true,
+          "description": "snapshot id"
+        },
+        {
+          "name": "state_kind",
+          "type": "string",
+          "required": true,
+          "description": "state kind"
+        },
+        {
+          "name": "schema_version",
+          "type": "string",
+          "required": true,
+          "description": "schema version"
+        },
+        {
+          "name": "relationship_id",
+          "type": "string",
+          "required": true,
+          "description": "relationship id"
+        }
+      ],
+      "constraints": [
+        "Container to Container or Component to Component; relationship_id references declared intent"
+      ],
+      "source_types": [
+        "ArchitectureContainer",
+        "ArchitectureComponent"
+      ],
+      "target_types": [
+        "ArchitectureContainer",
+        "ArchitectureComponent"
+      ]
+    },
+    {
+      "name": "ArchitectureOwns",
+      "description": "Architecture logical relationship",
+      "fields": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "description": "id"
+        },
+        {
+          "name": "source_id",
+          "type": "string",
+          "required": true,
+          "description": "source id"
+        },
+        {
+          "name": "target_id",
+          "type": "string",
+          "required": true,
+          "description": "target id"
+        },
+        {
+          "name": "model_id",
+          "type": "string",
+          "required": true,
+          "description": "model id"
+        },
+        {
+          "name": "snapshot_id",
+          "type": "string",
+          "required": true,
+          "description": "snapshot id"
+        },
+        {
+          "name": "state_kind",
+          "type": "string",
+          "required": true,
+          "description": "state kind"
+        },
+        {
+          "name": "schema_version",
+          "type": "string",
+          "required": true,
+          "description": "schema version"
+        },
+        {
+          "name": "source_ref",
+          "type": "json",
+          "required": true,
+          "description": "source ref"
+        }
+      ],
+      "constraints": [
+        "Component to revision-specific Symbol; qualified ownership only"
+      ],
+      "source_types": [
+        "ArchitectureComponent"
+      ],
+      "target_types": [
+        "Symbol"
+      ]
+    },
+    {
+      "name": "ArchitectureDependsOn",
+      "description": "Architecture logical relationship",
+      "fields": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "description": "id"
+        },
+        {
+          "name": "source_id",
+          "type": "string",
+          "required": true,
+          "description": "source id"
+        },
+        {
+          "name": "target_id",
+          "type": "string",
+          "required": true,
+          "description": "target id"
+        },
+        {
+          "name": "model_id",
+          "type": "string",
+          "required": true,
+          "description": "model id"
+        },
+        {
+          "name": "snapshot_id",
+          "type": "string",
+          "required": true,
+          "description": "snapshot id"
+        },
+        {
+          "name": "state_kind",
+          "type": "string",
+          "required": true,
+          "description": "state kind"
+        },
+        {
+          "name": "schema_version",
+          "type": "string",
+          "required": true,
+          "description": "schema version"
+        },
+        {
+          "name": "source_witnesses",
+          "type": "json",
+          "required": true,
+          "description": "source witnesses"
+        },
+        {
+          "name": "domain",
+          "type": "string",
+          "required": true,
+          "description": "domain"
+        },
+        {
+          "name": "coverage",
+          "type": "json",
+          "required": true,
+          "description": "coverage"
+        }
+      ],
+      "constraints": [
+        "Container to Container or Component to Component; qualified projection without self edges"
+      ],
+      "source_types": [
+        "ArchitectureContainer",
+        "ArchitectureComponent"
+      ],
+      "target_types": [
+        "ArchitectureContainer",
+        "ArchitectureComponent"
+      ]
+    },
+    {
+      "name": "ArchitectureChecks",
+      "description": "Architecture logical relationship",
+      "fields": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "description": "id"
+        },
+        {
+          "name": "source_id",
+          "type": "string",
+          "required": true,
+          "description": "source id"
+        },
+        {
+          "name": "target_id",
+          "type": "string",
+          "required": true,
+          "description": "target id"
+        },
+        {
+          "name": "model_id",
+          "type": "string",
+          "required": true,
+          "description": "model id"
+        },
+        {
+          "name": "snapshot_id",
+          "type": "string",
+          "required": true,
+          "description": "snapshot id"
+        },
+        {
+          "name": "state_kind",
+          "type": "string",
+          "required": true,
+          "description": "state kind"
+        },
+        {
+          "name": "schema_version",
+          "type": "string",
+          "required": true,
+          "description": "schema version"
+        },
+        {
+          "name": "input_identity",
+          "type": "json",
+          "required": true,
+          "description": "input identity"
+        },
+        {
+          "name": "phase",
+          "type": "string",
+          "required": true,
+          "description": "phase"
+        },
+        {
+          "name": "outcome",
+          "type": "string",
+          "required": true,
+          "description": "outcome"
+        },
+        {
+          "name": "provenance",
+          "type": "json",
+          "required": true,
+          "description": "provenance"
+        }
+      ],
+      "constraints": [
+        "Evaluation to Constraint, Scenario, or Mapping"
+      ],
+      "source_types": [
+        "ArchitectureEvaluation"
+      ],
+      "target_types": [
+        "ArchitectureConstraint",
+        "ArchitectureScenario",
+        "ArchitectureMapping"
+      ]
+    }
+  ],
+  "context_profiles": {},
+  "search_indexes": []
+}
