@@ -395,3 +395,14 @@ fn cod55_windows_unsafe_batch_input_preserves_existing_configuration() {
         assert!(case.calls().is_empty());
     }
 }
+
+#[test]
+fn cod55_windows_codex_user_target_uses_profile_not_home_decoy() {
+    let case = Case::new();
+    let result = payload(case.cli("codex").arg("--dry-run").output().unwrap());
+    assert_eq!(
+        Path::new(result["path"].as_str().unwrap()),
+        case.path("profile space/.codex/config.toml")
+    );
+    assert!(!case.path("home decoy/.codex/config.toml").exists());
+}
