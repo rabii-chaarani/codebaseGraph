@@ -172,7 +172,6 @@ pub(crate) struct ManagedWriteSession {
     pub base_generation: Option<ActiveGeneration>,
     ready: bool,
     finished: bool,
-    optional_retirement_error: Option<String>,
 }
 
 impl ManagedWriteSession {
@@ -250,13 +249,17 @@ impl ManagedWriteSession {
         {
             Ok((generation_id, optional_error)) => {
                 if optional_error.is_some() {
-                    // The journal carries the predecessor identity required to
-                    // retry retirement after a durable pointer commit.
+                    // Persist proof of the durable commit before retaining the
+                    // predecessor identity for later retirement retries.
+                    let _ = workspace.mark_phase(
+                        RunPhase::Published,
+                        Some(generation_id.clone()),
+                        None,
+                    );
                     workspace.retain_for_recovery();
                 } else {
                     finish_committed_workspace(workspace, &generation_id);
                 }
-                self.optional_retirement_error = optional_error;
                 Ok(generation_id)
             }
             Err(failure) => {
@@ -279,15 +282,7 @@ impl ManagedWriteSession {
                 "managed recovery requires this session's writer lease".into(),
             ));
         }
-        let mut report = self.store.reconcile_after_publication()?;
-        if let Some(error) = &self.optional_retirement_error {
-            report.retired_pending = report.retired_pending.max(1);
-            report.retired_generations_pending = report.retired_pending;
-            if report.optional_cleanup_error.is_none() {
-                report.optional_cleanup_error = Some(error.clone());
-            }
-        }
-        Ok(report)
+        self.store.reconcile_after_publication()
     }
 
     pub(crate) fn finish(mut self) {
@@ -422,7 +417,6 @@ impl ManagedStore {
             base_generation,
             ready: false,
             finished: false,
-            optional_retirement_error: None,
         })
     }
 
@@ -481,9 +475,6 @@ impl ManagedStore {
             ..ManagedCleanupReport::default()
         };
         report.retired_pending = self.optional_retired_pending(active.as_ref());
-        if report.run_recovery.optional_cleanup_error.is_some() {
-            report.retired_pending = report.retired_pending.max(1);
-        }
         report.retired_generations_pending = report.retired_pending;
         Ok(report)
     }
@@ -816,7 +807,29 @@ impl ManagedStore {
         let published = self.layout.generation(candidate_id)?;
         let active_id = active.as_ref().map(|value| value.generation_id.clone());
         let base_matches = active_id == journal.base_generation_id;
-        let published_valid = is_ready_generation_valid(&published);
+        // Inspect the root itself without following it. A dangling or foreign
+        // symlink is unknown state, not an absent generation to forget.
+        let published_present = match fs::symlink_metadata(published.root()) {
+            Ok(metadata) if metadata.file_type().is_symlink() => {
+                let error = NativeError::InvalidInput(format!(
+                    "refusing to use symlinked generation path {}",
+                    published.root().display()
+                ));
+                if cleanup_run_root && active_id.as_deref() != Some(candidate_id.as_str()) {
+                    return Ok(Some(error.to_string()));
+                }
+                return Err(error);
+            }
+            Ok(_) => true,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => false,
+            Err(error) => {
+                if cleanup_run_root && active_id.as_deref() != Some(candidate_id.as_str()) {
+                    return Ok(Some(error.to_string()));
+                }
+                return Err(error.into());
+            }
+        };
+        let published_valid = published_present && is_ready_generation_valid(&published);
         let staged_valid = is_ready_generation_valid(&staged);
 
         if active_id.as_deref() == Some(candidate_id.as_str()) && published_valid {
@@ -835,19 +848,72 @@ impl ManagedStore {
             return Ok(optional);
         }
 
+        if !base_matches && cleanup_run_root && journal.phase == RunPhase::Published {
+            // This journal records a durable commit by this run. A later
+            // generation may now be active; retry its predecessor only while
+            // the current active generation is known and different.
+            let Some(current) = active_id.as_deref() else {
+                return Ok(Some(
+                    "committed predecessor retirement awaits an active generation".into(),
+                ));
+            };
+            if journal.active_generation_id.as_deref() != Some(candidate_id.as_str())
+                || journal.base_generation_id.as_deref() == Some(current)
+                || journal.base_generation_id.as_deref() == Some(candidate_id.as_str())
+            {
+                return Ok(Some(
+                    "committed predecessor retirement remains ambiguous".into(),
+                ));
+            }
+            if let Some(base_id) = journal.base_generation_id.as_deref() {
+                let predecessor = self.layout.generation(base_id)?;
+                match fs::symlink_metadata(predecessor.root()) {
+                    Ok(_) => {
+                        if let Err(error) = ensure_directory_without_symlinks(predecessor.root())
+                            .and_then(|()| read_generation_metadata(&predecessor).map(|_| ()))
+                            .and_then(|()| self.finalize_previous_retirement(Some(base_id)))
+                        {
+                            return Ok(Some(error.to_string()));
+                        }
+                    }
+                    Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+                    Err(error) => return Ok(Some(error.to_string())),
+                }
+            }
+        }
+
         if !base_matches {
-            if published.root().exists() {
-                write_json_atomically(
-                    &published.retired_path(),
-                    &GenerationRetirement {
-                        schema_version: MANAGED_SCHEMA_VERSION,
-                        retired_at_ms: unix_time_ms(),
-                    },
-                )?;
-                self.retire_or_delete_generation_locked(
-                    &published,
-                    active.as_ref().map(|value| value.generation_id.as_str()),
-                )?;
+            // An unconfirmed Publishing run may represent a pointer write whose
+            // acknowledgement was lost. Do not discard its predecessor identity
+            // after a later generation supersedes it without proof of commit.
+            if cleanup_run_root && journal.phase == RunPhase::Publishing && published_valid {
+                return Ok(Some(
+                    "superseded publication outcome remains unconfirmed".into(),
+                ));
+            }
+            if published_present {
+                let disposal = ensure_directory_without_symlinks(published.root())
+                    .and_then(|()| {
+                        write_json_atomically(
+                            &published.retired_path(),
+                            &GenerationRetirement {
+                                schema_version: MANAGED_SCHEMA_VERSION,
+                                retired_at_ms: unix_time_ms(),
+                            },
+                        )
+                    })
+                    .and_then(|()| {
+                        self.retire_or_delete_generation_locked(
+                            &published,
+                            active.as_ref().map(|value| value.generation_id.as_str()),
+                        )
+                    });
+                if let Err(error) = disposal {
+                    if cleanup_run_root {
+                        return Ok(Some(error.to_string()));
+                    }
+                    return Err(error);
+                }
             }
             if cleanup_run_root {
                 return Ok(remove_run_root_confined(run_root, &self.layout.runs_root())
@@ -892,11 +958,16 @@ impl ManagedStore {
             return Ok(optional);
         }
 
-        if published.root().exists() {
-            self.retire_or_delete_generation_locked(
+        if published_present {
+            if let Err(error) = self.retire_or_delete_generation_locked(
                 &published,
                 active.as_ref().map(|value| value.generation_id.as_str()),
-            )?;
+            ) {
+                if cleanup_run_root {
+                    return Ok(Some(error.to_string()));
+                }
+                return Err(error);
+            }
         }
         if cleanup_run_root {
             return Ok(remove_run_root_confined(run_root, &self.layout.runs_root())

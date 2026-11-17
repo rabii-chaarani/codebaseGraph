@@ -1243,6 +1243,106 @@ mod tests {
         let _ = fs::remove_dir_all(root);
     }
 
+    #[cfg(unix)]
+    #[test]
+    fn direct_read_selectors_survive_optional_run_disposal_failure() {
+        use crate::api::{
+            CodebaseGraphApi, HealthRequest, MaterializationRequest, OperationRequest,
+            OutputFormat, QueryRequest,
+        };
+        use crate::storage::run_workspace::RunWorkspace;
+        let root = unique_temp_dir("direct-read-disposal-failure");
+        fs::create_dir_all(root.join("src")).unwrap();
+        fs::write(root.join("src/lib.rs"), "pub fn direct_symbol() {}\n").unwrap();
+        let db = root.join("graph.lbug");
+        let manifest = root.join("manifest.json");
+        let explicit = RepoSelector {
+            repo_root: Some(root.clone()),
+            config_path: None,
+            db_path: Some(db.clone()),
+            manifest_path: Some(manifest.clone()),
+        };
+        CodebaseGraphApi::new()
+            .execute_operation(&OperationRequest::Materialize(MaterializationRequest {
+                repo: explicit.clone(),
+                native_request_path: None,
+                source_root: None,
+                mode: "full".into(),
+                include_fts: false,
+                use_git: false,
+                git_diff: false,
+                git_base: None,
+                include_patterns: vec![],
+                exclude_patterns: vec![],
+                candidate_paths: vec![],
+                parallel: false,
+                spill_chunk_mib: None,
+                max_parallelism: None,
+                progress: false,
+                output_format: OutputFormat::Typed,
+            }))
+            .unwrap();
+        let state = root.join(".codebaseGraph");
+        fs::create_dir_all(&state).unwrap();
+        let config = state.join("config.json");
+        fs::write(
+            &config,
+            serde_json::to_vec(
+                &json!({"repo_root": root, "database_path": db, "manifest_path": manifest}),
+            )
+            .unwrap(),
+        )
+        .unwrap();
+        let configured = RepoSelector {
+            repo_root: Some(root.clone()),
+            config_path: Some(config),
+            db_path: None,
+            manifest_path: None,
+        };
+        let mut workspace = RunWorkspace::create(state.join("direct-runs"), None).unwrap();
+        let run = workspace.root().to_path_buf();
+        let registry = root.join("empty-registry");
+        fs::create_dir_all(&registry).unwrap();
+        workspace.set_cleanup_barrier(registry).unwrap();
+        let foreign = root.join("foreign");
+        fs::write(&foreign, b"unowned").unwrap();
+        let link = run.join("unknown-link");
+        std::os::unix::fs::symlink(&foreign, &link).unwrap();
+        assert!(workspace.abort(Some("fixture".into())).is_err());
+        for selector in [explicit, configured] {
+            let api = CodebaseGraphApi::new();
+            let health = api
+                .execute_operation(&OperationRequest::Health(HealthRequest {
+                    repo: selector.clone(),
+                    refresh_status: None,
+                    output_format: OutputFormat::Typed,
+                }))
+                .unwrap();
+            assert_eq!(health.payload["graph_readable"], true);
+            assert_eq!(health.payload["cleanup_pending"], true);
+            let query = api
+                .execute_operation(&OperationRequest::Query(QueryRequest {
+                    repo: selector,
+                    statement: "MATCH (n) RETURN count(n) AS total_nodes LIMIT 1".into(),
+                    parameters: json!({}),
+                    limit: 1,
+                    output_format: OutputFormat::Typed,
+                }))
+                .unwrap();
+            assert!(query.payload["rows"][0][0].as_u64().unwrap() > 0);
+            assert_eq!(fs::read(&foreign).unwrap(), b"unowned");
+            assert!(fs::symlink_metadata(&link)
+                .unwrap()
+                .file_type()
+                .is_symlink());
+        }
+        fs::remove_file(link).unwrap();
+        let report = RunWorkspace::cleanup_orphans(state.join("direct-runs")).unwrap();
+        assert_eq!(report.deleted, 1);
+        assert!(!run.exists());
+        fs::remove_dir_all(root).unwrap();
+    }
+
     #[test]
     fn direct_recovery_restores_real_graph_and_search_after_sidecar_rename() {
         use crate::api::{

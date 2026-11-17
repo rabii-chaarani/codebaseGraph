@@ -380,6 +380,7 @@ fn managed_optional_run_disposal_errors_preserve_active_read_and_retry() {
         let pending = store.recover_for_read().unwrap();
         assert!(pending.run_recovery.skipped_locked > 0);
         assert!(pending.run_recovery.optional_cleanup_error.is_some());
+        assert_eq!(pending.retired_generations_pending, 0);
         assert_eq!(store.open_read().unwrap().generation_id, active);
         assert_eq!(fs::read(&foreign).unwrap(), b"do not delete");
         assert!(fs::symlink_metadata(&link)
@@ -1100,7 +1101,11 @@ fn managed_retirement_failure_retains_retry_journal_until_reader_safe_recovery()
     assert!(report.optional_cleanup_error.is_some());
     let journal: RunJournal =
         serde_json::from_slice(&fs::read(run_root.join("journal.json")).unwrap()).unwrap();
-    assert_eq!(journal.phase, RunPhase::Publishing);
+    assert_eq!(journal.phase, RunPhase::Published);
+    assert_eq!(
+        journal.active_generation_id.as_deref(),
+        Some(expected_generation.as_str())
+    );
     assert_eq!(
         journal.base_generation_id.as_deref(),
         Some(first_generation.as_str())
@@ -1141,6 +1146,172 @@ fn managed_retirement_failure_retains_retry_journal_until_reader_safe_recovery()
 }
 
 #[test]
+fn repaired_retirement_before_reconcile_reports_no_outstanding_cleanup() {
+    let root = temp_dir("managed-retirement-repaired-before-reconcile");
+    let store = open_managed_store(root.join("storage"));
+    let first = publish_managed_generation(&store, b"db-a", json!({"files": []}));
+    let first_paths = store.layout().generation(&first).unwrap();
+    fs::create_dir(first_paths.retired_path()).unwrap();
+    let mut second = store.begin_write().unwrap();
+    let run = second
+        .staging_root()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .to_path_buf();
+    write_candidate_generation(
+        &second.candidate.paths,
+        b"db-b",
+        json!({"files": []}),
+        false,
+    );
+    second
+        .mark_ready_with_stats(&GraphSummary::default())
+        .unwrap();
+    second.publish_with_stats(&GraphSummary::default()).unwrap();
+    assert!(run.exists());
+    fs::remove_dir(first_paths.retired_path()).unwrap();
+    let report = second.reconcile_after_publication().unwrap();
+    assert_eq!(report.run_recovery.skipped_locked, 0);
+    assert_eq!(report.retired_generations_pending, 0);
+    assert!(report.optional_cleanup_error.is_none());
+    assert!(!run.exists());
+    assert!(!first_paths.root().exists());
+    second.finish();
+}
+
+#[test]
+fn predecessor_retry_survives_later_publication_and_live_readers() {
+    let root = temp_dir("managed-three-generation-retirement-retry");
+    let store = open_managed_store(root.join("storage"));
+    let first = publish_managed_generation(&store, b"db-a", json!({"files": []}));
+    let first_paths = store.layout().generation(&first).unwrap();
+    let first_reader = store.open_read().unwrap();
+    fs::create_dir(first_paths.retired_path()).unwrap();
+    let mut second = store.begin_write().unwrap();
+    let second_id = second.candidate.generation_id.clone();
+    let run = second
+        .staging_root()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .to_path_buf();
+    write_candidate_generation(
+        &second.candidate.paths,
+        b"db-b",
+        json!({"files": []}),
+        false,
+    );
+    second
+        .mark_ready_with_stats(&GraphSummary::default())
+        .unwrap();
+    assert_eq!(
+        second.publish_with_stats(&GraphSummary::default()).unwrap(),
+        second_id
+    );
+    assert!(second
+        .reconcile_after_publication()
+        .unwrap()
+        .optional_cleanup_error
+        .is_some());
+    second.finish();
+    assert!(run.exists());
+    let second_reader = store.open_read().unwrap();
+    let third = publish_managed_generation(&store, b"db-c", json!({"files": []}));
+    assert_eq!(store.open_read().unwrap().generation_id, third);
+    let pending = store.cleanup().unwrap();
+    assert!(pending.run_recovery.optional_cleanup_error.is_some());
+    assert!(
+        run.exists(),
+        "predecessor retry identity must survive later publication"
+    );
+    assert!(first_paths.retired_path().is_dir());
+    assert_eq!(fs::read(&first_reader.db_path).unwrap(), b"db-a");
+    assert_eq!(fs::read(&second_reader.db_path).unwrap(), b"db-b");
+    fs::remove_dir(first_paths.retired_path()).unwrap();
+    let metadata = fs::read(first_paths.metadata_path()).unwrap();
+    fs::write(first_paths.metadata_path(), b"invalid metadata").unwrap();
+    let unproven = store.cleanup().unwrap();
+    assert!(unproven.run_recovery.optional_cleanup_error.is_some());
+    assert!(run.exists());
+    assert!(!first_paths.retired_path().exists());
+    fs::write(first_paths.metadata_path(), metadata).unwrap();
+    let recovered = store.cleanup().unwrap();
+    assert_eq!(recovered.run_recovery.publishing_recovered, 1);
+    assert!(!run.exists());
+    assert!(first_paths.retired_path().is_file());
+    assert!(first_paths.root().exists());
+    let second_paths = store.layout().generation(&second_id).unwrap();
+    assert!(second_paths.root().exists());
+    drop(first_reader);
+    drop(second_reader);
+    store.cleanup().unwrap();
+    store.cleanup().unwrap();
+    assert!(!first_paths.root().exists());
+    assert!(!second_paths.root().exists());
+    assert_eq!(store.open_read().unwrap().generation_id, third);
+}
+
+#[cfg(unix)]
+#[test]
+fn superseded_candidate_disposal_failure_keeps_active_read_and_retry_journal() {
+    let root = temp_dir("managed-superseded-candidate-unknown");
+    let store = open_managed_store(root.join("storage"));
+    let first = publish_managed_generation(&store, b"db-a", json!({"files": []}));
+    let first_paths = store.layout().generation(&first).unwrap();
+    fs::create_dir(first_paths.retired_path()).unwrap();
+    let mut second = store.begin_write().unwrap();
+    let second_id = second.candidate.generation_id.clone();
+    let run = second
+        .staging_root()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .to_path_buf();
+    write_candidate_generation(
+        &second.candidate.paths,
+        b"db-b",
+        json!({"files": []}),
+        false,
+    );
+    second
+        .mark_ready_with_stats(&GraphSummary::default())
+        .unwrap();
+    second.publish_with_stats(&GraphSummary::default()).unwrap();
+    second.finish();
+    assert!(run.exists());
+    let mut third = store.begin_write().unwrap();
+    let third_id = third.candidate.generation_id.clone();
+    write_candidate_generation(&third.candidate.paths, b"db-c", json!({"files": []}), false);
+    third
+        .mark_ready_with_stats(&GraphSummary::default())
+        .unwrap();
+    third.publish_with_stats(&GraphSummary::default()).unwrap();
+    let second_paths = store.layout().generation(&second_id).unwrap();
+    let foreign = root.join("foreign");
+    fs::write(&foreign, b"unowned").unwrap();
+    let link = second_paths.root().join("unknown-link");
+    std::os::unix::fs::symlink(&foreign, &link).unwrap();
+    third.finish();
+    fs::remove_dir(first_paths.retired_path()).unwrap();
+    let pending = store.recover_for_read().unwrap();
+    assert!(pending.run_recovery.optional_cleanup_error.is_some());
+    assert!(run.exists());
+    assert_eq!(store.open_read().unwrap().generation_id, third_id);
+    assert_eq!(fs::read(&foreign).unwrap(), b"unowned");
+    assert!(fs::symlink_metadata(&link)
+        .unwrap()
+        .file_type()
+        .is_symlink());
+    fs::remove_file(link).unwrap();
+    store.cleanup().unwrap();
+    store.cleanup().unwrap();
+    assert!(!run.exists());
+    assert!(!second_paths.root().exists());
+    assert_eq!(store.open_read().unwrap().generation_id, third_id);
+}
+
+#[test]
 fn unresolved_retirement_does_not_collect_unknown_predecessor_without_reader() {
     let root = temp_dir("managed-retirement-unknown-no-reader");
     let store = open_managed_store(root.join("storage"));
@@ -1174,6 +1345,73 @@ fn unresolved_retirement_does_not_collect_unknown_predecessor_without_reader() {
     fs::remove_dir(old.retired_path()).unwrap();
     store.cleanup().unwrap();
     assert!(!old.root().exists());
+}
+
+#[cfg(unix)]
+#[test]
+fn dangling_nonactive_candidate_remains_pending_without_following_link() {
+    let root = temp_dir("managed-dangling-candidate");
+    let store = open_managed_store(root.join("storage"));
+    let active = publish_managed_generation(&store, b"committed", json!({"files": []}));
+    let (run, candidate) = orphan_publishing_run(
+        &store,
+        Some(active.clone()),
+        b"candidate",
+        json!({"files": []}),
+        OrphanPublishStage::AfterRename,
+    );
+    let published = store.layout().generation(&candidate).unwrap();
+    fs::remove_dir_all(published.root()).unwrap();
+    let absent_target = root.join("never-created-foreign-target");
+    std::os::unix::fs::symlink(&absent_target, published.root()).unwrap();
+    let pending = store.recover_for_read().unwrap();
+    assert!(pending.run_recovery.optional_cleanup_error.is_some());
+    assert!(run.exists());
+    assert!(fs::symlink_metadata(published.root())
+        .unwrap()
+        .file_type()
+        .is_symlink());
+    assert!(!absent_target.exists());
+    assert_eq!(store.open_read().unwrap().generation_id, active);
+    fs::remove_file(published.root()).unwrap();
+    store.cleanup().unwrap();
+    assert!(!run.exists());
+    assert_eq!(store.open_read().unwrap().generation_id, active);
+}
+
+#[cfg(unix)]
+#[test]
+fn invalid_nonactive_candidate_disposal_is_optional_and_retried() {
+    let root = temp_dir("managed-invalid-candidate-disposal");
+    let store = open_managed_store(root.join("storage"));
+    let active = publish_managed_generation(&store, b"committed", json!({"files": []}));
+    let (run, candidate) = orphan_publishing_run(
+        &store,
+        Some(active.clone()),
+        b"invalid",
+        json!({"files": []}),
+        OrphanPublishStage::AfterRename,
+    );
+    let candidate_paths = store.layout().generation(&candidate).unwrap();
+    fs::remove_file(candidate_paths.ready_path()).unwrap();
+    let foreign = root.join("foreign");
+    fs::write(&foreign, b"unowned").unwrap();
+    let link = candidate_paths.root().join("unknown-link");
+    std::os::unix::fs::symlink(&foreign, &link).unwrap();
+    let pending = store.recover_for_read().unwrap();
+    assert!(pending.run_recovery.optional_cleanup_error.is_some());
+    assert!(run.exists());
+    assert_eq!(store.open_read().unwrap().generation_id, active);
+    assert_eq!(fs::read(&foreign).unwrap(), b"unowned");
+    assert!(fs::symlink_metadata(&link)
+        .unwrap()
+        .file_type()
+        .is_symlink());
+    fs::remove_file(link).unwrap();
+    store.cleanup().unwrap();
+    assert!(!run.exists());
+    assert!(!candidate_paths.root().exists());
+    assert_eq!(store.open_read().unwrap().generation_id, active);
 }
 
 #[test]

@@ -40,6 +40,11 @@ pub(crate) struct RunWorkspaceRecovery {
     pub optional_cleanup_error: Option<String>,
 }
 
+#[cfg(test)]
+thread_local! {
+    static ORPHAN_ENTRY_HOOK: std::cell::Cell<Option<fn(&Path)>> = const { std::cell::Cell::new(None) };
+}
+
 #[derive(Debug)]
 pub(crate) struct RunWorkspace {
     root: PathBuf,
@@ -185,9 +190,24 @@ impl RunWorkspace {
 
         let mut report = RunWorkspaceRecovery::default();
         for entry in fs::read_dir(runs_root)? {
-            let entry = entry?;
+            let entry = match entry {
+                Ok(entry) => entry,
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => continue,
+                Err(error) => return Err(error.into()),
+            };
             let path = entry.path();
-            if !entry.file_type()?.is_dir() {
+            #[cfg(test)]
+            ORPHAN_ENTRY_HOOK.with(|hook| {
+                if let Some(hook) = hook.take() {
+                    hook(&path);
+                }
+            });
+            let is_directory = match entry.file_type() {
+                Ok(file_type) => file_type.is_dir(),
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => continue,
+                Err(error) => return Err(error.into()),
+            };
+            if !is_directory {
                 continue;
             }
             let Some(name) = path.file_name().and_then(|value| value.to_str()) else {
@@ -211,13 +231,26 @@ impl RunWorkspace {
                 report.skipped_locked += 1;
                 continue;
             }
-            let journal = read_orphan_journal(&path, name)?;
+            let journal = match read_orphan_journal(&path, name) {
+                Ok(journal) => journal,
+                Err(NativeError::Io(error)) if error.kind() == std::io::ErrorKind::NotFound => {
+                    continue
+                }
+                Err(error) => return Err(error),
+            };
             if journal.phase == RunPhase::Publishing {
                 report.publishing_recovered += 1;
             }
             drop(lease);
-            remove_run_tree(&path)?;
-            report.deleted += 1;
+            match remove_run_tree(&path) {
+                Ok(()) => report.deleted += 1,
+                Err(error) => {
+                    report
+                        .optional_cleanup_error
+                        .get_or_insert_with(|| error.to_string());
+                    report.skipped_locked += 1;
+                }
+            }
         }
         Ok(report)
     }
@@ -434,6 +467,42 @@ fn remove_file_if_present(path: &Path) -> Result<(), NativeError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn invalid_orphan_journal_remains_a_required_error() {
+        let root = std::env::temp_dir().join(format!(
+            "cgraph-invalid-orphan-{}-{}",
+            std::process::id(),
+            super::super::layout::managed_generation_id()
+        ));
+        fs::create_dir_all(&root).unwrap();
+        let run = root.join("run-invalid");
+        fs::create_dir(&run).unwrap();
+        fs::write(run.join("lease.lock"), b"").unwrap();
+        fs::write(run.join("journal.json"), b"invalid").unwrap();
+        assert!(RunWorkspace::cleanup_orphans(&root).is_err());
+        assert_eq!(fs::read(run.join("journal.json")).unwrap(), b"invalid");
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn vanished_orphan_is_not_recreated_during_cleanup() {
+        let root = std::env::temp_dir().join(format!(
+            "cgraph-vanished-orphan-{}-{}",
+            std::process::id(),
+            super::super::layout::managed_generation_id()
+        ));
+        fs::create_dir_all(&root).unwrap();
+        let run = root.join("run-vanished");
+        fs::create_dir(&run).unwrap();
+        fs::write(run.join("lease.lock"), b"").unwrap();
+        ORPHAN_ENTRY_HOOK.with(|hook| hook.set(Some(|path| fs::remove_dir_all(path).unwrap())));
+        let report = RunWorkspace::cleanup_orphans(&root).unwrap();
+        assert_eq!(report.deleted, 0);
+        assert!(!run.exists());
+        assert_eq!(fs::read_dir(&root).unwrap().count(), 0);
+        fs::remove_dir_all(root).unwrap();
+    }
 
     #[test]
     fn cleanup_barrier_records_its_absolute_origin() {
