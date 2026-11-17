@@ -1,0 +1,291 @@
+{
+  "schema_version": 1,
+  "work_id": "CBG-RESTORE-01/C4-P0",
+  "issue": "COD-137",
+  "source_commit": "ba5c7c543bd711b663e1dfc92d4bd58497ffb557",
+  "destination_equality": "Each destination is byte-for-byte and mode-identical to its original; destination commit is intentionally unspecified.",
+  "documents": [
+    {
+      "original_path": "docs/specs/CBG-C4-01/spec.md",
+      "destination_path": "docs/specs/CBG-C4-01/spec.md",
+      "original_commit": "ba5c7c543bd711b663e1dfc92d4bd58497ffb557",
+      "git_blob": "f2b8ae70de2250abdcf52cfbf3ed70017c3801d8",
+      "sha256": "6dda3d4795ac726b4ee76a62851f89f706e9292a715d5e0306c30d6c9d07b98f",
+      "bytes": 53363,
+      "mode": "100644",
+      "destination_equal": true
+    },
+    {
+      "original_path": "docs/specs/CBG-C4-01/proposal-review.md",
+      "destination_path": "docs/specs/CBG-C4-01/proposal-review.md",
+      "original_commit": "ba5c7c543bd711b663e1dfc92d4bd58497ffb557",
+      "git_blob": "258b03fdad9414352aaab5927b42e85f5f6aba25",
+      "sha256": "2f9f6de504f31d3b171239c00cd7837c576605e3e794fa96acd76b800cc4f1fd",
+      "bytes": 18382,
+      "mode": "100644",
+      "destination_equal": true
+    },
+    {
+      "original_path": "docs/specs/CBG-C4-01/cod16-contracts.md",
+      "destination_path": "docs/specs/CBG-C4-01/cod16-contracts.md",
+      "original_commit": "ba5c7c543bd711b663e1dfc92d4bd58497ffb557",
+      "git_blob": "55256256a2ed333c681fc0f5bf6c9604bd479b0f",
+      "sha256": "c5c5f523deb9a214f9218c15b63c67e66b4cdc429d7a45cf156bdda687af6847",
+      "bytes": 51193,
+      "mode": "100644",
+      "destination_equal": true
+    },
+    {
+      "original_path": "docs/specs/CBG-C4-01/cod16-decisions.md",
+      "destination_path": "docs/specs/CBG-C4-01/cod16-decisions.md",
+      "original_commit": "ba5c7c543bd711b663e1dfc92d4bd58497ffb557",
+      "git_blob": "9c1a72cb7eabbbb1ef4a85a507d838495cd71d5c",
+      "sha256": "f5c2489ca20e928ae08168d431a49d378dd8ba5d273f167c9f2089f958e93df1",
+      "bytes": 5529,
+      "mode": "100644",
+      "destination_equal": true
+    },
+    {
+      "original_path": "docs/specs/CBG-C4-01/cod16-fixtures.md",
+      "destination_path": "docs/specs/CBG-C4-01/cod16-fixtures.md",
+      "original_commit": "ba5c7c543bd711b663e1dfc92d4bd58497ffb557",
+      "git_blob": "32e47f9b9aec63907a7010575262d8f53439b611",
+      "sha256": "10eac06bfd49f61aded649bcc96822db62831c421f69946f2d2817acfe2df69a",
+      "bytes": 14320,
+      "mode": "100644",
+      "destination_equal": true
+    },
+    {
+      "original_path": "docs/specs/CBG-C4-01/cod16-review.md",
+      "destination_path": "docs/specs/CBG-C4-01/cod16-review.md",
+      "original_commit": "ba5c7c543bd711b663e1dfc92d4bd58497ffb557",
+      "git_blob": "649a7fa50009de79d296c503e09a992306c581b3",
+      "sha256": "b901bad43c7d122d64192f8a7624f308f317a71f0cedaf0a9563b1ca0a742881",
+      "bytes": 8909,
+      "mode": "100644",
+      "destination_equal": true
+    },
+    {
+      "original_path": "docs/specs/CBG-C4-01/cod17-baseline.md",
+      "destination_path": "docs/specs/CBG-C4-01/cod17-baseline.md",
+      "original_commit": "ba5c7c543bd711b663e1dfc92d4bd58497ffb557",
+      "git_blob": "6a2bec26cc5e665b6c4ca579014dbe008fe8a6c4",
+      "sha256": "9fc7ab3c651dfb43168b741559cda8757988b96b0112883dc5008aa8e4af4177",
+      "bytes": 23584,
+      "mode": "100644",
+      "destination_equal": true
+    },
+    {
+      "original_path": "docs/specs/CBG-C4-01/cod17-decisions.md",
+      "destination_path": "docs/specs/CBG-C4-01/cod17-decisions.md",
+      "original_commit": "ba5c7c543bd711b663e1dfc92d4bd58497ffb557",
+      "git_blob": "8121d3851265a6f83e8027176d7ca4af8175e75d",
+      "sha256": "ff0f03f2e05de1a41872ea593e8e33cab4e02e2ab05ce170bbaf7147897cad70",
+      "bytes": 3367,
+      "mode": "100644",
+      "destination_equal": true
+    },
+    {
+      "original_path": "docs/specs/CBG-C4-01/cod17-review.md",
+      "destination_path": "docs/specs/CBG-C4-01/cod17-review.md",
+      "original_commit": "ba5c7c543bd711b663e1dfc92d4bd58497ffb557",
+      "git_blob": "baec87487b481ebfb413b28c1bbc256e69b31e4c",
+      "sha256": "f9ff167a1862dbd92dbdb29b8855c8f5b147d21bc927aa23e85f3dd28d9120a4",
+      "bytes": 4797,
+      "mode": "100644",
+      "destination_equal": true
+    },
+    {
+      "original_path": "docs/specs/CBG-C4-01/cod18-contracts.md",
+      "destination_path": "docs/specs/CBG-C4-01/cod18-contracts.md",
+      "original_commit": "ba5c7c543bd711b663e1dfc92d4bd58497ffb557",
+      "git_blob": "34cd21929f31aa6de306ce2aa5aace75e4dea9c3",
+      "sha256": "bf57465a7062880f1075201261f20551adf58c502a7c16b358d9f56e77c03823",
+      "bytes": 30163,
+      "mode": "100644",
+      "destination_equal": true
+    },
+    {
+      "original_path": "docs/specs/CBG-C4-01/cod18-decisions.md",
+      "destination_path": "docs/specs/CBG-C4-01/cod18-decisions.md",
+      "original_commit": "ba5c7c543bd711b663e1dfc92d4bd58497ffb557",
+      "git_blob": "ac0b95a50716f7d900101b3400e549d5ff71eb6a",
+      "sha256": "0c4ab2414be0ce7ed84a42a87819febe61b87778332b3ee936873db45aedf8d8",
+      "bytes": 5425,
+      "mode": "100644",
+      "destination_equal": true
+    },
+    {
+      "original_path": "docs/specs/CBG-C4-01/cod18-fixtures.md",
+      "destination_path": "docs/specs/CBG-C4-01/cod18-fixtures.md",
+      "original_commit": "ba5c7c543bd711b663e1dfc92d4bd58497ffb557",
+      "git_blob": "9d5359b745e2629efb9363fa67a56f6c5282055f",
+      "sha256": "cd1eb5af7805a7dc6fd4ff278d9932117aa68cd3433b75e5d6d1d07a6a9c30ae",
+      "bytes": 10373,
+      "mode": "100644",
+      "destination_equal": true
+    },
+    {
+      "original_path": "docs/specs/CBG-C4-01/cod18-review.md",
+      "destination_path": "docs/specs/CBG-C4-01/cod18-review.md",
+      "original_commit": "ba5c7c543bd711b663e1dfc92d4bd58497ffb557",
+      "git_blob": "fdd116090d029577c1cda44bab0b0f8ee3a82b37",
+      "sha256": "1f7df16eef03a53597502490130f3660ecc726ba9ee955cb3d7d56b4f377e312",
+      "bytes": 9618,
+      "mode": "100644",
+      "destination_equal": true
+    },
+    {
+      "original_path": "docs/specs/CBG-C4-01/cod19-review.md",
+      "destination_path": "docs/specs/CBG-C4-01/cod19-review.md",
+      "original_commit": "ba5c7c543bd711b663e1dfc92d4bd58497ffb557",
+      "git_blob": "ee03bbe010832e80216af8eb5ae6a1b22e34b9ae",
+      "sha256": "a775cb9077de6a1913fb25f005da7960b78ccf05fb03d8bd11687ae6a8271a8a",
+      "bytes": 10898,
+      "mode": "100644",
+      "destination_equal": true
+    },
+    {
+      "original_path": "docs/specs/CBG-C4-01/approval-scope.md",
+      "destination_path": "docs/specs/CBG-C4-01/approval-scope.md",
+      "original_commit": "ba5c7c543bd711b663e1dfc92d4bd58497ffb557",
+      "git_blob": "cb8978ea9f6aeb9ea01ba2b6cbfa7c34720ff01f",
+      "sha256": "caf9e08e213fdbd7af33e311dc065cd5c1794d9b9f6beb4d8ae950a6ed2a9059",
+      "bytes": 10829,
+      "mode": "100644",
+      "destination_equal": true
+    },
+    {
+      "original_path": "docs/specs/CBG-C4-01/authority-transition.md",
+      "destination_path": "docs/specs/CBG-C4-01/authority-transition.md",
+      "original_commit": "ba5c7c543bd711b663e1dfc92d4bd58497ffb557",
+      "git_blob": "7b5024773ed3457c5473b61029c61bea0382dedc",
+      "sha256": "3ee40b53eb52bcad84fd5a61cbadb6d53866cf6d00907948efe6df3c0c8445fe",
+      "bytes": 69363,
+      "mode": "100644",
+      "destination_equal": true
+    },
+    {
+      "original_path": "docs/specs/CBG-C4-01/approvals/cod19-approval.md",
+      "destination_path": "docs/specs/CBG-C4-01/approvals/cod19-approval.md",
+      "original_commit": "ba5c7c543bd711b663e1dfc92d4bd58497ffb557",
+      "git_blob": "c3bc6e1b057bc5b3bc7be8aa39e0b349cf3d7d4b",
+      "sha256": "e0c176ab588ff6bd9877a644c1699cd803b89482e0e762681e1f2d85f37908e2",
+      "bytes": 4153,
+      "mode": "100644",
+      "destination_equal": true
+    },
+    {
+      "original_path": "docs/specs/CBG-C4-01/activation/cod19-activation.json",
+      "destination_path": "docs/specs/CBG-C4-01/activation/cod19-activation.json",
+      "original_commit": "ba5c7c543bd711b663e1dfc92d4bd58497ffb557",
+      "git_blob": "892509593b16aff3c47c6a1e5fc3cb7b10fb3ae6",
+      "sha256": "635f08030d0d4471dfea9cc6075665df568b075a06ede048f18673fe688181c8",
+      "bytes": 9475,
+      "mode": "100644",
+      "destination_equal": true
+    },
+    {
+      "original_path": "docs/specs/CBG-C4-01/activation/cod19-activation.md",
+      "destination_path": "docs/specs/CBG-C4-01/activation/cod19-activation.md",
+      "original_commit": "ba5c7c543bd711b663e1dfc92d4bd58497ffb557",
+      "git_blob": "e57ac2e66195a6aed2ec2b6154167f8a154cdb7d",
+      "sha256": "5d835213a29a6e9007af537e7009d3f9465fff96b86c661f1b8abbb67571a58b",
+      "bytes": 11572,
+      "mode": "100644",
+      "destination_equal": true
+    },
+    {
+      "original_path": "docs/specs/CBG-C4-01/activation/cod19-installation.json",
+      "destination_path": "docs/specs/CBG-C4-01/activation/cod19-installation.json",
+      "original_commit": "ba5c7c543bd711b663e1dfc92d4bd58497ffb557",
+      "git_blob": "9b54ca76c4e8b30d240ee359e0b053ca8f8a8924",
+      "sha256": "056c9294774d448c40e3450b0384f0981fe922ecd216e4583a1a1cf36bb78aa8",
+      "bytes": 2498,
+      "mode": "100644",
+      "destination_equal": true
+    },
+    {
+      "original_path": "docs/specs/CBG-C4-01/activation/cod19-ledger-closure.json",
+      "destination_path": "docs/specs/CBG-C4-01/activation/cod19-ledger-closure.json",
+      "original_commit": "ba5c7c543bd711b663e1dfc92d4bd58497ffb557",
+      "git_blob": "54c4b79c630091b3ba77911fa81315e0c31480c5",
+      "sha256": "594b8fdafc0140e171795d99baaa0aac1ccebdc4ae41e9414b136dc2a82a0111",
+      "bytes": 1984,
+      "mode": "100644",
+      "destination_equal": true
+    },
+    {
+      "original_path": "docs/specs/CBG-C4-01/activation/cod19-preflight.json",
+      "destination_path": "docs/specs/CBG-C4-01/activation/cod19-preflight.json",
+      "original_commit": "ba5c7c543bd711b663e1dfc92d4bd58497ffb557",
+      "git_blob": "b476898ef22977a43f2345bb6ab27ee44a71a46c",
+      "sha256": "491569704e57c424c648e9c73a53d9435a358f2a0adf6421698b77f5c90b3421",
+      "bytes": 67202,
+      "mode": "100644",
+      "destination_equal": true
+    }
+  ],
+  "approved_subject_bindings": [
+    {
+      "path": "docs/specs/CBG-C4-01/spec.md",
+      "approved_commit": "66dff2564e76ad06cdf172332e2da318d150fc73",
+      "git_blob": "f2b8ae70de2250abdcf52cfbf3ed70017c3801d8",
+      "sha256": "6dda3d4795ac726b4ee76a62851f89f706e9292a715d5e0306c30d6c9d07b98f",
+      "destination_equal": true
+    },
+    {
+      "path": "docs/specs/CBG-C4-01/approval-scope.md",
+      "approved_commit": "66dff2564e76ad06cdf172332e2da318d150fc73",
+      "git_blob": "cb8978ea9f6aeb9ea01ba2b6cbfa7c34720ff01f",
+      "sha256": "caf9e08e213fdbd7af33e311dc065cd5c1794d9b9f6beb4d8ae950a6ed2a9059",
+      "destination_equal": true
+    },
+    {
+      "path": "docs/specs/CBG-C4-01/authority-transition.md",
+      "approved_commit": "66dff2564e76ad06cdf172332e2da318d150fc73",
+      "git_blob": "7b5024773ed3457c5473b61029c61bea0382dedc",
+      "sha256": "3ee40b53eb52bcad84fd5a61cbadb6d53866cf6d00907948efe6df3c0c8445fe",
+      "destination_equal": true
+    },
+    {
+      "path": "docs/specs/CBG-C4-01/cod19-review.md",
+      "approved_commit": "66dff2564e76ad06cdf172332e2da318d150fc73",
+      "git_blob": "ee03bbe010832e80216af8eb5ae6a1b22e34b9ae",
+      "sha256": "a775cb9077de6a1913fb25f005da7960b78ccf05fb03d8bd11687ae6a8271a8a",
+      "destination_equal": true
+    }
+  ],
+  "original_completed_issues": [
+    {
+      "issue": "COD-16",
+      "status": "Done",
+      "pull_request": 185,
+      "source_commit": "0c49902ba7e12e10a8a93ba8540c2be0527d7d47"
+    },
+    {
+      "issue": "COD-17",
+      "status": "Done",
+      "pull_request": 184,
+      "source_commit": "f67e1d95862484dee34c8e818c98b72959366c5b"
+    },
+    {
+      "issue": "COD-18",
+      "status": "Done",
+      "pull_request": 186,
+      "source_commit": "79e45b79635e0e747715653ec32efb25fff54e09"
+    },
+    {
+      "issue": "COD-19",
+      "status": "Done",
+      "pull_request": 187,
+      "source_commit": "ba5c7c543bd711b663e1dfc92d4bd58497ffb557"
+    }
+  ],
+  "approval_references": {
+    "restoration_spec_commit": "d809fe0f8289bbf7d167a891bd7c31160f27f0e1",
+    "restoration_decision_commit": "663b2fc8d2790956975587dcab6b248bd40b5958",
+    "native_scope_ab_approved_commit": "66dff2564e76ad06cdf172332e2da318d150fc73",
+    "scoped_git_bootstrap_activation_commit": "ba5c7c543bd711b663e1dfc92d4bd58497ffb557"
+  }
+}
