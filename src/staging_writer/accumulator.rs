@@ -33,11 +33,6 @@ pub(crate) struct StagingAccumulator {
     pending_error: Option<NativeError>,
     relation_constraints: RelationConstraints,
     metrics: SpillMetrics,
-    // Last owner: actual legacy source admission survives all spool/output
-    // owners and transfers to StagingResult through native COPY/loader close.
-    legacy_staging: Option<
-        std::sync::Arc<crate::storage::maintenance_legacy_guard::LegacyStagingProducerGuard>,
-    >,
 }
 
 #[derive(Debug, Default)]
@@ -68,15 +63,11 @@ impl StagingAccumulator {
         output_chunk_limit: usize,
     ) -> Result<Self, NativeError> {
         let staging_dir = PathBuf::from(staging_dir);
-        let legacy_staging =
-            crate::storage::maintenance_legacy_guard::before_staging_producer(&staging_dir)?
-                .map(std::sync::Arc::new);
         let sequence = RUN_SEQUENCE.fetch_add(1, Ordering::Relaxed);
         let run_root = staging_dir.join(format!(".runs-{}-{sequence}", std::process::id()));
         let metrics = SpillMetrics::default();
         let raw_records = SortedSpool::new(&run_root, "staged", chunk_limit, metrics.clone())?;
-        let mut run_workspace = RunWorkspace::new(run_root);
-        run_workspace.defer_disposal |= legacy_staging.is_some();
+        let run_workspace = RunWorkspace::new(run_root);
         Ok(Self {
             staging_dir,
             run_workspace,
@@ -87,7 +78,6 @@ impl StagingAccumulator {
             pending_error: None,
             relation_constraints: RelationConstraints::from_declared_schema(),
             metrics,
-            legacy_staging,
         })
     }
 
@@ -109,7 +99,6 @@ impl StagingAccumulator {
             pending_error: Some(error),
             relation_constraints: RelationConstraints::from_declared_schema(),
             metrics: SpillMetrics::default(),
-            legacy_staging: None,
         }
     }
 
@@ -415,7 +404,6 @@ impl StagingAccumulator {
             unique_edge_count,
             spill_bytes,
             high_water_bytes,
-            _legacy_staging: self.legacy_staging.take(),
         })
     }
 
@@ -940,8 +928,7 @@ impl RunWorkspace {
     fn new(path: PathBuf) -> Self {
         // This predicate only restricts cleanup; it grants no Origin or
         // authority over this directory or any injected child.
-        let defer_disposal = crate::db_writer::phase_has_parent_workspace()
-            || crate::storage::maintenance_controls::workspace_retention_required(&path);
+        let defer_disposal = false;
         Self {
             path,
             defer_disposal,
@@ -1028,7 +1015,6 @@ mod output_tests {
         let path = root.join("caller-owned.csv");
         fs::write(&path, b"previous caller bytes").unwrap();
         let output = StagingOutputFile::create(&path).unwrap();
-        assert!(matches!(&output, StagingOutputFile::Plain(_)));
         let mut buffered = BufWriter::new(output);
         buffered.write_all(b"new accepted bytes").unwrap();
         finish_output(buffered).unwrap();
@@ -1037,64 +1023,6 @@ mod output_tests {
             fs::read_dir(&root).unwrap().count(),
             1,
             "unknown output gained origin metadata"
-        );
-        fs::remove_dir_all(root).unwrap();
-    }
-
-    #[test]
-    fn registered_spool_drop_preserves_unreceipted_injected_child_for_terminal_collection() {
-        let root = temp_root("registered-spool-retention");
-        let store = crate::storage::managed::GraphStorage::managed(root.join("storage"));
-        let session = store.begin_write().unwrap();
-        assert!(
-            session.phase_owner_scope().is_some(),
-            "real fresh run was not registered"
-        );
-        let spool = session
-            .staging_root()
-            .unwrap()
-            .join(".runs-retention-probe");
-        create_staging_directory(&spool).unwrap();
-        let child = spool.join("injected-unknown");
-        fs::write(&child, b"must remain untouched").unwrap();
-        drop(RunWorkspace::new(spool));
-        assert_eq!(fs::read(&child).unwrap(), b"must remain untouched");
-        session.abort(None).unwrap();
-        assert_eq!(fs::read(&child).unwrap(), b"must remain untouched");
-        fs::remove_dir_all(root).unwrap();
-    }
-
-    #[test]
-    fn legacy_staging_gate_survives_finish_and_result_clones_until_loader_owner_drops() {
-        use crate::storage::locks::{try_open_existing_locked, LockMode};
-        let root = temp_root("legacy-staging-result-lifetime");
-        let state = root.join(".codebaseGraph");
-        fs::create_dir(&state).unwrap();
-        let staging = state.join("native-staging");
-        let accumulator =
-            StagingAccumulator::with_limits(staging.to_str().unwrap(), 4096, 4096).unwrap();
-        let gate = state.join(".legacy-staging.use.lock");
-        assert!(try_open_existing_locked(&gate, LockMode::Exclusive)
-            .unwrap()
-            .is_none());
-        let result = accumulator.finish().unwrap();
-        assert!(
-            try_open_existing_locked(&gate, LockMode::Exclusive)
-                .unwrap()
-                .is_none(),
-            "finish released source admission before the returned CSV paths were consumed"
-        );
-        let clone = result.clone();
-        drop(result);
-        assert!(try_open_existing_locked(&gate, LockMode::Exclusive)
-            .unwrap()
-            .is_none());
-        drop(clone);
-        assert!(
-            try_open_existing_locked(&gate, LockMode::Exclusive)
-                .unwrap()
-                .is_some(),
-            "last internal loader owner failed to release the actual source gate"
         );
         fs::remove_dir_all(root).unwrap();
     }

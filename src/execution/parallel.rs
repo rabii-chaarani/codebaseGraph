@@ -8,7 +8,6 @@ use crate::protocol::{LanguageProfile, NativeSyntaxMaterializationRequest, Sourc
 use crate::scan;
 use std::fs::File;
 use std::io::Read;
-use std::path::Path;
 use std::sync::{mpsc, Mutex};
 use std::thread;
 use std::time::Instant;
@@ -29,7 +28,6 @@ pub(super) struct PartitionBuildResult {
     pub(super) parse_seconds: f64,
     pub(super) graph_build_seconds: f64,
     pub(super) reused_artifact: bool,
-    pub(super) transient: Option<crate::artifact_store::TransientPartition>,
     pub(super) accounted_bytes: u64,
 }
 
@@ -40,10 +38,6 @@ pub(super) fn build_execution_plan(
     mut consume: impl FnMut(usize, PartitionBuildResult) -> Result<(), NativeError>,
 ) -> Result<ExecutionPlanStats, NativeError> {
     let request = &scan.input;
-    let transient_plan_bytes = crate::artifact_store::TransientPartition::plan_bytes(
-        &request.staging_dir,
-        scan.supported.keys().map(String::as_str),
-    );
     let worker_count = resolved_worker_count(request, rebuild_paths.len());
     let mut stats = ExecutionPlanStats::default();
     if worker_count > 1 {
@@ -119,12 +113,9 @@ pub(super) fn build_execution_plan(
                     let result = result_slots[next_consume % worker_count]
                         .take()
                         .expect("checked result slot should be populated")?;
-                    stats.high_water_bytes = stats.high_water_bytes.max(
-                        result
-                            .accounted_bytes
-                            .saturating_mul(worker_count as u64)
-                            .saturating_add(transient_plan_bytes),
-                    );
+                    stats.high_water_bytes = stats
+                        .high_water_bytes
+                        .max(result.accounted_bytes.saturating_mul(worker_count as u64));
                     consume(next_consume, result)?;
                     next_consume += 1;
                     if next_dispatch < rebuild_paths.len() {
@@ -153,9 +144,7 @@ pub(super) fn build_execution_plan(
 
     for (index, path) in rebuild_paths.iter().enumerate() {
         let result = build_partition_for_path_with_workers(scan, path, artifact_store)?;
-        stats.high_water_bytes = stats
-            .high_water_bytes
-            .max(result.accounted_bytes.saturating_add(transient_plan_bytes));
+        stats.high_water_bytes = stats.high_water_bytes.max(result.accounted_bytes);
         consume(index, result)?;
     }
     Ok(stats)
@@ -238,7 +227,6 @@ fn build_partition_for_snapshot(
                 parse_seconds: 0.0,
                 graph_build_seconds: 0.0,
                 reused_artifact: true,
-                transient: None,
                 accounted_bytes,
             });
         }
@@ -256,28 +244,13 @@ fn build_partition_for_snapshot(
     partition.set_artifact_key(artifact_key.clone());
     let accounted_bytes = partition_accounted_bytes(&partition, snapshot.byte_len);
     let graph_build_seconds = elapsed_seconds(graph_build_started);
-    let transient = match artifact_store.store_partition(&artifact_key, &partition) {
-        Ok(_) => None,
-        Err(error) if crate::artifact_store::is_canonical_payload_conflict(&error) => {
-            Some(crate::artifact_store::TransientPartition::create(
-                Path::new(&request.staging_dir),
-                &artifact_key,
-                &partition,
-            )?)
-        }
-        Err(error) => return Err(error),
-    };
-    let mut diagnostics = diagnostics;
-    if transient.is_some() {
-        diagnostics.push(format!("artifact cache publication conflict for {}; rebuilt from scanned source using a per-run copy; canonical cache preserved", snapshot.path));
-    }
+    let _ = artifact_store.store_partition(&artifact_key, &partition)?;
     Ok(PartitionBuildResult {
         partition,
         diagnostics,
         parse_seconds,
         graph_build_seconds,
         reused_artifact: false,
-        transient,
         accounted_bytes,
     })
 }

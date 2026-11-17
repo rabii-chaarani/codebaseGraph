@@ -11,6 +11,7 @@ on:
       - unlabeled
     branches:
       - main
+      - dev
       - cod103-stack/cod-105
       - cod103-stack/cod-106
       - cod103-stack/cod-56

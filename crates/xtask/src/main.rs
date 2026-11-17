@@ -1764,6 +1764,7 @@ fn crate_preflight_policy_valid(release: &YamlValue) -> bool {
 fn ci_mode_policy_valid(ci: &YamlValue, issues: &mut Vec<String>) {
     let expected_bases = BTreeSet::from([
         "main",
+        "dev",
         "cod103-stack/cod-105",
         "cod103-stack/cod-106",
         "cod103-stack/cod-56",
@@ -1975,6 +1976,7 @@ fn check_workflow_policy(
     }
     let pull_request_bases = BTreeSet::from([
         "main",
+        "dev",
         "cod103-stack/cod-105",
         "cod103-stack/cod-106",
         "cod103-stack/cod-56",
@@ -1989,7 +1991,7 @@ fn check_workflow_policy(
         &pull_request_bases,
     ) {
         issues.push(
-            "FAIL: workflow-trigger-invalid: CI pull_request branches must contain exactly main and the five approved COD-103 stack bases.".to_string(),
+            "FAIL: workflow-trigger-invalid: CI pull_request branches must contain exactly main, dev and the five approved COD-103 stack bases.".to_string(),
         );
     }
     let pull_request_types = BTreeSet::from([
@@ -5641,6 +5643,70 @@ mod tests {
 
     #[cfg(unix)]
     #[test]
+    fn dev_pr_never_becomes_lightweight_even_with_release_metadata() {
+        let ci = valid_ci_workflow();
+        let script = extract_ci_step(&ci, "identity");
+        let base = CI_REQUIRED_BASE;
+        let head = CI_REQUIRED_SHA;
+        let mut event = github_pr(124, base, head, "labeled");
+        event["pull_request"]["base"]["ref"] = json!("dev");
+        let event_text = event.to_string();
+        let live = event["pull_request"].to_string();
+        let main =
+            json!({"ref":"refs/heads/main","object":{"type":"commit","sha":base}}).to_string();
+        let replies = [
+            ("api repos/owner/repo/pulls/124", live.as_str(), 0),
+            ("api repos/owner/repo/git/ref/heads/main", main.as_str(), 0),
+        ];
+        let run = run_ci_step(
+            script,
+            &[("GITHUB_EVENT_JSON", event_text.as_str())],
+            &[],
+            &replies,
+            &[],
+            None,
+        );
+        assert!(
+            run.output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&run.output.stderr)
+        );
+        let output = String::from_utf8(
+            run.stdout_files
+                .iter()
+                .find(|(path, _)| path == "output")
+                .unwrap()
+                .1
+                .clone(),
+        )
+        .unwrap();
+        assert!(output.contains("candidate=false\n"), "{output}");
+        let decision: Value = serde_json::from_slice(
+            &run.stdout_files
+                .iter()
+                .find(|(path, _)| path == "cod108/decision.json")
+                .unwrap()
+                .1,
+        )
+        .unwrap();
+        assert_eq!(decision["mode"], "full");
+        assert_eq!(decision["positive_metadata"], false);
+        let matrix = ci["jobs"]["native"]["strategy"]["matrix"]["include"]
+            .as_sequence()
+            .unwrap();
+        for target in ["macos-arm64", "windows-x86_64"] {
+            assert!(
+                matrix
+                    .iter()
+                    .any(|entry| entry["target"].as_str() == Some(target)
+                        && entry["run-tests"].as_bool() == Some(true)),
+                "missing full native test target {target}"
+            );
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
     fn ci_decision_body_executes_protected_classifier_and_falls_back_full() {
         let ci = valid_ci_workflow();
         let script = extract_ci_step(&ci, "decision");
@@ -6100,6 +6166,69 @@ mod tests {
             "full mode must fail when final current PR SHA differs from tested SHA"
         );
         assert_eq!(stale.calls.lines().count(), 2, "{}", stale.calls);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn dev_required_check_needs_current_full_base_and_head() {
+        let ci = valid_ci_workflow();
+        let run = required_body(&ci);
+        let base = CI_REQUIRED_BASE;
+        let head = CI_REQUIRED_SHA;
+        let mut event = required_pr_event(base, head, "synchronize");
+        event["pull_request"]["base"]["ref"] = json!("dev");
+        let (mut pr, main) = required_pr_api(base, head, "open", "synchronize");
+        pr["base"]["ref"] = json!("dev");
+        let invoke = |pr: &Value, results: &Value| {
+            let replies = [
+                ApiReply {
+                    request: "api repos/owner/repo/pulls/124",
+                    body: serde_json::to_vec(pr).unwrap(),
+                    exit: 0,
+                },
+                ApiReply {
+                    request: "api repos/owner/repo/git/ref/heads/main",
+                    body: serde_json::to_vec(&main).unwrap(),
+                    exit: 0,
+                },
+            ];
+            run_required_result(
+                run,
+                results,
+                &required_decision("full", base, head, false),
+                "pull_request",
+                &event,
+                "refs/pull/124/merge",
+                &replies,
+            )
+        };
+        assert!(invoke(&pr, &required_results("full"))
+            .output
+            .status
+            .success());
+        let mut stale = pr.clone();
+        stale["base"]["sha"] = json!(CI_REQUIRED_SHA);
+        assert!(!invoke(&stale, &required_results("full"))
+            .output
+            .status
+            .success());
+        let mut stale_head = pr.clone();
+        stale_head["head"]["sha"] = json!(CI_REQUIRED_BASE);
+        assert!(!invoke(&stale_head, &required_results("full"))
+            .output
+            .status
+            .success());
+        for result in ["cancelled", "failure", "skipped"] {
+            let mut failed = required_results("full");
+            failed["native"]["result"] = json!(result);
+            assert!(
+                !invoke(&pr, &failed).output.status.success(),
+                "accepted native result {result}"
+            );
+        }
+        let mut missing = required_results("full");
+        missing.as_object_mut().unwrap().remove("native");
+        assert!(!invoke(&pr, &missing).output.status.success());
     }
 
     #[cfg(unix)]
@@ -6627,11 +6756,46 @@ mod tests {
     }
 
     #[test]
+    fn workflow_policy_requires_each_exact_pr_base() {
+        let valid = valid_ci_workflow();
+        for omitted in [
+            "main",
+            "dev",
+            "cod103-stack/cod-105",
+            "cod103-stack/cod-106",
+            "cod103-stack/cod-56",
+            "cod103-stack/cod-107",
+            "cod103-stack/cod-108",
+        ] {
+            let mut ci = valid.clone();
+            ci["on"]["pull_request"]["branches"]
+                .as_sequence_mut()
+                .unwrap()
+                .retain(|item| item.as_str() != Some(omitted));
+            assert!(
+                workflow_policy_issues_for_ci(&ci)
+                    .iter()
+                    .any(|issue| issue.contains("workflow-trigger-invalid")),
+                "accepted omitted {omitted}"
+            );
+        }
+        let mut ci = valid;
+        ci["on"]["pull_request"]["branches"]
+            .as_sequence_mut()
+            .unwrap()
+            .push(YamlValue::String("extra".into()));
+        assert!(workflow_policy_issues_for_ci(&ci)
+            .iter()
+            .any(|issue| issue.contains("workflow-trigger-invalid")));
+    }
+
+    #[test]
     fn workflow_policy_rejects_unknown_stack_base_and_push_namespace() {
         for (event, branch) in [
             ("pull_request", "cod103-stack/cod-110"),
             ("pull_request", "*"),
             ("push", "cod103-stack/cod-105"),
+            ("push", "dev"),
             ("push", "*"),
         ] {
             let mut ci = valid_ci_workflow();

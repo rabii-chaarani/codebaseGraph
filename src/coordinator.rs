@@ -53,18 +53,8 @@ impl CoordinatorApiConfig {
     fn build_api(
         &self,
         cancellation: RefreshCancellation,
-        maintenance: Option<
-            crate::storage::maintenance::MaintenanceClient<Arc<ExecutionDispatcher>>,
-        >,
-        unavailable: Option<crate::storage::maintenance_scheduler::DriverError>,
     ) -> (CodebaseGraphApi, Option<RefreshRuntime>) {
-        CodebaseGraphApi::for_coordinator_owner_with_maintenance(
-            self.selector.clone(),
-            self.refresh,
-            cancellation,
-            maintenance,
-            unavailable,
-        )
+        CodebaseGraphApi::for_coordinator_owner(self.selector.clone(), self.refresh, cancellation)
     }
 }
 
@@ -210,8 +200,6 @@ impl CoordinatorOwner {
 struct CoordinatorControlPaths {
     lock: PathBuf,
     state: PathBuf,
-    managed_initialization: Option<ManagedLayout>,
-    direct_initialization: Option<DirectLayout>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -238,7 +226,6 @@ struct ExecutionJob {
     operation_id: String,
     invocation: OperationInvocation,
     context: ExecutionContext,
-    legacy_confirmation: Option<bool>,
     stream: TcpStream,
     _connection: ConnectionPermit,
 }
@@ -251,66 +238,13 @@ struct ExecutionDispatchState {
 }
 
 #[derive(Debug, Default)]
-pub(crate) struct ExecutionDispatcher {
+struct ExecutionDispatcher {
     state: Mutex<ExecutionDispatchState>,
     ready: Condvar,
     active_snapshot: AtomicBool,
 }
 
-/// Noncloneable ownership of the dispatcher's real execution slot. It has no
-/// caller deadline: only completion/drop of the actual maintenance work releases
-/// admission, including when its initiating caller has gone away.
-#[derive(Debug)]
-pub(crate) struct MaintenanceExecutionPermit {
-    dispatcher: Arc<ExecutionDispatcher>,
-}
-
-impl Drop for MaintenanceExecutionPermit {
-    fn drop(&mut self) {
-        self.dispatcher.finish_one();
-    }
-}
-
-// Driver-only boundary: advisory work never owns this permit. Production
-// collection wiring remains gated on the accepted storage controller contract.
-impl crate::storage::maintenance_scheduler::MaintenanceAdmission for Arc<ExecutionDispatcher> {
-    type Permit = MaintenanceExecutionPermit;
-
-    fn try_acquire(&self) -> Option<Self::Permit> {
-        self.try_acquire_maintenance()
-    }
-
-    fn stop_admission(&self) {
-        ExecutionDispatcher::stop_admission(self);
-    }
-
-    #[cfg(test)]
-    fn run_recovery(
-        &self,
-        operation: &mut dyn FnMut()
-            -> Result<(), crate::storage::maintenance_scheduler::DriverError>,
-    ) -> Result<bool, crate::storage::maintenance_scheduler::DriverError> {
-        let Some(_permit) = self.try_acquire_maintenance() else {
-            return Ok(false);
-        };
-        operation()?;
-        Ok(true)
-    }
-}
-
 impl ExecutionDispatcher {
-    fn try_acquire_maintenance(self: &Arc<Self>) -> Option<MaintenanceExecutionPermit> {
-        let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
-        if state.stopping || state.active || state.job.is_some() {
-            return None;
-        }
-        state.active = true;
-        self.active_snapshot.store(true, Ordering::Release);
-        Some(MaintenanceExecutionPermit {
-            dispatcher: Arc::clone(self),
-        })
-    }
-
     fn try_submit(&self, job: ExecutionJob) -> Result<(), Box<ExecutionJob>> {
         let mut state = self
             .state
@@ -557,20 +491,6 @@ impl CoordinatorClient {
         );
         loop {
             context.remaining()?;
-            if let Some(layout) = &self.inner.control.managed_initialization {
-                // Only the actual mutating acquisition may create this root.
-                // Existing roots are never enrolled by observation or emptiness.
-                crate::storage::maintenance_ownership::initialize_fresh_managed_domain(layout)
-                    .map_err(|error| {
-                        ApiError::new("coordinator_unavailable", error.to_string()).retryable(true)
-                    })?;
-            }
-            if let Some(layout) = &self.inner.control.direct_initialization {
-                crate::storage::maintenance_ownership::initialize_fresh_direct_domain(layout)
-                    .map_err(|error| {
-                        ApiError::new("coordinator_unavailable", error.to_string()).retryable(true)
-                    })?;
-            }
             if let Some(lease) = try_open_locked(&self.inner.control.lock, LockMode::Exclusive)
                 .map_err(|error| {
                     ApiError::new("coordinator_unavailable", error.to_string()).retryable(true)
@@ -913,33 +833,7 @@ where
         .name("codebase-graph-coordinator".to_string())
         .spawn(move || {
             started(OwnerStartup::BeforeRefresh);
-            let maintenance = (|| {
-                let memory = crate::storage::maintenance_budget::CleanupMemory::new(
-                    crate::storage::maintenance::MAINTENANCE_MEMORY_BYTES,
-                )
-                .map_err(|_| crate::storage::maintenance_scheduler::DriverError::ResourceLimit)?;
-                let target = config
-                    .identity
-                    .as_ref()
-                    .expect("captured coordinator identity")
-                    .maintenance_target(&memory)
-                    .map_err(|_| {
-                        crate::storage::maintenance_scheduler::DriverError::ResourceLimit
-                    })?;
-                crate::storage::maintenance::start_controller(
-                    target,
-                    memory,
-                    Arc::clone(&server_dispatcher),
-                    false,
-                )
-            })();
-            let (mut maintenance_runtime, maintenance_client, maintenance_error) = match maintenance
-            {
-                Ok((runtime, client)) => (Some(runtime), Some(client), None),
-                Err(error) => (None, None, Some(error)),
-            };
-            let (api, mut refresh_runtime) =
-                config.build_api(server_refresh_cancel, maintenance_client, maintenance_error);
+            let (api, mut refresh_runtime) = config.build_api(server_refresh_cancel);
             started(OwnerStartup::RefreshStarted(
                 refresh_runtime.as_ref().map(RefreshRuntime::state),
             ));
@@ -958,13 +852,7 @@ where
                 &server_stop,
                 &server_dispatcher,
             );
-            if let Some(runtime) = maintenance_runtime.as_ref() {
-                runtime.request_stop();
-            }
             if let Some(runtime) = refresh_runtime.as_mut() {
-                runtime.stop_and_join();
-            }
-            if let Some(runtime) = maintenance_runtime.as_mut() {
                 runtime.stop_and_join();
             }
             remove_owned_state(&state_path, &server_state.token);
@@ -1000,22 +888,16 @@ fn serve_owner(
         state,
         stop,
         dispatcher,
-        move |operation_id, mut invocation| {
+        move |mut invocation| {
             identity
                 .validate()
                 .map_err(|error| ApiError::new("repository_identity_changed", error))?;
             invocation.repo = selector.clone();
-            let confirmation =
-                api.prepare_legacy_confirmation_request(operation_id, &invocation)?;
-            Ok((invocation, confirmation))
+            Ok(invocation)
         },
-        move |operation_id, invocation, context, confirmation| {
+        move |operation_id, invocation, context| {
             context.remaining()?;
-            owner_api.execute_invocation_with_legacy_confirmation(
-                operation_id,
-                invocation,
-                confirmation,
-            )
+            owner_api.execute_invocation(operation_id, invocation)
         },
     );
 }
@@ -1028,16 +910,8 @@ fn serve_owner_with_executor<P, E>(
     prepare: P,
     execute: E,
 ) where
-    P: Fn(&str, OperationInvocation) -> Result<(OperationInvocation, Option<bool>), ApiError>
-        + Send
-        + Sync
-        + 'static,
-    E: Fn(
-            &str,
-            &OperationInvocation,
-            ExecutionContext,
-            Option<bool>,
-        ) -> Result<OperationResponse, ApiError>
+    P: Fn(OperationInvocation) -> Result<OperationInvocation, ApiError> + Send + Sync + 'static,
+    E: Fn(&str, &OperationInvocation, ExecutionContext) -> Result<OperationResponse, ApiError>
         + Send
         + Sync
         + 'static,
@@ -1054,12 +928,7 @@ fn serve_owner_with_executor<P, E>(
                 if job.context.remaining().is_err() {
                     None
                 } else {
-                    match worker_execute(
-                        &job.operation_id,
-                        &job.invocation,
-                        job.context,
-                        job.legacy_confirmation,
-                    ) {
+                    match worker_execute(&job.operation_id, &job.invocation, job.context) {
                         Ok(mut response) if job.context.remaining().is_ok() => {
                             attach_coordinator_status(&mut response, &worker_state);
                             Some(CoordinatorReply::Success(response))
@@ -1169,10 +1038,7 @@ fn handle_connection_dispatch<P>(
     connection: ConnectionPermit,
     prepare: Arc<P>,
 ) where
-    P: Fn(&str, OperationInvocation) -> Result<(OperationInvocation, Option<bool>), ApiError>
-        + Send
-        + Sync
-        + 'static,
+    P: Fn(OperationInvocation) -> Result<OperationInvocation, ApiError> + Send + Sync + 'static,
 {
     let request_deadline = accepted_at + COORDINATOR_FRAME_TIMEOUT;
     let request: CoordinatorRequest = match read_frame_until(stream, request_deadline) {
@@ -1225,8 +1091,8 @@ fn handle_connection_dispatch<P>(
                     return;
                 }
             };
-            let (invocation, legacy_confirmation) = match prepare(&operation_id, invocation) {
-                Ok(prepared) => prepared,
+            let invocation = match prepare(invocation) {
+                Ok(invocation) => invocation,
                 Err(error) => {
                     let reply = CoordinatorReply::Failure(error);
                     let _ = write_frame_until(
@@ -1250,7 +1116,6 @@ fn handle_connection_dispatch<P>(
                 operation_id,
                 invocation,
                 context,
-                legacy_confirmation,
                 stream: job_stream,
                 _connection: connection,
             };
@@ -1461,16 +1326,12 @@ fn coordinator_control_paths(selector: &RepoSelector) -> Result<CoordinatorContr
         return Ok(CoordinatorControlPaths {
             lock: layout.coordinator_lock_path(),
             state: layout.coordinator_state_path(),
-            managed_initialization: Some(layout),
-            direct_initialization: None,
         });
     }
     let layout = DirectLayout::new(&runtime.db_path, &runtime.manifest_path);
     Ok(CoordinatorControlPaths {
         lock: layout.coordinator_lock_path(),
         state: layout.coordinator_state_path(),
-        managed_initialization: None,
-        direct_initialization: Some(layout),
     })
 }
 
