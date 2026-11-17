@@ -986,9 +986,19 @@ fn finalize_materialization(
                     manifest_path.display()
                 ));
             }
-            workspace
-                .finish()
-                .map_err(|error| format!("failed to clean direct run workspace: {error}"))?;
+            #[cfg(test)]
+            POST_DIRECT_CLEANUP_HOOK.with(|hook| {
+                if let Some(hook) = hook.take() {
+                    hook(workspace.root());
+                }
+            });
+            if let Err(error) = workspace.finish() {
+                response.cleanup_pending = true;
+                response.pending_runs = 1;
+                response.diagnostics.push(format!(
+                    "cleanup pending: failed to clean direct run workspace: {error}"
+                ));
+            }
             session.finish();
         }
         StorageExecution::Managed {
@@ -1018,8 +1028,8 @@ fn finalize_materialization(
                 response,
             )?;
             let cleanup = session
-                .recover_and_gc()
-                .map_err(|error| format!("failed to reconcile managed storage cleanup: {error}"))?;
+                .reconcile_after_publication()
+                .map_err(|error| format!("failed to recover managed publication: {error}"))?;
             if cleanup.run_recovery.skipped_locked == 0 {
                 garbage_collect_artifacts(&artifact_root, &published_manifest)?;
             }
@@ -1028,6 +1038,12 @@ fn finalize_materialization(
             response.cleanup_pending =
                 cleanup.retired_generations_pending > 0 || cleanup.run_recovery.skipped_locked > 0;
             response.pending_runs = cleanup.run_recovery.skipped_locked;
+            if let Some(error) = cleanup.optional_cleanup_error {
+                response.cleanup_pending = true;
+                response
+                    .diagnostics
+                    .push(format!("cleanup pending: {error}"));
+            }
             session.finish();
         }
     }
@@ -1231,6 +1247,11 @@ fn resolved_source_root(options: &MaterializeOptions) -> Result<PathBuf, String>
 }
 
 #[cfg(test)]
+thread_local! {
+    static POST_DIRECT_CLEANUP_HOOK: std::cell::Cell<Option<fn(&Path)>> = const { std::cell::Cell::new(None) };
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::json;
@@ -1245,6 +1266,51 @@ mod tests {
                 .expect("clock should be after epoch")
                 .as_nanos()
         ))
+    }
+
+    #[test]
+    fn committed_direct_graph_survives_workspace_cleanup_failure() {
+        let root = unique_temp_dir("direct-post-commit-cleanup");
+        fs::create_dir_all(root.join("src")).unwrap();
+        fs::write(root.join("src/lib.rs"), "pub fn committed_symbol() {}\n").unwrap();
+        let db = root.join("graph.lbug");
+        let manifest = root.join("manifest.json");
+        let options = MaterializeOptions {
+            source_root: Some(root.clone()),
+            db: Some(db.clone()),
+            manifest: Some(manifest.clone()),
+            mode: "full".into(),
+            ..MaterializeOptions::default()
+        };
+        POST_DIRECT_CLEANUP_HOOK.with(|hook| {
+            hook.set(Some(|run_root| {
+                fs::write(
+                    run_root.join("cleanup-barrier.json"),
+                    b"invalid barrier fixture",
+                )
+                .unwrap();
+            }))
+        });
+        let (_, response) = execute_materialization(&options).unwrap();
+        assert!(response.database_written);
+        assert!(response.cleanup_pending);
+        assert_eq!(response.pending_runs, 1);
+        assert!(response
+            .diagnostics
+            .iter()
+            .any(|value| value.contains("cleanup pending")));
+        assert!(db.exists() && manifest.exists());
+        assert!(crate::api::graph_read::count_graph_nodes(&db).unwrap() > 0);
+        let runs = root.join(".codebaseGraph/direct-runs");
+        let retained = fs::read_dir(&runs)
+            .unwrap()
+            .map(|entry| entry.unwrap().path())
+            .collect::<Vec<_>>();
+        assert_eq!(retained.len(), 1);
+        assert!(retained[0].join("cleanup-barrier.json").exists());
+        fs::remove_file(retained[0].join("cleanup-barrier.json")).unwrap();
+        RunWorkspace::cleanup_orphans(&runs).unwrap();
+        fs::remove_dir_all(root).unwrap();
     }
 
     #[test]

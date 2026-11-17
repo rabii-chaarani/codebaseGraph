@@ -849,6 +849,52 @@ impl Fixture {
     }
 }
 
+// Failure-only metadata for the fixture-owned roots. Never print state contents:
+// coordinator and worker records may contain capabilities or other secrets.
+fn report_fixture_state_metadata(root: &Path) {
+    fn directory(path: &Path) -> bool {
+        fs::symlink_metadata(path)
+            .is_ok_and(|metadata| metadata.is_dir() && !metadata.file_type().is_symlink())
+    }
+    fn report_file(label: &str, path: &Path) {
+        match fs::symlink_metadata(path) {
+            Ok(metadata) if metadata.is_file() && !metadata.file_type().is_symlink() => {
+                eprintln!("fixture {label}: regular file, {} bytes", metadata.len());
+            }
+            Ok(_) => eprintln!("fixture {label}: non-regular or symlink"),
+            Err(error) => eprintln!("fixture {label}: unavailable ({:?})", error.kind()),
+        }
+    }
+    if !directory(root) {
+        return;
+    }
+    let state = root.join(".codebaseGraph");
+    if !directory(&state) {
+        return;
+    }
+    let storage = state.join("storage");
+    if !directory(&storage) {
+        return;
+    }
+    for name in ["coordinator.json", "worker.json", "active.json"] {
+        report_file(name, &storage.join(name));
+    }
+    let workers = storage.join("workers");
+    if !directory(&workers) {
+        return;
+    }
+    if let Ok(entries) = fs::read_dir(workers) {
+        for (index, entry) in entries.take(8).enumerate() {
+            if let Ok(entry) = entry {
+                let path = entry.path();
+                if directory(&path) {
+                    report_file(&format!("worker[{index}].stderr"), &path.join("stderr.log"));
+                }
+            }
+        }
+    }
+}
+
 impl Drop for Fixture {
     fn drop(&mut self) {
         // Resuming a paused owned worker permits its parent-lifetime watchdog
@@ -872,6 +918,7 @@ impl Drop for Fixture {
             thread::sleep(Duration::from_millis(25));
         }
         if thread::panicking() {
+            report_fixture_state_metadata(&self.root);
             eprintln!("retained failed lifecycle fixture: {}", self.root.display());
         } else if !alive(self.phase_pid) {
             let _ = fs::remove_dir_all(&self.root);

@@ -77,6 +77,13 @@ pub fn open_ladybug_database_with_threads(
     let config = SystemConfig::default()
         .read_only(read_only)
         .max_num_threads(max_num_threads);
+    open_ladybug_database_with_config(db_path, config)
+}
+
+pub(crate) fn open_ladybug_database_with_config(
+    db_path: &Path,
+    config: SystemConfig,
+) -> Result<Database, NativeError> {
     let native_path = guarded_native_path(db_path)?;
     Database::new(&native_path, config).map_err(|error| {
         NativeError::Database(format!(

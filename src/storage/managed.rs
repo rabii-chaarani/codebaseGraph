@@ -101,6 +101,23 @@ impl Drop for GenerationLease {
     }
 }
 
+#[cfg(test)]
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ManagedPublicationFault {
+    PointerAfterRename,
+    RootSync,
+}
+
+#[cfg(test)]
+thread_local! {
+    static PUBLICATION_FAULT: std::cell::Cell<Option<ManagedPublicationFault>> = const { std::cell::Cell::new(None) };
+}
+
+#[cfg(test)]
+pub(crate) fn set_publication_fault(fault: Option<ManagedPublicationFault>) {
+    PUBLICATION_FAULT.with(|slot| slot.set(fault));
+}
+
 #[derive(Debug, Clone)]
 pub(crate) enum StorageMode {
     Direct,
@@ -115,6 +132,7 @@ pub(crate) struct ManagedCleanupReport {
     pub retired_pending: usize,
     pub retired_generations_deleted: usize,
     pub retired_generations_pending: usize,
+    pub optional_cleanup_error: Option<String>,
 }
 
 #[derive(Debug)]
@@ -140,6 +158,11 @@ impl ManagedCandidate {
     }
 }
 
+struct PublicationFailure {
+    error: NativeError,
+    may_have_effects: bool,
+}
+
 #[derive(Debug)]
 pub(crate) struct ManagedWriteSession {
     store: ManagedStore,
@@ -149,6 +172,7 @@ pub(crate) struct ManagedWriteSession {
     pub base_generation: Option<ActiveGeneration>,
     ready: bool,
     finished: bool,
+    optional_retirement_error: Option<String>,
 }
 
 impl ManagedWriteSession {
@@ -224,35 +248,40 @@ impl ManagedWriteSession {
             .store
             .publish_candidate_inner(&workspace, &self.candidate)
         {
-            Ok(generation_id) => {
+            Ok((generation_id, optional_error)) => {
+                self.optional_retirement_error = optional_error;
                 finish_committed_workspace(workspace, &generation_id);
                 Ok(generation_id)
             }
-            Err(error) => {
-                let generation_id = self.candidate.generation_id.clone();
-                if self
-                    .store
-                    .publication_is_committed(&generation_id)
-                    .unwrap_or(false)
-                {
-                    finish_committed_workspace(workspace, &generation_id);
-                    return Ok(generation_id);
-                }
+            Err(failure) => {
                 self.finished = true;
-                let error = abort_workspace_after_error(workspace, error);
+                let error = if failure.may_have_effects {
+                    workspace.retain_for_recovery();
+                    failure.error
+                } else {
+                    abort_workspace_after_error(workspace, failure.error)
+                };
                 drop(self.writer_lease.take());
                 Err(error)
             }
         }
     }
 
-    pub(crate) fn recover_and_gc(&self) -> Result<ManagedCleanupReport, NativeError> {
+    pub(crate) fn reconcile_after_publication(&self) -> Result<ManagedCleanupReport, NativeError> {
         if self.writer_lease.is_none() {
             return Err(NativeError::InvalidInput(
-                "managed cleanup requires this session's writer lease".into(),
+                "managed recovery requires this session's writer lease".into(),
             ));
         }
-        self.store.cleanup_with_owned_writer()
+        let mut report = self.store.reconcile_after_publication()?;
+        if let Some(error) = &self.optional_retirement_error {
+            report.retired_pending = report.retired_pending.max(1);
+            report.retired_generations_pending = report.retired_pending;
+            if report.optional_cleanup_error.is_none() {
+                report.optional_cleanup_error = Some(error.clone());
+            }
+        }
+        Ok(report)
     }
 
     pub(crate) fn finish(mut self) {
@@ -387,6 +416,7 @@ impl ManagedStore {
             base_generation,
             ready: false,
             finished: false,
+            optional_retirement_error: None,
         })
     }
 
@@ -423,6 +453,73 @@ impl ManagedStore {
         }))
     }
 
+    /// Recover required publication transactions without making optional retired
+    /// generation disposal a prerequisite for reading the committed graph.
+    pub(crate) fn recover_for_read(&self) -> Result<ManagedCleanupReport, NativeError> {
+        self.ensure_layout()?;
+        let Some(_writer_lease) =
+            try_open_locked(self.layout.writer_lock_path(), LockMode::Exclusive)?
+        else {
+            return self.read_recovery_pending_report();
+        };
+        if !matches!(
+            probe_registry(&self.layout.phase_workspace_root()),
+            Ok(true)
+        ) {
+            return self.read_recovery_pending_report();
+        }
+        let _state_lease = self.open_state_lock(LockMode::Exclusive)?;
+        let mut active = self.read_active_generation()?;
+        let mut report = ManagedCleanupReport {
+            run_recovery: self.recover_runs_locked(&mut active)?,
+            ..ManagedCleanupReport::default()
+        };
+        report.retired_pending = self.optional_retired_pending(active.as_ref());
+        if report.run_recovery.optional_retirement_pending {
+            report.retired_pending = report.retired_pending.max(1);
+        }
+        report.retired_generations_pending = report.retired_pending;
+        Ok(report)
+    }
+
+    fn read_recovery_pending_report(&self) -> Result<ManagedCleanupReport, NativeError> {
+        let active = self.read_active_generation()?;
+        let mut report = ManagedCleanupReport::default();
+        report.run_recovery.skipped_locked =
+            existing_directories_with_prefix(&self.layout.runs_root(), "run-")?.len();
+        report.retired_pending = self.optional_retired_pending(active.as_ref());
+        report.retired_generations_pending = report.retired_pending;
+        Ok(report)
+    }
+
+    fn optional_retired_pending(&self, active: Option<&ActiveGeneration>) -> usize {
+        // Unknown optional state is pending, never a reason to delete it or
+        // deny access to a valid active generation.
+        match fs::read_dir(self.layout.generations_root()) {
+            Ok(entries) => {
+                let mut pending: usize = 0;
+                for entry in entries {
+                    match entry {
+                        Ok(entry) => {
+                            let name = entry.file_name();
+                            let name = name.to_string_lossy();
+                            if name.starts_with("gen-")
+                                && !active
+                                    .is_some_and(|a| name == format!("gen-{}", a.generation_id))
+                            {
+                                pending += 1;
+                            }
+                        }
+                        Err(_) => return pending.saturating_add(1),
+                    }
+                }
+                pending
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => 0,
+            Err(_) => 1,
+        }
+    }
+
     pub(crate) fn cleanup(&self) -> Result<ManagedCleanupReport, NativeError> {
         self.ensure_layout()?;
         // Cleanup is opportunistic for readers. Never replay or collect while
@@ -433,6 +530,31 @@ impl ManagedStore {
             return self.pending_cleanup_report();
         };
         self.cleanup_with_owned_writer()
+    }
+
+    fn reconcile_after_publication(&self) -> Result<ManagedCleanupReport, NativeError> {
+        if !matches!(
+            probe_registry(&self.layout.phase_workspace_root()),
+            Ok(true)
+        ) {
+            return self.read_recovery_pending_report();
+        }
+        let _state_lease = self.open_state_lock(LockMode::Exclusive)?;
+        let mut active = self.read_active_generation()?;
+        let mut report = ManagedCleanupReport {
+            run_recovery: self.recover_runs_locked(&mut active)?,
+            ..ManagedCleanupReport::default()
+        };
+        if let Err(error) = self.collect_retired_generations_locked(
+            active.as_ref().map(|value| value.generation_id.as_str()),
+            &mut report,
+        ) {
+            report.retired_pending = report.retired_pending.max(1);
+            report.optional_cleanup_error = Some(error.to_string());
+        }
+        report.retired_generations_deleted = report.retired_deleted;
+        report.retired_generations_pending = report.retired_pending;
+        Ok(report)
     }
 
     fn cleanup_with_owned_writer(&self) -> Result<ManagedCleanupReport, NativeError> {
@@ -529,13 +651,33 @@ impl ManagedStore {
         &self,
         workspace: &RunWorkspace,
         candidate: &ManagedCandidate,
-    ) -> Result<String, NativeError> {
+    ) -> Result<(String, Option<String>), PublicationFailure> {
+        let before = |error| PublicationFailure {
+            error,
+            may_have_effects: false,
+        };
         ensure_registry_empty(&self.layout.phase_workspace_root())
-            .map_err(NativeError::InvalidInput)?;
-        let _state_lease = self.open_state_lock(LockMode::Exclusive)?;
-        let mut active = self.read_active_generation()?;
-        self.finish_run_locked(workspace.root(), &workspace.journal()?, &mut active, false)?;
-        Ok(candidate.generation_id.clone())
+            .map_err(|error| before(NativeError::InvalidInput(error)))?;
+        let _state_lease = self.open_state_lock(LockMode::Exclusive).map_err(before)?;
+        let mut active = self.read_active_generation().map_err(before)?;
+        let journal = workspace.journal().map_err(before)?;
+        let active_id = active.as_ref().map(|value| value.generation_id.clone());
+        if active_id != journal.base_generation_id {
+            return Err(before(NativeError::InvalidInput(
+                ManagedValidationError::StaleBaseGeneration {
+                    expected: journal.base_generation_id.clone(),
+                    found: active_id,
+                }
+                .to_string(),
+            )));
+        }
+        let optional = self
+            .finish_run_locked(workspace.root(), &journal, &mut active, false)
+            .map_err(|error| PublicationFailure {
+                error,
+                may_have_effects: true,
+            })?;
+        Ok((candidate.generation_id.clone(), optional))
     }
 
     fn recover_runs_locked(
@@ -594,9 +736,22 @@ impl ManagedStore {
                 }
                 Err(error) => return Err(error),
             };
+            if let Err(error) = super::run_workspace::ensure_persisted_cleanup_allowed(&path) {
+                if matches!(journal.phase, RunPhase::Publishing | RunPhase::Published) {
+                    return Err(error);
+                }
+                report.skipped_locked += 1;
+                drop(lease);
+                continue;
+            }
             let recovered = match journal.phase {
                 RunPhase::Publishing | RunPhase::Published => {
-                    self.finish_run_locked(&path, &journal, active, true)?;
+                    if self
+                        .finish_run_locked(&path, &journal, active, true)?
+                        .is_some()
+                    {
+                        report.optional_retirement_pending = true;
+                    }
                     report.publishing_recovered += 1;
                     true
                 }
@@ -617,14 +772,14 @@ impl ManagedStore {
         journal: &RunJournal,
         active: &mut Option<ActiveGeneration>,
         cleanup_run_root: bool,
-    ) -> Result<(), NativeError> {
+    ) -> Result<Option<String>, NativeError> {
         ensure_registry_empty(&self.layout.phase_workspace_root())
             .map_err(NativeError::InvalidInput)?;
         let Some(candidate_id) = journal.candidate_generation_id.as_ref() else {
             if cleanup_run_root {
                 remove_run_root_confined(run_root, &self.layout.runs_root())?;
             }
-            return Ok(());
+            return Ok(None);
         };
         validate_generation_id(candidate_id)?;
         if let Some(base_generation_id) = journal.base_generation_id.as_deref() {
@@ -640,11 +795,17 @@ impl ManagedStore {
         let staged_valid = is_ready_generation_valid(&staged);
 
         if active_id.as_deref() == Some(candidate_id.as_str()) && published_valid {
-            self.finalize_previous_retirement(journal.base_generation_id.as_deref())?;
+            // A visible pointer after an earlier failed sync must be made durable
+            // before recovery considers the transaction committed.
+            sync_dir(self.layout.storage_root())?;
+            let optional = self
+                .finalize_previous_retirement(journal.base_generation_id.as_deref())
+                .err()
+                .map(|error| error.to_string());
             if cleanup_run_root {
                 remove_run_root_confined(run_root, &self.layout.runs_root())?;
             }
-            return Ok(());
+            return Ok(optional);
         }
 
         if !base_matches {
@@ -663,7 +824,7 @@ impl ManagedStore {
             }
             if cleanup_run_root {
                 remove_run_root_confined(run_root, &self.layout.runs_root())?;
-                return Ok(());
+                return Ok(None);
             }
             return Err(NativeError::InvalidInput(
                 ManagedValidationError::StaleBaseGeneration {
@@ -675,7 +836,7 @@ impl ManagedStore {
         }
 
         if published_valid && base_matches {
-            let activated = self.activate_published_generation_locked(
+            let (activated, optional) = self.activate_published_generation_locked(
                 &published,
                 journal.base_generation_id.as_deref(),
             )?;
@@ -683,12 +844,12 @@ impl ManagedStore {
             if cleanup_run_root {
                 remove_run_root_confined(run_root, &self.layout.runs_root())?;
             }
-            return Ok(());
+            return Ok(optional);
         }
 
         if staged_valid && base_matches {
             self.promote_candidate_generation_locked(&staged, &published)?;
-            let activated = self.activate_published_generation_locked(
+            let (activated, optional) = self.activate_published_generation_locked(
                 &published,
                 journal.base_generation_id.as_deref(),
             )?;
@@ -696,7 +857,7 @@ impl ManagedStore {
             if cleanup_run_root {
                 remove_run_root_confined(run_root, &self.layout.runs_root())?;
             }
-            return Ok(());
+            return Ok(optional);
         }
 
         if published.root().exists() {
@@ -708,7 +869,7 @@ impl ManagedStore {
         if cleanup_run_root {
             remove_run_root_confined(run_root, &self.layout.runs_root())?;
         }
-        Ok(())
+        Ok(None)
     }
 
     fn promote_candidate_generation_locked(
@@ -735,7 +896,7 @@ impl ManagedStore {
         &self,
         published: &GenerationPaths,
         previous_active_id: Option<&str>,
-    ) -> Result<ActiveGeneration, NativeError> {
+    ) -> Result<(ActiveGeneration, Option<String>), NativeError> {
         validate_ready_generation(published)?;
         let mut metadata = read_generation_metadata(published)?;
         let now_ms = unix_time_ms();
@@ -750,19 +911,33 @@ impl ManagedStore {
             published_at: format!("unix:{now_ms}"),
             activated_at_ms: now_ms,
         };
-        if let Err(error) = write_json_atomically(&self.layout.active_pointer_path(), &active) {
-            let _ = write_json_atomically(
-                &published.retired_path(),
-                &GenerationRetirement {
-                    schema_version: MANAGED_SCHEMA_VERSION,
-                    retired_at_ms: unix_time_ms(),
-                },
-            );
-            return Err(error);
+        self.write_active_pointer(&active)?;
+        #[cfg(test)]
+        if PUBLICATION_FAULT.with(|fault| fault.get()) == Some(ManagedPublicationFault::RootSync) {
+            return Err(NativeError::Io(std::io::Error::other(
+                "injected mandatory managed root sync failure",
+            )));
         }
         sync_dir(self.layout.storage_root())?;
-        self.finalize_previous_retirement(previous_active_id)?;
-        Ok(active)
+        let optional = self
+            .finalize_previous_retirement(previous_active_id)
+            .err()
+            .map(|error| error.to_string());
+        Ok((active, optional))
+    }
+
+    fn write_active_pointer(&self, active: &ActiveGeneration) -> Result<(), NativeError> {
+        #[cfg(test)]
+        if PUBLICATION_FAULT.with(|fault| fault.get())
+            == Some(ManagedPublicationFault::PointerAfterRename)
+        {
+            return super::atomic::write_json_atomically_with_fault(
+                &self.layout.active_pointer_path(),
+                active,
+                super::atomic::AtomicWriteFailure::AfterRename,
+            );
+        }
+        write_json_atomically(&self.layout.active_pointer_path(), active)
     }
 
     fn finalize_previous_retirement(
@@ -904,18 +1079,6 @@ impl ManagedStore {
     fn read_active_with_shared_lock(&self) -> Result<Option<ActiveGeneration>, NativeError> {
         let _lease = self.open_state_lock(LockMode::Shared)?;
         self.read_active_generation()
-    }
-
-    fn publication_is_committed(&self, generation_id: &str) -> Result<bool, NativeError> {
-        let _lease = self.open_state_lock(LockMode::Shared)?;
-        let Some(active) = self.read_active_generation()? else {
-            return Ok(false);
-        };
-        if active.generation_id != generation_id {
-            return Ok(false);
-        }
-        validate_ready_generation(&self.layout.generation(generation_id)?)?;
-        Ok(true)
     }
 }
 
@@ -1229,4 +1392,38 @@ fn finish_committed_workspace(workspace: RunWorkspace, generation_id: &str) {
     // workspace removal remain recoverable cleanup after that boundary.
     let _ = workspace.mark_phase(RunPhase::Published, Some(generation_id.to_string()), None);
     let _ = workspace.finish();
+}
+
+#[cfg(test)]
+mod publication_fault_tests {
+    use super::*;
+
+    #[test]
+    fn pointer_fault_is_reported_after_new_pointer_is_written() {
+        let root = std::env::temp_dir().join(format!(
+            "cgraph-pointer-fault-{}-{}",
+            std::process::id(),
+            unix_time_ms()
+        ));
+        let store = ManagedStore::new(ManagedLayout::new(&root));
+        let active = ActiveGeneration {
+            schema_version: MANAGED_SCHEMA_VERSION,
+            generation_id: "fault-test".into(),
+            published_at: "unix:0".into(),
+            activated_at_ms: 0,
+        };
+        set_publication_fault(Some(ManagedPublicationFault::PointerAfterRename));
+        let error = store.write_active_pointer(&active).unwrap_err();
+        set_publication_fault(None);
+        assert!(error.to_string().contains("after rename"));
+        assert_eq!(
+            store
+                .read_active_generation()
+                .unwrap()
+                .unwrap()
+                .generation_id,
+            active.generation_id
+        );
+        fs::remove_dir_all(root).unwrap();
+    }
 }

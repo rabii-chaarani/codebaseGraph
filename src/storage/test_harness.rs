@@ -235,6 +235,148 @@ fn managed_begin_write_holds_writer_lock_and_marks_candidate_ready_explicitly() 
 }
 
 #[test]
+fn managed_pointer_failures_preserve_publishing_evidence_and_recover() {
+    use storage::managed::{set_publication_fault, ManagedPublicationFault};
+    for fault in [
+        ManagedPublicationFault::PointerAfterRename,
+        ManagedPublicationFault::RootSync,
+    ] {
+        let root = temp_dir("managed_pointer_failure_recovery");
+        let store = open_managed_store(root.join("storage"));
+        let previous = publish_managed_generation(&store, b"old-db", json!({"files": ["old"]}));
+        let mut session = store.begin_write().unwrap();
+        let candidate = session.candidate.generation_id.clone();
+        let run_root = session
+            .staging_root()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .to_path_buf();
+        write_candidate_generation(
+            &session.candidate.paths,
+            b"new-db",
+            json!({"files": ["new"]}),
+            false,
+        );
+        session
+            .mark_ready_with_stats(&GraphSummary::default())
+            .unwrap();
+        set_publication_fault(Some(fault));
+        let error = session
+            .publish_with_stats(&GraphSummary::default())
+            .unwrap_err();
+        set_publication_fault(None);
+        assert!(error.to_string().contains("injected"), "{error}");
+        assert_eq!(
+            store
+                .read_active_generation()
+                .unwrap()
+                .unwrap()
+                .generation_id,
+            candidate
+        );
+        let generation = store.layout().generation(&candidate).unwrap();
+        assert!(!generation.retired_path().exists());
+        let journal: RunJournal =
+            serde_json::from_slice(&fs::read(run_root.join("journal.json")).unwrap()).unwrap();
+        assert_eq!(journal.phase, RunPhase::Publishing);
+        assert_eq!(
+            journal.base_generation_id.as_deref(),
+            Some(previous.as_str())
+        );
+        let report = store.cleanup().unwrap();
+        assert_eq!(report.run_recovery.publishing_recovered, 1);
+        assert!(!run_root.exists());
+        let read = store.open_read().unwrap();
+        assert_eq!(read.generation_id, candidate);
+        assert_eq!(fs::read(read.db_path).unwrap(), b"new-db");
+        assert!(!generation.retired_path().exists());
+    }
+}
+
+#[test]
+fn managed_read_recovery_preserves_persisted_unknown_barrier_until_proven_empty() {
+    let root = temp_dir("managed_external_barrier_recovery");
+    let store = open_managed_store(root.join("storage"));
+    let active = publish_managed_generation(&store, b"committed", json!({"files": []}));
+    let mut workspace =
+        RunWorkspace::create(store.layout().runs_root(), Some(active.clone())).unwrap();
+    let run = workspace.root().to_path_buf();
+    let registry = root.join("separate-phase-registry");
+    let lifecycle = unknown_phase_registry(&registry);
+    workspace.set_cleanup_barrier(registry).unwrap();
+    fs::write(run.join("owned-evidence"), b"retain until proven empty").unwrap();
+    assert!(workspace.abort(Some("fixture failure".into())).is_err());
+    let report = store.recover_for_read().unwrap();
+    assert!(report.run_recovery.skipped_locked > 0);
+    assert_eq!(
+        fs::read(run.join("owned-evidence")).unwrap(),
+        b"retain until proven empty"
+    );
+    assert!(run.join("cleanup-barrier.json").exists());
+    assert_eq!(store.open_read().unwrap().generation_id, active);
+    prove_phase_empty(&lifecycle);
+    let recovered = store.recover_for_read().unwrap();
+    assert_eq!(recovered.run_recovery.deleted, 1);
+    assert!(!run.exists());
+}
+
+#[test]
+fn managed_publishing_recovery_reports_unproven_persisted_barrier() {
+    let root = temp_dir("managed_publishing_external_barrier");
+    let store = open_managed_store(root.join("storage"));
+    let active = publish_managed_generation(&store, b"committed", json!({"files": []}));
+    let mut workspace =
+        RunWorkspace::create(store.layout().runs_root(), Some(active.clone())).unwrap();
+    let run = workspace.root().to_path_buf();
+    let registry = root.join("separate-phase-registry");
+    let lifecycle = unknown_phase_registry(&registry);
+    workspace.set_cleanup_barrier(registry).unwrap();
+    workspace
+        .mark_phase(RunPhase::Publishing, None, None)
+        .unwrap();
+    workspace.retain_for_recovery();
+    let error = store.recover_for_read().unwrap_err();
+    assert!(error.to_string().contains("containment_unknown"), "{error}");
+    assert!(run.join("cleanup-barrier.json").exists());
+    assert_eq!(store.open_read().unwrap().generation_id, active);
+    prove_phase_empty(&lifecycle);
+    assert_eq!(
+        store
+            .recover_for_read()
+            .unwrap()
+            .run_recovery
+            .publishing_recovered,
+        1
+    );
+    assert!(!run.exists());
+}
+
+#[test]
+fn managed_read_recovery_propagates_invalid_required_run_journal() {
+    let root = temp_dir("managed_invalid_required_recovery");
+    let store = open_managed_store(root.join("storage"));
+    let active = publish_managed_generation(&store, b"committed", json!({"files": []}));
+    let run = store.layout().runs_root().join("run-invalid");
+    fs::create_dir_all(&run).unwrap();
+    fs::write(run.join("lease.lock"), b"").unwrap();
+    fs::write(run.join("journal.json"), b"invalid journal").unwrap();
+    assert!(store.recover_for_read().is_err());
+    assert_eq!(
+        store
+            .read_active_generation()
+            .unwrap()
+            .unwrap()
+            .generation_id,
+        active
+    );
+    assert_eq!(
+        fs::read(run.join("journal.json")).unwrap(),
+        b"invalid journal"
+    );
+}
+
+#[test]
 fn managed_writer_is_serialized_across_sessions() {
     let root = temp_dir("managed_writer_is_serialized_across_sessions");
     let store = open_managed_store(root.join("storage"));
@@ -1428,7 +1570,7 @@ fn owned_writer_cleanup_reports_readers_and_collects_after_their_release() {
     );
     assert_eq!(
         session
-            .recover_and_gc()
+            .reconcile_after_publication()
             .unwrap()
             .retired_generations_pending,
         1
@@ -1437,7 +1579,7 @@ fn owned_writer_cleanup_reports_readers_and_collects_after_their_release() {
     drop(reader);
     assert_eq!(
         session
-            .recover_and_gc()
+            .reconcile_after_publication()
             .unwrap()
             .retired_generations_pending,
         0

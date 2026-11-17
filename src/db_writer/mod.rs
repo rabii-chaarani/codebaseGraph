@@ -6,6 +6,7 @@ mod rss;
 mod schema;
 mod write;
 
+pub(crate) use access::open_ladybug_database_with_config;
 pub use access::{
     connect_ladybug_database, is_transient_database_error, open_ladybug_database,
     open_ladybug_database_with_threads, retry_transient_database, READ_RETRY_POLICY,

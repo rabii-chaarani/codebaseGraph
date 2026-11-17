@@ -1,3 +1,5 @@
+#[cfg(unix)]
+use codebase_graph::api::HealthRequest;
 use codebase_graph::api::{
     CodebaseGraphApi, MaterializationRequest, OperationRequest, OutputFormat, QueryRequest,
     RepoSelector, SearchRequest,
@@ -51,6 +53,56 @@ fn managed_materialization_activates_generations_atomically() {
     );
     assert_eq!(active_manifest.schema_version, 5);
     assert!(active_manifest.graph_build_digest.is_some());
+}
+
+#[cfg(unix)]
+#[test]
+fn managed_read_preserves_unknown_retired_state_without_hiding_active_graph() {
+    let repo = temp_repo("retired-unknown-read");
+    write_managed_config(&repo);
+    write_source(&repo, "pub fn old_symbol() {}\n");
+    materialize_ok(&repo, None, None);
+    let storage = repo.join(".codebaseGraph/storage");
+    let old_id = active_generation_id(&storage);
+    let old_root = generation_root(&storage, &old_id);
+    let lease = shared_generation_lease(&old_root);
+    write_source(&repo, "pub fn current_symbol() {}\n");
+    materialize_ok(&repo, None, None);
+    let sentinel = repo.join("foreign-sentinel");
+    fs::write(&sentinel, b"unowned").unwrap();
+    let unknown = old_root.join("foreign-link");
+    std::os::unix::fs::symlink(&sentinel, &unknown).unwrap();
+    drop(lease);
+    let selector = RepoSelector {
+        repo_root: Some(repo.clone()),
+        ..RepoSelector::default()
+    };
+    let health = CodebaseGraphApi::new()
+        .execute_operation(&OperationRequest::Health(HealthRequest {
+            repo: selector.clone(),
+            refresh_status: None,
+            output_format: OutputFormat::Typed,
+        }))
+        .unwrap();
+    assert_eq!(health.payload["graph_readable"], true);
+    assert_eq!(health.payload["cleanup_pending"], true);
+    let query = CodebaseGraphApi::new()
+        .execute_operation(&OperationRequest::Query(QueryRequest {
+            repo: selector,
+            statement: "MATCH (n) RETURN count(n) AS total_nodes LIMIT 1".into(),
+            parameters: json!({}),
+            limit: 1,
+            output_format: OutputFormat::Typed,
+        }))
+        .unwrap();
+    assert!(query.payload["rows"][0][0].as_u64().unwrap() > 0);
+    assert!(fs::symlink_metadata(&unknown)
+        .unwrap()
+        .file_type()
+        .is_symlink());
+    assert_eq!(fs::read(&sentinel).unwrap(), b"unowned");
+    fs::remove_file(unknown).unwrap();
+    fs::remove_dir_all(repo).unwrap();
 }
 
 #[cfg(windows)]
@@ -325,6 +377,7 @@ fn materialize_ok(
         .payload
 }
 
+#[cfg(unix)]
 fn materialize_err(
     repo_root: &Path,
     db_path: Option<PathBuf>,

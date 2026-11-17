@@ -37,6 +37,7 @@ pub(crate) struct RunWorkspaceRecovery {
     pub deleted: usize,
     pub skipped_locked: usize,
     pub publishing_recovered: usize,
+    pub optional_retirement_pending: bool,
 }
 
 #[derive(Debug)]
@@ -160,6 +161,12 @@ impl RunWorkspace {
         self.write_journal(journal)
     }
 
+    /// Preserve an uncertain publication transaction for deterministic recovery.
+    pub(crate) fn retain_for_recovery(mut self) {
+        self.finished = true;
+        drop(self.lease.take());
+    }
+
     pub(crate) fn finish(mut self) -> Result<(), NativeError> {
         self.finish_inner(None)
     }
@@ -268,7 +275,7 @@ impl Drop for RunWorkspace {
     }
 }
 
-fn ensure_persisted_cleanup_allowed(root: &Path) -> Result<(), NativeError> {
+pub(super) fn ensure_persisted_cleanup_allowed(root: &Path) -> Result<(), NativeError> {
     let bytes = match fs::read(root.join("cleanup-barrier.json")) {
         Ok(bytes) => bytes,
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(()),

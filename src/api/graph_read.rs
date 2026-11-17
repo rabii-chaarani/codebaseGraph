@@ -1,9 +1,10 @@
 use crate::api::catalog::support::{metadata_payload, value_array, value_str, GRAPH_SCHEMA_JSON};
 use crate::db_writer::{
-    connect_ladybug_database, open_ladybug_database, retry_transient_database, READ_RETRY_POLICY,
+    connect_ladybug_database, open_ladybug_database, open_ladybug_database_with_config,
+    retry_transient_database, READ_RETRY_POLICY,
 };
 use crate::protocol::SearchBackendMetadata;
-use lbug::{Connection, Database, SystemConfig, Value};
+use lbug::{Connection, SystemConfig, Value};
 use serde_json::json;
 use std::{collections::BTreeSet, path::Path};
 
@@ -54,12 +55,8 @@ pub(crate) fn execute_graph_search(
     manifest_path: &Path,
     options: &GraphSearchRequest,
 ) -> Result<Vec<serde_json::Value>, String> {
-    let db = Database::new(db_path, SystemConfig::default().read_only(true)).map_err(|error| {
-        format!(
-            "failed to open graph database {}: {error}",
-            db_path.display()
-        )
-    })?;
+    let db = open_ladybug_database_with_config(db_path, SystemConfig::default().read_only(true))
+        .map_err(|error| error.to_string())?;
     let conn =
         Connection::new(&db).map_err(|error| format!("failed to connect to graph: {error}"))?;
     let candidate_limit = options.limit.clamp(10, 50);
@@ -236,12 +233,8 @@ pub(crate) fn execute_graph_context(
     if options.context_limit == 0 || options.budget == 0 {
         return Ok(Vec::new());
     }
-    let db = Database::new(db_path, SystemConfig::default().read_only(true)).map_err(|error| {
-        format!(
-            "failed to open graph database {}: {error}",
-            db_path.display()
-        )
-    })?;
+    let db = open_ladybug_database_with_config(db_path, SystemConfig::default().read_only(true))
+        .map_err(|error| error.to_string())?;
     let conn =
         Connection::new(&db).map_err(|error| format!("failed to connect to graph: {error}"))?;
     let schema = metadata_payload(GRAPH_SCHEMA_JSON)?;
@@ -973,10 +966,34 @@ fn round6(value: f64) -> f64 {
 
 #[cfg(test)]
 mod tests {
-    use super::{execute_graph_search, GraphSearchRequest};
+    use super::{execute_graph_context, execute_graph_search, GraphSearchRequest};
     use crate::api::catalog::schema_statements_from_copy_statements;
     use crate::db_writer::{write_database, LadybugWriteRequest};
     use std::fs;
+
+    #[test]
+    fn search_and_context_reject_ambiguous_native_database_paths_before_open() {
+        let options = GraphSearchRequest {
+            query: "symbol".into(),
+            layer: "semantic".into(),
+            limit: 3,
+            profile: "brief".into(),
+            budget: 100,
+            context_limit: 1,
+            max_depth: None,
+            detail: "slim".into(),
+        };
+        let ambiguous = std::path::Path::new("~/unowned-graph.lbug");
+        let search = execute_graph_search(ambiguous, std::path::Path::new("unused.json"), &options)
+            .unwrap_err();
+        let context = execute_graph_context(ambiguous, "node", "Function", &options).unwrap_err();
+        for error in [search, context] {
+            assert!(
+                error.contains("database_path_requires_literal_disk_resource"),
+                "{error}"
+            );
+        }
+    }
 
     #[test]
     fn manifest_without_backend_metadata_uses_legacy_ladybug_fts() {

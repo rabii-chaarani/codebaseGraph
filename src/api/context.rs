@@ -616,7 +616,9 @@ fn resolve_managed_runtime(
                 .to_path_buf()
         });
     let store = GraphStorage::managed(storage_root.clone());
-    let cleanup = store.cleanup().map_err(|error| error.to_string())?;
+    let cleanup = store
+        .recover_for_read()
+        .map_err(|error| error.to_string())?;
     let snapshot = store
         .resolve_active_read()
         .map_err(|error| error.to_string())?;
