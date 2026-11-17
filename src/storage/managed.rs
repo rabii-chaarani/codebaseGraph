@@ -249,8 +249,14 @@ impl ManagedWriteSession {
             .publish_candidate_inner(&workspace, &self.candidate)
         {
             Ok((generation_id, optional_error)) => {
+                if optional_error.is_some() {
+                    // The journal carries the predecessor identity required to
+                    // retry retirement after a durable pointer commit.
+                    workspace.retain_for_recovery();
+                } else {
+                    finish_committed_workspace(workspace, &generation_id);
+                }
                 self.optional_retirement_error = optional_error;
-                finish_committed_workspace(workspace, &generation_id);
                 Ok(generation_id)
             }
             Err(failure) => {
@@ -475,7 +481,7 @@ impl ManagedStore {
             ..ManagedCleanupReport::default()
         };
         report.retired_pending = self.optional_retired_pending(active.as_ref());
-        if report.run_recovery.optional_retirement_pending {
+        if report.run_recovery.optional_cleanup_error.is_some() {
             report.retired_pending = report.retired_pending.max(1);
         }
         report.retired_generations_pending = report.retired_pending;
@@ -545,12 +551,19 @@ impl ManagedStore {
             run_recovery: self.recover_runs_locked(&mut active)?,
             ..ManagedCleanupReport::default()
         };
-        if let Err(error) = self.collect_retired_generations_locked(
-            active.as_ref().map(|value| value.generation_id.as_str()),
-            &mut report,
-        ) {
-            report.retired_pending = report.retired_pending.max(1);
-            report.optional_cleanup_error = Some(error.to_string());
+        report.optional_cleanup_error = report.run_recovery.optional_cleanup_error.clone();
+        if report.run_recovery.skipped_locked == 0 {
+            if let Err(error) = self.collect_retired_generations_locked(
+                active.as_ref().map(|value| value.generation_id.as_str()),
+                &mut report,
+            ) {
+                report.retired_pending = report.retired_pending.max(1);
+                if report.optional_cleanup_error.is_none() {
+                    report.optional_cleanup_error = Some(error.to_string());
+                }
+            }
+        } else {
+            report.retired_pending = self.optional_retired_pending(active.as_ref());
         }
         report.retired_generations_deleted = report.retired_deleted;
         report.retired_generations_pending = report.retired_pending;
@@ -568,10 +581,14 @@ impl ManagedStore {
         let mut report = ManagedCleanupReport::default();
         let mut active = self.read_active_generation()?;
         report.run_recovery = self.recover_runs_locked(&mut active)?;
-        self.collect_retired_generations_locked(
-            active.as_ref().map(|value| value.generation_id.as_str()),
-            &mut report,
-        )?;
+        if report.run_recovery.skipped_locked == 0 {
+            self.collect_retired_generations_locked(
+                active.as_ref().map(|value| value.generation_id.as_str()),
+                &mut report,
+            )?;
+        } else {
+            report.retired_pending = self.optional_retired_pending(active.as_ref());
+        }
         report.retired_generations_deleted = report.retired_deleted;
         report.retired_generations_pending = report.retired_pending;
         Ok(report)
@@ -746,21 +763,27 @@ impl ManagedStore {
             }
             let recovered = match journal.phase {
                 RunPhase::Publishing | RunPhase::Published => {
-                    if self
-                        .finish_run_locked(&path, &journal, active, true)?
-                        .is_some()
-                    {
-                        report.optional_retirement_pending = true;
+                    if let Some(error) = self.finish_run_locked(&path, &journal, active, true)? {
+                        report.optional_cleanup_error.get_or_insert(error);
+                        report.skipped_locked += 1;
+                    } else {
+                        report.publishing_recovered += 1;
                     }
-                    report.publishing_recovered += 1;
                     true
                 }
                 _ => false,
             };
             drop(lease);
             if !recovered {
-                remove_run_root_confined(&path, &runs_root)?;
-                report.deleted += 1;
+                match remove_run_root_confined(&path, &runs_root) {
+                    Ok(()) => report.deleted += 1,
+                    Err(error) => {
+                        report
+                            .optional_cleanup_error
+                            .get_or_insert_with(|| error.to_string());
+                        report.skipped_locked += 1;
+                    }
+                }
             }
         }
         Ok(report)
@@ -777,7 +800,9 @@ impl ManagedStore {
             .map_err(NativeError::InvalidInput)?;
         let Some(candidate_id) = journal.candidate_generation_id.as_ref() else {
             if cleanup_run_root {
-                remove_run_root_confined(run_root, &self.layout.runs_root())?;
+                return Ok(remove_run_root_confined(run_root, &self.layout.runs_root())
+                    .err()
+                    .map(|error| error.to_string()));
             }
             return Ok(None);
         };
@@ -802,8 +827,10 @@ impl ManagedStore {
                 .finalize_previous_retirement(journal.base_generation_id.as_deref())
                 .err()
                 .map(|error| error.to_string());
-            if cleanup_run_root {
-                remove_run_root_confined(run_root, &self.layout.runs_root())?;
+            if cleanup_run_root && optional.is_none() {
+                return Ok(remove_run_root_confined(run_root, &self.layout.runs_root())
+                    .err()
+                    .map(|error| error.to_string()));
             }
             return Ok(optional);
         }
@@ -823,8 +850,9 @@ impl ManagedStore {
                 )?;
             }
             if cleanup_run_root {
-                remove_run_root_confined(run_root, &self.layout.runs_root())?;
-                return Ok(None);
+                return Ok(remove_run_root_confined(run_root, &self.layout.runs_root())
+                    .err()
+                    .map(|error| error.to_string()));
             }
             return Err(NativeError::InvalidInput(
                 ManagedValidationError::StaleBaseGeneration {
@@ -841,8 +869,10 @@ impl ManagedStore {
                 journal.base_generation_id.as_deref(),
             )?;
             *active = Some(activated);
-            if cleanup_run_root {
-                remove_run_root_confined(run_root, &self.layout.runs_root())?;
+            if cleanup_run_root && optional.is_none() {
+                return Ok(remove_run_root_confined(run_root, &self.layout.runs_root())
+                    .err()
+                    .map(|error| error.to_string()));
             }
             return Ok(optional);
         }
@@ -854,8 +884,10 @@ impl ManagedStore {
                 journal.base_generation_id.as_deref(),
             )?;
             *active = Some(activated);
-            if cleanup_run_root {
-                remove_run_root_confined(run_root, &self.layout.runs_root())?;
+            if cleanup_run_root && optional.is_none() {
+                return Ok(remove_run_root_confined(run_root, &self.layout.runs_root())
+                    .err()
+                    .map(|error| error.to_string()));
             }
             return Ok(optional);
         }
@@ -867,7 +899,9 @@ impl ManagedStore {
             )?;
         }
         if cleanup_run_root {
-            remove_run_root_confined(run_root, &self.layout.runs_root())?;
+            return Ok(remove_run_root_confined(run_root, &self.layout.runs_root())
+                .err()
+                .map(|error| error.to_string()));
         }
         Ok(None)
     }

@@ -967,19 +967,24 @@ fn finalize_materialization(
                         .map(|cleanup| cleanup.to_string()),
                 ));
             }
-            if let Err(error) = garbage_collect_artifacts(&artifact_root, &published_manifest) {
-                return Err(append_cleanup_error(
-                    error.clone(),
-                    workspace
-                        .abort(Some(error))
-                        .err()
-                        .map(|cleanup| cleanup.to_string()),
-                ));
-            }
+            #[cfg(test)]
+            POST_ARTIFACT_CLEANUP_HOOK.with(|hook| {
+                if let Some(hook) = hook.take() {
+                    hook(&artifact_root);
+                }
+            });
+            let artifact_cleanup_error =
+                garbage_collect_artifacts(&artifact_root, &published_manifest).err();
             response.storage_format = "direct".to_string();
             response.active_generation = None;
             response.cleanup_pending = false;
             response.pending_runs = 0;
+            if let Some(error) = artifact_cleanup_error {
+                response.cleanup_pending = true;
+                response
+                    .diagnostics
+                    .push(format!("cleanup pending: {error}"));
+            }
             if !manifest_path.exists() {
                 return Err(format!(
                     "direct manifest publication did not produce {}",
@@ -1030,14 +1035,28 @@ fn finalize_materialization(
             let cleanup = session
                 .reconcile_after_publication()
                 .map_err(|error| format!("failed to recover managed publication: {error}"))?;
-            if cleanup.run_recovery.skipped_locked == 0 {
-                garbage_collect_artifacts(&artifact_root, &published_manifest)?;
-            }
+            #[cfg(test)]
+            POST_ARTIFACT_CLEANUP_HOOK.with(|hook| {
+                if let Some(hook) = hook.take() {
+                    hook(&artifact_root);
+                }
+            });
+            let artifact_cleanup_error = if cleanup.run_recovery.skipped_locked == 0 {
+                garbage_collect_artifacts(&artifact_root, &published_manifest).err()
+            } else {
+                None
+            };
             response.storage_format = "managed_v2".to_string();
             response.active_generation = Some(published_generation);
             response.cleanup_pending =
                 cleanup.retired_generations_pending > 0 || cleanup.run_recovery.skipped_locked > 0;
             response.pending_runs = cleanup.run_recovery.skipped_locked;
+            if let Some(error) = artifact_cleanup_error {
+                response.cleanup_pending = true;
+                response
+                    .diagnostics
+                    .push(format!("cleanup pending: {error}"));
+            }
             if let Some(error) = cleanup.optional_cleanup_error {
                 response.cleanup_pending = true;
                 response
@@ -1249,6 +1268,7 @@ fn resolved_source_root(options: &MaterializeOptions) -> Result<PathBuf, String>
 #[cfg(test)]
 thread_local! {
     static POST_DIRECT_CLEANUP_HOOK: std::cell::Cell<Option<fn(&Path)>> = const { std::cell::Cell::new(None) };
+    static POST_ARTIFACT_CLEANUP_HOOK: std::cell::Cell<Option<fn(&Path)>> = const { std::cell::Cell::new(None) };
 }
 
 #[cfg(test)]
@@ -1266,6 +1286,63 @@ mod tests {
                 .expect("clock should be after epoch")
                 .as_nanos()
         ))
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn committed_graph_survives_artifact_disposal_failure_and_retries() {
+        thread_local! {
+            static TEST_ARTIFACT_ROOT: std::cell::RefCell<Option<PathBuf>> = const { std::cell::RefCell::new(None) };
+        }
+        fn inject_unknown_link(artifact_root: &Path) {
+            let target = artifact_root.join("foreign-target");
+            fs::write(&target, b"unowned").unwrap();
+            std::os::unix::fs::symlink(&target, artifact_root.join("foreign-link")).unwrap();
+            TEST_ARTIFACT_ROOT.with(|slot| *slot.borrow_mut() = Some(artifact_root.to_path_buf()));
+        }
+        for managed in [false, true] {
+            let root = unique_temp_dir("post-commit-artifact-cleanup");
+            fs::create_dir_all(root.join("src")).unwrap();
+            fs::write(root.join("src/lib.rs"), "pub fn committed_symbol() {}\n").unwrap();
+            let mut options = MaterializeOptions {
+                source_root: Some(root.clone()),
+                mode: "full".into(),
+                ..MaterializeOptions::default()
+            };
+            if managed {
+                options.storage_root = Some(root.join("storage"));
+            } else {
+                options.db = Some(root.join("graph.lbug"));
+                options.manifest = Some(root.join("manifest.json"));
+            }
+            POST_ARTIFACT_CLEANUP_HOOK.with(|hook| hook.set(Some(inject_unknown_link)));
+            let (_, response) = execute_materialization(&options).unwrap();
+            assert!(response.database_written);
+            assert!(response.cleanup_pending);
+            assert!(response
+                .diagnostics
+                .iter()
+                .any(|value| value.contains("cleanup pending")));
+            let artifact_root = TEST_ARTIFACT_ROOT.with(|slot| slot.borrow_mut().take().unwrap());
+            let link = artifact_root.join("foreign-link");
+            assert!(fs::symlink_metadata(&link)
+                .unwrap()
+                .file_type()
+                .is_symlink());
+            assert_eq!(
+                fs::read(artifact_root.join("foreign-target")).unwrap(),
+                b"unowned"
+            );
+            fs::remove_file(link).unwrap();
+            let (_, retried) = execute_materialization(&options).unwrap();
+            assert!(retried.database_written);
+            assert!(!retried.cleanup_pending);
+            assert_eq!(
+                fs::read(artifact_root.join("foreign-target")).unwrap(),
+                b"unowned"
+            );
+            fs::remove_dir_all(root).unwrap();
+        }
     }
 
     #[test]

@@ -32,12 +32,12 @@ pub(crate) struct RunJournal {
     pub last_error: Option<String>,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(crate) struct RunWorkspaceRecovery {
     pub deleted: usize,
     pub skipped_locked: usize,
     pub publishing_recovered: usize,
-    pub optional_retirement_pending: bool,
+    pub optional_cleanup_error: Option<String>,
 }
 
 #[derive(Debug)]
