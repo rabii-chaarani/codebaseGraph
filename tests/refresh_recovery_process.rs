@@ -79,6 +79,7 @@ fn safe_fixture_trace_line(line: &[u8]) -> bool {
 }
 
 #[cfg(debug_assertions)]
+#[derive(Clone)]
 struct FixtureStderrDrain {
     bytes: std::sync::Arc<std::sync::Mutex<std::collections::VecDeque<u8>>>,
     redacted: std::sync::Arc<std::sync::atomic::AtomicBool>,
@@ -206,7 +207,7 @@ fn fixture_stderr_drain_is_bounded_and_prevents_pipe_backpressure() {
         }
         return;
     }
-    let mut child = ChildGuard(
+    let mut child = ChildGuard::plain(
         Command::new(std::env::current_exe().unwrap())
             .args([
                 "--exact",
@@ -241,7 +242,150 @@ fn fixture_stderr_drain_is_bounded_and_prevents_pipe_backpressure() {
     assert!(drain.redacted.load(Ordering::Acquire));
 }
 
-struct ChildGuard(Child);
+#[cfg(debug_assertions)]
+#[test]
+fn central_daemon_captures_synthetic_postsend_failure() {
+    use std::io::{BufRead, BufReader};
+    use std::sync::{atomic::AtomicUsize, Arc};
+
+    const CHILD: &str = "CGR_SYNTHETIC_DAEMON_TRACE_CHILD";
+    if std::env::var_os(CHILD).is_some() {
+        let root = temp_repo();
+        let config = install(&root);
+        let storage = root.join(".codebaseGraph/storage");
+        fs::create_dir_all(&storage).unwrap();
+        let lock = fs::OpenOptions::new()
+            .create(true)
+            .truncate(false)
+            .read(true)
+            .write(true)
+            .open(storage.join("coordinator.lock"))
+            .unwrap();
+        fs2::FileExt::lock_exclusive(&lock).unwrap();
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        listener.set_nonblocking(true).unwrap();
+        let token = "a".repeat(64);
+        fs::write(
+            storage.join("coordinator.json"),
+            serde_json::to_vec(&json!({
+                "version": 1, "endpoint": listener.local_addr().unwrap(), "token": token,
+                "pid": std::process::id(), "supports_deadlines": true
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+        let executions = Arc::new(AtomicUsize::new(0));
+        let observed = Arc::clone(&executions);
+        thread::spawn(move || loop {
+            match listener.accept() {
+                Ok((mut stream, _)) => {
+                    stream
+                        .set_read_timeout(Some(Duration::from_secs(2)))
+                        .unwrap();
+                    let mut line = String::new();
+                    BufReader::new(stream.try_clone().unwrap())
+                        .read_line(&mut line)
+                        .unwrap();
+                    let request: Value = serde_json::from_str(&line).unwrap();
+                    match request["command"]["command"].as_str() {
+                        Some("ping") => stream.write_all(b"{\"status\":\"pong\"}\n").unwrap(),
+                        Some("execute") => {
+                            observed.fetch_add(1, Ordering::SeqCst);
+                        }
+                        _ => panic!("unexpected synthetic coordinator command"),
+                    }
+                }
+                Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                    thread::sleep(Duration::from_millis(5))
+                }
+                Err(_) => break,
+            }
+        });
+        let (daemon, port, _) = start_daemon(&root, &config, &root, &[]);
+        let mut session = McpSession::start(port);
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| session.health()));
+        assert!(
+            result.is_err(),
+            "synthetic disconnected request unexpectedly succeeded"
+        );
+        assert_eq!(executions.load(Ordering::SeqCst), 1);
+        let deadline = Instant::now() + Duration::from_secs(2);
+        while Instant::now() < deadline {
+            let present = daemon
+                .1
+                .as_ref()
+                .unwrap()
+                .bytes
+                .lock()
+                .unwrap()
+                .iter()
+                .copied()
+                .collect::<Vec<_>>();
+            if String::from_utf8_lossy(&present).contains("client_read_failed") {
+                break;
+            }
+            thread::sleep(Duration::from_millis(5));
+        }
+        std::panic::resume_unwind(result.unwrap_err());
+    }
+    let output = Command::new(std::env::current_exe().unwrap())
+        .args([
+            "--exact",
+            "central_daemon_captures_synthetic_postsend_failure",
+            "--nocapture",
+        ])
+        .env(CHILD, "1")
+        .output()
+        .unwrap();
+    assert!(!output.status.success());
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert_eq!(stderr.matches("CGR_COORD_TRACE v1").count(), 1, "{stderr}");
+    assert!(stderr.contains("client_read_failed"), "{stderr}");
+    assert!(stderr.contains("owner_pid_matches=false"), "{stderr}");
+    assert!(
+        stderr.contains("server_trace_may_be_incomplete=true"),
+        "{stderr}"
+    );
+    assert!(!stderr.contains(&"a".repeat(64)), "synthetic token leaked");
+}
+
+struct ChildGuard(
+    Child,
+    #[cfg(debug_assertions)] Option<FixtureStderrDrain>,
+    #[cfg(debug_assertions)] bool,
+);
+
+impl ChildGuard {
+    fn plain(child: Child) -> Self {
+        Self(
+            child,
+            #[cfg(debug_assertions)]
+            None,
+            #[cfg(debug_assertions)]
+            false,
+        )
+    }
+
+    fn server(child: Child) -> Self {
+        #[cfg(debug_assertions)]
+        {
+            let mut guard = Self::plain(child);
+            guard.1 = Some(FixtureStderrDrain::attach(&mut guard));
+            guard.2 = true;
+            guard
+        }
+        #[cfg(not(debug_assertions))]
+        {
+            Self::plain(child)
+        }
+    }
+
+    #[cfg(debug_assertions)]
+    fn retain_for_fixture(&mut self) -> Option<FixtureStderrDrain> {
+        self.2 = false;
+        self.1.clone()
+    }
+}
 
 impl Drop for ChildGuard {
     fn drop(&mut self) {
@@ -249,6 +393,12 @@ impl Drop for ChildGuard {
             let _ = self.0.kill();
         }
         let _ = self.0.wait();
+        #[cfg(debug_assertions)]
+        if self.2 && thread::panicking() {
+            if let Some(drain) = &self.1 {
+                drain.report_after_child_exit();
+            }
+        }
     }
 }
 
@@ -266,7 +416,7 @@ impl ManualBuild {
     fn start(root: &Path) -> Self {
         let stdout = root.join("manual-build.stdout");
         let stderr = root.join("manual-build.stderr");
-        let child = ChildGuard(
+        let child = ChildGuard::plain(
             Command::new(binary())
                 .current_dir(root)
                 .args([
@@ -645,16 +795,19 @@ fn start_daemon(
         config.to_str().unwrap().to_string(),
     ];
     args.extend(overrides.iter().map(|value| (*value).to_string()));
-    let daemon = ChildGuard(
-        Command::new(binary())
-            .current_dir(current_dir)
-            .args(args)
-            .stdin(Stdio::null())
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .spawn()
-            .unwrap(),
-    );
+    let mut command = Command::new(binary());
+    command
+        .current_dir(current_dir)
+        .args(args)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null());
+    #[cfg(debug_assertions)]
+    command
+        .env("CODEBASE_GRAPH_TEST_COORDINATOR_TRACE", "1")
+        .stderr(Stdio::piped());
+    #[cfg(not(debug_assertions))]
+    command.stderr(Stdio::null());
+    let daemon = ChildGuard::server(command.spawn().unwrap());
     let state_path = root.join(".codebaseGraph/mcp-daemon.json");
     wait_for_file(&state_path);
     let state: Value = serde_json::from_str(&fs::read_to_string(&state_path).unwrap()).unwrap();
@@ -703,7 +856,9 @@ fn start_http_server_with_env(
     for (key, value) in environment {
         command.env(key, value);
     }
-    let mut daemon = ChildGuard(command.spawn().unwrap());
+    #[cfg(debug_assertions)]
+    command.env("CODEBASE_GRAPH_TEST_COORDINATOR_TRACE", "1");
+    let mut daemon = ChildGuard::server(command.spawn().unwrap());
     let deadline = Instant::now() + Duration::from_secs(20);
     while Instant::now() < deadline {
         if try_request(
@@ -848,7 +1003,7 @@ fn legacy_worker_pid_recovery(manual_publication: bool) {
         },
     );
     let ready = root.join("unrelated.ready");
-    let mut unrelated = ChildGuard(
+    let mut unrelated = ChildGuard::plain(
         Command::new(std::env::current_exe().unwrap())
             .args([
                 "--exact",

@@ -492,7 +492,7 @@ fn verified_abandoned_guardian_is_terminated_before_automatic_refresh() {
             });
         }
     }
-    let mut guardian = ChildGuard(command.spawn().unwrap());
+    let mut guardian = ChildGuard::plain(command.spawn().unwrap());
     // Keep owner authority alive deliberately: only authenticated recovery by
     // the new exclusive worker-lock holder may end this abandoned startup.
     let owner_pipe = guardian.0.stdin.take().unwrap();
@@ -607,7 +607,7 @@ fn standalone_owner_loss_preserves_candidate_while_guardian_is_unavailable() {
     let barrier = root.join("standalone-barrier");
     fs::create_dir(&barrier).unwrap();
     let error_path = root.join("standalone.stderr");
-    let mut build = ChildGuard(
+    let mut build = ChildGuard::plain(
         Command::new(binary())
             .current_dir(&root)
             .args([
@@ -728,20 +728,11 @@ struct Fixture {
     descriptor: Value,
     phase_pid: u32,
     paused: Vec<u32>,
-    trace_enabled: bool,
     trace_drains: Vec<FixtureStderrDrain>,
 }
 
 impl Fixture {
     fn new(timing: bool) -> Self {
-        Self::new_internal(timing, false)
-    }
-
-    fn traced(timing: bool) -> Self {
-        Self::new_internal(timing, true)
-    }
-
-    fn new_internal(timing: bool, trace_enabled: bool) -> Self {
         let root = temp_repo();
         fs::write(
             root.join("initial.py"),
@@ -771,15 +762,7 @@ impl Fixture {
         if timing {
             environment.push(("CODEBASE_GRAPH_PHASE_TIMING_DIR", timing_dir.as_path()));
         }
-        if trace_enabled {
-            environment.push(("CODEBASE_GRAPH_TEST_COORDINATOR_TRACE", Path::new("1")));
-        }
         let (mut daemon, port) = start_http_server_with_env(&config, &root, &[], &environment);
-        let trace_drains = if trace_enabled {
-            vec![FixtureStderrDrain::attach(&mut daemon)]
-        } else {
-            Vec::new()
-        };
         let session = McpSession::start(port);
         // Start the faulted build only after client setup is complete, so its
         // bounded native barrier cannot expire while MCP is initializing.
@@ -817,6 +800,7 @@ impl Fixture {
         .unwrap();
         assert_eq!(descriptor["version"], 2);
         assert!(alive(phase_pid));
+        let trace_drains = daemon.retain_for_fixture().into_iter().collect();
         Self {
             root,
             config,
@@ -827,14 +811,12 @@ impl Fixture {
             descriptor,
             phase_pid,
             paused: Vec::new(),
-            trace_enabled,
             trace_drains,
         }
     }
     fn set_daemon(&mut self, mut daemon: ChildGuard) {
-        if self.trace_enabled {
-            self.trace_drains
-                .push(FixtureStderrDrain::attach(&mut daemon));
+        if let Some(drain) = daemon.retain_for_fixture() {
+            self.trace_drains.push(drain);
         }
         self.daemon = Some(daemon);
     }
@@ -958,7 +940,7 @@ impl Drop for Fixture {
 
 #[test]
 fn paused_database_loader_exits_after_outer_worker_failure_and_refresh_recovers() {
-    let mut fixture = Fixture::traced(false);
+    let mut fixture = Fixture::new(false);
     fixture.pause(fixture.phase_pid);
     terminate(fixture.worker());
     wait_until("paused loader survived termination of its worker", || {
@@ -1074,7 +1056,7 @@ fn loader_allocation_is_observed_without_resource_budget_cancellation() {
 
 #[test]
 fn owner_exit_cleans_paused_worker_and_loader_before_recovery() {
-    let mut fixture = Fixture::traced(false);
+    let mut fixture = Fixture::new(false);
     fixture.pause(fixture.phase_pid);
     fixture.pause(fixture.worker());
     let worker = fixture.worker();
@@ -1089,13 +1071,10 @@ fn owner_exit_cleans_paused_worker_and_loader_before_recovery() {
         &fixture.config,
         &fixture.root,
         &[],
-        &[
-            (
-                "CODEBASE_GRAPH_TEST_PHASE_BARRIER_DIR",
-                fixture.barrier.as_path(),
-            ),
-            ("CODEBASE_GRAPH_TEST_COORDINATOR_TRACE", Path::new("1")),
-        ],
+        &[(
+            "CODEBASE_GRAPH_TEST_PHASE_BARRIER_DIR",
+            fixture.barrier.as_path(),
+        )],
     );
     fixture.set_daemon(daemon);
     fixture.session = McpSession::start(port);
