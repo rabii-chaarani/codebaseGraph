@@ -1532,16 +1532,18 @@ fn send_to_state_with_context(
     let read_deadline =
         execution_deadline.or_else(|| ping.then_some(Instant::now() + STREAM_IO_TIMEOUT));
     read_frame_with_policy(&mut stream, read_deadline, read_deadline.is_none()).map_err(|error| {
-        #[cfg(debug_assertions)]
-        if !ping && !execution_deadline.is_some_and(|deadline| Instant::now() >= deadline) {
-            fixture_trace::record(fixture_trace::Kind::ClientReadFailed, 0);
-            fixture_trace::render_once(state.pid == std::process::id());
-        }
-        if execution_deadline.is_some_and(|deadline| Instant::now() >= deadline) {
+        let expired = execution_deadline.is_some_and(|deadline| Instant::now() >= deadline);
+        let classified = if expired {
             ExecutionContext::expired_error()
         } else {
             ApiError::new("coordinator_transport_error", error).retryable(ping)
+        };
+        #[cfg(debug_assertions)]
+        if !ping && !expired {
+            fixture_trace::record(fixture_trace::Kind::ClientReadFailed, 0);
+            fixture_trace::render_once(state.pid == std::process::id());
         }
+        classified
     })
 }
 
