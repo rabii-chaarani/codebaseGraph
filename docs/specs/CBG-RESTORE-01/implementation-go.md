@@ -1,6 +1,20 @@
 # COD-136 implementation assignment and readiness gate
 
-Revision 0.1, 17 November 2026 (Australia/Darwin). This is a post-approval execution supplement; [actual approval](approval.md) binds the unchanged package at d809fe0f8289bbf7d167a891bd7c31160f27f0e1. It changes no requirements or acceptance criteria.
+Revision 0.2, 17 November 2026 (Australia/Darwin). This is a post-approval execution supplement; [actual approval](approval.md) binds the unchanged package at d809fe0f8289bbf7d167a891bd7c31160f27f0e1. It changes no requirements or acceptance criteria.
+
+## Actual bounded product-write GO after readiness
+
+The root has received and checked /root/restoration_implementation's recorded readiness and grants **non-CI-exception product-write GO once this supplement is committed and published**. The same sole owner may implement and check the approved restoration inside the 137-path ownership. Root remains quiescent for product files. The earlier readiness-only assignment is superseded by this bounded GO; original approval and all final checks remain.
+
+Readiness evidence is under the owned external implementation/owner directory: readiness.md, owned-blob-mapping.json and collector-caller-inventory.txt. The opaque current-main archive matches all 136 existing owned Git blobs: 88 paths differ at both baselines, 48 are main-only and the named regression test is new. Main-only is not deletion authority; per-file retained-behavior/caller auditing continues while implementing. The current textual collector scan finds 57 matching owned files, without claiming complete indirect-caller coverage.
+
+An issue-owned graph at /private/tmp/cbg-restore-owner-graph2 indexed 125 frozen-main files with matching SHA-256 values. Manifest SHA256: 10c78dbf68fd0979ea33b3a69b0da88e81bf7177f00133c89ca61b83845a4dcc. Database SHA256: 774a8e68559783b43dec985360b17786d3c40bd2c095c1caca172d5fedc60458. Discovery CLI SHA256: bcf583dfea22df32b6817d0910899a1a1374088bb1d3ec12720ac306da54d832. The no-fts build yields empty semantic searches; read-only query located publish_with_stats and explicit semantic dependencies/change_impact/callgraph contexts returned reference, module and retirement-call evidence. This is bounded source discovery, supplemented by exact input hashes and caller inspection, not complete semantic search or product qualification.
+
+The first sandboxed guardian launch failed EPERM and is retained. The isolated escalated retry succeeded; the live source graph was not repaired or queried through a guard bypass. Native0.19 library/header inputs match the retained official manifest. The chosen new normal build target is /private/tmp/codebasegraph-restore-v304-20261117/target; check free space again before Cargo (approximately31GiB remained after graph creation). Do not reuse targets or overwrite frozen executables/dependencies.
+
+The proposed dev-CI branch exception remains **unapproved** at d091767dd26d5b25f963d20129bd0abc982fc46b. Do not add dev, alter branch/event qualification policy or implement CI-R01–CI-R05 until its actual human decision is recorded. The exact-six-base COD-103 contract remains binding in the meantime. Non-CI reconstruction and ordinary reconciliation of retired test callers may proceed under the original approval; any required CI gate/contract change is reported rather than weakened. Release manual dispatch is not a native-test qualification workaround.
+
+The readiness and approval records were independently checked; the original five-file approved package remains unchanged. Product tests, final native qualification, authority reconciliation, separate Terra execution and fresh Sol/xhigh review still lie ahead. This GO does not claim those outcomes.
 
 ## Serialized ownership transition
 
