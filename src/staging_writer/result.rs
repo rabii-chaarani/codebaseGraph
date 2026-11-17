@@ -9,9 +9,4 @@ pub(crate) struct StagingResult {
     pub(crate) unique_edge_count: usize,
     pub(crate) spill_bytes: u64,
     pub(crate) high_water_bytes: usize,
-    // Internal lifetime ownership only; this result is consumed after actual
-    // native COPY closes, before constructing the public operation response.
-    pub(super) _legacy_staging: Option<
-        std::sync::Arc<crate::storage::maintenance_legacy_guard::LegacyStagingProducerGuard>,
-    >,
 }

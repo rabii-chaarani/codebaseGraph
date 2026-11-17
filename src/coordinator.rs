@@ -19,6 +19,213 @@ use std::sync::{Arc, Condvar, Mutex, MutexGuard, Weak};
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
+#[cfg(debug_assertions)]
+mod fixture_trace {
+    use std::fmt::Write as _;
+    use std::io::Write as _;
+    use std::sync::atomic::{AtomicBool, Ordering};
+    use std::sync::Mutex;
+
+    const CAPACITY: usize = 32;
+    const OUTPUT_LIMIT: usize = 2048;
+    static ENABLED: AtomicBool = AtomicBool::new(false);
+    static RENDERED: AtomicBool = AtomicBool::new(false);
+    static EVENTS: Mutex<Ring> = Mutex::new(Ring::new());
+
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    pub(super) enum Kind {
+        Empty,
+        OwnerStart,
+        OwnerStop,
+        Accept,
+        RegisterFailed,
+        NonblockingFailed,
+        ExecutorSpawnFailed,
+        HandlerSpawnFailed,
+        Dispatch,
+        CloneFailed,
+        Busy,
+        WorkerStart,
+        WorkerReply,
+        WorkerPanic,
+        WorkerAbandon,
+        ResponseWritten,
+        ResponseWriteFailed,
+        ResponseSpawnFailed,
+        CloseAll,
+        ClientReadFailed,
+    }
+    impl Kind {
+        fn label(self) -> &'static str {
+            match self {
+                Self::Empty => "empty",
+                Self::OwnerStart => "owner_start",
+                Self::OwnerStop => "owner_stop",
+                Self::Accept => "accept",
+                Self::RegisterFailed => "register_failed",
+                Self::NonblockingFailed => "nonblocking_failed",
+                Self::ExecutorSpawnFailed => "executor_spawn_failed",
+                Self::HandlerSpawnFailed => "handler_spawn_failed",
+                Self::Dispatch => "dispatch",
+                Self::CloneFailed => "clone_failed",
+                Self::Busy => "busy",
+                Self::WorkerStart => "worker_start",
+                Self::WorkerReply => "worker_reply",
+                Self::WorkerPanic => "worker_panic",
+                Self::WorkerAbandon => "worker_abandon",
+                Self::ResponseWritten => "response_written",
+                Self::ResponseWriteFailed => "response_write_failed",
+                Self::ResponseSpawnFailed => "response_spawn_failed",
+                Self::CloseAll => "close_all",
+                Self::ClientReadFailed => "client_read_failed",
+            }
+        }
+    }
+    #[derive(Clone, Copy)]
+    struct Event {
+        kind: Kind,
+        connection: u64,
+    }
+    const EMPTY: Event = Event {
+        kind: Kind::Empty,
+        connection: 0,
+    };
+    pub(super) struct Ring {
+        entries: [Event; CAPACITY],
+        next: usize,
+        len: usize,
+    }
+    impl Ring {
+        const fn new() -> Self {
+            Self {
+                entries: [EMPTY; CAPACITY],
+                next: 0,
+                len: 0,
+            }
+        }
+        fn push(&mut self, kind: Kind, connection: u64) {
+            self.entries[self.next] = Event { kind, connection };
+            self.next = (self.next + 1) % CAPACITY;
+            self.len = (self.len + 1).min(CAPACITY);
+        }
+        fn render(&self, pid: u32, owner_pid_matches: bool) -> Buffer {
+            let mut output = Buffer {
+                bytes: [0; OUTPUT_LIMIT],
+                len: 0,
+            };
+            let _ = writeln!(output, "CGR_COORD_TRACE v1 pid={pid} owner_pid_matches={owner_pid_matches} server_trace_may_be_incomplete=true");
+            let start = (self.next + CAPACITY - self.len) % CAPACITY;
+            for offset in 0..self.len {
+                let event = self.entries[(start + offset) % CAPACITY];
+                let _ = writeln!(
+                    output,
+                    "CGR_COORD_TRACE {} {}",
+                    event.kind.label(),
+                    event.connection
+                );
+            }
+            output
+        }
+    }
+    struct Buffer {
+        bytes: [u8; OUTPUT_LIMIT],
+        len: usize,
+    }
+    impl std::fmt::Write for Buffer {
+        fn write_str(&mut self, value: &str) -> std::fmt::Result {
+            let remaining = self.bytes.len().saturating_sub(self.len);
+            let count = remaining.min(value.len());
+            self.bytes[self.len..self.len + count].copy_from_slice(&value.as_bytes()[..count]);
+            self.len += count;
+            Ok(())
+        }
+    }
+    fn enabled_value(value: Option<&std::ffi::OsStr>) -> bool {
+        value == Some(std::ffi::OsStr::new("1"))
+    }
+    pub(super) fn init() {
+        if enabled_value(std::env::var_os("CODEBASE_GRAPH_TEST_COORDINATOR_TRACE").as_deref()) {
+            ENABLED.store(true, Ordering::Relaxed);
+        }
+    }
+    fn try_record(ring: &Mutex<Ring>, kind: Kind, connection: u64) -> bool {
+        if let Ok(mut ring) = ring.try_lock() {
+            ring.push(kind, connection);
+            true
+        } else {
+            false
+        }
+    }
+    fn claim_once(rendered: &AtomicBool) -> bool {
+        !rendered.swap(true, Ordering::Relaxed)
+    }
+    pub(super) fn record(kind: Kind, connection: u64) {
+        if ENABLED.load(Ordering::Relaxed) {
+            let _ = try_record(&EVENTS, kind, connection);
+        }
+    }
+    pub(super) fn render_once(owner_pid_matches: bool) {
+        if !ENABLED.load(Ordering::Relaxed) || !claim_once(&RENDERED) {
+            return;
+        }
+        let output = match EVENTS.try_lock() {
+            Ok(ring) => ring.render(std::process::id(), owner_pid_matches),
+            Err(_) => return,
+        };
+        // No request or response thread waits for diagnostic I/O. The explicitly
+        // enabled fixture continuously drains stderr; failure to spawn is ignored.
+        let _ = std::thread::Builder::new()
+            .name("cgraph-fixture-trace".into())
+            .spawn(move || {
+                let _ = std::io::stderr().write_all(&output.bytes[..output.len]);
+            });
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[test]
+        fn fixture_trace_is_default_off_and_requires_exact_opt_in() {
+            assert!(!enabled_value(None));
+            assert!(!enabled_value(Some(std::ffi::OsStr::new("true"))));
+            assert!(enabled_value(Some(std::ffi::OsStr::new("1"))));
+        }
+
+        #[test]
+        fn fixture_trace_contention_drops_observation_and_render_is_one_shot() {
+            let ring = Mutex::new(Ring::new());
+            let held = ring.lock().unwrap();
+            assert!(!try_record(&ring, Kind::Dispatch, 7));
+            drop(held);
+            assert!(try_record(&ring, Kind::Dispatch, 8));
+            let rendered = AtomicBool::new(false);
+            assert!(claim_once(&rendered));
+            assert!(!claim_once(&rendered));
+        }
+
+        #[test]
+        fn fixture_trace_ring_wraps_and_render_is_bounded_static_data() {
+            let mut ring = Ring::new();
+            for id in 0..80 {
+                ring.push(Kind::Dispatch, id);
+            }
+            ring.push(Kind::ClientReadFailed, 0);
+            let output = ring.render(17, false);
+            assert!(output.len <= OUTPUT_LIMIT);
+            let text = std::str::from_utf8(&output.bytes[..output.len]).unwrap();
+            assert!(text.contains("owner_pid_matches=false"));
+            assert!(text.contains("server_trace_may_be_incomplete=true"));
+            assert!(text.contains("client_read_failed"));
+            assert!(!text.contains("dispatch 0\n"));
+            assert_eq!(text.lines().count(), CAPACITY + 1);
+            assert!(text
+                .lines()
+                .all(|line| line.starts_with("CGR_COORD_TRACE ")));
+        }
+    }
+}
+
 const COORDINATOR_PROTOCOL_VERSION: u64 = 1;
 const COORDINATOR_AUTHENTICATION_FAILED: &str = "coordinator_authentication_failed";
 const COORDINATOR_REQUEST_RECEIVE_FAILED: &str = "coordinator_request_receive_failed";
@@ -53,18 +260,8 @@ impl CoordinatorApiConfig {
     fn build_api(
         &self,
         cancellation: RefreshCancellation,
-        maintenance: Option<
-            crate::storage::maintenance::MaintenanceClient<Arc<ExecutionDispatcher>>,
-        >,
-        unavailable: Option<crate::storage::maintenance_scheduler::DriverError>,
     ) -> (CodebaseGraphApi, Option<RefreshRuntime>) {
-        CodebaseGraphApi::for_coordinator_owner_with_maintenance(
-            self.selector.clone(),
-            self.refresh,
-            cancellation,
-            maintenance,
-            unavailable,
-        )
+        CodebaseGraphApi::for_coordinator_owner(self.selector.clone(), self.refresh, cancellation)
     }
 }
 
@@ -210,8 +407,6 @@ impl CoordinatorOwner {
 struct CoordinatorControlPaths {
     lock: PathBuf,
     state: PathBuf,
-    managed_initialization: Option<ManagedLayout>,
-    direct_initialization: Option<DirectLayout>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -238,7 +433,6 @@ struct ExecutionJob {
     operation_id: String,
     invocation: OperationInvocation,
     context: ExecutionContext,
-    legacy_confirmation: Option<bool>,
     stream: TcpStream,
     _connection: ConnectionPermit,
 }
@@ -251,66 +445,13 @@ struct ExecutionDispatchState {
 }
 
 #[derive(Debug, Default)]
-pub(crate) struct ExecutionDispatcher {
+struct ExecutionDispatcher {
     state: Mutex<ExecutionDispatchState>,
     ready: Condvar,
     active_snapshot: AtomicBool,
 }
 
-/// Noncloneable ownership of the dispatcher's real execution slot. It has no
-/// caller deadline: only completion/drop of the actual maintenance work releases
-/// admission, including when its initiating caller has gone away.
-#[derive(Debug)]
-pub(crate) struct MaintenanceExecutionPermit {
-    dispatcher: Arc<ExecutionDispatcher>,
-}
-
-impl Drop for MaintenanceExecutionPermit {
-    fn drop(&mut self) {
-        self.dispatcher.finish_one();
-    }
-}
-
-// Driver-only boundary: advisory work never owns this permit. Production
-// collection wiring remains gated on the accepted storage controller contract.
-impl crate::storage::maintenance_scheduler::MaintenanceAdmission for Arc<ExecutionDispatcher> {
-    type Permit = MaintenanceExecutionPermit;
-
-    fn try_acquire(&self) -> Option<Self::Permit> {
-        self.try_acquire_maintenance()
-    }
-
-    fn stop_admission(&self) {
-        ExecutionDispatcher::stop_admission(self);
-    }
-
-    #[cfg(test)]
-    fn run_recovery(
-        &self,
-        operation: &mut dyn FnMut()
-            -> Result<(), crate::storage::maintenance_scheduler::DriverError>,
-    ) -> Result<bool, crate::storage::maintenance_scheduler::DriverError> {
-        let Some(_permit) = self.try_acquire_maintenance() else {
-            return Ok(false);
-        };
-        operation()?;
-        Ok(true)
-    }
-}
-
 impl ExecutionDispatcher {
-    fn try_acquire_maintenance(self: &Arc<Self>) -> Option<MaintenanceExecutionPermit> {
-        let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
-        if state.stopping || state.active || state.job.is_some() {
-            return None;
-        }
-        state.active = true;
-        self.active_snapshot.store(true, Ordering::Release);
-        Some(MaintenanceExecutionPermit {
-            dispatcher: Arc::clone(self),
-        })
-    }
-
     fn try_submit(&self, job: ExecutionJob) -> Result<(), Box<ExecutionJob>> {
         let mut state = self
             .state
@@ -397,6 +538,8 @@ impl ConnectionRegistry {
     }
 
     fn close_all(&self) {
+        #[cfg(debug_assertions)]
+        fixture_trace::record(fixture_trace::Kind::CloseAll, 0);
         let streams = self
             .streams
             .lock()
@@ -412,16 +555,33 @@ impl ConnectionRegistry {
         reply: CoordinatorReply,
         connection: ConnectionPermit,
     ) {
+        #[cfg(debug_assertions)]
+        let connection_id = connection.id;
         let writer = thread::Builder::new()
             .name("codebase-graph-coordinator-response".to_string())
             .spawn(move || {
-                let _ = write_frame_until(
+                let result = write_frame_until(
                     &mut stream,
                     &reply,
                     Instant::now() + COORDINATOR_FRAME_TIMEOUT,
                 );
+                #[cfg(debug_assertions)]
+                fixture_trace::record(
+                    if result.is_ok() {
+                        fixture_trace::Kind::ResponseWritten
+                    } else {
+                        fixture_trace::Kind::ResponseWriteFailed
+                    },
+                    connection_id,
+                );
+                #[cfg(not(debug_assertions))]
+                let _ = result;
                 drop(connection);
             });
+        #[cfg(debug_assertions)]
+        if writer.is_err() {
+            fixture_trace::record(fixture_trace::Kind::ResponseSpawnFailed, connection_id);
+        }
         if let Ok(writer) = writer {
             let mut writers = self
                 .writers
@@ -489,6 +649,8 @@ enum CoordinatorReply {
 
 impl CoordinatorClient {
     pub(crate) fn connect_or_start(mut config: CoordinatorApiConfig) -> Result<Self, String> {
+        #[cfg(debug_assertions)]
+        fixture_trace::init();
         config.selector = bind_repo_selector(&config.selector)?;
         config.identity = Some(RepositoryIdentity::capture(&config.selector)?);
         let control = coordinator_control_paths(&config.selector)?;
@@ -557,20 +719,6 @@ impl CoordinatorClient {
         );
         loop {
             context.remaining()?;
-            if let Some(layout) = &self.inner.control.managed_initialization {
-                // Only the actual mutating acquisition may create this root.
-                // Existing roots are never enrolled by observation or emptiness.
-                crate::storage::maintenance_ownership::initialize_fresh_managed_domain(layout)
-                    .map_err(|error| {
-                        ApiError::new("coordinator_unavailable", error.to_string()).retryable(true)
-                    })?;
-            }
-            if let Some(layout) = &self.inner.control.direct_initialization {
-                crate::storage::maintenance_ownership::initialize_fresh_direct_domain(layout)
-                    .map_err(|error| {
-                        ApiError::new("coordinator_unavailable", error.to_string()).retryable(true)
-                    })?;
-            }
             if let Some(lease) = try_open_locked(&self.inner.control.lock, LockMode::Exclusive)
                 .map_err(|error| {
                     ApiError::new("coordinator_unavailable", error.to_string()).retryable(true)
@@ -913,33 +1061,7 @@ where
         .name("codebase-graph-coordinator".to_string())
         .spawn(move || {
             started(OwnerStartup::BeforeRefresh);
-            let maintenance = (|| {
-                let memory = crate::storage::maintenance_budget::CleanupMemory::new(
-                    crate::storage::maintenance::MAINTENANCE_MEMORY_BYTES,
-                )
-                .map_err(|_| crate::storage::maintenance_scheduler::DriverError::ResourceLimit)?;
-                let target = config
-                    .identity
-                    .as_ref()
-                    .expect("captured coordinator identity")
-                    .maintenance_target(&memory)
-                    .map_err(|_| {
-                        crate::storage::maintenance_scheduler::DriverError::ResourceLimit
-                    })?;
-                crate::storage::maintenance::start_controller(
-                    target,
-                    memory,
-                    Arc::clone(&server_dispatcher),
-                    false,
-                )
-            })();
-            let (mut maintenance_runtime, maintenance_client, maintenance_error) = match maintenance
-            {
-                Ok((runtime, client)) => (Some(runtime), Some(client), None),
-                Err(error) => (None, None, Some(error)),
-            };
-            let (api, mut refresh_runtime) =
-                config.build_api(server_refresh_cancel, maintenance_client, maintenance_error);
+            let (api, mut refresh_runtime) = config.build_api(server_refresh_cancel);
             started(OwnerStartup::RefreshStarted(
                 refresh_runtime.as_ref().map(RefreshRuntime::state),
             ));
@@ -958,13 +1080,7 @@ where
                 &server_stop,
                 &server_dispatcher,
             );
-            if let Some(runtime) = maintenance_runtime.as_ref() {
-                runtime.request_stop();
-            }
             if let Some(runtime) = refresh_runtime.as_mut() {
-                runtime.stop_and_join();
-            }
-            if let Some(runtime) = maintenance_runtime.as_mut() {
                 runtime.stop_and_join();
             }
             remove_owned_state(&state_path, &server_state.token);
@@ -1000,22 +1116,16 @@ fn serve_owner(
         state,
         stop,
         dispatcher,
-        move |operation_id, mut invocation| {
+        move |mut invocation| {
             identity
                 .validate()
                 .map_err(|error| ApiError::new("repository_identity_changed", error))?;
             invocation.repo = selector.clone();
-            let confirmation =
-                api.prepare_legacy_confirmation_request(operation_id, &invocation)?;
-            Ok((invocation, confirmation))
+            Ok(invocation)
         },
-        move |operation_id, invocation, context, confirmation| {
+        move |operation_id, invocation, context| {
             context.remaining()?;
-            owner_api.execute_invocation_with_legacy_confirmation(
-                operation_id,
-                invocation,
-                confirmation,
-            )
+            owner_api.execute_invocation(operation_id, invocation)
         },
     );
 }
@@ -1028,20 +1138,14 @@ fn serve_owner_with_executor<P, E>(
     prepare: P,
     execute: E,
 ) where
-    P: Fn(&str, OperationInvocation) -> Result<(OperationInvocation, Option<bool>), ApiError>
-        + Send
-        + Sync
-        + 'static,
-    E: Fn(
-            &str,
-            &OperationInvocation,
-            ExecutionContext,
-            Option<bool>,
-        ) -> Result<OperationResponse, ApiError>
+    P: Fn(OperationInvocation) -> Result<OperationInvocation, ApiError> + Send + Sync + 'static,
+    E: Fn(&str, &OperationInvocation, ExecutionContext) -> Result<OperationResponse, ApiError>
         + Send
         + Sync
         + 'static,
 {
+    #[cfg(debug_assertions)]
+    fixture_trace::record(fixture_trace::Kind::OwnerStart, 0);
     let dispatcher = Arc::clone(dispatcher);
     let worker_dispatcher = Arc::clone(&dispatcher);
     let worker_state = state.clone();
@@ -1050,16 +1154,13 @@ fn serve_owner_with_executor<P, E>(
     let worker_execute = Arc::clone(&execute);
     let worker = spawn_execution_worker(move || {
         while let Some(job) = worker_dispatcher.take() {
+            #[cfg(debug_assertions)]
+            fixture_trace::record(fixture_trace::Kind::WorkerStart, job._connection.id);
             let reply = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                 if job.context.remaining().is_err() {
                     None
                 } else {
-                    match worker_execute(
-                        &job.operation_id,
-                        &job.invocation,
-                        job.context,
-                        job.legacy_confirmation,
-                    ) {
+                    match worker_execute(&job.operation_id, &job.invocation, job.context) {
                         Ok(mut response) if job.context.remaining().is_ok() => {
                             attach_coordinator_status(&mut response, &worker_state);
                             Some(CoordinatorReply::Success(response))
@@ -1070,13 +1171,25 @@ fn serve_owner_with_executor<P, E>(
                         Err(error) => Some(CoordinatorReply::Failure(error)),
                     }
                 }
-            }))
-            .unwrap_or(None);
+            }));
+            let reply = match reply {
+                Ok(reply) => reply,
+                Err(payload) => {
+                    #[cfg(debug_assertions)]
+                    fixture_trace::record(fixture_trace::Kind::WorkerPanic, job._connection.id);
+                    drop(payload);
+                    None
+                }
+            };
             worker_dispatcher.finish_one();
             if let Some(reply) = reply {
+                #[cfg(debug_assertions)]
+                fixture_trace::record(fixture_trace::Kind::WorkerReply, job._connection.id);
                 let registry = Arc::clone(&job._connection.registry);
                 registry.send_response(job.stream, reply, job._connection);
             } else {
+                #[cfg(debug_assertions)]
+                fixture_trace::record(fixture_trace::Kind::WorkerAbandon, job._connection.id);
                 let _ = job.stream.shutdown(std::net::Shutdown::Both);
                 drop(job._connection);
             }
@@ -1084,6 +1197,8 @@ fn serve_owner_with_executor<P, E>(
     });
 
     let Ok(worker) = worker else {
+        #[cfg(debug_assertions)]
+        fixture_trace::record(fixture_trace::Kind::ExecutorSpawnFailed, 0);
         dispatcher.stop_admission();
         return;
     };
@@ -1094,12 +1209,20 @@ fn serve_owner_with_executor<P, E>(
             Ok((mut stream, _)) => {
                 let accepted_at = Instant::now();
                 if stream.set_nonblocking(true).is_err() {
+                    #[cfg(debug_assertions)]
+                    fixture_trace::record(fixture_trace::Kind::NonblockingFailed, 0);
                     continue;
                 }
                 let Ok(connection) = registry.register(&stream) else {
+                    #[cfg(debug_assertions)]
+                    fixture_trace::record(fixture_trace::Kind::RegisterFailed, 0);
                     let _ = stream.shutdown(std::net::Shutdown::Both);
                     continue;
                 };
+                #[cfg(debug_assertions)]
+                let connection_id = connection.id;
+                #[cfg(debug_assertions)]
+                fixture_trace::record(fixture_trace::Kind::Accept, connection_id);
                 let server_state = state.clone();
                 let server_dispatcher = Arc::clone(&dispatcher);
                 let server_prepare = Arc::clone(&prepare);
@@ -1117,6 +1240,9 @@ fn serve_owner_with_executor<P, E>(
                     })
                 {
                     handlers.push(handler);
+                } else {
+                    #[cfg(debug_assertions)]
+                    fixture_trace::record(fixture_trace::Kind::HandlerSpawnFailed, connection_id);
                 }
                 let mut index = 0;
                 while index < handlers.len() {
@@ -1134,6 +1260,8 @@ fn serve_owner_with_executor<P, E>(
             Err(_) => thread::sleep(COORDINATOR_POLL_INTERVAL),
         }
     }
+    #[cfg(debug_assertions)]
+    fixture_trace::record(fixture_trace::Kind::OwnerStop, 0);
     dispatcher.stop_admission();
     registry.close_all();
     for handler in handlers {
@@ -1169,10 +1297,7 @@ fn handle_connection_dispatch<P>(
     connection: ConnectionPermit,
     prepare: Arc<P>,
 ) where
-    P: Fn(&str, OperationInvocation) -> Result<(OperationInvocation, Option<bool>), ApiError>
-        + Send
-        + Sync
-        + 'static,
+    P: Fn(OperationInvocation) -> Result<OperationInvocation, ApiError> + Send + Sync + 'static,
 {
     let request_deadline = accepted_at + COORDINATOR_FRAME_TIMEOUT;
     let request: CoordinatorRequest = match read_frame_until(stream, request_deadline) {
@@ -1225,8 +1350,8 @@ fn handle_connection_dispatch<P>(
                     return;
                 }
             };
-            let (invocation, legacy_confirmation) = match prepare(&operation_id, invocation) {
-                Ok(prepared) => prepared,
+            let invocation = match prepare(invocation) {
+                Ok(invocation) => invocation,
                 Err(error) => {
                     let reply = CoordinatorReply::Failure(error);
                     let _ = write_frame_until(
@@ -1244,17 +1369,22 @@ fn handle_connection_dispatch<P>(
                 return;
             }
             let Ok(job_stream) = stream.try_clone() else {
+                #[cfg(debug_assertions)]
+                fixture_trace::record(fixture_trace::Kind::CloneFailed, connection.id);
                 return;
             };
+            #[cfg(debug_assertions)]
+            fixture_trace::record(fixture_trace::Kind::Dispatch, connection.id);
             let job = ExecutionJob {
                 operation_id,
                 invocation,
                 context,
-                legacy_confirmation,
                 stream: job_stream,
                 _connection: connection,
             };
             if let Err(job) = dispatcher.try_submit(job) {
+                #[cfg(debug_assertions)]
+                fixture_trace::record(fixture_trace::Kind::Busy, job._connection.id);
                 let reply = CoordinatorReply::Failure(
                     ApiError::new(
                         "graph_busy",
@@ -1402,11 +1532,18 @@ fn send_to_state_with_context(
     let read_deadline =
         execution_deadline.or_else(|| ping.then_some(Instant::now() + STREAM_IO_TIMEOUT));
     read_frame_with_policy(&mut stream, read_deadline, read_deadline.is_none()).map_err(|error| {
-        if execution_deadline.is_some_and(|deadline| Instant::now() >= deadline) {
+        let expired = execution_deadline.is_some_and(|deadline| Instant::now() >= deadline);
+        let classified = if expired {
             ExecutionContext::expired_error()
         } else {
             ApiError::new("coordinator_transport_error", error).retryable(ping)
+        };
+        #[cfg(debug_assertions)]
+        if !ping && !expired {
+            fixture_trace::record(fixture_trace::Kind::ClientReadFailed, 0);
+            fixture_trace::render_once(state.pid == std::process::id());
         }
+        classified
     })
 }
 
@@ -1461,16 +1598,12 @@ fn coordinator_control_paths(selector: &RepoSelector) -> Result<CoordinatorContr
         return Ok(CoordinatorControlPaths {
             lock: layout.coordinator_lock_path(),
             state: layout.coordinator_state_path(),
-            managed_initialization: Some(layout),
-            direct_initialization: None,
         });
     }
     let layout = DirectLayout::new(&runtime.db_path, &runtime.manifest_path);
     Ok(CoordinatorControlPaths {
         lock: layout.coordinator_lock_path(),
         state: layout.coordinator_state_path(),
-        managed_initialization: None,
-        direct_initialization: Some(layout),
     })
 }
 

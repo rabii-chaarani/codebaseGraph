@@ -1,0 +1,106 @@
+{
+  "work": "COD-138 / CBG-RESTORE-01/C4-P1",
+  "original_commit": "f000bc1c90c788593ad0e1825ea6d03f7f439900",
+  "original_pr": "https://github.com/rabii-chaarani/codebaseGraph/pull/188",
+  "destination_baseline": "cf9493edce3692054c4d6c17b53d2fdb562b632e",
+  "destination_baseline_pr": "https://github.com/rabii-chaarani/codebaseGraph/pull/201",
+  "brief_commit": "fb68df8445aa5ee770f41566ad09cc33e00ee2f8",
+  "rest_spec_approval": "663b2fc8d2790956975587dcab6b248bd40b5958",
+  "native_spec_approval": "66dff2564e76ad06cdf172332e2da318d150fc73",
+  "native_scoped_activation": "ba5c7c543bd711b663e1dfc92d4bd58497ffb557",
+  "files": [
+    {
+      "operation": "exact_original_copy",
+      "original": {
+        "commit": "f000bc1c90c788593ad0e1825ea6d03f7f439900",
+        "path": "src/architecture/mod.rs",
+        "blob": "ae29df24b5cfcc3147600a2c481ac3bd6958cfaf",
+        "sha256": "c5b01f1ee455e944687f372f55d01ac300281dc3652739d62193602ae80cc1a9",
+        "bytes": 11008,
+        "mode": "100644"
+      },
+      "destination": {
+        "path": "src/architecture/mod.rs",
+        "blob": "ae29df24b5cfcc3147600a2c481ac3bd6958cfaf",
+        "sha256": "c5b01f1ee455e944687f372f55d01ac300281dc3652739d62193602ae80cc1a9",
+        "bytes": 11008,
+        "mode": "100644"
+      }
+    },
+    {
+      "operation": "exact_original_copy",
+      "original": {
+        "commit": "f000bc1c90c788593ad0e1825ea6d03f7f439900",
+        "path": "assets/architecture_schema.json",
+        "blob": "423cd295210402608a6d85f84f5136ebc4773009",
+        "sha256": "704c349299c26c7162fbe1e5e1219fb78ab0e5d2908252dd22541f69d2151f7b",
+        "bytes": 18859,
+        "mode": "100644"
+      },
+      "destination": {
+        "path": "assets/architecture_schema.json",
+        "blob": "423cd295210402608a6d85f84f5136ebc4773009",
+        "sha256": "704c349299c26c7162fbe1e5e1219fb78ab0e5d2908252dd22541f69d2151f7b",
+        "bytes": 18859,
+        "mode": "100644"
+      }
+    },
+    {
+      "operation": "exact_original_copy",
+      "original": {
+        "commit": "f000bc1c90c788593ad0e1825ea6d03f7f439900",
+        "path": "tests/architecture_model.rs",
+        "blob": "cd214645207dc915b90e1090dc26869b4abfcb7d",
+        "sha256": "6afd4314e8b1c3aa302c7b199b4b0c71124218393639216419100fb8a739baf4",
+        "bytes": 12965,
+        "mode": "100644"
+      },
+      "destination": {
+        "path": "tests/architecture_model.rs",
+        "blob": "cd214645207dc915b90e1090dc26869b4abfcb7d",
+        "sha256": "6afd4314e8b1c3aa302c7b199b4b0c71124218393639216419100fb8a739baf4",
+        "bytes": 12965,
+        "mode": "100644"
+      }
+    }
+  ],
+  "facade": {
+    "operation": "graft single module export onto destination baseline; preserve all other bytes",
+    "original": {
+      "commit": "f000bc1c90c788593ad0e1825ea6d03f7f439900",
+      "path": "src/lib.rs",
+      "blob": "e671159e58f814bbcd263494cc66e89c40a3cac7",
+      "sha256": "58b91d81f2fb91477665a769a7eb4e6679b46b8ab87f97c938eac8eff1722ab2",
+      "bytes": 1056,
+      "mode": "100644"
+    },
+    "baseline": {
+      "commit": "cf9493edce3692054c4d6c17b53d2fdb562b632e",
+      "path": "src/lib.rs",
+      "blob": "0290b38a23d2d3bd4f9c1af49b1cc1b7d6736ef9",
+      "sha256": "5db50f6ba67dd7bc873c4ea6a17f37fc7f4a357e87abfe09c3bb30ef8d7f17b5",
+      "bytes": 814,
+      "mode": "100644"
+    },
+    "destination": {
+      "path": "src/lib.rs",
+      "blob": "b30a2fa8e3ba57274fb3967ae94305d1fb11b28a",
+      "sha256": "f243f412f5b99a0291a19c5ee07421c7bdbff5ce9d97ae6bead6e025e6832f65",
+      "bytes": 836,
+      "mode": "100644"
+    },
+    "added_bytes": "pub mod architecture;\n",
+    "original_export": "pub mod architecture;",
+    "original_delta": {
+      "commit": "e7684366296362599a32c558779e5bdb3b8df946",
+      "parent": "12c49179489e6d2e2d2962900c850f603e12ac88",
+      "original_location": "after pub mod api;",
+      "destination_location": "before global allocator;",
+      "delta": "one added line pub mod architecture;"
+    }
+  },
+  "evidence": {
+    "historical": "Original COD-20 report at f000bc1; Rust 1.96 results do not qualify destination.",
+    "destination": "Newly executed Rust 1.98.1 checks and independent verification recorded separately; this map asserts no test result."
+  }
+}

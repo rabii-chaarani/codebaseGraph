@@ -6,8 +6,8 @@ use crate::api::{
     },
     core::{ApiCore, OperationDescriptor},
     refresh::{
-        run_refresh_watch, start_refresh_service_with_maintenance, RefreshCancellation,
-        RefreshRuntime, RefreshServiceConfig,
+        run_refresh_watch, start_refresh_service, RefreshCancellation, RefreshRuntime,
+        RefreshServiceConfig,
     },
 };
 use crate::coordinator::{CoordinatorApiConfig, CoordinatorClient};
@@ -84,38 +84,16 @@ impl CodebaseGraphApi<ApiCore> {
         self.core.resolve_mcp_operation(tool_name)
     }
 
-    #[cfg(test)]
     pub(crate) fn for_coordinator_owner(
         selector: RepoSelector,
         refresh: Option<RefreshServiceConfig>,
         cancellation: RefreshCancellation,
     ) -> (Self, Option<RefreshRuntime>) {
-        Self::for_coordinator_owner_with_maintenance(selector, refresh, cancellation, None, None)
-    }
-
-    pub(crate) fn for_coordinator_owner_with_maintenance(
-        selector: RepoSelector,
-        refresh: Option<RefreshServiceConfig>,
-        cancellation: RefreshCancellation,
-        maintenance: Option<
-            crate::storage::maintenance::MaintenanceClient<
-                std::sync::Arc<crate::coordinator::ExecutionDispatcher>,
-            >,
-        >,
-        unavailable: Option<crate::storage::maintenance_scheduler::DriverError>,
-    ) -> (Self, Option<RefreshRuntime>) {
-        let runtime = refresh.map(|config| {
-            start_refresh_service_with_maintenance(
-                selector,
-                config,
-                cancellation,
-                maintenance.clone(),
-            )
-        });
+        let runtime = refresh.map(|config| start_refresh_service(selector, config, cancellation));
         let state = runtime.as_ref().map(RefreshRuntime::state);
         (
             Self {
-                core: ApiCore::for_coordinator_with_maintenance(state, maintenance, unavailable),
+                core: ApiCore::for_coordinator(state),
             },
             runtime,
         )
@@ -138,24 +116,6 @@ impl CodebaseGraphApi<ApiCore> {
 
     pub(crate) fn latest_mcp_protocol_version() -> &'static str {
         "2025-11-25"
-    }
-
-    pub(crate) fn prepare_legacy_confirmation_request(
-        &self,
-        operation_id: &str,
-        invocation: &OperationInvocation,
-    ) -> Result<Option<bool>, ApiError> {
-        self.core
-            .prepare_legacy_confirmation_request(operation_id, invocation)
-    }
-    pub(crate) fn execute_invocation_with_legacy_confirmation(
-        &self,
-        operation_id: &str,
-        invocation: &OperationInvocation,
-        handled: Option<bool>,
-    ) -> Result<OperationResponse, ApiError> {
-        self.core
-            .execute_invocation_with_legacy_confirmation(operation_id, invocation, handled)
     }
 
     pub fn execute_invocation(

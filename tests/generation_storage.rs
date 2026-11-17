@@ -1,3 +1,5 @@
+#[cfg(unix)]
+use codebase_graph::api::HealthRequest;
 use codebase_graph::api::{
     CodebaseGraphApi, MaterializationRequest, OperationRequest, OutputFormat, QueryRequest,
     RepoSelector, SearchRequest,
@@ -43,8 +45,7 @@ fn managed_materialization_activates_generations_atomically() {
     write_source(&repo, "pub fn version() -> &'static str { \"v3\" }\n");
     let third = materialize_ok(&repo, None, None);
     assert_eq!(third["storage_format"], "managed_v2");
-    assert!(third["cleanup_pending"].is_boolean());
-    collect_managed_until_owned_idle(&repo);
+    assert_eq!(third["cleanup_pending"], json!(false));
     assert!(!first_generation_root.exists());
 
     let active_manifest = read_manifest(
@@ -52,6 +53,56 @@ fn managed_materialization_activates_generations_atomically() {
     );
     assert_eq!(active_manifest.schema_version, 5);
     assert!(active_manifest.graph_build_digest.is_some());
+}
+
+#[cfg(unix)]
+#[test]
+fn managed_read_preserves_unknown_retired_state_without_hiding_active_graph() {
+    let repo = temp_repo("retired-unknown-read");
+    write_managed_config(&repo);
+    write_source(&repo, "pub fn old_symbol() {}\n");
+    materialize_ok(&repo, None, None);
+    let storage = repo.join(".codebaseGraph/storage");
+    let old_id = active_generation_id(&storage);
+    let old_root = generation_root(&storage, &old_id);
+    let lease = shared_generation_lease(&old_root);
+    write_source(&repo, "pub fn current_symbol() {}\n");
+    materialize_ok(&repo, None, None);
+    let sentinel = repo.join("foreign-sentinel");
+    fs::write(&sentinel, b"unowned").unwrap();
+    let unknown = old_root.join("foreign-link");
+    std::os::unix::fs::symlink(&sentinel, &unknown).unwrap();
+    drop(lease);
+    let selector = RepoSelector {
+        repo_root: Some(repo.clone()),
+        ..RepoSelector::default()
+    };
+    let health = CodebaseGraphApi::new()
+        .execute_operation(&OperationRequest::Health(HealthRequest {
+            repo: selector.clone(),
+            refresh_status: None,
+            output_format: OutputFormat::Typed,
+        }))
+        .unwrap();
+    assert_eq!(health.payload["graph_readable"], true);
+    assert_eq!(health.payload["cleanup_pending"], true);
+    let query = CodebaseGraphApi::new()
+        .execute_operation(&OperationRequest::Query(QueryRequest {
+            repo: selector,
+            statement: "MATCH (n) RETURN count(n) AS total_nodes LIMIT 1".into(),
+            parameters: json!({}),
+            limit: 1,
+            output_format: OutputFormat::Typed,
+        }))
+        .unwrap();
+    assert!(query.payload["rows"][0][0].as_u64().unwrap() > 0);
+    assert!(fs::symlink_metadata(&unknown)
+        .unwrap()
+        .file_type()
+        .is_symlink());
+    assert_eq!(fs::read(&sentinel).unwrap(), b"unowned");
+    fs::remove_file(unknown).unwrap();
+    fs::remove_dir_all(repo).unwrap();
 }
 
 #[cfg(windows)]
@@ -108,8 +159,7 @@ fn managed_reads_survive_deferred_retired_generation_deletion() {
     drop(held_file);
     write_source(&repo, "pub fn final_symbol() {}\n");
     let published = materialize_ok(&repo, None, None);
-    assert!(published["cleanup_pending"].is_boolean());
-    collect_managed_until_owned_idle(&repo);
+    assert_eq!(published["cleanup_pending"], false);
     assert!(!old_root.exists(), "retired generation should be collected");
 }
 
@@ -244,7 +294,6 @@ fn managed_materialization_survives_ten_updates_without_generation_leaks() {
     let storage_root = repo.join(".codebaseGraph").join("storage");
 
     for index in 0..10 {
-        eprintln!("generation churn publishing revision {} of 10", index + 1);
         write_source(
             &repo,
             &format!("pub fn churned() -> usize {{ {} }}\n", index + 1),
@@ -253,8 +302,6 @@ fn managed_materialization_survives_ten_updates_without_generation_leaks() {
         assert_eq!(payload["storage_format"], "managed_v2");
     }
 
-    eprintln!("generation churn collecting after ten updates");
-    collect_managed_until_owned_idle(&repo);
     let generations_root = storage_root.join("generations");
     let generation_count = fs::read_dir(&generations_root)
         .expect("generation root should exist")
@@ -313,100 +360,6 @@ fn managed_materialization_survives_ten_updates_without_generation_leaks() {
         churned_size <= clean_size.saturating_add(allowance),
         "churned database used {churned_size} bytes; clean control used {clean_size} bytes"
     );
-}
-
-/// Drive the shipping default-false health entry until the fixture's proven
-/// owned work is physically idle. Advisory partial/unknown measurement remains
-/// truthful; this never rewrites its completeness or grants deletion authority.
-fn collect_managed_until_owned_idle(repo: &Path) {
-    use std::collections::BTreeSet;
-    use std::process::Command;
-    let storage = repo.join(".codebaseGraph/storage");
-    let active = active_generation_id(&storage);
-    let manifest = read_manifest(&generation_root(&storage, &active).join("manifest.json"));
-    let expected = manifest
-        .files
-        .values()
-        .filter_map(|entry| entry.artifact_key.clone())
-        .collect::<BTreeSet<_>>();
-    let receipts = ["runs", "workers", "phases"]
-        .into_iter()
-        .filter_map(|name| fs::read_dir(storage.join(name)).ok())
-        .flatten()
-        .map(|entry| {
-            fs::read_dir(entry.unwrap().path().join(".workspace-origins"))
-                .map(|entries| entries.count())
-                .unwrap_or(0)
-        })
-        .sum::<usize>();
-    let attempts = 128
-        + 16 * (receipts
-            + expected.len()
-            + fs::read_dir(storage.join("generations")).unwrap().count());
-    let mut last = serde_json::Value::Null;
-    let binary = std::env::var_os("CARGO_BIN_EXE_codebase-graph")
-        .unwrap_or_else(|| env!("CARGO_BIN_EXE_codebase-graph").into());
-    for attempt in 0..attempts {
-        let output = Command::new(&binary)
-            .args(["check-health", "--repo-root"])
-            .arg(repo)
-            .arg("--json")
-            .output()
-            .expect("shipping health should execute");
-        assert!(
-            output.status.success(),
-            "health failed: {}",
-            String::from_utf8_lossy(&output.stderr)
-        );
-        last = serde_json::from_slice(&output.stdout).unwrap();
-        assert_eq!(last["graph_readable"], true);
-        assert_eq!(active_generation_id(&storage), active);
-        let maintenance = &last["maintenance"];
-        if attempt % 64 == 0 {
-            eprintln!(
-                "generation cleanup attempt {attempt}/{attempts}: {}",
-                maintenance["last_attempt"]
-            );
-        }
-        assert!(
-            maintenance["errors"].as_array().unwrap().is_empty(),
-            "{last}"
-        );
-        for field in ["attempted_entries", "deleted_entries"] {
-            if let Some(entries) = maintenance["last_attempt"][field].as_u64() {
-                assert!(entries <= 100, "shipping mutation grant exceeded: {last}");
-            }
-        }
-        let generations = fs::read_dir(storage.join("generations"))
-            .unwrap()
-            .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
-            .collect::<BTreeSet<_>>();
-        let mut keys = BTreeSet::new();
-        for shard in fs::read_dir(storage.join("artifacts")).unwrap() {
-            let shard = shard.unwrap();
-            if shard.file_type().unwrap().is_dir() {
-                for entry in fs::read_dir(shard.path()).unwrap() {
-                    keys.insert(entry.unwrap().file_name().to_string_lossy().into_owned());
-                }
-            }
-        }
-        let empty = |name: &str| {
-            fs::read_dir(storage.join(name))
-                .map(|mut entries| entries.next().is_none())
-                .unwrap_or(true)
-        };
-        if generations == BTreeSet::from([format!("gen-{active}")])
-            && keys == expected
-            && empty("runs")
-            && empty("workers")
-            && fs::metadata(storage.join("artifacts/.publication.stream"))
-                .is_ok_and(|metadata| metadata.len() == 0)
-        {
-            assert_eq!(last["pending_runs"], 0);
-            return;
-        }
-    }
-    panic!("shipping bounded collection did not reach owned idle: {last}");
 }
 
 fn materialize_ok(
@@ -578,6 +531,5 @@ fn temp_repo(name: &str) -> PathBuf {
     }
     fs::create_dir_all(&root)
         .unwrap_or_else(|error| panic!("failed to create temp dir {}: {error}", root.display()));
-    fs::canonicalize(&root)
-        .unwrap_or_else(|error| panic!("failed to resolve temp dir {}: {error}", root.display()))
+    root
 }

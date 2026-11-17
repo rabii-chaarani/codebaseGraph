@@ -32,7 +32,360 @@ fn temp_repo() -> PathBuf {
     path
 }
 
-struct ChildGuard(Child);
+#[cfg(debug_assertions)]
+fn safe_fixture_trace_line(line: &[u8]) -> bool {
+    let Ok(line) = std::str::from_utf8(line) else {
+        return false;
+    };
+    let fields = line.split_ascii_whitespace().collect::<Vec<_>>();
+    if fields.first() != Some(&"CGR_COORD_TRACE") {
+        return false;
+    }
+    if fields.get(1) == Some(&"v1") {
+        return fields.len() == 5
+            && fields[2]
+                .strip_prefix("pid=")
+                .is_some_and(|value| value.parse::<u32>().is_ok())
+            && matches!(
+                fields[3],
+                "owner_pid_matches=true" | "owner_pid_matches=false"
+            )
+            && fields[4] == "server_trace_may_be_incomplete=true";
+    }
+    fields.len() == 3
+        && matches!(
+            fields[1],
+            "owner_start"
+                | "owner_stop"
+                | "accept"
+                | "register_failed"
+                | "nonblocking_failed"
+                | "executor_spawn_failed"
+                | "handler_spawn_failed"
+                | "dispatch"
+                | "clone_failed"
+                | "busy"
+                | "worker_start"
+                | "worker_reply"
+                | "worker_panic"
+                | "worker_abandon"
+                | "response_written"
+                | "response_write_failed"
+                | "response_spawn_failed"
+                | "close_all"
+                | "client_read_failed"
+        )
+        && fields[2].parse::<u64>().is_ok()
+}
+
+#[cfg(debug_assertions)]
+#[derive(Clone)]
+struct FixtureStderrDrain {
+    bytes: std::sync::Arc<std::sync::Mutex<std::collections::VecDeque<u8>>>,
+    redacted: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    done: std::sync::Arc<std::sync::atomic::AtomicBool>,
+}
+
+#[cfg(debug_assertions)]
+impl FixtureStderrDrain {
+    fn attach(child: &mut ChildGuard) -> Self {
+        const LIMIT: usize = 8192;
+        const MAX_LINE: usize = 128;
+        let mut stderr = child.0.stderr.take().expect("fixture stderr must be piped");
+        let bytes = std::sync::Arc::new(std::sync::Mutex::new(
+            std::collections::VecDeque::with_capacity(LIMIT),
+        ));
+        let redacted = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let done = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let output = std::sync::Arc::clone(&bytes);
+        let suppressed = std::sync::Arc::clone(&redacted);
+        let finished = std::sync::Arc::clone(&done);
+        thread::Builder::new()
+            .name("fixture-stderr-drain".into())
+            .spawn(move || {
+                let mut buffer = [0_u8; 1024];
+                let mut line = Vec::with_capacity(MAX_LINE);
+                let mut overlong = false;
+                loop {
+                    match stderr.read(&mut buffer) {
+                        Ok(0) => break,
+                        Err(error) if error.kind() == std::io::ErrorKind::Interrupted => continue,
+                        Err(_) => break,
+                        Ok(count) => {
+                            for byte in &buffer[..count] {
+                                if *byte == b'\n' {
+                                    if !overlong && safe_fixture_trace_line(&line) {
+                                        if let Ok(mut output) = output.lock() {
+                                            for byte in
+                                                line.iter().copied().chain(std::iter::once(b'\n'))
+                                            {
+                                                if output.len() == LIMIT {
+                                                    output.pop_front();
+                                                }
+                                                output.push_back(byte);
+                                            }
+                                        }
+                                    } else {
+                                        suppressed.store(true, Ordering::Release);
+                                    }
+                                    line.clear();
+                                    overlong = false;
+                                } else if line.len() < MAX_LINE {
+                                    line.push(*byte);
+                                } else {
+                                    overlong = true;
+                                }
+                            }
+                        }
+                    }
+                }
+                if !line.is_empty() || overlong {
+                    suppressed.store(true, Ordering::Release);
+                }
+                finished.store(true, Ordering::Release);
+            })
+            .expect("fixture stderr drainer must start");
+        Self {
+            bytes,
+            redacted,
+            done,
+        }
+    }
+
+    fn report_after_child_exit(&self) {
+        let deadline = Instant::now() + Duration::from_millis(250);
+        while !self.done.load(Ordering::Acquire) && Instant::now() < deadline {
+            thread::sleep(Duration::from_millis(5));
+        }
+        if let Ok(bytes) = self.bytes.try_lock() {
+            let snapshot = bytes.iter().copied().collect::<Vec<_>>();
+            eprintln!(
+                "failed fixture coordinator trace (bounded tail; nontrace_output_present={}):\n{}",
+                self.redacted.load(Ordering::Acquire),
+                String::from_utf8_lossy(&snapshot)
+            );
+        }
+    }
+}
+
+#[cfg(debug_assertions)]
+#[test]
+fn fixture_trace_filter_accepts_only_static_schema() {
+    assert!(safe_fixture_trace_line(
+        b"CGR_COORD_TRACE v1 pid=17 owner_pid_matches=false server_trace_may_be_incomplete=true"
+    ));
+    assert!(safe_fixture_trace_line(
+        b"CGR_COORD_TRACE response_written 42"
+    ));
+    assert!(!safe_fixture_trace_line(
+        b"CGR_COORD_TRACE response_written secret"
+    ));
+    assert!(!safe_fixture_trace_line(
+        b"CGR_COORD_TRACE response_written 42 extra"
+    ));
+    assert!(!safe_fixture_trace_line(
+        b"CGR_COORD_TRACE endpoint 127.0.0.1"
+    ));
+    assert!(!safe_fixture_trace_line(
+        b"CGR_COORD_TRACE v1 pid=17 token=secret server_trace_may_be_incomplete=true"
+    ));
+}
+
+#[cfg(debug_assertions)]
+#[test]
+fn fixture_stderr_drain_is_bounded_and_prevents_pipe_backpressure() {
+    const SENTINEL: &str = "CGR_SYNTHETIC_RAW_SECRET";
+    if std::env::var_os("CGR_TEST_STDERR_FLOOD_CHILD").is_some() {
+        let mut stderr = std::io::stderr();
+        for _ in 0..5000 {
+            stderr.write_all(b"CGR_COORD_TRACE dispatch 42\n").unwrap();
+        }
+        writeln!(stderr, "CGR_COORD_TRACE dispatch {SENTINEL}").unwrap();
+        let oversized = [b'z'; 1024];
+        for _ in 0..128 {
+            stderr.write_all(&oversized).unwrap();
+        }
+        return;
+    }
+    let mut child = ChildGuard::plain(
+        Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "fixture_stderr_drain_is_bounded_and_prevents_pipe_backpressure",
+                "--nocapture",
+            ])
+            .env("CGR_TEST_STDERR_FLOOD_CHILD", "1")
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::piped())
+            .spawn()
+            .unwrap(),
+    );
+    let drain = FixtureStderrDrain::attach(&mut child);
+    let deadline = Instant::now() + Duration::from_secs(10);
+    let status = loop {
+        if let Some(status) = child.0.try_wait().unwrap() {
+            break status;
+        }
+        assert!(Instant::now() < deadline, "drained child blocked on stderr");
+        thread::sleep(Duration::from_millis(5));
+    };
+    assert!(status.success());
+    let deadline = Instant::now() + Duration::from_secs(2);
+    while !drain.done.load(Ordering::Acquire) && Instant::now() < deadline {
+        thread::sleep(Duration::from_millis(5));
+    }
+    assert!(drain.done.load(Ordering::Acquire));
+    let mut bytes = drain.bytes.lock().unwrap();
+    assert_eq!(bytes.len(), 8192);
+    assert!(!String::from_utf8_lossy(bytes.make_contiguous()).contains(SENTINEL));
+    assert!(drain.redacted.load(Ordering::Acquire));
+}
+
+#[cfg(debug_assertions)]
+#[test]
+fn central_daemon_captures_synthetic_postsend_failure() {
+    use std::io::{BufRead, BufReader};
+    use std::sync::{atomic::AtomicUsize, Arc};
+
+    const CHILD: &str = "CGR_SYNTHETIC_DAEMON_TRACE_CHILD";
+    if std::env::var_os(CHILD).is_some() {
+        let root = temp_repo();
+        let config = install(&root);
+        let storage = root.join(".codebaseGraph/storage");
+        fs::create_dir_all(&storage).unwrap();
+        let lock = fs::OpenOptions::new()
+            .create(true)
+            .truncate(false)
+            .read(true)
+            .write(true)
+            .open(storage.join("coordinator.lock"))
+            .unwrap();
+        fs2::FileExt::lock_exclusive(&lock).unwrap();
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        listener.set_nonblocking(true).unwrap();
+        let token = "a".repeat(64);
+        fs::write(
+            storage.join("coordinator.json"),
+            serde_json::to_vec(&json!({
+                "version": 1, "endpoint": listener.local_addr().unwrap(), "token": token,
+                "pid": std::process::id(), "supports_deadlines": true
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+        let executions = Arc::new(AtomicUsize::new(0));
+        let observed = Arc::clone(&executions);
+        thread::spawn(move || loop {
+            match listener.accept() {
+                Ok((mut stream, _)) => {
+                    stream
+                        .set_read_timeout(Some(Duration::from_secs(2)))
+                        .unwrap();
+                    let mut line = String::new();
+                    BufReader::new(stream.try_clone().unwrap())
+                        .read_line(&mut line)
+                        .unwrap();
+                    let request: Value = serde_json::from_str(&line).unwrap();
+                    match request["command"]["command"].as_str() {
+                        Some("ping") => stream.write_all(b"{\"status\":\"pong\"}\n").unwrap(),
+                        Some("execute") => {
+                            observed.fetch_add(1, Ordering::SeqCst);
+                        }
+                        _ => panic!("unexpected synthetic coordinator command"),
+                    }
+                }
+                Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                    thread::sleep(Duration::from_millis(5))
+                }
+                Err(_) => break,
+            }
+        });
+        let (daemon, port, _) = start_daemon(&root, &config, &root, &[]);
+        let mut session = McpSession::start(port);
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| session.health()));
+        assert!(
+            result.is_err(),
+            "synthetic disconnected request unexpectedly succeeded"
+        );
+        assert_eq!(executions.load(Ordering::SeqCst), 1);
+        let deadline = Instant::now() + Duration::from_secs(2);
+        while Instant::now() < deadline {
+            let present = daemon
+                .1
+                .as_ref()
+                .unwrap()
+                .bytes
+                .lock()
+                .unwrap()
+                .iter()
+                .copied()
+                .collect::<Vec<_>>();
+            if String::from_utf8_lossy(&present).contains("client_read_failed") {
+                break;
+            }
+            thread::sleep(Duration::from_millis(5));
+        }
+        std::panic::resume_unwind(result.unwrap_err());
+    }
+    let output = Command::new(std::env::current_exe().unwrap())
+        .args([
+            "--exact",
+            "central_daemon_captures_synthetic_postsend_failure",
+            "--nocapture",
+        ])
+        .env(CHILD, "1")
+        .output()
+        .unwrap();
+    assert!(!output.status.success());
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert_eq!(stderr.matches("CGR_COORD_TRACE v1").count(), 1, "{stderr}");
+    assert!(stderr.contains("client_read_failed"), "{stderr}");
+    assert!(stderr.contains("owner_pid_matches=false"), "{stderr}");
+    assert!(
+        stderr.contains("server_trace_may_be_incomplete=true"),
+        "{stderr}"
+    );
+    assert!(!stderr.contains(&"a".repeat(64)), "synthetic token leaked");
+}
+
+struct ChildGuard(
+    Child,
+    #[cfg(debug_assertions)] Option<FixtureStderrDrain>,
+    #[cfg(debug_assertions)] bool,
+);
+
+impl ChildGuard {
+    fn plain(child: Child) -> Self {
+        Self(
+            child,
+            #[cfg(debug_assertions)]
+            None,
+            #[cfg(debug_assertions)]
+            false,
+        )
+    }
+
+    fn server(child: Child) -> Self {
+        #[cfg(debug_assertions)]
+        {
+            let mut guard = Self::plain(child);
+            guard.1 = Some(FixtureStderrDrain::attach(&mut guard));
+            guard.2 = true;
+            guard
+        }
+        #[cfg(not(debug_assertions))]
+        {
+            Self::plain(child)
+        }
+    }
+
+    #[cfg(debug_assertions)]
+    fn retain_for_fixture(&mut self) -> Option<FixtureStderrDrain> {
+        self.2 = false;
+        self.1.clone()
+    }
+}
 
 impl Drop for ChildGuard {
     fn drop(&mut self) {
@@ -40,6 +393,12 @@ impl Drop for ChildGuard {
             let _ = self.0.kill();
         }
         let _ = self.0.wait();
+        #[cfg(debug_assertions)]
+        if self.2 && thread::panicking() {
+            if let Some(drain) = &self.1 {
+                drain.report_after_child_exit();
+            }
+        }
     }
 }
 
@@ -57,7 +416,7 @@ impl ManualBuild {
     fn start(root: &Path) -> Self {
         let stdout = root.join("manual-build.stdout");
         let stderr = root.join("manual-build.stderr");
-        let child = ChildGuard(
+        let child = ChildGuard::plain(
             Command::new(binary())
                 .current_dir(root)
                 .args([
@@ -436,16 +795,19 @@ fn start_daemon(
         config.to_str().unwrap().to_string(),
     ];
     args.extend(overrides.iter().map(|value| (*value).to_string()));
-    let daemon = ChildGuard(
-        Command::new(binary())
-            .current_dir(current_dir)
-            .args(args)
-            .stdin(Stdio::null())
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .spawn()
-            .unwrap(),
-    );
+    let mut command = Command::new(binary());
+    command
+        .current_dir(current_dir)
+        .args(args)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null());
+    #[cfg(debug_assertions)]
+    command
+        .env("CODEBASE_GRAPH_TEST_COORDINATOR_TRACE", "1")
+        .stderr(Stdio::piped());
+    #[cfg(not(debug_assertions))]
+    command.stderr(Stdio::null());
+    let daemon = ChildGuard::server(command.spawn().unwrap());
     let state_path = root.join(".codebaseGraph/mcp-daemon.json");
     wait_for_file(&state_path);
     let state: Value = serde_json::from_str(&fs::read_to_string(&state_path).unwrap()).unwrap();
@@ -494,7 +856,9 @@ fn start_http_server_with_env(
     for (key, value) in environment {
         command.env(key, value);
     }
-    let mut daemon = ChildGuard(command.spawn().unwrap());
+    #[cfg(debug_assertions)]
+    command.env("CODEBASE_GRAPH_TEST_COORDINATOR_TRACE", "1");
+    let mut daemon = ChildGuard::server(command.spawn().unwrap());
     let deadline = Instant::now() + Duration::from_secs(20);
     while Instant::now() < deadline {
         if try_request(
@@ -639,7 +1003,7 @@ fn legacy_worker_pid_recovery(manual_publication: bool) {
         },
     );
     let ready = root.join("unrelated.ready");
-    let mut unrelated = ChildGuard(
+    let mut unrelated = ChildGuard::plain(
         Command::new(std::env::current_exe().unwrap())
             .args([
                 "--exact",
