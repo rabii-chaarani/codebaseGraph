@@ -262,6 +262,14 @@ mod fixture_trace {
         CorrResponseWritten,
         CorrResponseFailed,
         CorrEarlyReply,
+        ClientReadZero,
+        ClientReadSome,
+        ClientReadDelimitedError,
+        CorrPermitRemoved,
+        CorrPermitAbsent,
+        CorrPermitUnknown,
+        CorrHandlerClosing,
+        CorrWriterClosing,
     }
     impl Kind {
         fn label(self) -> &'static str {
@@ -297,6 +305,14 @@ mod fixture_trace {
                 Self::CorrResponseWritten => "corr_response_written",
                 Self::CorrResponseFailed => "corr_response_failed",
                 Self::CorrEarlyReply => "corr_early_reply",
+                Self::ClientReadZero => "client_read_zero",
+                Self::ClientReadSome => "client_read_some",
+                Self::ClientReadDelimitedError => "client_read_delimited_error",
+                Self::CorrPermitRemoved => "corr_permit_removed",
+                Self::CorrPermitAbsent => "corr_permit_absent",
+                Self::CorrPermitUnknown => "corr_permit_unknown",
+                Self::CorrHandlerClosing => "corr_handler_closing",
+                Self::CorrWriterClosing => "corr_writer_closing",
             }
         }
     }
@@ -397,6 +413,9 @@ mod fixture_trace {
     }
     fn enabled_value(value: Option<&std::ffi::OsStr>) -> bool {
         value == Some(std::ffi::OsStr::new("1"))
+    }
+    pub(super) fn enabled() -> bool {
+        ENABLED.load(Ordering::Relaxed)
     }
     pub(super) fn init() {
         if enabled_value(std::env::var_os("CODEBASE_GRAPH_TEST_COORDINATOR_TRACE").as_deref()) {
@@ -974,6 +993,315 @@ mod fixture_trace {
         }
 
         #[test]
+        fn receive_progress_buckets_use_only_returned_application_bytes() {
+            use super::super::*;
+            use std::io::Write;
+            for (bytes, expected) in [
+                (&b""[..], ReceiveProgress::Zero),
+                (&b"partial"[..], ReceiveProgress::Some),
+                (&b"not-json\n"[..], ReceiveProgress::Delimited),
+            ] {
+                let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+                let mut sender = TcpStream::connect(listener.local_addr().unwrap()).unwrap();
+                let (mut receiver, _) = listener.accept().unwrap();
+                sender.write_all(bytes).unwrap();
+                drop(sender);
+                let mut progress = ReceiveProgress::Zero;
+                let result: Result<serde_json::Value, String> = read_frame_with_policy(
+                    &mut receiver,
+                    Some(Instant::now() + std::time::Duration::from_secs(5)),
+                    false,
+                    Some(&mut progress),
+                );
+                assert!(result.is_err());
+                assert_eq!(progress, expected);
+            }
+        }
+
+        #[test]
+        fn permit_removal_distinguishes_present_absent_and_poisoned() {
+            const CHILD: &str = "CGR_PERMIT_OUTCOME_CHILD";
+            if std::env::var_os(CHILD).is_some() {
+                use super::super::*;
+                ENABLED.store(true, Ordering::Relaxed);
+                let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+                let _client = TcpStream::connect(listener.local_addr().unwrap()).unwrap();
+                let (stream, _) = listener.accept().unwrap();
+                let registry = Arc::new(ConnectionRegistry::default());
+                let permit = registry.register(&stream).unwrap();
+                let id = permit.id;
+                drop(permit);
+                drop(ConnectionPermit {
+                    registry: Arc::clone(&registry),
+                    id,
+                    trace_id: 0,
+                });
+                let poison = Arc::clone(&registry);
+                let _ = std::thread::spawn(move || {
+                    let _held = poison.streams.lock().unwrap();
+                    panic!("synthetic poison");
+                })
+                .join();
+                drop(ConnectionPermit {
+                    registry: Arc::clone(&registry),
+                    id,
+                    trace_id: 0,
+                });
+                let snapshot = *EVENTS.lock().unwrap();
+                let output = snapshot.render(1, false);
+                let text = std::str::from_utf8(&output.bytes[..output.len]).unwrap();
+                assert!(text.contains("corr_permit_removed 0\n"));
+                assert!(text.contains("corr_permit_absent 0\n"));
+                assert!(text.contains("corr_permit_unknown 0\n"));
+                return;
+            }
+            let output = std::process::Command::new(std::env::current_exe().unwrap())
+                .args(["--exact", "coordinator::fixture_trace::tests::permit_removal_distinguishes_present_absent_and_poisoned", "--nocapture"])
+                .env(CHILD, "1").output().unwrap();
+            assert!(
+                output.status.success(),
+                "{}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+
+        #[test]
+        fn owner_writer_finishes_normally_before_client_reads() {
+            const CHILD: &str = "CGR_WRITER_FINISHED_CHILD";
+            if std::env::var_os(CHILD).is_some() {
+                use super::super::*;
+                ENABLED.store(true, Ordering::Relaxed);
+                let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+                listener.set_nonblocking(true).unwrap();
+                let endpoint = listener.local_addr().unwrap();
+                let state = CoordinatorState {
+                    version: COORDINATOR_PROTOCOL_VERSION,
+                    endpoint,
+                    token: "a".repeat(64),
+                    pid: std::process::id(),
+                    supports_deadlines: true,
+                };
+                let server_state = state.clone();
+                let stop = Arc::new(AtomicBool::new(false));
+                let server_stop = Arc::clone(&stop);
+                let dispatcher = Arc::new(ExecutionDispatcher::default());
+                let (observer_tx, observer_rx) = std::sync::mpsc::channel();
+                let server = std::thread::spawn(move || {
+                    serve_owner_with_observer(
+                        listener,
+                        &server_state,
+                        &server_stop,
+                        &dispatcher,
+                        Ok,
+                        |operation_id, invocation, _| {
+                            Ok(OperationResponse::from_payload(
+                                operation_id,
+                                invocation.output_format,
+                                serde_json::json!({"ok": true}),
+                            ))
+                        },
+                        Some(observer_tx),
+                    );
+                });
+                let weak = observer_rx
+                    .recv_timeout(std::time::Duration::from_secs(5))
+                    .unwrap();
+                let mut client = TcpStream::connect(endpoint).unwrap();
+                let guard = register_client(&client).unwrap();
+                let request = CoordinatorRequest {
+                    version: COORDINATOR_PROTOCOL_VERSION,
+                    token: state.token,
+                    timeout_ms: None,
+                    command: CoordinatorCommand::Execute {
+                        operation_id: "health".into(),
+                        invocation: OperationInvocation {
+                            repo: RepoSelector::default(),
+                            arguments: serde_json::json!({}),
+                            output_format: crate::api::OutputFormat::Typed,
+                        },
+                    },
+                };
+                write_frame_until(
+                    &mut client,
+                    &request,
+                    Instant::now() + std::time::Duration::from_secs(5),
+                )
+                .unwrap();
+                let deadline = Instant::now() + std::time::Duration::from_secs(5);
+                loop {
+                    let finished = weak.upgrade().is_some_and(|registry| {
+                        registry
+                            .writers
+                            .lock()
+                            .unwrap()
+                            .iter()
+                            .any(std::thread::JoinHandle::is_finished)
+                    });
+                    if finished {
+                        break;
+                    }
+                    assert!(Instant::now() < deadline, "response writer did not finish");
+                    std::thread::sleep(std::time::Duration::from_millis(5));
+                }
+                let reply: CoordinatorReply = read_frame_until(
+                    &mut client,
+                    Instant::now() + std::time::Duration::from_secs(5),
+                )
+                .unwrap();
+                assert!(matches!(reply, CoordinatorReply::Success(_)));
+                let snapshot = *EVENTS.lock().unwrap();
+                let output = snapshot.render(std::process::id(), true);
+                let text = std::str::from_utf8(&output.bytes[..output.len]).unwrap();
+                assert!(text.contains("corr_response_written 1\n"));
+                assert!(text.contains("corr_permit_removed 1\n"));
+                assert!(text.contains("corr_writer_closing 1\n"));
+                assert!(!text.contains("close_all"));
+                drop(guard);
+                stop.store(true, Ordering::Release);
+                server.join().unwrap();
+                return;
+            }
+            let output = std::process::Command::new(std::env::current_exe().unwrap())
+                .args(["--exact", "coordinator::fixture_trace::tests::owner_writer_finishes_normally_before_client_reads", "--nocapture"])
+                .env(CHILD, "1").output().unwrap();
+            assert!(
+                output.status.success(),
+                "{}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+
+        #[test]
+        fn owner_controlled_close_and_client_early_close_are_single_submission() {
+            const CHILD: &str = "CGR_OWNER_CLOSE_CHILD";
+            if let Some(mode) = std::env::var_os(CHILD) {
+                use super::super::*;
+                use std::sync::atomic::AtomicUsize;
+                ENABLED.store(true, Ordering::Relaxed);
+                let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+                listener.set_nonblocking(true).unwrap();
+                let endpoint = listener.local_addr().unwrap();
+                let state = CoordinatorState {
+                    version: COORDINATOR_PROTOCOL_VERSION,
+                    endpoint,
+                    token: "a".repeat(64),
+                    pid: std::process::id(),
+                    supports_deadlines: true,
+                };
+                let server_state = state.clone();
+                let stop = Arc::new(AtomicBool::new(false));
+                let server_stop = Arc::clone(&stop);
+                let dispatcher = Arc::new(ExecutionDispatcher::default());
+                let executions = Arc::new(AtomicUsize::new(0));
+                let worker_count = Arc::clone(&executions);
+                let (observer_tx, observer_rx) = std::sync::mpsc::channel();
+                let (started_tx, started_rx) = std::sync::mpsc::channel();
+                let (release_tx, release_rx) = std::sync::mpsc::channel();
+                let release_rx = Mutex::new(release_rx);
+                let server = std::thread::spawn(move || {
+                    serve_owner_with_observer(
+                        listener,
+                        &server_state,
+                        &server_stop,
+                        &dispatcher,
+                        Ok,
+                        move |operation_id, invocation, _| {
+                            worker_count.fetch_add(1, Ordering::SeqCst);
+                            started_tx.send(()).unwrap();
+                            release_rx
+                                .lock()
+                                .unwrap()
+                                .recv_timeout(std::time::Duration::from_secs(5))
+                                .unwrap();
+                            Ok(OperationResponse::from_payload(
+                                operation_id,
+                                invocation.output_format,
+                                serde_json::json!({"ok": true}),
+                            ))
+                        },
+                        Some(observer_tx),
+                    );
+                });
+                let weak = observer_rx
+                    .recv_timeout(std::time::Duration::from_secs(5))
+                    .unwrap();
+                let invocation = OperationInvocation {
+                    repo: RepoSelector::default(),
+                    arguments: serde_json::json!({}),
+                    output_format: crate::api::OutputFormat::Typed,
+                };
+                if mode == "shutdown" {
+                    let command = CoordinatorCommand::Execute {
+                        operation_id: "health".into(),
+                        invocation,
+                    };
+                    let client = std::thread::spawn(move || {
+                        send_to_state_with_context(&state, &command, ExecutionContext::default())
+                    });
+                    started_rx
+                        .recv_timeout(std::time::Duration::from_secs(5))
+                        .unwrap();
+                    weak.upgrade().unwrap().close_all();
+                    let error = client.join().unwrap().unwrap_err();
+                    assert_eq!(error.code, "coordinator_transport_error");
+                    assert!(!error.retryable);
+                } else {
+                    let mut client = TcpStream::connect(endpoint).unwrap();
+                    let request = CoordinatorRequest {
+                        version: COORDINATOR_PROTOCOL_VERSION,
+                        token: state.token,
+                        timeout_ms: None,
+                        command: CoordinatorCommand::Execute {
+                            operation_id: "health".into(),
+                            invocation,
+                        },
+                    };
+                    write_frame_until(
+                        &mut client,
+                        &request,
+                        Instant::now() + std::time::Duration::from_secs(5),
+                    )
+                    .unwrap();
+                    started_rx
+                        .recv_timeout(std::time::Duration::from_secs(5))
+                        .unwrap();
+                    drop(client);
+                }
+                release_tx.send(()).unwrap();
+                let deadline = Instant::now() + std::time::Duration::from_secs(5);
+                loop {
+                    let finished = weak.upgrade().is_some_and(|registry| {
+                        registry
+                            .writers
+                            .lock()
+                            .unwrap()
+                            .iter()
+                            .any(std::thread::JoinHandle::is_finished)
+                    });
+                    if finished {
+                        break;
+                    }
+                    assert!(Instant::now() < deadline, "response writer did not finish");
+                    std::thread::sleep(std::time::Duration::from_millis(5));
+                }
+                stop.store(true, Ordering::Release);
+                server.join().unwrap();
+                assert_eq!(executions.load(Ordering::SeqCst), 1);
+                return;
+            }
+            for mode in ["shutdown", "early"] {
+                let output = std::process::Command::new(std::env::current_exe().unwrap())
+                    .args(["--exact", "coordinator::fixture_trace::tests::owner_controlled_close_and_client_early_close_are_single_submission", "--nocapture"])
+                    .env(CHILD, mode).output().unwrap();
+                assert!(
+                    output.status.success(),
+                    "{}",
+                    String::from_utf8_lossy(&output.stderr)
+                );
+            }
+        }
+
+        #[test]
         fn actual_dispatched_disconnect_correlates_without_replay() {
             const CHILD: &str = "CGR_CORRELATION_SYNTHETIC_CHILD";
             const SENTINEL: &str = "CGR_CORRELATION_SECRET_SENTINEL";
@@ -1457,6 +1785,8 @@ impl ConnectionRegistry {
                 #[cfg(not(debug_assertions))]
                 let _ = result;
                 drop(connection);
+                #[cfg(debug_assertions)]
+                fixture_trace::record_corr(fixture_trace::Kind::CorrWriterClosing, trace_id);
             });
         #[cfg(debug_assertions)]
         if writer.is_err() {
@@ -1503,11 +1833,29 @@ struct ConnectionPermit {
 
 impl Drop for ConnectionPermit {
     fn drop(&mut self) {
+        #[cfg(debug_assertions)]
+        let outcome = match self.registry.streams.lock() {
+            Ok(mut streams) => Some(streams.remove(&self.id).is_some()),
+            Err(poisoned) => {
+                poisoned.into_inner().remove(&self.id);
+                None
+            }
+        };
+        #[cfg(not(debug_assertions))]
         self.registry
             .streams
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .remove(&self.id);
+        #[cfg(debug_assertions)]
+        fixture_trace::record_corr(
+            match outcome {
+                Some(true) => fixture_trace::Kind::CorrPermitRemoved,
+                Some(false) => fixture_trace::Kind::CorrPermitAbsent,
+                None => fixture_trace::Kind::CorrPermitUnknown,
+            },
+            self.trace_id,
+        );
     }
 }
 
@@ -2026,6 +2374,33 @@ fn serve_owner_with_executor<P, E>(
         + Sync
         + 'static,
 {
+    serve_owner_with_observer(
+        listener,
+        state,
+        stop,
+        dispatcher,
+        prepare,
+        execute,
+        #[cfg(test)]
+        None,
+    );
+}
+
+fn serve_owner_with_observer<P, E>(
+    listener: TcpListener,
+    state: &CoordinatorState,
+    stop: &AtomicBool,
+    dispatcher: &Arc<ExecutionDispatcher>,
+    prepare: P,
+    execute: E,
+    #[cfg(test)] observer: Option<std::sync::mpsc::Sender<Weak<ConnectionRegistry>>>,
+) where
+    P: Fn(OperationInvocation) -> Result<OperationInvocation, ApiError> + Send + Sync + 'static,
+    E: Fn(&str, &OperationInvocation, ExecutionContext) -> Result<OperationResponse, ApiError>
+        + Send
+        + Sync
+        + 'static,
+{
     #[cfg(debug_assertions)]
     fixture_trace::record(fixture_trace::Kind::OwnerStart, 0);
     let dispatcher = Arc::clone(dispatcher);
@@ -2100,6 +2475,10 @@ fn serve_owner_with_executor<P, E>(
         return;
     };
     let registry = Arc::new(ConnectionRegistry::default());
+    #[cfg(test)]
+    if let Some(observer) = observer {
+        let _ = observer.send(Arc::downgrade(&registry));
+    }
     let mut handlers = Vec::new();
     while !stop.load(Ordering::Acquire) {
         match listener.accept() {
@@ -2134,6 +2513,14 @@ fn serve_owner_with_executor<P, E>(
                             connection,
                             server_prepare,
                         );
+                        #[cfg(debug_assertions)]
+                        {
+                            let trace_id = fixture_trace::correlate_server(&stream);
+                            fixture_trace::record_corr(
+                                fixture_trace::Kind::CorrHandlerClosing,
+                                trace_id,
+                            );
+                        }
                     })
                 {
                     handlers.push(handler);
@@ -2477,7 +2864,20 @@ fn send_to_state_with_context(
     })?;
     let read_deadline =
         execution_deadline.or_else(|| ping.then_some(Instant::now() + STREAM_IO_TIMEOUT));
-    read_frame_with_policy(&mut stream, read_deadline, read_deadline.is_none()).map_err(|error| {
+    #[cfg(debug_assertions)]
+    let mut receive_progress = ReceiveProgress::Zero;
+    read_frame_with_policy(
+        &mut stream,
+        read_deadline,
+        read_deadline.is_none(),
+        #[cfg(debug_assertions)]
+        if fixture_trace::enabled() {
+            Some(&mut receive_progress)
+        } else {
+            None
+        },
+    )
+    .map_err(|error| {
         let expired = execution_deadline.is_some_and(|deadline| Instant::now() >= deadline);
         let classified = if expired {
             ExecutionContext::expired_error()
@@ -2486,6 +2886,14 @@ fn send_to_state_with_context(
         };
         #[cfg(debug_assertions)]
         if !ping && !expired {
+            fixture_trace::record_corr(
+                match receive_progress {
+                    ReceiveProgress::Zero => fixture_trace::Kind::ClientReadZero,
+                    ReceiveProgress::Some => fixture_trace::Kind::ClientReadSome,
+                    ReceiveProgress::Delimited => fixture_trace::Kind::ClientReadDelimitedError,
+                },
+                trace_id,
+            );
             fixture_trace::record_corr(fixture_trace::Kind::ClientReadFailed, trace_id);
             fixture_trace::render_once(state.pid == std::process::id());
         }
@@ -2663,13 +3071,28 @@ fn read_frame_until<T: DeserializeOwned>(
     stream: &mut TcpStream,
     deadline: Instant,
 ) -> Result<T, String> {
-    read_frame_with_policy(stream, Some(deadline), false)
+    read_frame_with_policy(
+        stream,
+        Some(deadline),
+        false,
+        #[cfg(debug_assertions)]
+        None,
+    )
+}
+
+#[cfg(debug_assertions)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ReceiveProgress {
+    Zero,
+    Some,
+    Delimited,
 }
 
 fn read_frame_with_policy<T: DeserializeOwned>(
     stream: &mut TcpStream,
     deadline: Option<Instant>,
     start_timeout_after_first_byte: bool,
+    #[cfg(debug_assertions)] mut progress: Option<&mut ReceiveProgress>,
 ) -> Result<T, String> {
     stream
         .set_nonblocking(true)
@@ -2694,6 +3117,14 @@ fn read_frame_with_policy<T: DeserializeOwned>(
                     deadline = Some(Instant::now() + COORDINATOR_FRAME_TIMEOUT);
                 }
                 let frame_end = buffer[..read].iter().position(|byte| *byte == b'\n');
+                #[cfg(debug_assertions)]
+                if let Some(progress) = progress.as_deref_mut() {
+                    *progress = if frame_end.is_some() {
+                        ReceiveProgress::Delimited
+                    } else {
+                        ReceiveProgress::Some
+                    };
+                }
                 let bytes_to_append = frame_end.unwrap_or(read);
                 if payload.len().saturating_add(bytes_to_append) > MAX_FRAME_BYTES {
                     return Err(format!(

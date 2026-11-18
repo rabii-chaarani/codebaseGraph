@@ -74,6 +74,14 @@ fn safe_fixture_trace_line(line: &[u8]) -> bool {
                 | "response_spawn_failed"
                 | "close_all"
                 | "client_read_failed"
+                | "client_read_zero"
+                | "client_read_some"
+                | "client_read_delimited_error"
+                | "corr_permit_removed"
+                | "corr_permit_absent"
+                | "corr_permit_unknown"
+                | "corr_handler_closing"
+                | "corr_writer_closing"
                 | "corr_receive"
                 | "corr_receive_failed"
                 | "corr_auth_rejected"
@@ -365,6 +373,10 @@ fn central_daemon_captures_synthetic_postsend_failure() {
     assert_eq!(stderr.matches("CGR_COORD_TRACE v1").count(), 1, "{stderr}");
     assert!(
         stderr.contains("CGR_COORD_TRACE client_read_failed 0\n"),
+        "{stderr}"
+    );
+    assert!(
+        stderr.contains("CGR_COORD_TRACE client_read_zero 0\n"),
         "{stderr}"
     );
     assert!(stderr.contains("owner_pid_matches=false"), "{stderr}");
