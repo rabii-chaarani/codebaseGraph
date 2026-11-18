@@ -1,0 +1,325 @@
+{
+  "issue": "COD-138",
+  "work": "CBG-RESTORE-01/C4-P1",
+  "corrected_baseline": "ad38fe56f17f64ef104ce7556e20e9748e0df55e",
+  "corrected_baseline_tree": "111af2d8db5fa981a972176c7b33e11d898b585e",
+  "previous_restored_baseline": "6115439262005d1de984c5837e88f057c7317205",
+  "previous_contract_subject": "cf9493edce3692054c4d6c17b53d2fdb562b632e",
+  "previous_type_subject": "6b6b273d0c37e43929c7d01aae11822783ad9bbe",
+  "original_type_subject": "f000bc1c90c788593ad0e1825ea6d03f7f439900",
+  "previous_types_evidence": {
+    "run": 44164878443,
+    "attempt": 2,
+    "source": "6b6b273d0c37e43929c7d01aae11822783ad9bbe"
+  },
+  "corrected_baseline_evidence": {
+    "run": 44238431967,
+    "attempt": 1,
+    "source": "ad38fe56f17f64ef104ce7556e20e9748e0df55e"
+  },
+  "mapping": "Every entry keeps the same path, mode and blob. The facade preserves exactly the earlier one-line export against the corrected baseline. Local execution and hosted CI for the combined tree are recorded separately.",
+  "carried_paths": [
+    {
+      "path": "assets/architecture_schema.json",
+      "from": "6b6b273d0c37e43929c7d01aae11822783ad9bbe",
+      "blob": "423cd295210402608a6d85f84f5136ebc4773009",
+      "mode": "100644",
+      "sha256": "704c349299c26c7162fbe1e5e1219fb78ab0e5d2908252dd22541f69d2151f7b",
+      "bytes": 18859,
+      "role": "types product and tests"
+    },
+    {
+      "path": "docs/specs/CBG-C4-01/activation/cod19-activation.json",
+      "from": "cf9493edce3692054c4d6c17b53d2fdb562b632e",
+      "blob": "892509593b16aff3c47c6a1e5fc3cb7b10fb3ae6",
+      "mode": "100644",
+      "sha256": "635f08030d0d4471dfea9cc6075665df568b075a06ede048f18673fe688181c8",
+      "bytes": 9475,
+      "role": "contract prerequisite"
+    },
+    {
+      "path": "docs/specs/CBG-C4-01/activation/cod19-activation.md",
+      "from": "cf9493edce3692054c4d6c17b53d2fdb562b632e",
+      "blob": "e57ac2e66195a6aed2ec2b6154167f8a154cdb7d",
+      "mode": "100644",
+      "sha256": "5d835213a29a6e9007af537e7009d3f9465fff96b86c661f1b8abbb67571a58b",
+      "bytes": 11572,
+      "role": "contract prerequisite"
+    },
+    {
+      "path": "docs/specs/CBG-C4-01/activation/cod19-installation.json",
+      "from": "cf9493edce3692054c4d6c17b53d2fdb562b632e",
+      "blob": "9b54ca76c4e8b30d240ee359e0b053ca8f8a8924",
+      "mode": "100644",
+      "sha256": "056c9294774d448c40e3450b0384f0981fe922ecd216e4583a1a1cf36bb78aa8",
+      "bytes": 2498,
+      "role": "contract prerequisite"
+    },
+    {
+      "path": "docs/specs/CBG-C4-01/activation/cod19-ledger-closure.json",
+      "from": "cf9493edce3692054c4d6c17b53d2fdb562b632e",
+      "blob": "54c4b79c630091b3ba77911fa81315e0c31480c5",
+      "mode": "100644",
+      "sha256": "594b8fdafc0140e171795d99baaa0aac1ccebdc4ae41e9414b136dc2a82a0111",
+      "bytes": 1984,
+      "role": "contract prerequisite"
+    },
+    {
+      "path": "docs/specs/CBG-C4-01/activation/cod19-preflight.json",
+      "from": "cf9493edce3692054c4d6c17b53d2fdb562b632e",
+      "blob": "b476898ef22977a43f2345bb6ab27ee44a71a46c",
+      "mode": "100644",
+      "sha256": "491569704e57c424c648e9c73a53d9435a358f2a0adf6421698b77f5c90b3421",
+      "bytes": 67202,
+      "role": "contract prerequisite"
+    },
+    {
+      "path": "docs/specs/CBG-C4-01/approval-scope.md",
+      "from": "cf9493edce3692054c4d6c17b53d2fdb562b632e",
+      "blob": "cb8978ea9f6aeb9ea01ba2b6cbfa7c34720ff01f",
+      "mode": "100644",
+      "sha256": "caf9e08e213fdbd7af33e311dc065cd5c1794d9b9f6beb4d8ae950a6ed2a9059",
+      "bytes": 10829,
+      "role": "contract prerequisite"
+    },
+    {
+      "path": "docs/specs/CBG-C4-01/approvals/cod19-approval.md",
+      "from": "cf9493edce3692054c4d6c17b53d2fdb562b632e",
+      "blob": "c3bc6e1b057bc5b3bc7be8aa39e0b349cf3d7d4b",
+      "mode": "100644",
+      "sha256": "e0c176ab588ff6bd9877a644c1699cd803b89482e0e762681e1f2d85f37908e2",
+      "bytes": 4153,
+      "role": "contract prerequisite"
+    },
+    {
+      "path": "docs/specs/CBG-C4-01/authority-transition.md",
+      "from": "cf9493edce3692054c4d6c17b53d2fdb562b632e",
+      "blob": "7b5024773ed3457c5473b61029c61bea0382dedc",
+      "mode": "100644",
+      "sha256": "3ee40b53eb52bcad84fd5a61cbadb6d53866cf6d00907948efe6df3c0c8445fe",
+      "bytes": 69363,
+      "role": "contract prerequisite"
+    },
+    {
+      "path": "docs/specs/CBG-C4-01/cod16-contracts.md",
+      "from": "cf9493edce3692054c4d6c17b53d2fdb562b632e",
+      "blob": "55256256a2ed333c681fc0f5bf6c9604bd479b0f",
+      "mode": "100644",
+      "sha256": "c5c5f523deb9a214f9218c15b63c67e66b4cdc429d7a45cf156bdda687af6847",
+      "bytes": 51193,
+      "role": "contract prerequisite"
+    },
+    {
+      "path": "docs/specs/CBG-C4-01/cod16-decisions.md",
+      "from": "cf9493edce3692054c4d6c17b53d2fdb562b632e",
+      "blob": "9c1a72cb7eabbbb1ef4a85a507d838495cd71d5c",
+      "mode": "100644",
+      "sha256": "f5c2489ca20e928ae08168d431a49d378dd8ba5d273f167c9f2089f958e93df1",
+      "bytes": 5529,
+      "role": "contract prerequisite"
+    },
+    {
+      "path": "docs/specs/CBG-C4-01/cod16-fixtures.md",
+      "from": "cf9493edce3692054c4d6c17b53d2fdb562b632e",
+      "blob": "32e47f9b9aec63907a7010575262d8f53439b611",
+      "mode": "100644",
+      "sha256": "10eac06bfd49f61aded649bcc96822db62831c421f69946f2d2817acfe2df69a",
+      "bytes": 14320,
+      "role": "contract prerequisite"
+    },
+    {
+      "path": "docs/specs/CBG-C4-01/cod16-review.md",
+      "from": "cf9493edce3692054c4d6c17b53d2fdb562b632e",
+      "blob": "649a7fa50009de79d296c503e09a992306c581b3",
+      "mode": "100644",
+      "sha256": "b901bad43c7d122d64192f8a7624f308f317a71f0cedaf0a9563b1ca0a742881",
+      "bytes": 8909,
+      "role": "contract prerequisite"
+    },
+    {
+      "path": "docs/specs/CBG-C4-01/cod17-baseline.md",
+      "from": "cf9493edce3692054c4d6c17b53d2fdb562b632e",
+      "blob": "6a2bec26cc5e665b6c4ca579014dbe008fe8a6c4",
+      "mode": "100644",
+      "sha256": "9fc7ab3c651dfb43168b741559cda8757988b96b0112883dc5008aa8e4af4177",
+      "bytes": 23584,
+      "role": "contract prerequisite"
+    },
+    {
+      "path": "docs/specs/CBG-C4-01/cod17-decisions.md",
+      "from": "cf9493edce3692054c4d6c17b53d2fdb562b632e",
+      "blob": "8121d3851265a6f83e8027176d7ca4af8175e75d",
+      "mode": "100644",
+      "sha256": "ff0f03f2e05de1a41872ea593e8e33cab4e02e2ab05ce170bbaf7147897cad70",
+      "bytes": 3367,
+      "role": "contract prerequisite"
+    },
+    {
+      "path": "docs/specs/CBG-C4-01/cod17-review.md",
+      "from": "cf9493edce3692054c4d6c17b53d2fdb562b632e",
+      "blob": "baec87487b481ebfb413b28c1bbc256e69b31e4c",
+      "mode": "100644",
+      "sha256": "f9ff167a1862dbd92dbdb29b8855c8f5b147d21bc927aa23e85f3dd28d9120a4",
+      "bytes": 4797,
+      "role": "contract prerequisite"
+    },
+    {
+      "path": "docs/specs/CBG-C4-01/cod18-contracts.md",
+      "from": "cf9493edce3692054c4d6c17b53d2fdb562b632e",
+      "blob": "34cd21929f31aa6de306ce2aa5aace75e4dea9c3",
+      "mode": "100644",
+      "sha256": "bf57465a7062880f1075201261f20551adf58c502a7c16b358d9f56e77c03823",
+      "bytes": 30163,
+      "role": "contract prerequisite"
+    },
+    {
+      "path": "docs/specs/CBG-C4-01/cod18-decisions.md",
+      "from": "cf9493edce3692054c4d6c17b53d2fdb562b632e",
+      "blob": "ac0b95a50716f7d900101b3400e549d5ff71eb6a",
+      "mode": "100644",
+      "sha256": "0c4ab2414be0ce7ed84a42a87819febe61b87778332b3ee936873db45aedf8d8",
+      "bytes": 5425,
+      "role": "contract prerequisite"
+    },
+    {
+      "path": "docs/specs/CBG-C4-01/cod18-fixtures.md",
+      "from": "cf9493edce3692054c4d6c17b53d2fdb562b632e",
+      "blob": "9d5359b745e2629efb9363fa67a56f6c5282055f",
+      "mode": "100644",
+      "sha256": "cd1eb5af7805a7dc6fd4ff278d9932117aa68cd3433b75e5d6d1d07a6a9c30ae",
+      "bytes": 10373,
+      "role": "contract prerequisite"
+    },
+    {
+      "path": "docs/specs/CBG-C4-01/cod18-review.md",
+      "from": "cf9493edce3692054c4d6c17b53d2fdb562b632e",
+      "blob": "fdd116090d029577c1cda44bab0b0f8ee3a82b37",
+      "mode": "100644",
+      "sha256": "1f7df16eef03a53597502490130f3660ecc726ba9ee955cb3d7d56b4f377e312",
+      "bytes": 9618,
+      "role": "contract prerequisite"
+    },
+    {
+      "path": "docs/specs/CBG-C4-01/cod19-review.md",
+      "from": "cf9493edce3692054c4d6c17b53d2fdb562b632e",
+      "blob": "ee03bbe010832e80216af8eb5ae6a1b22e34b9ae",
+      "mode": "100644",
+      "sha256": "a775cb9077de6a1913fb25f005da7960b78ccf05fb03d8bd11687ae6a8271a8a",
+      "bytes": 10898,
+      "role": "contract prerequisite"
+    },
+    {
+      "path": "docs/specs/CBG-C4-01/execution/cod137-preservation-evidence.md",
+      "from": "cf9493edce3692054c4d6c17b53d2fdb562b632e",
+      "blob": "9ed8ee5614a29a96e8367e7e8121465ec9c60d03",
+      "mode": "100644",
+      "sha256": "0f6234d7d567a9ac26f2d624ee646276c052f178a9c6f8595d7b89c556ec5b78",
+      "bytes": 10583,
+      "role": "contract prerequisite"
+    },
+    {
+      "path": "docs/specs/CBG-C4-01/execution/cod137-preservation-map.json",
+      "from": "cf9493edce3692054c4d6c17b53d2fdb562b632e",
+      "blob": "39b556c3363ac2e0b0fd505aa8c37c9ff26ca4da",
+      "mode": "100644",
+      "sha256": "66c07d1af5cb98e828e39b23ae61b32757211ae3d2d80efc52dcbb42ae6d1e6b",
+      "bytes": 12439,
+      "role": "contract prerequisite"
+    },
+    {
+      "path": "docs/specs/CBG-C4-01/execution/cod137-preservation.md",
+      "from": "cf9493edce3692054c4d6c17b53d2fdb562b632e",
+      "blob": "1ecff7b751ef68e7aff9a51df076c7db8e4c9ecc",
+      "mode": "100644",
+      "sha256": "c57c622f5327121a1ae3799c7c705e7357bbc25dd3d9c1e0ca7a1524b85c994b",
+      "bytes": 11291,
+      "role": "contract prerequisite"
+    },
+    {
+      "path": "docs/specs/CBG-C4-01/execution/cod138-types-port-evidence.md",
+      "from": "6b6b273d0c37e43929c7d01aae11822783ad9bbe",
+      "blob": "4158f16a139580869df49ac6aba3d3f7f07ba857",
+      "mode": "100644",
+      "sha256": "f9b7de6c5cf1c318feab30c31744231032363bd172eab37ea1eb74042555521b",
+      "bytes": 11246,
+      "role": "historical types record"
+    },
+    {
+      "path": "docs/specs/CBG-C4-01/execution/cod138-types-port-map.json",
+      "from": "6b6b273d0c37e43929c7d01aae11822783ad9bbe",
+      "blob": "e7a57e52a82ec7fb66674250c072d176d65e98b8",
+      "mode": "100644",
+      "sha256": "e9bf917684533c083b36ebbb994c08506cc6f3fcf6b030aa1d0d9c3207c10104",
+      "bytes": 4244,
+      "role": "historical types record"
+    },
+    {
+      "path": "docs/specs/CBG-C4-01/execution/cod138-types-port.md",
+      "from": "6b6b273d0c37e43929c7d01aae11822783ad9bbe",
+      "blob": "4b4c07f20726046c9f80596eec1df0bb2010afda",
+      "mode": "100644",
+      "sha256": "e9f3085d8c368c2de01dab56df8bad8e449bf5d63b0c22eeedf7136b3cae3394",
+      "bytes": 16429,
+      "role": "historical types record"
+    },
+    {
+      "path": "docs/specs/CBG-C4-01/proposal-review.md",
+      "from": "cf9493edce3692054c4d6c17b53d2fdb562b632e",
+      "blob": "258b03fdad9414352aaab5927b42e85f5f6aba25",
+      "mode": "100644",
+      "sha256": "2f9f6de504f31d3b171239c00cd7837c576605e3e794fa96acd76b800cc4f1fd",
+      "bytes": 18382,
+      "role": "contract prerequisite"
+    },
+    {
+      "path": "docs/specs/CBG-C4-01/spec.md",
+      "from": "cf9493edce3692054c4d6c17b53d2fdb562b632e",
+      "blob": "f2b8ae70de2250abdcf52cfbf3ed70017c3801d8",
+      "mode": "100644",
+      "sha256": "6dda3d4795ac726b4ee76a62851f89f706e9292a715d5e0306c30d6c9d07b98f",
+      "bytes": 53363,
+      "role": "contract prerequisite"
+    },
+    {
+      "path": "src/architecture/mod.rs",
+      "from": "6b6b273d0c37e43929c7d01aae11822783ad9bbe",
+      "blob": "ae29df24b5cfcc3147600a2c481ac3bd6958cfaf",
+      "mode": "100644",
+      "sha256": "c5b01f1ee455e944687f372f55d01ac300281dc3652739d62193602ae80cc1a9",
+      "bytes": 11008,
+      "role": "types product and tests"
+    },
+    {
+      "path": "src/lib.rs",
+      "from": "6b6b273d0c37e43929c7d01aae11822783ad9bbe",
+      "blob": "b30a2fa8e3ba57274fb3967ae94305d1fb11b28a",
+      "mode": "100644",
+      "sha256": "f243f412f5b99a0291a19c5ee07421c7bdbff5ce9d97ae6bead6e025e6832f65",
+      "bytes": 836,
+      "role": "types product and tests"
+    },
+    {
+      "path": "tests/architecture_model.rs",
+      "from": "6b6b273d0c37e43929c7d01aae11822783ad9bbe",
+      "blob": "cd214645207dc915b90e1090dc26869b4abfcb7d",
+      "mode": "100644",
+      "sha256": "6afd4314e8b1c3aa302c7b199b4b0c71124218393639216419100fb8a739baf4",
+      "bytes": 12965,
+      "role": "types product and tests"
+    }
+  ],
+  "restoration_delta_paths_preserved": [
+    "docs/specs/CBG-RESTORE-01/pr200-direct-read-evidence.md",
+    "docs/specs/CBG-RESTORE-01/pr200-direct-read-followup.md",
+    "docs/specs/CBG-RESTORE-01/windows-reset-correlation-approval.md",
+    "docs/specs/CBG-RESTORE-01/windows-reset-correlation-brief.md",
+    "docs/specs/CBG-RESTORE-01/windows-reset-correlation-evidence.md",
+    "docs/specs/CBG-RESTORE-01/windows-response-observation-brief.md",
+    "docs/specs/CBG-RESTORE-01/windows-response-observation-evidence.md",
+    "src/api/context.rs",
+    "src/coordinator.rs",
+    "src/storage/direct.rs",
+    "src/storage/test_harness.rs",
+    "tests/refresh_recovery_process.rs"
+  ]
+}
