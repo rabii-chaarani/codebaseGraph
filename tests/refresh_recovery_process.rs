@@ -74,6 +74,22 @@ fn safe_fixture_trace_line(line: &[u8]) -> bool {
                 | "response_spawn_failed"
                 | "close_all"
                 | "client_read_failed"
+                | "corr_receive"
+                | "corr_receive_failed"
+                | "corr_auth_rejected"
+                | "corr_prepare_rejected"
+                | "corr_dispatch"
+                | "corr_worker_start"
+                | "corr_worker_reply"
+                | "corr_worker_abandon"
+                | "corr_response_written"
+                | "corr_response_failed"
+                | "corr_early_reply"
+                | "event_loss"
+                | "ring_overwrite"
+                | "correlation_loss"
+                | "correlation_uncertain"
+                | "render_truncated"
         )
         && fields[2].parse::<u64>().is_ok()
 }
@@ -176,6 +192,13 @@ fn fixture_trace_filter_accepts_only_static_schema() {
     ));
     assert!(safe_fixture_trace_line(
         b"CGR_COORD_TRACE response_written 42"
+    ));
+    assert!(safe_fixture_trace_line(b"CGR_COORD_TRACE corr_dispatch 42"));
+    assert!(safe_fixture_trace_line(
+        b"CGR_COORD_TRACE correlation_loss 2"
+    ));
+    assert!(!safe_fixture_trace_line(
+        b"CGR_COORD_TRACE corr_dispatch token=secret"
     ));
     assert!(!safe_fixture_trace_line(
         b"CGR_COORD_TRACE response_written secret"
@@ -345,6 +368,14 @@ fn central_daemon_captures_synthetic_postsend_failure() {
     assert!(
         stderr.contains("server_trace_may_be_incomplete=true"),
         "{stderr}"
+    );
+    assert!(
+        !stderr.contains("CGR_COORD_TRACE corr_dispatch "),
+        "external owner cannot provide local dispatch evidence"
+    );
+    assert!(
+        !stderr.contains("CGR_COORD_TRACE corr_receive "),
+        "external owner cannot provide local receive evidence"
     );
     assert!(!stderr.contains(&"a".repeat(64)), "synthetic token leaked");
 }

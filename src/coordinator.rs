@@ -23,14 +23,206 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 mod fixture_trace {
     use std::fmt::Write as _;
     use std::io::Write as _;
-    use std::sync::atomic::{AtomicBool, Ordering};
-    use std::sync::Mutex;
+    use std::net::{SocketAddr, TcpStream};
+    use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+    use std::sync::{Arc, Mutex};
 
     const CAPACITY: usize = 32;
     const OUTPUT_LIMIT: usize = 2048;
     static ENABLED: AtomicBool = AtomicBool::new(false);
     static RENDERED: AtomicBool = AtomicBool::new(false);
     static EVENTS: Mutex<Ring> = Mutex::new(Ring::new());
+    static CORRELATION: Mutex<Correlation> = Mutex::new(Correlation::new());
+    static CORRELATION_UNCERTAIN: AtomicBool = AtomicBool::new(false);
+    static CORRELATION_LOSS: AtomicU64 = AtomicU64::new(0);
+    static EVENT_LOSS: AtomicU64 = AtomicU64::new(0);
+    static NEXT_SEQUENCE: AtomicU64 = AtomicU64::new(1);
+    static CORRELATION_INFLIGHT: AtomicU64 = AtomicU64::new(0);
+    const ACTIVE_LIMIT: usize = 64;
+    const HISTORY_LIMIT: usize = 4096;
+
+    #[derive(Clone, Copy, PartialEq, Eq)]
+    struct Tuple(SocketAddr, SocketAddr);
+    struct Entry {
+        tuple: Tuple,
+        sequence: u64,
+        active: Arc<AtomicBool>,
+        reused: bool,
+    }
+    struct Correlation {
+        entries: Vec<Entry>,
+    }
+    impl Correlation {
+        const fn new() -> Self {
+            Self {
+                entries: Vec::new(),
+            }
+        }
+        fn register(&mut self, tuple: Tuple, sequence: u64) -> Option<ClientGuard> {
+            if let Some(entry) = self.entries.iter_mut().find(|entry| entry.tuple == tuple) {
+                entry.reused = true;
+                return None;
+            }
+            if self.entries.len() >= HISTORY_LIMIT {
+                return None;
+            }
+            if self
+                .entries
+                .iter()
+                .filter(|entry| entry.active.load(Ordering::SeqCst))
+                .count()
+                >= ACTIVE_LIMIT
+            {
+                return None;
+            }
+            let active = Arc::new(AtomicBool::new(true));
+            self.entries.push(Entry {
+                tuple,
+                sequence,
+                active: Arc::clone(&active),
+                reused: false,
+            });
+            Some(ClientGuard { active, sequence })
+        }
+        fn valid_sequence(&self, sequence: u64) -> bool {
+            self.entries.iter().any(|entry| {
+                entry.sequence == sequence && !entry.reused && entry.active.load(Ordering::SeqCst)
+            })
+        }
+        fn lookup(&self, tuple: Tuple) -> u64 {
+            self.entries
+                .iter()
+                .find(|entry| {
+                    entry.tuple == tuple && !entry.reused && entry.active.load(Ordering::SeqCst)
+                })
+                .map_or(0, |entry| entry.sequence)
+        }
+    }
+    pub(super) struct ClientGuard {
+        active: Arc<AtomicBool>,
+        sequence: u64,
+    }
+    impl ClientGuard {
+        pub(super) fn sequence(&self) -> u64 {
+            self.sequence
+        }
+    }
+    impl Drop for ClientGuard {
+        fn drop(&mut self) {
+            self.active.store(false, Ordering::SeqCst);
+            if CORRELATION_INFLIGHT.load(Ordering::SeqCst) != 0 {
+                CORRELATION_UNCERTAIN.store(true, Ordering::SeqCst);
+                loss();
+            }
+        }
+    }
+    fn loss() {
+        CORRELATION_LOSS.fetch_add(1, Ordering::Relaxed);
+    }
+    fn next_sequence(counter: &AtomicU64) -> Option<u64> {
+        counter
+            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| n.checked_add(1))
+            .ok()
+            .filter(|n| *n != 0)
+    }
+    fn inspected_tuple(
+        local: std::io::Result<SocketAddr>,
+        remote: std::io::Result<SocketAddr>,
+    ) -> Option<Tuple> {
+        Some(Tuple(local.ok()?, remote.ok()?))
+    }
+    pub(super) fn register_client(stream: &TcpStream) -> Option<ClientGuard> {
+        if !ENABLED.load(Ordering::Relaxed) {
+            return None;
+        }
+        let tuple = match inspected_tuple(stream.local_addr(), stream.peer_addr()) {
+            Some(tuple) => tuple,
+            None => {
+                CORRELATION_UNCERTAIN.store(true, Ordering::Release);
+                loss();
+                return None;
+            }
+        };
+        let sequence = match next_sequence(&NEXT_SEQUENCE) {
+            Some(sequence) => sequence,
+            None => {
+                CORRELATION_UNCERTAIN.store(true, Ordering::Release);
+                loss();
+                return None;
+            }
+        };
+        if CORRELATION_UNCERTAIN.load(Ordering::Acquire) {
+            loss();
+            return None;
+        }
+        let result = match CORRELATION.try_lock() {
+            Ok(mut table) => table.register(tuple, sequence),
+            Err(_) => {
+                CORRELATION_UNCERTAIN.store(true, Ordering::Release);
+                None
+            }
+        };
+        if result.is_none() {
+            CORRELATION_UNCERTAIN.store(true, Ordering::Release);
+            loss();
+        }
+        result
+    }
+    pub(super) fn correlate_server(stream: &TcpStream) -> u64 {
+        if !ENABLED.load(Ordering::Relaxed) {
+            return 0;
+        }
+        let tuple = match inspected_tuple(stream.peer_addr(), stream.local_addr()) {
+            Some(tuple) => tuple,
+            None => {
+                loss();
+                return 0;
+            }
+        };
+        if CORRELATION_UNCERTAIN.load(Ordering::Acquire) {
+            loss();
+            return 0;
+        }
+        let sequence = match CORRELATION.try_lock() {
+            Ok(table) => table.lookup(tuple),
+            Err(_) => {
+                CORRELATION_UNCERTAIN.store(true, Ordering::Release);
+                0
+            }
+        };
+        if sequence == 0 || CORRELATION_UNCERTAIN.load(Ordering::Acquire) {
+            loss();
+            0
+        } else {
+            sequence
+        }
+    }
+
+    fn revalidate(sequence: u64) -> u64 {
+        if sequence == 0 || CORRELATION_UNCERTAIN.load(Ordering::Acquire) {
+            return 0;
+        }
+        let valid = match CORRELATION.try_lock() {
+            Ok(table) => table.valid_sequence(sequence),
+            Err(_) => {
+                CORRELATION_UNCERTAIN.store(true, Ordering::Release);
+                false
+            }
+        };
+        if valid && !CORRELATION_UNCERTAIN.load(Ordering::Acquire) {
+            sequence
+        } else {
+            loss();
+            0
+        }
+    }
+    pub(super) fn record_corr(kind: Kind, sequence: u64) {
+        if ENABLED.load(Ordering::Relaxed) {
+            CORRELATION_INFLIGHT.fetch_add(1, Ordering::SeqCst);
+            record(kind, revalidate(sequence));
+            CORRELATION_INFLIGHT.fetch_sub(1, Ordering::SeqCst);
+        }
+    }
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     pub(super) enum Kind {
@@ -54,6 +246,17 @@ mod fixture_trace {
         ResponseSpawnFailed,
         CloseAll,
         ClientReadFailed,
+        CorrReceive,
+        CorrReceiveFailed,
+        CorrAuthRejected,
+        CorrPrepareRejected,
+        CorrDispatch,
+        CorrWorkerStart,
+        CorrWorkerReply,
+        CorrWorkerAbandon,
+        CorrResponseWritten,
+        CorrResponseFailed,
+        CorrEarlyReply,
     }
     impl Kind {
         fn label(self) -> &'static str {
@@ -78,6 +281,17 @@ mod fixture_trace {
                 Self::ResponseSpawnFailed => "response_spawn_failed",
                 Self::CloseAll => "close_all",
                 Self::ClientReadFailed => "client_read_failed",
+                Self::CorrReceive => "corr_receive",
+                Self::CorrReceiveFailed => "corr_receive_failed",
+                Self::CorrAuthRejected => "corr_auth_rejected",
+                Self::CorrPrepareRejected => "corr_prepare_rejected",
+                Self::CorrDispatch => "corr_dispatch",
+                Self::CorrWorkerStart => "corr_worker_start",
+                Self::CorrWorkerReply => "corr_worker_reply",
+                Self::CorrWorkerAbandon => "corr_worker_abandon",
+                Self::CorrResponseWritten => "corr_response_written",
+                Self::CorrResponseFailed => "corr_response_failed",
+                Self::CorrEarlyReply => "corr_early_reply",
             }
         }
     }
@@ -90,10 +304,12 @@ mod fixture_trace {
         kind: Kind::Empty,
         connection: 0,
     };
+    #[derive(Clone, Copy)]
     pub(super) struct Ring {
         entries: [Event; CAPACITY],
         next: usize,
         len: usize,
+        overwritten: u64,
     }
     impl Ring {
         const fn new() -> Self {
@@ -101,9 +317,13 @@ mod fixture_trace {
                 entries: [EMPTY; CAPACITY],
                 next: 0,
                 len: 0,
+                overwritten: 0,
             }
         }
         fn push(&mut self, kind: Kind, connection: u64) {
+            if self.len == CAPACITY {
+                self.overwritten = self.overwritten.saturating_add(1);
+            }
             self.entries[self.next] = Event { kind, connection };
             self.next = (self.next + 1) % CAPACITY;
             self.len = (self.len + 1).min(CAPACITY);
@@ -115,15 +335,45 @@ mod fixture_trace {
             };
             let _ = writeln!(output, "CGR_COORD_TRACE v1 pid={pid} owner_pid_matches={owner_pid_matches} server_trace_may_be_incomplete=true");
             let start = (self.next + CAPACITY - self.len) % CAPACITY;
+            let mut truncated = false;
             for offset in 0..self.len {
                 let event = self.entries[(start + offset) % CAPACITY];
-                let _ = writeln!(
-                    output,
-                    "CGR_COORD_TRACE {} {}",
+                let line = format!(
+                    "CGR_COORD_TRACE {} {}\n",
                     event.kind.label(),
                     event.connection
                 );
+                if output.len + line.len() + 320 > OUTPUT_LIMIT {
+                    truncated = true;
+                    break;
+                }
+                let _ = output.write_str(&line);
             }
+            let _ = writeln!(
+                output,
+                "CGR_COORD_TRACE event_loss {}",
+                EVENT_LOSS.load(Ordering::Relaxed)
+            );
+            let _ = writeln!(
+                output,
+                "CGR_COORD_TRACE ring_overwrite {}",
+                self.overwritten
+            );
+            let _ = writeln!(
+                output,
+                "CGR_COORD_TRACE correlation_loss {}",
+                CORRELATION_LOSS.load(Ordering::Relaxed)
+            );
+            let _ = writeln!(
+                output,
+                "CGR_COORD_TRACE correlation_uncertain {}",
+                u8::from(CORRELATION_UNCERTAIN.load(Ordering::Acquire))
+            );
+            let _ = writeln!(
+                output,
+                "CGR_COORD_TRACE render_truncated {}",
+                u8::from(truncated)
+            );
             output
         }
     }
@@ -161,17 +411,23 @@ mod fixture_trace {
     }
     pub(super) fn record(kind: Kind, connection: u64) {
         if ENABLED.load(Ordering::Relaxed) {
-            let _ = try_record(&EVENTS, kind, connection);
+            if !try_record(&EVENTS, kind, connection) {
+                EVENT_LOSS.fetch_add(1, Ordering::Relaxed);
+            }
         }
     }
     pub(super) fn render_once(owner_pid_matches: bool) {
         if !ENABLED.load(Ordering::Relaxed) || !claim_once(&RENDERED) {
             return;
         }
-        let output = match EVENTS.try_lock() {
-            Ok(ring) => ring.render(std::process::id(), owner_pid_matches),
-            Err(_) => return,
+        let snapshot = match EVENTS.try_lock() {
+            Ok(ring) => *ring,
+            Err(_) => {
+                EVENT_LOSS.fetch_add(1, Ordering::Relaxed);
+                return;
+            }
         };
+        let output = snapshot.render(std::process::id(), owner_pid_matches);
         // No request or response thread waits for diagnostic I/O. The explicitly
         // enabled fixture continuously drains stderr; failure to spawn is ignored.
         let _ = std::thread::Builder::new()
@@ -184,6 +440,471 @@ mod fixture_trace {
     #[cfg(test)]
     mod tests {
         use super::*;
+
+        fn tuple(port: u16) -> Tuple {
+            Tuple(([127, 0, 0, 1], port).into(), ([127, 0, 0, 1], 42).into())
+        }
+
+        #[test]
+        fn correlation_failed_socket_inspection_is_unknown() {
+            let error = || std::io::Error::other("synthetic address inspection failure");
+            assert!(inspected_tuple(Err(error()), Ok(([127, 0, 0, 1], 1).into())).is_none());
+            assert!(inspected_tuple(Ok(([127, 0, 0, 1], 1).into()), Err(error())).is_none());
+        }
+
+        #[test]
+        fn correlation_render_truncates_only_complete_lines_and_keeps_loss_indicators() {
+            let mut ring = Ring::new();
+            for _ in 0..80 {
+                ring.push(Kind::CorrResponseWritten, u64::MAX);
+            }
+            let output = ring.render(u32::MAX, false);
+            assert!(output.len <= OUTPUT_LIMIT);
+            let text = std::str::from_utf8(&output.bytes[..output.len]).unwrap();
+            assert!(text.ends_with('\n'));
+            assert!(text.contains("CGR_COORD_TRACE ring_overwrite 48\n"));
+            assert!(text.contains("CGR_COORD_TRACE render_truncated 1\n"));
+            assert!(text
+                .lines()
+                .all(|line| line.starts_with("CGR_COORD_TRACE ")));
+        }
+
+        #[test]
+        fn concurrent_guard_drop_marks_inflight_evidence_uncertain() {
+            const CHILD: &str = "CGR_CORRELATION_INFLIGHT_CHILD";
+            if std::env::var_os(CHILD).is_some() {
+                let guard = CORRELATION.lock().unwrap().register(tuple(30), 5).unwrap();
+                CORRELATION_INFLIGHT.fetch_add(1, Ordering::SeqCst);
+                std::thread::spawn(move || drop(guard)).join().unwrap();
+                assert!(CORRELATION_UNCERTAIN.load(Ordering::SeqCst));
+                assert_eq!(revalidate(5), 0);
+                CORRELATION_INFLIGHT.fetch_sub(1, Ordering::SeqCst);
+                return;
+            }
+            let status = std::process::Command::new(std::env::current_exe().unwrap())
+                .args(["--exact", "coordinator::fixture_trace::tests::concurrent_guard_drop_marks_inflight_evidence_uncertain"])
+                .env(CHILD, "1").status().unwrap();
+            assert!(status.success());
+        }
+
+        #[test]
+        fn correlated_late_worker_and_response_phases_are_unknown_after_evidence_loss() {
+            const CHILD: &str = "CGR_CORRELATION_LATE_PHASE_CHILD";
+            if let Some(mode) = std::env::var_os(CHILD) {
+                ENABLED.store(true, Ordering::Relaxed);
+                let mut guard = Some(CORRELATION.lock().unwrap().register(tuple(33), 17).unwrap());
+                if mode == "drop" {
+                    drop(guard.take());
+                } else if mode == "reuse" {
+                    assert!(CORRELATION
+                        .lock()
+                        .unwrap()
+                        .register(tuple(33), 18)
+                        .is_none());
+                } else {
+                    CORRELATION_UNCERTAIN.store(true, Ordering::Release);
+                }
+                record_corr(Kind::CorrWorkerStart, 17);
+                record_corr(Kind::CorrWorkerReply, 17);
+                record_corr(Kind::CorrWorkerAbandon, 17);
+                record_corr(Kind::CorrResponseWritten, 17);
+                record_corr(Kind::CorrResponseFailed, 17);
+                let snapshot = *EVENTS.lock().unwrap();
+                let output = snapshot.render(1, false);
+                let text = std::str::from_utf8(&output.bytes[..output.len]).unwrap();
+                for kind in [
+                    "corr_worker_start",
+                    "corr_worker_reply",
+                    "corr_worker_abandon",
+                    "corr_response_written",
+                    "corr_response_failed",
+                ] {
+                    assert!(
+                        text.contains(&format!("CGR_COORD_TRACE {kind} 0\n")),
+                        "{text}"
+                    );
+                    assert!(
+                        !text.contains(&format!("CGR_COORD_TRACE {kind} 17\n")),
+                        "{text}"
+                    );
+                }
+                return;
+            }
+            for mode in ["drop", "reuse", "uncertain"] {
+                let output = std::process::Command::new(std::env::current_exe().unwrap())
+                    .args(["--exact", "coordinator::fixture_trace::tests::correlated_late_worker_and_response_phases_are_unknown_after_evidence_loss", "--nocapture"])
+                    .env(CHILD, mode).output().unwrap();
+                assert!(
+                    output.status.success(),
+                    "{}",
+                    String::from_utf8_lossy(&output.stderr)
+                );
+            }
+        }
+
+        #[test]
+        fn correlation_history_exhaustion_never_reuses_lost_evidence() {
+            const CHILD: &str = "CGR_CORRELATION_HISTORY_CHILD";
+            if std::env::var_os(CHILD).is_some() {
+                ENABLED.store(true, Ordering::Relaxed);
+                {
+                    let mut table = CORRELATION.lock().unwrap();
+                    for index in 0..HISTORY_LIMIT {
+                        drop(
+                            table
+                                .register(tuple(index as u16 + 100), index as u64 + 1)
+                                .unwrap(),
+                        );
+                    }
+                }
+                let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+                let client = TcpStream::connect(listener.local_addr().unwrap()).unwrap();
+                let (server, _) = listener.accept().unwrap();
+                assert!(register_client(&client).is_none());
+                assert!(CORRELATION_UNCERTAIN.load(Ordering::Acquire));
+                assert_eq!(correlate_server(&server), 0);
+                return;
+            }
+            let status = std::process::Command::new(std::env::current_exe().unwrap())
+                .args(["--exact", "coordinator::fixture_trace::tests::correlation_history_exhaustion_never_reuses_lost_evidence"])
+                .env(CHILD, "1").status().unwrap();
+            assert!(status.success());
+        }
+
+        #[test]
+        fn event_lock_loss_is_reported_without_waiting() {
+            const CHILD: &str = "CGR_CORRELATION_EVENT_LOSS_CHILD";
+            if std::env::var_os(CHILD).is_some() {
+                ENABLED.store(true, Ordering::Relaxed);
+                let held = EVENTS.lock().unwrap();
+                record(Kind::CorrDispatch, 1);
+                assert_eq!(EVENT_LOSS.load(Ordering::Relaxed), 1);
+                drop(held);
+                let snapshot = *EVENTS.lock().unwrap();
+                let output = snapshot.render(1, false);
+                let text = std::str::from_utf8(&output.bytes[..output.len]).unwrap();
+                assert!(text.contains("event_loss 1\n"));
+                assert!(!text.contains("corr_dispatch 1\n"));
+                return;
+            }
+            let status = std::process::Command::new(std::env::current_exe().unwrap())
+                .args(["--exact", "coordinator::fixture_trace::tests::event_lock_loss_is_reported_without_waiting"])
+                .env(CHILD, "1").status().unwrap();
+            assert!(status.success());
+        }
+
+        #[test]
+        fn correlation_contended_registration_sets_sticky_unknown() {
+            const CHILD: &str = "CGR_CORRELATION_CONTENTION_CHILD";
+            if std::env::var_os(CHILD).is_some() {
+                ENABLED.store(true, Ordering::Relaxed);
+                let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+                let client = TcpStream::connect(listener.local_addr().unwrap()).unwrap();
+                let (server, _) = listener.accept().unwrap();
+                let held = CORRELATION.lock().unwrap();
+                assert!(register_client(&client).is_none());
+                drop(held);
+                assert!(CORRELATION_UNCERTAIN.load(Ordering::Acquire));
+                assert_eq!(correlate_server(&server), 0);
+                assert!(CORRELATION_LOSS.load(Ordering::Relaxed) > 0);
+                return;
+            }
+            let status = std::process::Command::new(std::env::current_exe().unwrap())
+                .args(["--exact", "coordinator::fixture_trace::tests::correlation_contended_registration_sets_sticky_unknown"])
+                .env(CHILD, "1").status().unwrap();
+            assert!(status.success());
+        }
+
+        #[test]
+        fn correlation_sequence_wrap_and_unknown_are_rejected() {
+            let counter = AtomicU64::new(u64::MAX - 1);
+            assert_eq!(next_sequence(&counter), Some(u64::MAX - 1));
+            assert_eq!(next_sequence(&counter), None);
+            assert_eq!(next_sequence(&AtomicU64::new(0)), None);
+        }
+
+        #[test]
+        fn correlation_drop_invalidates_without_taking_table_lock() {
+            let table = Mutex::new(Correlation::new());
+            let guard = table.lock().unwrap().register(tuple(77), 9).unwrap();
+            let held = table.lock().unwrap();
+            drop(guard);
+            assert_eq!(held.lookup(tuple(77)), 0);
+            assert!(table.try_lock().is_err());
+        }
+
+        #[test]
+        fn correlation_reuse_and_guard_invalidation_are_conservative() {
+            let mut table = Correlation::new();
+            let first = table.register(tuple(1), 1).unwrap();
+            assert_eq!(table.lookup(tuple(1)), 1);
+            drop(first);
+            assert_eq!(table.lookup(tuple(1)), 0);
+            assert!(table.register(tuple(1), 2).is_none());
+            assert_eq!(table.lookup(tuple(1)), 0);
+            let live = table.register(tuple(2), 3).unwrap();
+            assert!(table.register(tuple(2), 4).is_none());
+            assert_eq!(table.lookup(tuple(2)), 0);
+            drop(live);
+        }
+
+        #[test]
+        fn correlation_active_and_history_limits_do_not_evict_evidence() {
+            let mut table = Correlation::new();
+            let mut guards = Vec::new();
+            for index in 0..ACTIVE_LIMIT {
+                guards.push(
+                    table
+                        .register(tuple(index as u16 + 100), index as u64 + 1)
+                        .unwrap(),
+                );
+            }
+            assert!(table.register(tuple(999), 1000).is_none());
+            assert_eq!(table.lookup(tuple(100)), 1);
+            drop(guards);
+            for index in ACTIVE_LIMIT..HISTORY_LIMIT {
+                drop(
+                    table
+                        .register(tuple(index as u16 + 100), index as u64 + 1)
+                        .unwrap(),
+                );
+            }
+            assert!(table.register(tuple(9999), 10000).is_none());
+        }
+
+        #[test]
+        fn correlation_real_sockets_match_only_during_guard_lifetime() {
+            let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+            let client = TcpStream::connect(listener.local_addr().unwrap()).unwrap();
+            let (server, _) = listener.accept().unwrap();
+            let tuple = Tuple(client.local_addr().unwrap(), client.peer_addr().unwrap());
+            let reverse = Tuple(server.peer_addr().unwrap(), server.local_addr().unwrap());
+            let mut table = Correlation::new();
+            let guard = table.register(tuple, 37).unwrap();
+            assert_eq!(table.lookup(reverse), 37);
+            drop(guard);
+            assert_eq!(table.lookup(reverse), 0);
+        }
+
+        #[test]
+        fn actual_early_rejection_and_success_are_correlated() {
+            const CHILD: &str = "CGR_CORRELATION_PHASE_CHILD";
+            if let Some(mode) = std::env::var_os(CHILD) {
+                use super::super::*;
+                ENABLED.store(true, Ordering::Relaxed);
+                let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+                let endpoint = listener.local_addr().unwrap();
+                let state = CoordinatorState {
+                    version: COORDINATOR_PROTOCOL_VERSION,
+                    endpoint,
+                    token: "a".repeat(64),
+                    pid: std::process::id(),
+                    supports_deadlines: true,
+                };
+                let mut server_state = state.clone();
+                let reject = mode == "reject";
+                let malformed = mode == "receive";
+                if reject {
+                    server_state.token = "b".repeat(64);
+                }
+                let server = std::thread::spawn(move || {
+                    let (mut stream, _) = listener.accept().unwrap();
+                    let registry = Arc::new(ConnectionRegistry::default());
+                    let permit = registry.register(&stream).unwrap();
+                    let dispatcher = ExecutionDispatcher::default();
+                    handle_connection_dispatch(
+                        &mut stream,
+                        Instant::now(),
+                        &server_state,
+                        &dispatcher,
+                        permit,
+                        Arc::new(Ok),
+                    );
+                    if !reject && !malformed {
+                        let job = dispatcher
+                            .state
+                            .lock()
+                            .unwrap()
+                            .job
+                            .take()
+                            .expect("one dispatched request");
+                        let reply = CoordinatorReply::Success(OperationResponse::from_payload(
+                            "health",
+                            job.invocation.output_format,
+                            serde_json::json!({"ok": true}),
+                        ));
+                        registry.send_response(job.stream, reply, job._connection);
+                        registry.join_writers();
+                    }
+                });
+                let command = CoordinatorCommand::Execute {
+                    operation_id: "health".into(),
+                    invocation: OperationInvocation {
+                        repo: RepoSelector::default(),
+                        arguments: serde_json::json!({"query": "SECRET_PHASE_PAYLOAD"}),
+                        output_format: crate::api::OutputFormat::Typed,
+                    },
+                };
+                use std::io::Write;
+                let mut client = TcpStream::connect(endpoint).unwrap();
+                let guard = register_client(&client).unwrap();
+                if malformed {
+                    client.write_all(b"not-json\n").unwrap();
+                } else {
+                    write_frame_until(
+                        &mut client,
+                        &CoordinatorRequest {
+                            version: COORDINATOR_PROTOCOL_VERSION,
+                            token: state.token.clone(),
+                            timeout_ms: None,
+                            command,
+                        },
+                        Instant::now() + std::time::Duration::from_secs(5),
+                    )
+                    .unwrap();
+                }
+                server.join().unwrap();
+                let reply: CoordinatorReply = read_frame_until(
+                    &mut client,
+                    Instant::now() + std::time::Duration::from_secs(5),
+                )
+                .unwrap();
+                if malformed || reject {
+                    assert!(matches!(reply, CoordinatorReply::Failure(_)));
+                } else {
+                    assert!(matches!(reply, CoordinatorReply::Success(_)));
+                }
+                drop(guard);
+                let snapshot = *EVENTS.lock().unwrap();
+                let output = snapshot.render(std::process::id(), true);
+                let text = std::str::from_utf8(&output.bytes[..output.len]).unwrap();
+                if malformed {
+                    assert!(text.contains("corr_receive_failed 1\n"));
+                    assert!(text.contains("corr_early_reply 1\n"));
+                    assert!(!text.contains("corr_dispatch 1\n"));
+                } else if reject {
+                    assert!(text.contains("corr_receive 1\n"));
+                    assert!(text.contains("corr_auth_rejected 1\n"));
+                    assert!(text.contains("corr_early_reply 1\n"));
+                    assert!(!text.contains("corr_dispatch 1\n"));
+                } else {
+                    assert!(text.contains("corr_receive 1\n"));
+                    assert!(text.contains("corr_dispatch 1\n"));
+                    assert!(text.contains("corr_response_written 1\n"));
+                }
+                assert!(!text.contains("SECRET_PHASE_PAYLOAD"));
+                assert!(!text.contains(&"a".repeat(64)));
+                assert!(!text.contains(&endpoint.to_string()));
+                return;
+            }
+            for mode in ["receive", "reject", "success"] {
+                let output = std::process::Command::new(std::env::current_exe().unwrap())
+                    .args(["--exact", "coordinator::fixture_trace::tests::actual_early_rejection_and_success_are_correlated", "--nocapture"])
+                    .env(CHILD, mode).output().unwrap();
+                assert!(
+                    output.status.success(),
+                    "{}",
+                    String::from_utf8_lossy(&output.stderr)
+                );
+            }
+        }
+
+        #[test]
+        fn actual_preaccept_close_is_not_misidentified_as_server_dispatch() {
+            use std::io::{Read, Write};
+            let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+            let mut client = TcpStream::connect(listener.local_addr().unwrap()).unwrap();
+            client
+                .set_read_timeout(Some(std::time::Duration::from_secs(2)))
+                .unwrap();
+            let tuple = Tuple(client.local_addr().unwrap(), client.peer_addr().unwrap());
+            let mut table = Correlation::new();
+            let guard = table.register(tuple, 11).unwrap();
+            client.write_all(b"synthetic\n").unwrap();
+            drop(listener);
+            let mut byte = [0];
+            assert!(!matches!(client.read(&mut byte), Ok(count) if count > 0));
+            drop(guard);
+            assert_eq!(table.lookup(tuple), 0);
+        }
+
+        #[test]
+        fn actual_dispatched_disconnect_correlates_without_replay() {
+            const CHILD: &str = "CGR_CORRELATION_SYNTHETIC_CHILD";
+            const SENTINEL: &str = "CGR_CORRELATION_SECRET_SENTINEL";
+            if std::env::var_os(CHILD).is_some() {
+                use super::super::*;
+                ENABLED.store(true, Ordering::Relaxed);
+                let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+                let endpoint = listener.local_addr().unwrap();
+                let state = CoordinatorState {
+                    version: COORDINATOR_PROTOCOL_VERSION,
+                    endpoint,
+                    token: "a".repeat(64),
+                    pid: std::process::id(),
+                    supports_deadlines: true,
+                };
+                let server_state = state.clone();
+                let server = std::thread::spawn(move || {
+                    let (mut stream, _) = listener.accept().unwrap();
+                    let registry = Arc::new(ConnectionRegistry::default());
+                    let permit = registry.register(&stream).unwrap();
+                    let dispatcher = ExecutionDispatcher::default();
+                    handle_connection_dispatch(
+                        &mut stream,
+                        Instant::now(),
+                        &server_state,
+                        &dispatcher,
+                        permit,
+                        Arc::new(Ok),
+                    );
+                    let job = dispatcher
+                        .state
+                        .lock()
+                        .unwrap()
+                        .job
+                        .take()
+                        .expect("exactly one request was dispatched");
+                    let _ = job.stream.shutdown(std::net::Shutdown::Both);
+                });
+                let invocation = OperationInvocation {
+                    repo: RepoSelector::default(),
+                    arguments: serde_json::json!({"query": SENTINEL}),
+                    output_format: crate::api::OutputFormat::Typed,
+                };
+                let command = CoordinatorCommand::Execute {
+                    operation_id: "health".into(),
+                    invocation,
+                };
+                let error =
+                    send_to_state_with_context(&state, &command, ExecutionContext::default())
+                        .unwrap_err();
+                assert_eq!(error.code, "coordinator_transport_error");
+                assert!(!error.retryable);
+                server.join().unwrap();
+                std::thread::sleep(std::time::Duration::from_millis(100));
+                return;
+            }
+            let output = std::process::Command::new(std::env::current_exe().unwrap())
+                .args(["--exact", "coordinator::fixture_trace::tests::actual_dispatched_disconnect_correlates_without_replay", "--nocapture"])
+                .env(CHILD, "1").output().unwrap();
+            assert!(
+                output.status.success(),
+                "{}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+            let text = String::from_utf8_lossy(&output.stderr);
+            let id = text
+                .lines()
+                .find_map(|line| line.strip_prefix("CGR_COORD_TRACE client_read_failed "))
+                .unwrap();
+            assert_ne!(id, "0");
+            assert!(text.contains(&format!("CGR_COORD_TRACE corr_receive {id}\n")));
+            assert!(text.contains(&format!("CGR_COORD_TRACE corr_dispatch {id}\n")));
+            assert!(!text.contains(SENTINEL));
+            assert!(!text.contains(&"a".repeat(64)));
+            assert!(output.stderr.len() <= OUTPUT_LIMIT);
+        }
 
         #[test]
         fn fixture_trace_is_default_off_and_requires_exact_opt_in() {
@@ -218,7 +939,8 @@ mod fixture_trace {
             assert!(text.contains("server_trace_may_be_incomplete=true"));
             assert!(text.contains("client_read_failed"));
             assert!(!text.contains("dispatch 0\n"));
-            assert_eq!(text.lines().count(), CAPACITY + 1);
+            assert!(text.contains("ring_overwrite"));
+            assert!(text.contains("render_truncated"));
             assert!(text
                 .lines()
                 .all(|line| line.starts_with("CGR_COORD_TRACE ")));
@@ -534,6 +1256,8 @@ impl ConnectionRegistry {
         Ok(ConnectionPermit {
             registry: Arc::clone(self),
             id,
+            #[cfg(debug_assertions)]
+            trace_id: 0,
         })
     }
 
@@ -557,6 +1281,8 @@ impl ConnectionRegistry {
     ) {
         #[cfg(debug_assertions)]
         let connection_id = connection.id;
+        #[cfg(debug_assertions)]
+        let trace_id = connection.trace_id;
         let writer = thread::Builder::new()
             .name("codebase-graph-coordinator-response".to_string())
             .spawn(move || {
@@ -573,6 +1299,15 @@ impl ConnectionRegistry {
                         fixture_trace::Kind::ResponseWriteFailed
                     },
                     connection_id,
+                );
+                #[cfg(debug_assertions)]
+                fixture_trace::record_corr(
+                    if result.is_ok() {
+                        fixture_trace::Kind::CorrResponseWritten
+                    } else {
+                        fixture_trace::Kind::CorrResponseFailed
+                    },
+                    trace_id,
                 );
                 #[cfg(not(debug_assertions))]
                 let _ = result;
@@ -617,6 +1352,8 @@ impl ConnectionRegistry {
 struct ConnectionPermit {
     registry: Arc<ConnectionRegistry>,
     id: u64,
+    #[cfg(debug_assertions)]
+    trace_id: u64,
 }
 
 impl Drop for ConnectionPermit {
@@ -1156,6 +1893,11 @@ fn serve_owner_with_executor<P, E>(
         while let Some(job) = worker_dispatcher.take() {
             #[cfg(debug_assertions)]
             fixture_trace::record(fixture_trace::Kind::WorkerStart, job._connection.id);
+            #[cfg(debug_assertions)]
+            fixture_trace::record_corr(
+                fixture_trace::Kind::CorrWorkerStart,
+                job._connection.trace_id,
+            );
             let reply = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                 if job.context.remaining().is_err() {
                     None
@@ -1185,11 +1927,21 @@ fn serve_owner_with_executor<P, E>(
             if let Some(reply) = reply {
                 #[cfg(debug_assertions)]
                 fixture_trace::record(fixture_trace::Kind::WorkerReply, job._connection.id);
+                #[cfg(debug_assertions)]
+                fixture_trace::record_corr(
+                    fixture_trace::Kind::CorrWorkerReply,
+                    job._connection.trace_id,
+                );
                 let registry = Arc::clone(&job._connection.registry);
                 registry.send_response(job.stream, reply, job._connection);
             } else {
                 #[cfg(debug_assertions)]
                 fixture_trace::record(fixture_trace::Kind::WorkerAbandon, job._connection.id);
+                #[cfg(debug_assertions)]
+                fixture_trace::record_corr(
+                    fixture_trace::Kind::CorrWorkerAbandon,
+                    job._connection.trace_id,
+                );
                 let _ = job.stream.shutdown(std::net::Shutdown::Both);
                 drop(job._connection);
             }
@@ -1299,30 +2051,59 @@ fn handle_connection_dispatch<P>(
 ) where
     P: Fn(OperationInvocation) -> Result<OperationInvocation, ApiError> + Send + Sync + 'static,
 {
+    #[cfg(debug_assertions)]
+    let mut connection = connection;
+    macro_rules! early_reply {
+        ($reply:expr) => {{
+            let result =
+                write_frame_until(stream, $reply, Instant::now() + COORDINATOR_FRAME_TIMEOUT);
+            #[cfg(debug_assertions)]
+            fixture_trace::record_corr(
+                if result.is_ok() {
+                    fixture_trace::Kind::CorrEarlyReply
+                } else {
+                    fixture_trace::Kind::CorrResponseFailed
+                },
+                connection.trace_id,
+            );
+            let _ = result;
+        }};
+    }
     let request_deadline = accepted_at + COORDINATOR_FRAME_TIMEOUT;
-    let request: CoordinatorRequest = match read_frame_until(stream, request_deadline) {
+    let received = read_frame_until(stream, request_deadline);
+    #[cfg(debug_assertions)]
+    {
+        connection.trace_id = fixture_trace::correlate_server(stream);
+        fixture_trace::record_corr(
+            if received.is_ok() {
+                fixture_trace::Kind::CorrReceive
+            } else {
+                fixture_trace::Kind::CorrReceiveFailed
+            },
+            connection.trace_id,
+        );
+    }
+    let request: CoordinatorRequest = match received {
         Ok(request) => request,
         Err(error) => {
             let reply = coordinator_request_receive_failure(error);
-            let _ = write_frame_until(stream, &reply, Instant::now() + COORDINATOR_FRAME_TIMEOUT);
+            early_reply!(&reply);
             return;
         }
     };
     if request.version != COORDINATOR_PROTOCOL_VERSION || request.token != state.token {
+        #[cfg(debug_assertions)]
+        fixture_trace::record_corr(fixture_trace::Kind::CorrAuthRejected, connection.trace_id);
         let reply = CoordinatorReply::Failure(ApiError::new(
             COORDINATOR_AUTHENTICATION_FAILED,
             "repository coordinator protocol or token is invalid",
         ));
-        let _ = write_frame_until(stream, &reply, Instant::now() + COORDINATOR_FRAME_TIMEOUT);
+        early_reply!(&reply);
         return;
     }
     match request.command {
         CoordinatorCommand::Ping => {
-            let _ = write_frame_until(
-                stream,
-                &CoordinatorReply::Pong,
-                Instant::now() + COORDINATOR_FRAME_TIMEOUT,
-            );
+            early_reply!(&CoordinatorReply::Pong);
         }
         CoordinatorCommand::Execute {
             operation_id,
@@ -1334,38 +2115,33 @@ fn handle_connection_dispatch<P>(
                     "invalid_coordinator_deadline",
                     "bounded coordinator execution is only supported for health and search",
                 ));
-                let _ =
-                    write_frame_until(stream, &reply, Instant::now() + COORDINATOR_FRAME_TIMEOUT);
+                early_reply!(&reply);
                 return;
             }
             let context = match coordinator_execution_context(request.timeout_ms, accepted_at) {
                 Ok(context) => context,
                 Err(error) => {
                     let reply = CoordinatorReply::Failure(error);
-                    let _ = write_frame_until(
-                        stream,
-                        &reply,
-                        Instant::now() + COORDINATOR_FRAME_TIMEOUT,
-                    );
+                    early_reply!(&reply);
                     return;
                 }
             };
             let invocation = match prepare(invocation) {
                 Ok(invocation) => invocation,
                 Err(error) => {
-                    let reply = CoordinatorReply::Failure(error);
-                    let _ = write_frame_until(
-                        stream,
-                        &reply,
-                        Instant::now() + COORDINATOR_FRAME_TIMEOUT,
+                    #[cfg(debug_assertions)]
+                    fixture_trace::record_corr(
+                        fixture_trace::Kind::CorrPrepareRejected,
+                        connection.trace_id,
                     );
+                    let reply = CoordinatorReply::Failure(error);
+                    early_reply!(&reply);
                     return;
                 }
             };
             if context.remaining().is_err() {
                 let reply = CoordinatorReply::Failure(ExecutionContext::expired_error());
-                let _ =
-                    write_frame_until(stream, &reply, Instant::now() + COORDINATOR_FRAME_TIMEOUT);
+                early_reply!(&reply);
                 return;
             }
             let Ok(job_stream) = stream.try_clone() else {
@@ -1375,6 +2151,8 @@ fn handle_connection_dispatch<P>(
             };
             #[cfg(debug_assertions)]
             fixture_trace::record(fixture_trace::Kind::Dispatch, connection.id);
+            #[cfg(debug_assertions)]
+            fixture_trace::record_corr(fixture_trace::Kind::CorrDispatch, connection.trace_id);
             let job = ExecutionJob {
                 operation_id,
                 invocation,
@@ -1392,8 +2170,18 @@ fn handle_connection_dispatch<P>(
                     )
                     .retryable(true),
                 );
-                let _ =
+                let result =
                     write_frame_until(stream, &reply, Instant::now() + COORDINATOR_FRAME_TIMEOUT);
+                #[cfg(debug_assertions)]
+                fixture_trace::record_corr(
+                    if result.is_ok() {
+                        fixture_trace::Kind::CorrEarlyReply
+                    } else {
+                        fixture_trace::Kind::CorrResponseFailed
+                    },
+                    job._connection.trace_id,
+                );
+                let _ = result;
                 drop(job);
             }
         }
@@ -1498,6 +2286,12 @@ fn send_to_state_with_context(
         )
         .retryable(true)
     })?;
+    #[cfg(debug_assertions)]
+    let trace_guard = fixture_trace::register_client(&stream);
+    #[cfg(debug_assertions)]
+    let trace_id = trace_guard
+        .as_ref()
+        .map_or(0, fixture_trace::ClientGuard::sequence);
     let timeout_ms = context
         .remaining()?
         .map(|remaining| remaining.as_nanos().saturating_add(999_999) / 1_000_000)
@@ -1540,7 +2334,7 @@ fn send_to_state_with_context(
         };
         #[cfg(debug_assertions)]
         if !ping && !expired {
-            fixture_trace::record(fixture_trace::Kind::ClientReadFailed, 0);
+            fixture_trace::record_corr(fixture_trace::Kind::ClientReadFailed, trace_id);
             fixture_trace::render_once(state.pid == std::process::id());
         }
         classified
