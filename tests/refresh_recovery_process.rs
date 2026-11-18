@@ -363,7 +363,10 @@ fn central_daemon_captures_synthetic_postsend_failure() {
     assert!(!output.status.success());
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert_eq!(stderr.matches("CGR_COORD_TRACE v1").count(), 1, "{stderr}");
-    assert!(stderr.contains("client_read_failed"), "{stderr}");
+    assert!(
+        stderr.contains("CGR_COORD_TRACE client_read_failed 0\n"),
+        "{stderr}"
+    );
     assert!(stderr.contains("owner_pid_matches=false"), "{stderr}");
     assert!(
         stderr.contains("server_trace_may_be_incomplete=true"),

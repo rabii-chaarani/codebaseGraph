@@ -627,8 +627,10 @@ mod fixture_trace {
         fn correlation_drop_invalidates_without_taking_table_lock() {
             let table = Mutex::new(Correlation::new());
             let guard = table.lock().unwrap().register(tuple(77), 9).unwrap();
-            let held = table.lock().unwrap();
-            drop(guard);
+            let mut held = table.lock().unwrap();
+            std::thread::spawn(move || drop(guard)).join().unwrap();
+            assert_eq!(held.lookup(tuple(77)), 0);
+            assert!(held.register(tuple(77), 10).is_none());
             assert_eq!(held.lookup(tuple(77)), 0);
             assert!(table.try_lock().is_err());
         }
@@ -704,6 +706,8 @@ mod fixture_trace {
                 let mut server_state = state.clone();
                 let reject = mode == "reject";
                 let malformed = mode == "receive";
+                let busy = mode == "busy";
+                let stopping = mode == "stopping";
                 if reject {
                     server_state.token = "b".repeat(64);
                 }
@@ -712,6 +716,11 @@ mod fixture_trace {
                     let registry = Arc::new(ConnectionRegistry::default());
                     let permit = registry.register(&stream).unwrap();
                     let dispatcher = ExecutionDispatcher::default();
+                    {
+                        let mut dispatch_state = dispatcher.state.lock().unwrap();
+                        dispatch_state.active = busy;
+                        dispatch_state.stopping = stopping;
+                    }
                     handle_connection_dispatch(
                         &mut stream,
                         Instant::now(),
@@ -720,7 +729,7 @@ mod fixture_trace {
                         permit,
                         Arc::new(Ok),
                     );
-                    if !reject && !malformed {
+                    if !reject && !malformed && !busy && !stopping {
                         let job = dispatcher
                             .state
                             .lock()
@@ -769,8 +778,14 @@ mod fixture_trace {
                     Instant::now() + std::time::Duration::from_secs(5),
                 )
                 .unwrap();
-                if malformed || reject {
-                    assert!(matches!(reply, CoordinatorReply::Failure(_)));
+                if malformed || reject || busy || stopping {
+                    let CoordinatorReply::Failure(error) = reply else {
+                        panic!("expected rejection");
+                    };
+                    if busy || stopping {
+                        assert_eq!(error.code, "graph_busy");
+                        assert!(error.retryable);
+                    }
                 } else {
                     assert!(matches!(reply, CoordinatorReply::Success(_)));
                 }
@@ -787,6 +802,10 @@ mod fixture_trace {
                     assert!(text.contains("corr_auth_rejected 1\n"));
                     assert!(text.contains("corr_early_reply 1\n"));
                     assert!(!text.contains("corr_dispatch 1\n"));
+                } else if busy || stopping {
+                    assert!(text.contains("corr_receive 1\n"));
+                    assert!(text.contains("corr_early_reply 1\n"));
+                    assert!(!text.contains("corr_dispatch 1\n"));
                 } else {
                     assert!(text.contains("corr_receive 1\n"));
                     assert!(text.contains("corr_dispatch 1\n"));
@@ -797,7 +816,7 @@ mod fixture_trace {
                 assert!(!text.contains(&endpoint.to_string()));
                 return;
             }
-            for mode in ["receive", "reject", "success"] {
+            for mode in ["receive", "reject", "busy", "stopping", "success"] {
                 let output = std::process::Command::new(std::env::current_exe().unwrap())
                     .args(["--exact", "coordinator::fixture_trace::tests::actual_early_rejection_and_success_are_correlated", "--nocapture"])
                     .env(CHILD, mode).output().unwrap();
@@ -807,6 +826,104 @@ mod fixture_trace {
                     String::from_utf8_lossy(&output.stderr)
                 );
             }
+        }
+
+        #[test]
+        fn actual_worker_and_writer_drop_correlation_after_client_guard() {
+            const CHILD: &str = "CGR_CORRELATION_ACTUAL_WORKER_CHILD";
+            if std::env::var_os(CHILD).is_some() {
+                use super::super::*;
+                ENABLED.store(true, Ordering::Relaxed);
+                let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+                listener.set_nonblocking(true).unwrap();
+                let endpoint = listener.local_addr().unwrap();
+                let state = CoordinatorState {
+                    version: COORDINATOR_PROTOCOL_VERSION,
+                    endpoint,
+                    token: "a".repeat(64),
+                    pid: std::process::id(),
+                    supports_deadlines: true,
+                };
+                let server_state = state.clone();
+                let stop = Arc::new(AtomicBool::new(false));
+                let server_stop = Arc::clone(&stop);
+                let dispatcher = Arc::new(ExecutionDispatcher::default());
+                let (started_tx, started_rx) = std::sync::mpsc::channel();
+                let (release_tx, release_rx) = std::sync::mpsc::channel();
+                let release_rx = Mutex::new(release_rx);
+                let server = std::thread::spawn(move || {
+                    serve_owner_with_executor(
+                        listener,
+                        &server_state,
+                        &server_stop,
+                        &dispatcher,
+                        Ok,
+                        move |operation_id, invocation, _| {
+                            started_tx.send(()).unwrap();
+                            release_rx
+                                .lock()
+                                .unwrap()
+                                .recv_timeout(std::time::Duration::from_secs(5))
+                                .unwrap();
+                            Ok(OperationResponse::from_payload(
+                                operation_id,
+                                invocation.output_format,
+                                serde_json::json!({"ok": true}),
+                            ))
+                        },
+                    );
+                });
+                let mut client = TcpStream::connect(endpoint).unwrap();
+                let guard = register_client(&client).unwrap();
+                let request = CoordinatorRequest {
+                    version: COORDINATOR_PROTOCOL_VERSION,
+                    token: state.token,
+                    timeout_ms: None,
+                    command: CoordinatorCommand::Execute {
+                        operation_id: "health".into(),
+                        invocation: OperationInvocation {
+                            repo: RepoSelector::default(),
+                            arguments: serde_json::json!({}),
+                            output_format: crate::api::OutputFormat::Typed,
+                        },
+                    },
+                };
+                write_frame_until(
+                    &mut client,
+                    &request,
+                    Instant::now() + std::time::Duration::from_secs(5),
+                )
+                .unwrap();
+                started_rx
+                    .recv_timeout(std::time::Duration::from_secs(5))
+                    .unwrap();
+                drop(guard);
+                release_tx.send(()).unwrap();
+                let reply: CoordinatorReply = read_frame_until(
+                    &mut client,
+                    Instant::now() + std::time::Duration::from_secs(5),
+                )
+                .unwrap();
+                assert!(matches!(reply, CoordinatorReply::Success(_)));
+                stop.store(true, Ordering::Release);
+                server.join().unwrap();
+                let snapshot = *EVENTS.lock().unwrap();
+                let output = snapshot.render(std::process::id(), true);
+                let text = std::str::from_utf8(&output.bytes[..output.len]).unwrap();
+                assert!(text.contains("corr_worker_reply 0\n"), "{text}");
+                assert!(text.contains("corr_response_written 0\n"), "{text}");
+                assert!(!text.contains("corr_worker_reply 1\n"), "{text}");
+                assert!(!text.contains("corr_response_written 1\n"), "{text}");
+                return;
+            }
+            let output = std::process::Command::new(std::env::current_exe().unwrap())
+                .args(["--exact", "coordinator::fixture_trace::tests::actual_worker_and_writer_drop_correlation_after_client_guard", "--nocapture"])
+                .env(CHILD, "1").output().unwrap();
+            assert!(
+                output.status.success(),
+                "{}",
+                String::from_utf8_lossy(&output.stderr)
+            );
         }
 
         #[test]
@@ -2152,7 +2269,7 @@ fn handle_connection_dispatch<P>(
             #[cfg(debug_assertions)]
             fixture_trace::record(fixture_trace::Kind::Dispatch, connection.id);
             #[cfg(debug_assertions)]
-            fixture_trace::record_corr(fixture_trace::Kind::CorrDispatch, connection.trace_id);
+            let trace_id = connection.trace_id;
             let job = ExecutionJob {
                 operation_id,
                 invocation,
@@ -2160,7 +2277,12 @@ fn handle_connection_dispatch<P>(
                 stream: job_stream,
                 _connection: connection,
             };
-            if let Err(job) = dispatcher.try_submit(job) {
+            let submission = dispatcher.try_submit(job);
+            #[cfg(debug_assertions)]
+            if submission.is_ok() {
+                fixture_trace::record_corr(fixture_trace::Kind::CorrDispatch, trace_id);
+            }
+            if let Err(job) = submission {
                 #[cfg(debug_assertions)]
                 fixture_trace::record(fixture_trace::Kind::Busy, job._connection.id);
                 let reply = CoordinatorReply::Failure(
@@ -2287,7 +2409,9 @@ fn send_to_state_with_context(
         .retryable(true)
     })?;
     #[cfg(debug_assertions)]
-    let trace_guard = fixture_trace::register_client(&stream);
+    let trace_guard = (state.pid == std::process::id())
+        .then(|| fixture_trace::register_client(&stream))
+        .flatten();
     #[cfg(debug_assertions)]
     let trace_id = trace_guard
         .as_ref()
