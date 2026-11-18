@@ -32,6 +32,8 @@ The final Windows logs explicitly show passing execution of:
 
 The macOS unit and integration logs independently show the corresponding applicable cases passing. Mac artifact job134596549967 and Windows artifact job134588956934 succeeded. Hosted execution now covers the socket/Direct/recovery paths that were not executable locally at de0b; the [local report and its restrictions](windows-response-observation-evidence.md) remain unchanged.
 
+Artifact-job evidence is the successful terminal CI result and provider/run metadata. The independent verifier did not inspect those jobs' source/smoke logs, download final native artifact bytes or verify their manifests. No independent byte-level or installed-artifact validation is claimed.
+
 The [Direct-read correction](pr200-direct-read-evidence.md) at 0837d7ff489bc6a17a7f2ba788fb1e05efd7e288 preserves the no-journal shared read lease and reports optional candidate residue through existing cleanup_pending on both Direct selectors. Required journal recovery, containment, writer exclusion and operation-owned cleanup retain their strict behavior. It adds no automatic collector or cleanup-only public interface. This addresses thread PRRT_kwDOSZ0Wus64bVWQ/comment4599530494.
 
 Fresh independent verification used default/GPT-6.1 Terra/medium/fork-none. Fresh prompt-only adversarial final review used default/GPT-6.1 Sol/xhigh/fork-none and the required adversarial-review-engineer method. The final source/report rebind passed with no confirmed P0–P3 defects. Independent execution and compilation are distinguished in the linked reports. The owner full907 run was retained; no second full local suite was run. Subsequent focused64, atomic2 and non-network10 results remain bound to their stated snapshots.
