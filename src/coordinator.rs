@@ -120,10 +120,15 @@ mod fixture_trace {
         CORRELATION_LOSS.fetch_add(1, Ordering::Relaxed);
     }
     fn next_sequence(counter: &AtomicU64) -> Option<u64> {
-        counter
-            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| n.checked_add(1))
-            .ok()
-            .filter(|n| *n != 0)
+        let mut current = counter.load(Ordering::Relaxed);
+        loop {
+            let next = current.checked_add(1)?;
+            match counter.compare_exchange_weak(current, next, Ordering::Relaxed, Ordering::Relaxed)
+            {
+                Ok(previous) => return (previous != 0).then_some(previous),
+                Err(observed) => current = observed,
+            }
+        }
     }
     fn inspected_tuple(
         local: std::io::Result<SocketAddr>,
@@ -618,7 +623,32 @@ mod fixture_trace {
             let counter = AtomicU64::new(u64::MAX - 1);
             assert_eq!(next_sequence(&counter), Some(u64::MAX - 1));
             assert_eq!(next_sequence(&counter), None);
-            assert_eq!(next_sequence(&AtomicU64::new(0)), None);
+            assert_eq!(counter.load(Ordering::Relaxed), u64::MAX);
+            let zero = AtomicU64::new(0);
+            assert_eq!(next_sequence(&zero), None);
+            assert_eq!(zero.load(Ordering::Relaxed), 1);
+        }
+
+        #[test]
+        fn correlation_sequences_are_unique_under_concurrent_allocation() {
+            let counter = Arc::new(AtomicU64::new(1));
+            let workers: Vec<_> = (0..8)
+                .map(|_| {
+                    let counter = Arc::clone(&counter);
+                    std::thread::spawn(move || {
+                        (0..256)
+                            .map(|_| next_sequence(&counter).unwrap())
+                            .collect::<Vec<_>>()
+                    })
+                })
+                .collect();
+            let mut values: Vec<_> = workers
+                .into_iter()
+                .flat_map(|worker| worker.join().unwrap())
+                .collect();
+            values.sort_unstable();
+            assert_eq!(values, (1..=2048).collect::<Vec<_>>());
+            assert_eq!(counter.load(Ordering::Relaxed), 2049);
         }
 
         #[test]
