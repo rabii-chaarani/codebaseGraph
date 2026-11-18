@@ -54,67 +54,24 @@ pub(crate) fn copy_path(path: &Path) -> String {
     copy_path.replace('"', "\\\"")
 }
 
-/// Tracking is optional producer metadata. Only the factory's genuine new-file
-/// token may produce Origin; ordinary caller-owned or preexisting paths retain
-/// their historical File::create behavior without being adopted.
-pub(super) enum StagingOutputFile {
-    Tracked(Box<crate::storage::maintenance_controls::WorkspaceOutputFile>),
-    Plain(File),
-}
+pub(super) struct StagingOutputFile(File);
 impl StagingOutputFile {
     pub(super) fn create(path: &Path) -> Result<Self, NativeError> {
-        match crate::storage::maintenance_controls::WorkspaceOutputFile::create_new(path) {
-            Ok(Some(output)) => {
-                let _ =
-                    crate::storage::maintenance_origin::record_created_workspace_output(&output);
-                Ok(Self::Tracked(Box::new(output)))
-            }
-            Ok(None) | Err(_) => Ok(Self::Plain(File::create(path)?)),
-        }
-    }
-    fn finish(self) {
-        if let Self::Tracked(output) = self {
-            if let Ok(completed) = (*output).finish() {
-                // Keep the actual completed-output guards through receipt
-                // publication. Failure preserves the primary staging result;
-                // the unproven output remains ineligible for collection.
-                let _ = crate::storage::maintenance_origin::record_completed_workspace_output(
-                    &completed,
-                );
-            }
-        }
+        Ok(Self(File::create(path)?))
     }
 }
 impl Write for StagingOutputFile {
-    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
-        match self {
-            Self::Tracked(output) => output.write(bytes),
-            Self::Plain(output) => output.write(bytes),
-        }
+    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+        self.0.write(bytes)
     }
-    fn flush(&mut self) -> std::io::Result<()> {
-        match self {
-            Self::Tracked(output) => output.flush(),
-            Self::Plain(output) => output.flush(),
-        }
+    fn flush(&mut self) -> io::Result<()> {
+        self.0.flush()
     }
 }
 pub(super) fn finish_output(mut writer: BufWriter<StagingOutputFile>) -> Result<(), NativeError> {
     writer.flush()?;
-    let output = writer.into_inner().map_err(|error| error.into_error())?;
-    output.finish();
     Ok(())
 }
-
-/// Only an actual exclusive directory-creation token may attest namespace
-/// birth. Existing/unregistered paths preserve primary creation behavior.
 pub(super) fn create_staging_directory(path: &Path) -> Result<(), NativeError> {
-    match crate::storage::maintenance_controls::WorkspaceCreatedDirectory::create_new(path) {
-        Ok(Some(created)) => {
-            let _ =
-                crate::storage::maintenance_origin::record_created_workspace_directory(&created);
-            Ok(())
-        }
-        Ok(None) | Err(_) => Ok(std::fs::create_dir_all(path)?),
-    }
+    Ok(std::fs::create_dir_all(path)?)
 }
