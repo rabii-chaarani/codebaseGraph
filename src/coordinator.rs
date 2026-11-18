@@ -410,10 +410,8 @@ mod fixture_trace {
         !rendered.swap(true, Ordering::Relaxed)
     }
     pub(super) fn record(kind: Kind, connection: u64) {
-        if ENABLED.load(Ordering::Relaxed) {
-            if !try_record(&EVENTS, kind, connection) {
-                EVENT_LOSS.fetch_add(1, Ordering::Relaxed);
-            }
+        if ENABLED.load(Ordering::Relaxed) && !try_record(&EVENTS, kind, connection) {
+            EVENT_LOSS.fetch_add(1, Ordering::Relaxed);
         }
     }
     pub(super) fn render_once(owner_pid_matches: bool) {
