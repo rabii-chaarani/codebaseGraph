@@ -966,10 +966,34 @@ fn round6(value: f64) -> f64 {
 
 #[cfg(test)]
 mod tests {
-    use super::{execute_graph_search, GraphSearchRequest};
+    use super::{execute_graph_context, execute_graph_search, GraphSearchRequest};
     use crate::api::catalog::schema_statements_from_copy_statements;
     use crate::db_writer::{write_database, LadybugWriteRequest};
     use std::fs;
+
+    #[test]
+    fn search_and_context_reject_ambiguous_native_database_paths_before_open() {
+        let options = GraphSearchRequest {
+            query: "symbol".into(),
+            layer: "semantic".into(),
+            limit: 3,
+            profile: "brief".into(),
+            budget: 100,
+            context_limit: 1,
+            max_depth: None,
+            detail: "slim".into(),
+        };
+        let ambiguous = std::path::Path::new("~/unowned-graph.lbug");
+        let search = execute_graph_search(ambiguous, std::path::Path::new("unused.json"), &options)
+            .unwrap_err();
+        let context = execute_graph_context(ambiguous, "node", "Function", &options).unwrap_err();
+        for error in [search, context] {
+            assert!(
+                error.contains("database_path_requires_literal_disk_resource"),
+                "{error}"
+            );
+        }
+    }
 
     #[test]
     fn manifest_without_backend_metadata_uses_legacy_ladybug_fts() {
