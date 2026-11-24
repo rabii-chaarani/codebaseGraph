@@ -1,8 +1,6 @@
 use crate::error::NativeError;
-use crate::storage::maintenance_ownership::DatabaseUseLease;
 use lbug::{Connection, Database, SystemConfig};
 use std::{
-    ops::Deref,
     path::{Component, Path, PathBuf},
     thread,
     time::Duration,
@@ -67,54 +65,7 @@ pub fn retry_transient_database<T>(
     unreachable!("retry loop always returns")
 }
 
-/// A native database and its physical-resource exclusion, owned together.
-///
-/// Connections borrow the native handle through this wrapper, so safe Rust
-/// cannot release the exclusion while a connection remains in use.
-///
-/// ```no_run
-/// use codebase_graph::db_writer::{connect_ladybug_database, open_ladybug_database};
-/// let database = open_ladybug_database(std::path::Path::new("graph.lbug"), true)?;
-/// let connection = connect_ladybug_database(&database)?;
-/// connection.query("RETURN 1")?;
-/// drop(connection);
-/// drop(database);
-/// # Ok::<(), Box<dyn std::error::Error>>(())
-/// ```
-///
-/// ```compile_fail
-/// use codebase_graph::db_writer::{connect_ladybug_database, open_ladybug_database};
-/// let database = open_ladybug_database(std::path::Path::new("graph.lbug"), true).unwrap();
-/// let connection = connect_ladybug_database(&database).unwrap();
-/// drop(database);
-/// connection.query("RETURN 1").unwrap();
-/// ```
-///
-/// ```compile_fail
-/// use codebase_graph::db_writer::open_ladybug_database;
-/// let database = open_ladybug_database(std::path::Path::new("graph.lbug"), true).unwrap();
-/// let native: lbug::Database = *database;
-/// ```
-#[derive(Debug)]
-pub struct GuardedDatabase {
-    // Rust drops fields in declaration order: close the native database before
-    // releasing either family or resource exclusion, including during unwind.
-    database: Database,
-    _lease: DatabaseUseLease,
-}
-
-impl Deref for GuardedDatabase {
-    type Target = Database;
-
-    fn deref(&self) -> &Self::Target {
-        &self.database
-    }
-}
-
-pub fn open_ladybug_database(
-    db_path: &Path,
-    read_only: bool,
-) -> Result<GuardedDatabase, NativeError> {
+pub fn open_ladybug_database(db_path: &Path, read_only: bool) -> Result<Database, NativeError> {
     open_ladybug_database_with_threads(db_path, read_only, DEFAULT_READ_THREADS)
 }
 
@@ -122,7 +73,7 @@ pub fn open_ladybug_database_with_threads(
     db_path: &Path,
     read_only: bool,
     max_num_threads: u64,
-) -> Result<GuardedDatabase, NativeError> {
+) -> Result<Database, NativeError> {
     let config = SystemConfig::default()
         .read_only(read_only)
         .max_num_threads(max_num_threads);
@@ -132,31 +83,20 @@ pub fn open_ladybug_database_with_threads(
 pub(crate) fn open_ladybug_database_with_config(
     db_path: &Path,
     config: SystemConfig,
-) -> Result<GuardedDatabase, NativeError> {
-    // Acquire before native open, including absent-to-created databases. An
-    // open error drops the lease; successful construction moves it with the DB.
+) -> Result<Database, NativeError> {
     let native_path = guarded_native_path(db_path)?;
-    let lease = DatabaseUseLease::acquire_shared(&native_path)?;
-    #[cfg(windows)]
-    ensure_windows_native_encoding(&native_path)?;
-    let database = Database::new(&native_path, config).map_err(|error| {
+    Database::new(&native_path, config).map_err(|error| {
         NativeError::Database(format!(
             "failed to open graph database {}: {error}",
             db_path.display()
         ))
-    })?;
-    Ok(GuardedDatabase {
-        database,
-        _lease: lease,
     })
 }
 
-/// Bind the resource using the same local, absolute UTF-8 spelling sent to
-/// Ladybug. Its Rust SDK converts paths through `display()`, and its pinned
-/// native StorageUtils::expandPath expands a leading '~' and lexically removes
-/// '..'. Reject those ambiguous forms before creating any coordination files;
-/// resolving once also keeps guard and native open independent of later CWD
-/// changes. This does not change persisted Direct writer/journal addresses.
+/// Resolve the local, absolute UTF-8 spelling sent to Ladybug. Its pinned SDK
+/// uses `display()`, and the native engine expands a leading tilde and removes
+/// parent components. Reject ambiguous forms before opening the database. This
+/// does not change persisted Direct writer or journal addresses.
 pub(super) fn guarded_native_path(db_path: &Path) -> Result<PathBuf, NativeError> {
     let spelling = db_path
         .to_str()

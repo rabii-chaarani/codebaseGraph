@@ -492,7 +492,7 @@ fn verified_abandoned_guardian_is_terminated_before_automatic_refresh() {
             });
         }
     }
-    let mut guardian = ChildGuard(command.spawn().unwrap());
+    let mut guardian = ChildGuard::plain(command.spawn().unwrap());
     // Keep owner authority alive deliberately: only authenticated recovery by
     // the new exclusive worker-lock holder may end this abandoned startup.
     let owner_pipe = guardian.0.stdin.take().unwrap();
@@ -607,7 +607,7 @@ fn standalone_owner_loss_preserves_candidate_while_guardian_is_unavailable() {
     let barrier = root.join("standalone-barrier");
     fs::create_dir(&barrier).unwrap();
     let error_path = root.join("standalone.stderr");
-    let mut build = ChildGuard(
+    let mut build = ChildGuard::plain(
         Command::new(binary())
             .current_dir(&root)
             .args([
@@ -728,6 +728,7 @@ struct Fixture {
     descriptor: Value,
     phase_pid: u32,
     paused: Vec<u32>,
+    trace_drains: Vec<FixtureStderrDrain>,
 }
 
 impl Fixture {
@@ -761,7 +762,7 @@ impl Fixture {
         if timing {
             environment.push(("CODEBASE_GRAPH_PHASE_TIMING_DIR", timing_dir.as_path()));
         }
-        let (daemon, port) = start_http_server_with_env(&config, &root, &[], &environment);
+        let (mut daemon, port) = start_http_server_with_env(&config, &root, &[], &environment);
         let session = McpSession::start(port);
         // Start the faulted build only after client setup is complete, so its
         // bounded native barrier cannot expire while MCP is initializing.
@@ -799,6 +800,7 @@ impl Fixture {
         .unwrap();
         assert_eq!(descriptor["version"], 2);
         assert!(alive(phase_pid));
+        let trace_drains = daemon.retain_for_fixture().into_iter().collect();
         Self {
             root,
             config,
@@ -809,7 +811,14 @@ impl Fixture {
             descriptor,
             phase_pid,
             paused: Vec::new(),
+            trace_drains,
         }
+    }
+    fn set_daemon(&mut self, mut daemon: ChildGuard) {
+        if let Some(drain) = daemon.retain_for_fixture() {
+            self.trace_drains.push(drain);
+        }
+        self.daemon = Some(daemon);
     }
     fn worker(&self) -> u32 {
         self.descriptor["worker_pid"].as_u64().unwrap() as u32
@@ -849,6 +858,52 @@ impl Fixture {
     }
 }
 
+// Failure-only metadata for the fixture-owned roots. Never print state contents:
+// coordinator and worker records may contain capabilities or other secrets.
+fn report_fixture_state_metadata(root: &Path) {
+    fn directory(path: &Path) -> bool {
+        fs::symlink_metadata(path)
+            .is_ok_and(|metadata| metadata.is_dir() && !metadata.file_type().is_symlink())
+    }
+    fn report_file(label: &str, path: &Path) {
+        match fs::symlink_metadata(path) {
+            Ok(metadata) if metadata.is_file() && !metadata.file_type().is_symlink() => {
+                eprintln!("fixture {label}: regular file, {} bytes", metadata.len());
+            }
+            Ok(_) => eprintln!("fixture {label}: non-regular or symlink"),
+            Err(error) => eprintln!("fixture {label}: unavailable ({:?})", error.kind()),
+        }
+    }
+    if !directory(root) {
+        return;
+    }
+    let state = root.join(".codebaseGraph");
+    if !directory(&state) {
+        return;
+    }
+    let storage = state.join("storage");
+    if !directory(&storage) {
+        return;
+    }
+    for name in ["coordinator.json", "worker.json", "active.json"] {
+        report_file(name, &storage.join(name));
+    }
+    let workers = storage.join("workers");
+    if !directory(&workers) {
+        return;
+    }
+    if let Ok(entries) = fs::read_dir(workers) {
+        for (index, entry) in entries.take(8).enumerate() {
+            if let Ok(entry) = entry {
+                let path = entry.path();
+                if directory(&path) {
+                    report_file(&format!("worker[{index}].stderr"), &path.join("stderr.log"));
+                }
+            }
+        }
+    }
+}
+
 impl Drop for Fixture {
     fn drop(&mut self) {
         // Resuming a paused owned worker permits its parent-lifetime watchdog
@@ -872,6 +927,10 @@ impl Drop for Fixture {
             thread::sleep(Duration::from_millis(25));
         }
         if thread::panicking() {
+            for drain in &self.trace_drains {
+                drain.report_after_child_exit();
+            }
+            report_fixture_state_metadata(&self.root);
             eprintln!("retained failed lifecycle fixture: {}", self.root.display());
         } else if !alive(self.phase_pid) {
             let _ = fs::remove_dir_all(&self.root);
@@ -1017,7 +1076,7 @@ fn owner_exit_cleans_paused_worker_and_loader_before_recovery() {
             fixture.barrier.as_path(),
         )],
     );
-    fixture.daemon = Some(daemon);
+    fixture.set_daemon(daemon);
     fixture.session = McpSession::start(port);
     fixture.verify_recovery();
 }

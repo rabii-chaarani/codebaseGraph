@@ -1,0 +1,159 @@
+{
+  "schema": "CBG-RESTORE-01.authority-proposal/0.1",
+  "work": "CBG-RESTORE-01",
+  "linear_issue": "COD-136",
+  "status": "proposed-pending-exact-committed-subject-human-approval",
+  "preparation_change": "chg-3a1ewe",
+  "authority": "Scryer for the restoration runtime scope; existing approved Git/bootstrap authority remains scoped to native C4",
+  "baseline": {
+    "source_main": "90e2ab6fae2767bdb158e19f0072d43568e80dbc",
+    "reference": "ca115690b226384164cf364458a0e3255b8908d3",
+    "target_dev": "2f1fe10f6fc5f275f61e4a9bc2d38b4b33a7b5a9",
+    "retained_c4_spec": "66dff2564e76ad06cdf172332e2da318d150fc73",
+    "retained_c4_activation": "ba5c7c543bd711b663e1dfc92d4bd58497ffb557"
+  },
+  "placement": [
+    {
+      "node": "node-88",
+      "name": "Graph Store",
+      "claims": [
+        "resp-108",
+        "resp-109",
+        "resp-232",
+        "resp-233",
+        "resp-234"
+      ],
+      "intended": "Pre-collector Managed/Direct storage and ordinary publication/lease/ownership/recovery paths; remove added historical collector, enrollment and persistent cleanup gates."
+    },
+    {
+      "node": "node-56",
+      "name": "Materialization API",
+      "claims": [
+        "resp-238",
+        "resp-72",
+        "resp-71",
+        "resp-231",
+        "resp-270"
+      ],
+      "intended": "Retain complete deterministic full/incremental builds, owned transient workspaces and no-op behavior; remove collector coupling."
+    },
+    {
+      "node": "node-209",
+      "name": "Graph Coordinator",
+      "claims": [
+        "resp-277",
+        "resp-278",
+        "resp-279",
+        "resp-280",
+        "resp-2nrnv4",
+        "resp-hqtyds",
+        "resp-nehrn9"
+      ],
+      "intended": "Retain read/build serving and existing slot/deadline/no-replay contracts; remove added collector driver and automatic maintenance initialization."
+    },
+    {
+      "node": "node-110",
+      "name": "Unified API Core",
+      "claims": [
+        "resp-122",
+        "resp-123",
+        "resp-121"
+      ],
+      "intended": "Keep canonical operation execution/errors; collector-specific health/control paths are removed without duplicating semantics in adapters."
+    },
+    {
+      "node": "node-96",
+      "name": "Public API Contracts",
+      "claims": [
+        "resp-116",
+        "resp-117"
+      ],
+      "intended": "Remove cleanup-only request/response fields and adapter schemas while preserving other signatures/defaults and output selection."
+    },
+    {
+      "node": "node-1",
+      "name": "Release Gate",
+      "claims": [],
+      "intended": "Retain delivered platform/security/package/installer/CI/release safeguards and existing specific claims; do not invent topology or qualification."
+    }
+  ],
+  "retained_amendments": [
+    {
+      "work": "CBG-COPY-01",
+      "subject": "c5b62ba77d2f94b71714b5319f3b3fa215983f9f",
+      "intent": "Fail closed on uncertain native mutations, no same-candidate replay, deterministic sequential chunks and bounded diagnostics."
+    },
+    {
+      "work": "CBG-COPY-01 resource R1",
+      "subject": "c8dd4ea9ca2a6f992756a2a41828396a27eabb6d",
+      "intent": "Remove workload resource ceilings/options and RSS termination, use native engine defaults, retain streaming and jumbo-record support. This already-approved amendment takes precedence over superseded pool/budget statements."
+    },
+    {
+      "work": "CBG-PLAT-01",
+      "subject": "8a410c7a22f5291f06a1cece5cd9e7c0be255e72",
+      "intent": "Retain current supported-target/client/runtime/installer contracts and exact-slice qualification limits."
+    },
+    {
+      "work": "COD-21 Rust minimum",
+      "decision_record_commit": "1ed5620073e5e0a60cef6425daaca2cb20c469d9",
+      "intent": "Preserve the actual root minimum Rust1.98 property decision and explicit1.98.1 build policy. The record identifies the human's exact property/value choice; it does not claim that the historical question named a Git SHA."
+    }
+  ],
+  "pending_work_treatment": {
+    "preserve_unmodified": [
+      "COD-113 cancelled WIP",
+      "COD-125/126 two-slot/explicit-build proposal and pending claims",
+      "COD-135 identity/recovery work and signed scope",
+      "CBG-COPY-01 resource-removal pending reconciliation",
+      "Native C4 contracts/activation/approval records and closure owners"
+    ],
+    "conflict_rule": "Read committed intent and applicable already human-approved amendments for this restoration. Do not interpret other planned claim wording as permission, overwrite/refile/fold it, or restore whole historical model files. A contradictory binding directive, missing contract precedence or required foreign ownership change stops product work for the maintainer.",
+    "claim_plan": "No new architecture topology or responsibility is invented for the preparation package. Existing claims are the restoration targets. Before product edits confirm source mapping and identify any genuinely required changed/removed claim; record it under the appropriate owner and reuse only actual matching human approval.",
+    "resource_drift": "Committed resp-274 still mentions a configured memory budget; the approved resource-removal amendment is retained and its existing owner keeps pending reconciliation. No old ceiling may be reinstated to satisfy stale wording."
+  },
+  "permissions": {
+    "authorized_now": [
+      "preservation and independent snapshot verification",
+      "contract/ledger/brief authoring",
+      "independent static review",
+      "reviewable contract PR to dev"
+    ],
+    "requires_exact_subject_approval": [
+      "dependent product implementation",
+      "implementer GO",
+      "claim implementation/sign-off beyond actual recorded scope"
+    ],
+    "excluded": [
+      "original ref history rewrite",
+      "other issue cancellation/closure",
+      "native YAML trust activation",
+      "merge/release",
+      "runtime install or daemon/client reconfiguration",
+      "live graph enrollment/migration/deletion",
+      "another project's state or live guard bypass"
+    ]
+  },
+  "verification": {
+    "requirements": "REST-R01 through REST-R13",
+    "acceptance": "REST-A01 through REST-A12",
+    "independent_execution": {
+      "agent_type": "default",
+      "model": "gpt-6.1-terra",
+      "reasoning_effort": "medium",
+      "fork_turns": "none"
+    },
+    "final_review": {
+      "agent_type": "default",
+      "model": "gpt-6.1-sol",
+      "reasoning_effort": "xhigh",
+      "fork_turns": "none",
+      "skill": "/Users/rabii/.codex/skills/adversarial-review-engineer/SKILL.md"
+    }
+  },
+  "evidence": {
+    "preservation_root": "/Users/rabii/.codex/visualizations/2026/11/17/01a1e723-ed0a-7b81-a2f8-23de6974c9c0/restore-v304-preservation",
+    "bundle_sha256": "440e5ccfbac9f023c5e2e2a660d356eb5e62e44cb659a212e7d187af3c7eab99",
+    "preservation_independent_result": "PASS within captured scope; no product/platform qualification"
+  },
+  "approval_record": null
+}
