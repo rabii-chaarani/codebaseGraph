@@ -8,10 +8,15 @@ package CBGUC01Verification {
     verification def SessionStartupAndGraphReuse {
         doc /* After a restart, open the first repository task session in each
                supported agent environment. Exercise existing and new worktrees
-               after one setup. Observe automatic startup, instructions, graph
-               status and context identifiers. Check graph-first guidance where
-               usable context exists. Exercise missing, stale, invalid and valid
-               graph data to check when the system builds, refreshes or reuses it. */
+               after one setup. Observe automatic startup and instructions.
+               Check repository, branch and worktree identifiers in session-start
+               and graph-status responses and their omission from routine queries.
+               Check graph-first guidance where usable context exists. Start
+               sessions with missing, stale, invalid and valid graph data to
+               observe when the system builds, refreshes or reuses it. During an
+               active session, switch branches and worktrees to destinations with
+               missing and stale graph data. Check automatic build or refresh
+               for the selected context after each switch. */
         subject system : CodebaseGraph;
         objective {
             verify automaticSessionInstructions;
