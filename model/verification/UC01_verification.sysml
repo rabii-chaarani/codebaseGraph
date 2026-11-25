@@ -8,7 +8,8 @@ package CBGUC01Verification {
     verification def SessionStartupAndGraphReuse {
         doc /* After a restart, open the first repository task session in each
                supported agent environment. Exercise existing and new worktrees
-               after one setup. Observe automatic startup and instructions.
+               after one setup. Observe automatic startup, instructions, graph
+               availability and any build or refresh in progress.
                Check repository, branch and worktree identifiers in session-start
                and graph-status responses and their omission from routine queries.
                Check graph-first guidance where usable context exists. Start
