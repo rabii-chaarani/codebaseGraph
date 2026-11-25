@@ -77,26 +77,24 @@ package CBGNeeds {
         doc /* N5. Stakeholder-provided need, 23 November 2026.
                The developer needs AI agents to use codebaseGraph
                automatically in every session.
-               Working scope: sessions performing repository-related work;
-               client coverage and session boundaries remain to be defined. */
+               Scope covers repository tasks that need codebase context on
+               supported client and platform combinations under R-UC1-08
+               and R-UC1-11. */
 
         subject system : CodebaseGraph;
         stakeholder developer : Developer;
         actor codingAgent : CodingAgent;
 
         require constraint {
-            doc /* The developer needs the coding agent to use codebaseGraph
-                   automatically in every coding session, without manual
-                   reminders to invoke it. */
+            doc /* When a supported session first needs repository context
+                   and the graph is usable, the coding agent shall query
+                   the graph before opening source files for that task,
+                   without a manual reminder. */
         }
 
-        // Proposed evaluation, not a selected integration mechanism:
-        // Observe session traces for automatic graph requests and relevant
-        // context made available to the agent during its repository task.
-        // Distinguish availability, attempted use, successful use and useful
-        // use. Configuration or a connection alone is insufficient evidence.
-        // Count and report unavailable/failed sessions; do not hide them by
-        // silently excluding them from the session coverage calculation.
+        // Assess graph-first use from session traces. Record attempts,
+        // successful use, query failures and unavailable sessions. Report
+        // totals for all sessions exercised, including unavailable sessions.
     }
 
     concern def RapidCodebaseUnderstanding {

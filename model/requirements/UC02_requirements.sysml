@@ -309,8 +309,20 @@ package CBGUC02Requirements {
         codeUnderstandingNeed, graphStatusNeed;
 
     requirement def QueryTokenBudget {
-        doc /* R-UC2-26. Keep query responses within the agent-defined token
-               budget, using an agreed token-counting method. */
+        doc /* R-UC2-26. When the agent specifies a token budget, the complete
+               serialized query response on stdout shall fit that budget in the
+               selected format. Preserve all required information, including
+               readiness and failure status, original branch identification,
+               per-symbol freshness and omission information where applicable.
+               Reduce optional detail and omit lower-ranked results as needed.
+               Use the agreed token-counting method for both the full response
+               and the smallest valid response for the query outcome and format.
+               If that minimum exceeds the budget, the CLI shall exit with a
+               nonzero status, leave stdout empty and emit a concise diagnostic
+               on stderr stating the minimum token count for that response.
+               This budget error takes precedence over emitting a query
+               response, including those specified by R-UC1-04, R-UC1-07 and
+               R-UC1-19. Apply the same rule to structured text and JSON. */
         subject system : CodebaseGraph;
     }
     requirement queryTokenBudget : QueryTokenBudget {

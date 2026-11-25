@@ -80,10 +80,20 @@ package CBGUC02Verification {
     }
 
     verification def BudgetAndResponseFormat {
-        doc /* Query with progressively tighter budgets. Count response tokens
-               using the agreed method. Check relevance ordering, reduction of
-               detail and indications of omissions. Check structured text by
-               default and parse the JSON when the agent selects it. */
+        doc /* Exercise default structured text and explicitly selected JSON.
+               In each format, cover omitted results, building and unavailable
+               responses, and a query that spans a branch switch. Use the
+               agreed token-counting method to calculate the minimum valid
+               response size for each scenario. Try budgets one token below,
+               equal to and above that minimum. Below the minimum, check for
+               a nonzero exit, empty stdout and a concise stderr diagnostic
+               giving the minimum. At and above the minimum, require a valid
+               response in the selected format. Count complete stdout and
+               check that it fits the requested budget. Check required status,
+               original branch identification, freshness and omission
+               information where applicable. Parse the JSON when selected.
+               Check relevance ordering and the reduction of optional detail
+               when only some results fit. */
         subject system : CodebaseGraph;
         objective {
             verify queryTokenBudget;

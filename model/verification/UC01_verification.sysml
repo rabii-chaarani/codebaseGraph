@@ -1,4 +1,5 @@
 package CBGUC01Verification {
+    private import CBGNeeds::automaticSessionUseNeed;
     private import CBGSystem::*;
     private import CBGUC01Requirements::*;
 
@@ -28,6 +29,21 @@ package CBGUC01Verification {
             verify automaticGraphPreparation;
             verify firstSessionStartup;
             verify existingGraphValidationAndReuse;
+        }
+    }
+
+    verification def AutomaticGraphUseInSupportedSessions {
+        doc /* For each supported client and platform combination, start a
+               repository task that needs context available in a usable graph.
+               Check the session trace for a CLI graph query for task context
+               before the agent opens source files for the task, with no
+               manual reminder. Exercise file fallback when graph context is
+               unavailable. Record graph query attempts, successful use,
+               query failures and unavailable sessions. Include unavailable
+               sessions in the reported totals. */
+        subject system : CodebaseGraph;
+        objective {
+            verify automaticSessionUseNeed;
         }
     }
 
@@ -69,10 +85,12 @@ package CBGUC01Verification {
     verification def MonitoringAndSourceDeletion {
         doc /* While the system is running with no agent sessions, save an edit
                and observe monitoring and refresh. During a session, delete a
-               source file and delete an individual symbol in a separate edit.
-               After detection and before refresh completes, query the affected
-               source context and check removal of the deleted symbols and the
-               relationships connected to them. */
+               source file. After detection and before refresh completes, query
+               the affected context and check that symbols from that file and
+               all relationships connected to them are absent. In a separate
+               edit, delete a symbol from a surviving file. Query the affected
+               context after detection and before refresh completes. Check that
+               all relationships connected to the deleted symbol are absent. */
         subject system : CodebaseGraph;
         objective {
             verify deletedSourceSymbolExclusion;
